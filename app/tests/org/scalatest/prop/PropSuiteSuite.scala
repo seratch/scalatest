@@ -20,9 +20,9 @@ import org.scalacheck._
 import Arbitrary._
 import Prop._
 
-class FunSuiteSuite extends prop.FunSuite {
+class PropSuiteSuite extends PropSuite {
 
-  test("Checkers' check methods must be callable directly from prop.FunSuite") {
+  test("Checkers' check methods must be callable directly from PropSuite") {
 
     // Ensure a success does not fail in an exception
     val propConcatLists = property((a: List[Int], b: List[Int]) => a.size + b.size == (a ::: b).size)
@@ -67,7 +67,7 @@ class FunSuiteSuite extends prop.FunSuite {
 
   test("tests that take properties get executed") {
 
-    val a = new prop.FunSuite {
+    val a = new PropSuite {
       var prop1Used = false
       var prop2Used = false
       val fun1 = (a: Int) => { prop1Used = true; true }
@@ -80,7 +80,7 @@ class FunSuiteSuite extends prop.FunSuite {
     assert(a.prop1Used)
     assert(a.prop2Used)
 
-    val b = new prop.FunSuite {
+    val b = new PropSuite {
       var prop1Used = false
       var prop2Used = false
       val fun1 = (a: Int, b: Int) => { prop1Used = true; true }
@@ -93,7 +93,7 @@ class FunSuiteSuite extends prop.FunSuite {
     assert(b.prop1Used)
     assert(b.prop2Used)
 
-    val c = new prop.FunSuite {
+    val c = new PropSuite {
       var prop1Used = false
       var prop2Used = false
       val fun1 = (a: Int, b: Int, c: Int) => { prop1Used = true; true }
@@ -106,7 +106,7 @@ class FunSuiteSuite extends prop.FunSuite {
     assert(c.prop1Used)
     assert(c.prop2Used)
 
-    val d = new prop.FunSuite {
+    val d = new PropSuite {
       var prop1Used = false
       var prop2Used = false
       val fun1 = (a: Int, b: Int, c: Int, d: Int) => { prop1Used = true; true }
@@ -119,7 +119,7 @@ class FunSuiteSuite extends prop.FunSuite {
     assert(d.prop1Used)
     assert(d.prop2Used)
 
-    val e = new prop.FunSuite {
+    val e = new PropSuite {
       var prop1Used = false
       var prop2Used = false
       val fun1 = (a: Int, b: Int, c: Int, d: Int, e: Int) => { prop1Used = true; true }
@@ -132,7 +132,7 @@ class FunSuiteSuite extends prop.FunSuite {
     assert(e.prop1Used)
     assert(e.prop2Used)
 
-    val f = new prop.FunSuite {
+    val f = new PropSuite {
       var prop1Used = false
       var prop2Used = false
       val fun1 = (a: Int, b: Int, c: Int, d: Int, e: Int, f: Int) => { prop1Used = true; true }

@@ -33,6 +33,9 @@ private[scalatest] object Resources {
     msgFmt.format(argArray)
   }
 
-  def apply(resourceName: String, o1: AnyRef*): String = makeString(resourceName, o1.toArray)
+  // Later, figure out how to get varargs to work.
+  def apply(resourceName: String, o1: Any): String = makeString(resourceName, Array[Object](o1.asInstanceOf[Object]))
+  def apply(resourceName: String, o1: Any, o2: Any): String = makeString(resourceName, Array[Object](o1.asInstanceOf[Object], o2.asInstanceOf[Object]))
+  def apply(resourceName: String, o1: Any, o2: Any, o3: Any): String = makeString(resourceName, Array[Object](o1.asInstanceOf[Object], o2.asInstanceOf[Object], o3.asInstanceOf[Object]))
 }
 

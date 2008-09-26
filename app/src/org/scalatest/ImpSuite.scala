@@ -17,7 +17,8 @@ package org.scalatest
 
 /**
  * Trait that can be mixed into suites that need methods invoked before and after executing the
- * suite, and/or before and after running each test. This trait facilitates a style of testing in which mutable
+ * suite, and/or before and after running each test. The "imp" in <code>ImpSuite</code> stands
+ * for <em>imperative</em>, because this trait facilitates a style of testing in which mutable
  * fixture objects held in instance variables are replaced or reinitialized before each test or
  * suite. Here's an example:
  * 
@@ -25,7 +26,7 @@ package org.scalatest
  * import org.scalatest._
  * import scala.collection.mutable.ListBuffer
  *
- * class MySuite extends BeforeAndAfter {
+ * class MySuite extends ImpSuite {
  *
  *   // Fixtures as reassignable variables and mutable objects
  *   var sb: StringBuilder = _
@@ -54,29 +55,27 @@ package org.scalatest
  * <p>
  * Because this trait invokes <code>super.execute</code> to execute the suite and <code>super.runTest</code> to
  * run each test, you may need to mix this trait in last to get the desired behavior. For example, this won't
- * work, because <code>BeforeAndAfter</code> is "super" to </code>FunSuite</code>:
+ * work, because <code>ImpSuite</code> is "super" to </code>FunSuite</code>:
  * </p>
  * <pre>
- * class MySuite extends BeforeAndAfter with FunSuite 
+ * class MySuite extends ImpSuite with FunSuite 
  * </pre>
  * <p>
- * You'd need to turn it around, so that <code>FunSuite</code> is "super" to <code>BeforeAndAfter</code>, like this:
+ * You'd need to turn it around, so that <code>FunSuite</code> is "super" to <code>ImpSuite</code>, like this:
  * </p>
  * <pre>
- * class MySuite extends FunSuite with BeforeAndAfter
+ * class MySuite extends FunSuite with ImpSuite
  * </pre>
  * <p>
  *
  * <p>
  * If you want to do something before and after both the tests and the nested <code>Suite</code>s,
  * then you can override <code>execute</code> itself, or use the <code>beforeAll</code>
- * and <code>afterAll</code> methods of <code>BeforeAndAfter</code>.
+ * and <code>afterAll</code> methods of <code>ImpSuite</code>.
  * </p>
  *
  */
-trait BeforeAndAfter extends ExecuteAndRun {
-  
-  this: Suite =>
+trait ImpSuite extends Suite {
   
   /**
    * Defines a method to be run before each of this suite's tests. This trait's implementation
@@ -129,7 +128,7 @@ trait BeforeAndAfter extends ExecuteAndRun {
    * exception, this method will complete abruptly with the same exception.
    * </p>
   */
-  abstract override def runTest(testName: String, reporter: Reporter, stopper: Stopper, properties: Map[String, Any]) {
+  override def runTest(testName: String, reporter: Reporter, stopper: Stopper, properties: Map[String, Any]) {
     beforeEach()
     try {
       super.runTest(testName, reporter, stopper, properties)
@@ -164,7 +163,7 @@ trait BeforeAndAfter extends ExecuteAndRun {
    * exception, this method will complete abruptly with the same exception.
    * </p>
   */
-  abstract override def execute(testName: Option[String], reporter: Reporter, stopper: Stopper, includes: Set[String], excludes: Set[String],
+  override def execute(testName: Option[String], reporter: Reporter, stopper: Stopper, includes: Set[String], excludes: Set[String],
                        properties: Map[String, Any], distributor: Option[Distributor]) {
     beforeAll()
     try {

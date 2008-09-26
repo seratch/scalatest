@@ -220,9 +220,6 @@
 			<arg value="org.scalatest" />
 
 			<arg value="-m" />
-			<arg value="org.scalatest.matchers" />
-
-			<arg value="-m" />
 			<arg value="org.scalatest.testng" />
 
 			<arg value="-m" />
@@ -243,10 +240,7 @@
 			<arg value="-o" />
 
 			<arg value="-s" />
-			<arg value="org.scalatest.StackSpec" />
-
-			<arg value="-s" />
-			<arg value="org.scalatest.SpecSuite" />
+			<arg value="org.scalatest.FunSuiteSuite" />
 
 <!--
 			<arg value="-s" />

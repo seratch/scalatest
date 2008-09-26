@@ -20,6 +20,36 @@ import java.util.ConcurrentModificationException
 import java.util.concurrent.atomic.AtomicReference
 
 /**
+ * Abstract class whose subclasses can be as to <code>FunSuite</code> and <code>FunSuiteN</code>'s test
+ * registration methods to place tests into groups. For example, if you define:
+ * <pre>
+ * object SlowTest extends Group("SlowTest")
+ * </pre>
+ *
+ * then you can place a test into the <code>SlowTest</code> group like this:
+ * <pre>
+ * class MySuite extends FunSuite {
+ *
+ *   test("my test", SlowTest) {
+ *     Thread.sleep(1000)
+ *   }
+ * }
+ * </pre>
+ *
+ * If you have created Java annotation interfaces for use as group names in direct subclasses of <code>org.scalatest.Suite</code>,
+ * then you will probably want to use group names on your <code>FunSuite</code>s that match. To do so, simply 
+ * pass the fully qualified names of the Java interfaces to the <code>Group</code> constructor. For example, if you've
+ * defined a Java annotation interface with fully qualified name, <code>com.mycompany.groups.SlowTest</code>, then you could
+ * create a matching group for <code>FunSuite</code>s like this:
+ * <pre>
+ * object SlowTest extends Group("com.mycompany.groups.SlowTest")
+ * </pre>
+ *
+ * @author Bill Venners
+ */
+abstract class Group(val name: String)
+
+/**
  * A suite of tests in which each test is represented as a function value. The &#8220;<code>Fun</code> &#8221;in <code>FunSuite</code> stands for functional.
  * Here's an example <code>FunSuite</code>:
  *
@@ -481,9 +511,9 @@ trait FunSuite extends Suite {
 
   private val IgnoreGroupName = "org.scalatest.Ignore"
 
-  private abstract class FunNode
-  private case class Test(testName: String, testFunction: () => Unit) extends FunNode
-  private case class Info(report: Report) extends FunNode
+  private trait Test
+  private case class PlainOldTest(testName: String, f: () => Unit) extends Test
+  private case class InformerTest(testName: String, f: (Informer) => Unit) extends Test
 
   // Access to the testNamesList, testsMap, and groupsMap must be synchronized, because the test methods are invoked by
   // the primary constructor, but testNames, groups, and runTest get invoked directly or indirectly
@@ -496,78 +526,30 @@ trait FunSuite extends Suite {
   // Test names are in reverse order of test registration method invocations
   private class Bundle private(
     val testNamesList: List[String],
-    val doList: List[FunNode],
     val testsMap: Map[String, Test],
     val groupsMap: Map[String, Set[String]],
     val executeHasBeenInvoked: Boolean
   ) {
-    def unpack = (testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked)
+    def unpack = (testNamesList, testsMap, groupsMap, executeHasBeenInvoked)
   }
   
   private object Bundle {
     def apply(
       testNamesList: List[String],
-      doList: List[FunNode],
       testsMap: Map[String, Test],
       groupsMap: Map[String, Set[String]],
       executeHasBeenInvoked: Boolean
     ): Bundle =
-      new Bundle(testNamesList, doList,testsMap, groupsMap, executeHasBeenInvoked)
+      new Bundle(testNamesList, testsMap, groupsMap, executeHasBeenInvoked)
   }
 
-  private val atomic = new AtomicReference[Bundle](Bundle(List(), List(), Map(), Map(), false))
+  private val atomic = new AtomicReference[Bundle](Bundle(Nil, Map(), Map(), false))
 
   private def updateAtomic(oldBundle: Bundle, newBundle: Bundle) {
     if (!atomic.compareAndSet(oldBundle, newBundle))
       throw new ConcurrentModificationException
   }
   
-  // later will initialize with an informer that registers things between tests for later passing to the informer
-  private var currentInformer = zombieInformer
-  implicit def info: Informer = {
-    if (currentInformer == null)
-      registrationInformer
-    else
-      currentInformer
-  }
-  
-  // Hey, my first lazy val. Turns out classes must be initialized before
-  // the traits they mix in. Thus currentInformer was null when it was accessed via
-  // an info outside a test. This solves the problem.
-  private lazy val registrationInformer: Informer =
-    new Informer {
-      def nameForReport: String = suiteName
-      def apply(report: Report) {
-        if (report == null)
-          throw new NullPointerException
-        val oldBundle = atomic.get
-        var (testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
-        doList ::= Info(report)
-        updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked))
-      }
-      def apply(message: String) {
-        if (message == null)
-          throw new NullPointerException
-        apply(new Report(nameForReport, message))
-      }
-    }
-    
-  private val zombieInformer =
-    new Informer {
-      private val complaint = "Sorry, you can only use FunSuite's info when executing the suite."
-      def nameForReport: String = { throw new IllegalStateException(complaint) }
-      def apply(report: Report) {
-        if (report == null)
-          throw new NullPointerException
-        throw new IllegalStateException(complaint)
-      }
-      def apply(message: String) {
-        if (message == null)
-          throw new NullPointerException
-        throw new IllegalStateException(complaint)
-      }
-    }
-
   /**
    * Register a test with the specified name, optional groups, and function value that takes no arguments.
    * This method will register the test for later execution via an invocation of one of the <code>execute</code>
@@ -579,22 +561,49 @@ trait FunSuite extends Suite {
   protected def test(testName: String, testGroups: Group*)(f: => Unit) {
 
     val oldBundle = atomic.get
-    var (testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
+    var (testNamesList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
+ 
+    if (executeHasBeenInvoked)
+      throw new IllegalStateException("You cannot register a test  on a FunSuite after execute has been invoked.")
+    
+    require(!testsMap.keySet.contains(testName), "Duplicate test name: " + testName)
+
+    testsMap += (testName -> PlainOldTest(testName, f _))
+    testNamesList ::= testName
+    val groupNames = Set[String]() ++ testGroups.map(_.name)
+    if (!groupNames.isEmpty)
+      groupsMap += (testName -> groupNames)
+
+    updateAtomic(oldBundle, Bundle(testNamesList, testsMap, groupsMap, executeHasBeenInvoked))
+  }
+
+  /**
+   * Register a test with the specified name, optional groups, and function value that takes an <code>Informer</code>.
+   * This method will register the test for later execution via an invocation of one of the <code>execute</code>
+   * methods. The <code>Informer</code> passed to the function value will be able to forward messages and reports provided via its <code>code</code>
+   * methods to the <code>Reporter</code> passed to <code>execute</code>. 
+   * The passed test name must not have been registered previously on
+   * this <code>FunSuite</code> instance.
+   *
+   * @throws IllegalArgumentException if <code>testName</code> had been registered previously
+   */
+  protected def testWithInformer(testName: String, testGroups: Group*)(f: (Informer) => Unit) {
+
+    val oldBundle = atomic.get
+    var (testNamesList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
 
     if (executeHasBeenInvoked)
       throw new IllegalStateException("You cannot register a test  on a FunSuite after execute has been invoked.")
     
     require(!testsMap.keySet.contains(testName), "Duplicate test name: " + testName)
 
-    val testNode = Test(testName, f _)
-    testsMap += (testName -> testNode)
+    testsMap += (testName -> InformerTest(testName, f))
     testNamesList ::= testName
-    doList ::= testNode
     val groupNames = Set[String]() ++ testGroups.map(_.name)
     if (!groupNames.isEmpty)
       groupsMap += (testName -> groupNames)
 
-    updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked))
+    updateAtomic(oldBundle, Bundle(testNamesList, testsMap, groupsMap, executeHasBeenInvoked))
   }
 
   /**
@@ -612,12 +621,35 @@ trait FunSuite extends Suite {
     test(testName)(f) // Call test without passing the groups
 
     val oldBundle = atomic.get
-    var (testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
+    var (testNamesList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
 
     val groupNames = Set[String]() ++ testGroups.map(_.name)
     groupsMap += (testName -> (groupNames + IgnoreGroupName))
 
-    updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked))
+    updateAtomic(oldBundle, Bundle(testNamesList, testsMap, groupsMap, executeHasBeenInvoked))
+  }
+
+  /**
+   * Register a test to ignore, which has the specified name, optional groups, and function value that takes a <code>Informer</code>.
+   * This method will register the test for later ignoring via an invocation of one of the <code>execute</code>
+   * methods. This method exists to make it easy to ignore an existing test method by changing the call to <code>testWithInformer</code>
+   * to <code>ignoreWithInformer</code> without deleting or commenting out the actual test code. The test will not be executed, but a
+   * report will be sent that indicates the test was ignored. The passed test name must not have been registered previously on
+   * this <code>FunSuite</code> instance.
+   *
+   * @throws IllegalArgumentException if <code>testName</code> had been registered previously
+   */
+  protected def ignoreWithInformer(testName: String, testGroups: Group*)(f: (Informer) => Unit) {
+
+    testWithInformer(testName)(f) // Call testWithInformer without passing the groups
+
+    val oldBundle = atomic.get
+    var (testNamesList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
+
+    val groupNames = Set[String]() ++ testGroups.map(_.name)
+    groupsMap += (testName -> (groupNames + IgnoreGroupName))
+
+    updateAtomic(oldBundle, Bundle(testNamesList, testsMap, groupsMap, executeHasBeenInvoked))
   }
 
   /**
@@ -657,29 +689,26 @@ trait FunSuite extends Suite {
 
     try {
 
-      val theTest = atomic.get.testsMap(testName)
-
-      val oldInformer = info
-      try {
-        currentInformer =
-          new Informer {
-            val nameForReport: String = getTestNameForReport(testName)
-            def apply(report: Report) {
-              if (report == null)
-                throw new NullPointerException
-              wrappedReporter.infoProvided(report)
+      atomic.get.testsMap(testName) match {
+        case PlainOldTest(testName, f) => f()
+        case InformerTest(testName, f) => {
+          val informer =
+            new Informer {
+              val nameForReport: String = getTestNameForReport(testName)
+              def apply(report: Report) {
+                if (report == null)
+                  throw new NullPointerException
+                wrappedReporter.infoProvided(report)
+              }
+              def apply(message: String) {
+                if (message == null)
+                  throw new NullPointerException
+                val report = new Report(nameForReport, message)
+                wrappedReporter.infoProvided(report)
+              }
             }
-            def apply(message: String) {
-              if (message == null)
-                throw new NullPointerException
-              val report = new Report(nameForReport, message)
-              wrappedReporter.infoProvided(report)
-            }
-          }
-        theTest.testFunction()
-      }
-      finally {
-        currentInformer = oldInformer
+          f(informer)
+        }
       }
 
       val report = new Report(getTestNameForReport(testName), "")
@@ -716,7 +745,7 @@ trait FunSuite extends Suite {
    *
    * <p>
    * This trait's implementation returns groups that were passed as strings contained in <code>Group</code> objects passed to 
-   * methods <code>test</code> and <code>ignore</code>. 
+   * methods <code>test</code>, <code>testWithInformer</code>, <code>ignore</code>, and <code>ignoreWithInformer</code>. 
    * </p>
    */
   override def groups: Map[String, Set[String]] = atomic.get.groupsMap
@@ -729,84 +758,16 @@ trait FunSuite extends Suite {
     suiteName + ": " + testName
   }
   
-  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, includes: Set[String], excludes: Set[String],
-      goodies: Map[String, Any]) {
-
-    if (testName == null)
-      throw new NullPointerException("testName was null")
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (includes == null)
-      throw new NullPointerException("includes was null")
-    if (excludes == null)
-      throw new NullPointerException("excludes was null")
-    if (goodies == null)
-      throw new NullPointerException("goodies was null")
-
-    // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
-    // so that exceptions are caught and transformed
-    // into error messages on the standard error stream.
-    val wrappedReporter = wrapReporterIfNecessary(reporter)
-
-    // If a testName to execute is passed, just execute that, else execute the tests returned
-    // by testNames.
-    testName match {
-      case Some(tn) => runTest(tn, wrappedReporter, stopper, goodies)
-      case None => {
-        val doList = atomic.get.doList.reverse
-        for (node <- doList) {
-          node match {
-            case Info(message) => info(message)
-            case Test(tn, _) =>
-              if (!stopper.stopRequested && (includes.isEmpty || !(includes ** groups.getOrElse(tn, Set())).isEmpty)) {
-                if (excludes.contains(IgnoreGroupName) && groups.getOrElse(tn, Set()).contains(IgnoreGroupName)) {
-                  wrappedReporter.testIgnored(new Report(getTestNameForReport(tn), ""))
-                }
-                else if ((excludes ** groups.getOrElse(tn, Set())).isEmpty) {
-                  runTest(tn, wrappedReporter, stopper, goodies)
-                }
-              }
-          }
-        }
-      }
-    }
-  }
-
   override def execute(testName: Option[String], reporter: Reporter, stopper: Stopper, includes: Set[String], excludes: Set[String],
       goodies: Map[String, Any], distributor: Option[Distributor]) {
 
     // Set the flag that indicates execute has been invoked, which will disallow any further
     // invocations of "test" with an IllegalStateException.
     val oldBundle = atomic.get
-    val (testNamesList, doList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
+    val (testNamesList, testsMap, groupsMap, executeHasBeenInvoked) = oldBundle.unpack
     if (!executeHasBeenInvoked)
-      updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, groupsMap, true))
-
-    val wrappedReporter = wrapReporterIfNecessary(reporter)
-
-    currentInformer =
-      new Informer {
-        val nameForReport: String = suiteName
-        def apply(report: Report) {
-          if (report == null)
-            throw new NullPointerException
-          wrappedReporter.infoProvided(report)
-        }
-        def apply(message: String) {
-          if (message == null)
-            throw new NullPointerException
-          val report = new Report(nameForReport, message)
-          wrappedReporter.infoProvided(report)
-        }
-      }
-
-    try {
-      super.execute(testName, wrappedReporter, stopper, includes, excludes, goodies, distributor)
-    }
-    finally {
-      currentInformer = zombieInformer
-    }
+      updateAtomic(oldBundle, Bundle(testNamesList, testsMap, groupsMap, true))
+    
+    super.execute(testName, reporter, stopper, includes, excludes, goodies, distributor)
   }
 }
