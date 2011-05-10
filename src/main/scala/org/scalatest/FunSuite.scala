@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.StackDepthExceptionHelper.getStackDepth
 import org.scalatest.events._
 import Suite.anErrorThatShouldCauseAnAbort
-import Suite.checkRunTestParamsForNull
 
 /**
  * A suite of tests in which each test is represented as a function value. The &#8220;<code>Fun</code>&#8221; in <code>FunSuite</code> stands
@@ -73,9 +72,7 @@ import Suite.checkRunTestParamsForNull
  * <code>TestRegistrationClosedException</code>.
  * </p>
  *
- * 
- * <a name="SharedFixtures"></a><h2>Shared fixtures</h2>
- *
+ * <h2>Shared fixtures</h2>
  *
  * <p>
  * A test <em>fixture</em> is objects or other artifacts (such as files, sockets, database
@@ -627,25 +624,42 @@ import Suite.checkRunTestParamsForNull
  *
  * <pre>
  * scala> (new StackFunSuite).execute()
- * StackFunSuite:
- * - empty is invoked on an empty stack
- * - peek is invoked on an empty stack
- * - pop is invoked on an empty stack
- * - empty is invoked on this non-empty stack: Stack(9)
- * - peek is invoked on this non-empty stack: Stack(9)
- * - pop is invoked on this non-empty stack: Stack(9)
- * - full is invoked on this non-full stack: Stack(9)
- * - push is invoked on this non-full stack: Stack(9)
- * - empty is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
- * - peek is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
- * - pop is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
- * - full is invoked on this non-full stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
- * - push is invoked on this non-full stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
- * - full is invoked on a full stack
- * - empty is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
- * - peek is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
- * - pop is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
- * - push is invoked on a full stack
+ * Test Starting - StackFunSuite: empty is invoked on an empty stack
+ * Test Succeeded - StackFunSuite: empty is invoked on an empty stack
+ * Test Starting - StackFunSuite: peek is invoked on an empty stack
+ * Test Succeeded - StackFunSuite: peek is invoked on an empty stack
+ * Test Starting - StackFunSuite: pop is invoked on an empty stack
+ * Test Succeeded - StackFunSuite: pop is invoked on an empty stack
+ * Test Starting - StackFunSuite: empty is invoked on this non-empty stack: Stack(9)
+ * Test Succeeded - StackFunSuite: empty is invoked on this non-empty stack: Stack(9)
+ * Test Starting - StackFunSuite: peek is invoked on this non-empty stack: Stack(9)
+ * Test Succeeded - StackFunSuite: peek is invoked on this non-empty stack: Stack(9)
+ * Test Starting - StackFunSuite: pop is invoked on this non-empty stack: Stack(9)
+ * Test Succeeded - StackFunSuite: pop is invoked on this non-empty stack: Stack(9)
+ * Test Starting - StackFunSuite: full is invoked on this non-full stack: Stack(9)
+ * Test Succeeded - StackFunSuite: full is invoked on this non-full stack: Stack(9)
+ * Test Starting - StackFunSuite: push is invoked on this non-full stack: Stack(9)
+ * Test Succeeded - StackFunSuite: push is invoked on this non-full stack: Stack(9)
+ * Test Starting - StackFunSuite: empty is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Succeeded - StackFunSuite: empty is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Starting - StackFunSuite: peek is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Succeeded - StackFunSuite: peek is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Starting - StackFunSuite: pop is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Succeeded - StackFunSuite: pop is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Starting - StackFunSuite: full is invoked on this non-full stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Succeeded - StackFunSuite: full is invoked on this non-full stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Starting - StackFunSuite: push is invoked on this non-full stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Succeeded - StackFunSuite: push is invoked on this non-full stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1)
+ * Test Starting - StackFunSuite: full is invoked on a full stack
+ * Test Succeeded - StackFunSuite: full is invoked on a full stack
+ * Test Starting - StackFunSuite: empty is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+ * Test Succeeded - StackFunSuite: empty is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+ * Test Starting - StackFunSuite: peek is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+ * Test Succeeded - StackFunSuite: peek is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+ * Test Starting - StackFunSuite: pop is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+ * Test Succeeded - StackFunSuite: pop is invoked on this non-empty stack: Stack(9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+ * Test Starting - StackFunSuite: push is invoked on a full stack
+ * Test Succeeded - StackFunSuite: push is invoked on a full stack
  * </pre>
  * 
  * <p>
@@ -798,9 +812,9 @@ import Suite.checkRunTestParamsForNull
  * </p>
  *
  * <pre>
- * MySuite:
- * - addition !!! IGNORED !!!
- * - subtraction
+ * Test Ignored - MySuite: addition
+ * Test Starting - MySuite: subtraction
+ * Test Succeeded - MySuite: subtraction
  * </pre>
  *
  * <h2>Pending tests</h2>
@@ -860,9 +874,10 @@ import Suite.checkRunTestParamsForNull
  * </p>
  *
  * <pre>
- * MySuite:
- * - addition
- * - subtraction (pending)
+ * Test Starting - MySuite: addition
+ * Test Succeeded - MySuite: addition
+ * Test Starting - MySuite: subtraction
+ * Test Pending - MySuite: subtraction
  * </pre>
  * 
  * <h2>Informers</h2>
@@ -899,17 +914,73 @@ import Suite.checkRunTestParamsForNull
  * included in the printed report:
  *
  * <pre>
- * MySuite:
- * - addition
- *   + Addition seems to work 
+ * Test Starting - MySuite: addition
+ * Info Provided - MySuite.addition: Addition seems to work
+ * Test Succeeded - MySuite: addition
  * </pre>
  *
  * @author Bill Venners
  */
 trait FunSuite extends Suite { thisSuite =>
 
-  private final val engine = new Engine("concurrentFunSuiteMod", "FunSuite")
-  import engine._
+  private val IgnoreTagName = "org.scalatest.Ignore"
+
+  private abstract class FunNode
+  private case class TestNode(testName: String, fun: () => Unit) extends FunNode
+  private case class InfoNode(message: String) extends FunNode
+
+  // Access to the testNamesList, testsMap, and tagsMap must be synchronized, because the test methods are invoked by
+  // the primary constructor, but testNames, tags, and runTest get invoked directly or indirectly
+  // by run. When running tests concurrently with ScalaTest Runner, different threads can
+  // instantiate and run the suite. Instead of synchronizing, I put them in an immutable Bundle object (and
+  // all three collections--testNamesList, testsMap, and tagsMap--are immuable collections), then I put the Bundle
+  // in an AtomicReference. Since the expected use case is the test method will be called
+  // from the primary constructor, which will be all done by one thread, I just in effect use optimistic locking on the Bundle.
+  // If two threads ever called test at the same time, they could get a ConcurrentModificationException.
+  // Test names are in reverse order of test registration method invocations
+  private class Bundle private(
+    val testNamesList: List[String],
+    val doList: List[FunNode],
+    val testsMap: Map[String, TestNode],
+    val tagsMap: Map[String, Set[String]],
+    val registrationClosed: Boolean
+  ) {
+    def unpack = (testNamesList, doList, testsMap, tagsMap, registrationClosed)
+  }
+
+  private object Bundle {
+    def apply(
+      testNamesList: List[String],
+      doList: List[FunNode],
+      testsMap: Map[String, TestNode],
+      tagsMap: Map[String, Set[String]],
+      registrationClosed: Boolean
+    ): Bundle =
+      new Bundle(testNamesList, doList,testsMap, tagsMap, registrationClosed)
+  }
+
+  private val atomic = new AtomicReference[Bundle](Bundle(List(), List(), Map(), Map(), false))
+
+  private def updateAtomic(oldBundle: Bundle, newBundle: Bundle) {
+    val shouldBeOldBundle = atomic.getAndSet(newBundle)
+    if (!(shouldBeOldBundle eq oldBundle))
+      throw new ConcurrentModificationException(Resources("concurrentFunSuiteBundleMod"))
+  }
+
+  private class RegistrationInformer extends Informer {
+    def apply(message: String) {
+      if (message == null)
+        throw new NullPointerException
+      val oldBundle = atomic.get
+      var (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+      doList ::= InfoNode(message)
+      updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, registrationClosed))
+    }
+  }
+
+  // The informer will be a registration informer until run is called for the first time. (This
+  // is the registration phase of a FunSuite's lifecycle.)
+  private final val atomicInformer = new AtomicReference[Informer](new RegistrationInformer)
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
@@ -920,6 +991,16 @@ trait FunSuite extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
+
+  private val zombieInformer =
+    new Informer {
+      private val complaint = Resources("cantCallInfoNow", "FunSuite")
+      def apply(message: String) {
+        if (message == null)
+          throw new NullPointerException
+        throw new IllegalStateException(complaint)
+      }
+    }
 
   /**
    * Register a test with the specified name, optional tags, and function value that takes no arguments.
@@ -935,8 +1016,31 @@ trait FunSuite extends Suite { thisSuite =>
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    * @throws NullPointerException if <code>testName</code> or any passed test tag is <code>null</code>
    */
-  protected def test(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(testName, testFun _, "testCannotAppearInsideAnotherTest", "FunSuite.scala", "test", testTags: _*)
+  protected def test(testName: String, testTags: Tag*)(f: => Unit) {
+
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("testCannotAppearInsideAnotherTest"), getStackDepth("FunSuite.scala", "test"))
+    
+    if (atomic.get.testsMap.keySet.contains(testName))
+      throw new DuplicateTestNameException(Resources("duplicateTestName", testName), getStackDepth("FunSuite.scala", "test"))
+
+    val oldBundle = atomic.get
+    var (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+
+    val testNode = TestNode(testName, f _)
+    testsMap += (testName -> testNode)
+    testNamesList ::= testName
+    doList ::= testNode
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    if (!tagNames.isEmpty)
+      tagsMap += (testName -> tagNames)
+
+    updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, registrationClosed))
   }
 
   /**
@@ -954,8 +1058,25 @@ trait FunSuite extends Suite { thisSuite =>
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    */
-  protected def ignore(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testName, testFun _, "ignoreCannotAppearInsideATest", "FunSuite.scala", "ignore", testTags: _*)
+  protected def ignore(testName: String, testTags: Tag*)(f: => Unit) {
+
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("ignoreCannotAppearInsideATest"), getStackDepth("FunSuite.scala", "ignore"))
+
+    test(testName)(f) // Call test without passing the tags
+
+    val oldBundle = atomic.get
+    var (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    tagsMap += (testName -> (tagNames + IgnoreTagName))
+
+    updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, registrationClosed))
   }
 
   /**
@@ -971,6 +1092,7 @@ trait FunSuite extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
+  // runTest should throw IAE if a test name is passed that doesn't exist. Looks like right now it just reports a test failure.
   /**
    * Run a test. This trait's implementation runs the test registered with the name specified by <code>testName</code>.
    *
@@ -978,24 +1100,85 @@ trait FunSuite extends Suite { thisSuite =>
    * @param reporter the <code>Reporter</code> to which results will be reported
    * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
    * @param configMap a <code>Map</code> of properties that can be used by the executing <code>Suite</code> of tests.
-   * @throws IllegalArgumentException if <code>testName</code> is defined but a test with that name does not exist on this <code>FunSuite</code>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
   protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    def invokeWithFixture(theTest: TestLeaf) {
-      val theConfigMap = configMap
-      withFixture(
-        new NoArgTest {
-          def name = testName
-          def apply() { theTest.testFun() }
-          def configMap = theConfigMap
-        }
-      )
-    }
+    if (testName == null || reporter == null || stopper == null || configMap == null)
+      throw new NullPointerException
 
-    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
+    val stopRequested = stopper
+    val report = wrapReporterIfNecessary(reporter)
+
+    // Create a Rerunner if the FunSuite has a no-arg constructor
+    val hasPublicNoArgConstructor = Suite.checkForPublicNoArgConstructor(getClass)
+
+    val rerunnable =
+      if (hasPublicNoArgConstructor)
+        Some(new TestRerunner(getClass.getName, testName))
+      else
+        None
+     
+    val testStartTime = System.currentTimeMillis
+    report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, None, rerunnable))
+
+    try {
+
+      val theTest = atomic.get.testsMap(testName)
+
+      val informerForThisTest =
+        new ConcurrentInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName))) {
+          def apply(message: String) {
+            if (message == null)
+              throw new NullPointerException
+            report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread))
+          }
+        }
+
+      val oldInformer = atomicInformer.getAndSet(informerForThisTest)
+      var swapAndCompareSucceeded = false
+      try {
+        val theConfigMap = configMap
+        withFixture(
+          new NoArgTest {
+            def name = testName
+            def apply() { theTest.fun() }
+            def configMap = theConfigMap
+          }
+        )
+      }
+      finally {
+        val shouldBeInformerForThisTest = atomicInformer.getAndSet(oldInformer)
+        swapAndCompareSucceeded = shouldBeInformerForThisTest eq informerForThisTest
+      }
+
+      if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+        throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
+
+      val duration = System.currentTimeMillis - testStartTime
+      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(duration), None, rerunnable))
+    }
+    catch { 
+      case _: TestPendingException =>
+        report(TestPending(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName))
+      case e if !anErrorThatShouldCauseAnAbort(e) =>
+        val duration = System.currentTimeMillis - testStartTime
+        handleFailedTest(e, false, testName, rerunnable, report, tracker, duration)
+      case e => throw e
+    }
+  }
+
+  private def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+      rerunnable: Option[Rerunner], reporter: Reporter, tracker: Tracker, duration: Long) {
+
+    val message =
+      if (throwable.getMessage != null) // [bv: this could be factored out into a helper method]
+        throwable.getMessage
+      else
+        throwable.toString
+
+    reporter(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), None, rerunnable))
   }
 
   /**
@@ -1028,13 +1211,89 @@ trait FunSuite extends Suite { thisSuite =>
   protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+
+    val stopRequested = stopper
+
+    // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+    // so that exceptions are caught and transformed
+    // into error messages on the standard error stream.
+    val report = wrapReporterIfNecessary(reporter)
+
+    // If a testName is passed to run, just run that, else run the tests returned
+    // by testNames.
+    testName match {
+      case Some(tn) => runTest(tn, report, stopRequested, configMap, tracker)
+      case None =>
+
+        val doList = atomic.get.doList.reverse
+        for (node <- doList) {
+          node match {
+            case InfoNode(message) => info(message)
+            case TestNode(tn, _) =>
+              val (filterTest, ignoreTest) = filter(tn, tags)
+              if (!filterTest)
+                if (ignoreTest)
+                  report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), tn))
+                else
+                  runTest(tn, report, stopRequested, configMap, tracker)
+          }
+        }
+    }
   }
 
+  @volatile private var wasRunBefore = false
   override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
+    wasRunBefore = true
+
+    val stopRequested = stopper
+
+    // Set the flag that indicates registration is closed (because run has now been invoked),
+    // which will disallow any further invocations of "test" or "ignore" with
+    // an RegistrationClosedException.    
+    val oldBundle = atomic.get
+    val (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+    if (!registrationClosed)
+      updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, true))
+
+    val report = wrapReporterIfNecessary(reporter)
+
+    val informerForThisSuite =
+      new ConcurrentInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)) {
+        def apply(message: String) {
+          if (message == null)
+            throw new NullPointerException
+          report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread))
+        }
+      }
+
+    atomicInformer.set(informerForThisSuite)
+
+    var swapAndCompareSucceeded = false
+    try {
+      super.run(testName, report, stopRequested, filter, configMap, distributor, tracker)
+    }
+    finally {
+      val shouldBeInformerForThisSuite = atomicInformer.getAndSet(zombieInformer)
+      swapAndCompareSucceeded = shouldBeInformerForThisSuite eq informerForThisSuite
+    }
+    if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+      throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
   }
 
   /**
@@ -1057,8 +1316,4 @@ trait FunSuite extends Suite { thisSuite =>
    * </p>
    */
   protected def testsFor(unit: Unit) {}
-}
-
-private[scalatest] object FunSuite {
-  val IgnoreTagName = "org.scalatest.Ignore"
 }

@@ -325,11 +325,15 @@ private[scalatest] class RunnerJFrame(val eventTypesToCollect: Set[EventToPresen
             }
 
             val mainMessage =
-              holder.message match {
-                case Some(msg) =>
-                  val trimmed = msg.trim
-                  if (trimmed.length > 0) Some(trimmed) else None
+              holder.throwable match {
+                case Some(ex: PropertyTestFailedException) => Some(ex.undecoratedMessage)
+                case _ =>
+                  holder.message match {
+                    case Some(msg) =>
+                      val trimmed = msg.trim
+                      if (trimmed.length > 0) Some(trimmed) else None
                     case _ => None
+                  }
               }
 
             import EventHolder.suiteAndTestName
@@ -410,12 +414,11 @@ private[scalatest] class RunnerJFrame(val eventTypesToCollect: Set[EventToPresen
                   {
                     if (mainMessage.isDefined) {
                       <tr valign="top"><td align="right"><span class="label">{ Resources("DetailsMessage") + ":" }</span></td><td align="left">
-                      { // Put <br>'s in for line returns at least, so property check failure messages look better
-                        def lineSpans = for (line <- mainMessage.get.split('\n')) yield <span>{ line }<br/></span>
+                      {
                         if (isFailureEvent) {
-                          <span class="dark">{ lineSpans }</span>
+                          <span class="dark">{ mainMessage.get }</span>
                         } else {
-                          <span>{ lineSpans }</span>
+                          <span>{ mainMessage.get }</span>
                         }
                       }
                       </td></tr>
@@ -620,7 +623,7 @@ private[scalatest] class RunnerJFrame(val eventTypesToCollect: Set[EventToPresen
     runsFailuresItem.addActionListener(
       new ActionListener() {
         def actionPerformed(ae: ActionEvent) {
-          viewOptions = runsAndFailures intersect eventTypesToCollect
+          viewOptions = runsAndFailures ** eventTypesToCollect
           updateViewOptionsAndEventsList()
         }
       }
@@ -733,7 +736,7 @@ private[scalatest] class RunnerJFrame(val eventTypesToCollect: Set[EventToPresen
   }
 
   private def reorderCollectedEvents() {
-    collectedEvents = collectedEvents.sortWith((a, b) => a.event.ordinal > b.event.ordinal)
+    collectedEvents = collectedEvents.sort((a, b) => a.event.ordinal > b.event.ordinal)
   }
 
   private def refreshEventsJList() {
@@ -1346,7 +1349,7 @@ private[scalatest] class RunnerJFrame(val eventTypesToCollect: Set[EventToPresen
   def showErrorDialog(title: String, msg: String) {
     val jOptionPane: JOptionPane = new NarrowJOptionPane(msg, JOptionPane.ERROR_MESSAGE)
     val jd: JDialog = jOptionPane.createDialog(RunnerJFrame.this, title)
-    jd.setVisible(true)
+    jd.show()
   }
 
   private class RunnerThread extends Thread {
@@ -1356,7 +1359,7 @@ private[scalatest] class RunnerJFrame(val eventTypesToCollect: Set[EventToPresen
       withClassLoaderAndDispatchReporter(runpathList, reporterConfigurations, Some(graphicRunReporter), passFailReporter) {
         (loader, dispatchReporter) => {
           try {
-            Runner.doRunRunRunDaDoRunRun(dispatchReporter, suitesList, junitsList, stopper, filter,
+            Runner.doRunRunRunADoRunRun(dispatchReporter, suitesList, junitsList, stopper, filter,
                 propertiesMap, concurrent, memberOfList, beginsWithList, testNGList, runpathList, loader, RunnerJFrame.this, nextRunStamp, numThreads) 
           }
           finally {

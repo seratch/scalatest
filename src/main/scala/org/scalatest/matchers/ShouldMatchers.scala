@@ -18,7 +18,6 @@ package org.scalatest.matchers
 import org.scalatest._
 import scala.reflect.Manifest
 import org.scalatest.verb.ShouldVerb
-import scala.collection.Traversable
 
 /**
  * Trait that provides a domain specific language (DSL) for expressing assertions in tests
@@ -40,8 +39,8 @@ import scala.collection.Traversable
  * 
  * <p>
  * The <code>left should equal (right)</code> syntax works by calling <code>==</code>  on the <code>left</code>
- * value, passing in the <code>right</code> value, on every type except arrays. If both <code>left</code> and right are arrays, <code>deep</code>
- * will be invoked on both <code>left</code> and <code>right</code> before comparing them with <em>==</em>. Thus, even though this expression
+ * value, passing in the <code>right</code> value, on every type except arrays. If <code>left</code> is an array, <code>deepEquals</code>
+ * will be invoked on <code>left</code>, passing in <code>right</code>. Thus, even though this expression
  * will yield false, because <code>Array</code>'s <code>equals</code> method compares object identity:
  * </p>
  * 
@@ -50,7 +49,7 @@ import scala.collection.Traversable
  * </pre>
  *
  * <p>
- * The following expression will <em>not</em> result in a <code>TestFailedException</code>, because ScalaTest compares
+ * The following expression will <em>not</em> result in a <code>TestFailedException</code>, because <code>deepEquals</code> compares
  * the two arrays structurally, taking into consideration the equality of the array's contents:
  * </p>
  *
@@ -159,8 +158,8 @@ import scala.collection.Traversable
  *
  * <p>
  * The <code>left should be === (right)</code> syntax works by calling <code>==</code>  on the <code>left</code>
- * value, passing in the <code>right</code> value, on every type except arrays. If both <code>left</code> and right are arrays, <code>deep</code>
- * will be invoked on both <code>left</code> and <code>right</code> before comparing them with <em>==</em>. Thus, even though this expression
+ * value, passing in the <code>right</code> value, on every type except arrays. If <code>left</code> is an array, <code>deepEquals</code>
+ * will be invoked on <code>left</code>, passing in <code>right</code>. Thus, even though this expression
  * will yield false, because <code>Array</code>'s <code>equals</code> method compares object identity:
  * </p>
  *
@@ -169,7 +168,7 @@ import scala.collection.Traversable
  * </pre>
  *
  * <p>
- * The following expression will <em>not</em> result in a <code>TestFailedException</code>, because ScalaTest compares
+ * The following expression will <em>not</em> result in a <code>TestFailedException</code>, because <code>deepEquals</code> compares
  * the two arrays structurally, taking into consideration the equality of the array's contents:
  * </p>
  *
@@ -311,7 +310,7 @@ import scala.collection.Traversable
  * seven should be (6 plusOrMinus 2)
  * </pre>
  * 
- * <h2>Traversables, iterables, sets, sequences, and maps</h2>
+ * <h2>Iterables, collections, sequences, and maps</h2>
  * 
  * <p>
  * You can use some of the syntax shown previously with <code>Iterable</code> and its
@@ -334,7 +333,7 @@ import scala.collection.Traversable
  * </pre>
  * 
  * <p>
- * You can check the size of any <code>Traversable</code>, like this:
+ * You can check the size of any <code>Collection</code>, like this:
  * </p>
  * 
  * <pre class="indent">
@@ -455,8 +454,7 @@ import scala.collection.Traversable
  * </pre>
  * 
  * <p>
- * As with <code>equal</code>, using <code>be</code> on two arrays results in <code>deep</code> being called on both arrays prior to
- * calling <code>equal</code>. As a result,
+ * As with <code>equal</code>, using <code>be</code> on arrays results in <code>deepEquals</code> being called, not <code>equals</code>. As a result,
  * the following expression would <em>not</em> throw a <code>TestFailedException</code>:
  * </p>
  *
@@ -593,7 +591,7 @@ import scala.collection.Traversable
  * </p>
  * 
  * <pre class="indent">
- * traversable should (contain (7) or contain (8) and have size (9))
+ * collection should (contain (7) or contain (8) and have size (9))
  * </pre>
  * 
  * <p>
@@ -601,7 +599,7 @@ import scala.collection.Traversable
  * </p>
  * 
  * <pre class="indent">
- * traversable should ((contain (7) or contain (8)) and have size (9))
+ * collection should ((contain (7) or contain (8)) and have size (9))
  * </pre>
  * 
  * <p>
@@ -609,7 +607,7 @@ import scala.collection.Traversable
  * </p>
  * 
  * <pre class="indent">
- * traversable should (contain (7) or (contain (8) and have size (9)))
+ * collection should (contain (7) or (contain (8) and have size (9)))
  * </pre>
  * 
  * <h2>Working with <code>Option</code>s</h2>
@@ -1437,8 +1435,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *     ^
      * </pre>
      */
-    def should(haveWord: HaveWord): ResultOfHaveWordForTraversable[(K, V)] = {
-      new ResultOfHaveWordForTraversable(left, true)
+    def should(haveWord: HaveWord): ResultOfHaveWordForCollection[(K, V)] = {
+      new ResultOfHaveWordForCollection(left, true)
     }
 
     /**
@@ -1524,17 +1522,17 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    *
    * @author Bill Venners
    */
-  final class TraversableShouldWrapper[T](left: Traversable[T]) {
+  final class CollectionShouldWrapper[T](left: Collection[T]) {
 
     /**
      * This method enables syntax such as the following:
      *
      * <pre>
-     * traversable should equal (Set(1, 2, 3))
-     *             ^
+     * collection should equal (Set(1, 2, 3))
+     *            ^
      * </pre>
      */
-    def should(rightMatcher: Matcher[Traversable[T]]) {
+    def should(rightMatcher: Matcher[Collection[T]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
@@ -1542,33 +1540,33 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * This method enables syntax such as the following:
      *
      * <pre>
-     * traversable should have size (3)
-     *             ^
+     * collection should have size (3)
+     *            ^
      * </pre>
      */
-    def should(haveWord: HaveWord): ResultOfHaveWordForTraversable[T] = 
-      new ResultOfHaveWordForTraversable(left, true)
+    def should(haveWord: HaveWord): ResultOfHaveWordForCollection[T] =
+      new ResultOfHaveWordForCollection(left, true)
 
     /**
      * This method enables syntax such as the following:
      *
      * <pre>
-     * traversable should be theSameInstanceAs anotherObject
-     *             ^
+     * collection should be theSameInstanceAs anotherObject
+     *            ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[Traversable[T]] = new ResultOfBeWordForAnyRef(left, true)
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[Collection[T]] = new ResultOfBeWordForAnyRef(left, true)
 
     /**
      * This method enables syntax such as the following:
      *
      * <pre>
-     * traversable should not have size (3)
-     *             ^
+     * collection should not have size (3)
+     *            ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForTraversable[T, Traversable[T]] =
-      new ResultOfNotWordForTraversable(left, false)
+    def should(notWord: NotWord): ResultOfNotWordForCollection[T, Collection[T]] =
+      new ResultOfNotWordForCollection(left, false)
   }
 
   /**
@@ -1954,7 +1952,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
            if (!clazz.isAssignableFrom(u.getClass)) {
              val s = Resources("wrongException", clazz.getName, u.getClass.getName)
              throw newTestFailedException(s)
-             // throw new TestFailedException(s, u, 3)
+             // throw new TestFailedException(s, u, 2)
            }
            else {
              Some(u)
@@ -1965,7 +1963,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
          case None =>
            val message = Resources("exceptionExpected", clazz.getName)
            throw newTestFailedException(message)
-           // throw new TestFailedException(message, 3)
+           // throw new TestFailedException(message, 2)
          case Some(e) => e.asInstanceOf[T] // I know this cast will succeed, becuase isAssignableFrom succeeded above
        }
      }
@@ -2029,7 +2027,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * Implicitly converts an object of type <code>scala.Collection[T]</code> to a <code>CollectionShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToTraversableShouldWrapper[T](o: Traversable[T]): TraversableShouldWrapper[T] = new TraversableShouldWrapper[T](o)
+  implicit def convertToCollectionShouldWrapper[T](o: Collection[T]): CollectionShouldWrapper[T] = new CollectionShouldWrapper[T](o)
 
   /**
    * Implicitly converts an object of type <code>scala.Seq[T]</code> to a <code>SeqShouldWrapper[T]</code>,

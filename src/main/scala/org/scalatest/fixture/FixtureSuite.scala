@@ -17,18 +17,20 @@ package org.scalatest.fixture
 
 import org.scalatest._
 import collection.immutable.TreeSet
-import fixture.FixtureSuite._
-// import fixture.FixtureSuite.FixturelessTestFunAndConfigMap
-// import fixture.FixtureSuite.TestFunAndConfigMap
 import java.lang.reflect.{InvocationTargetException, Method, Modifier}
+import org.scalatest.Suite.checkForPublicNoArgConstructor
+import org.scalatest.Suite.TestMethodPrefix
+import org.scalatest.Suite.IgnoreAnnotation
+import org.scalatest.Suite.InformerInParens
 import FixtureSuite.FixtureAndInformerInParens
 import FixtureSuite.FixtureInParens
 import FixtureSuite.testMethodTakesAFixtureAndInformer
+import FixtureSuite.testMethodTakesAnInformer
 import FixtureSuite.testMethodTakesAFixture
 import FixtureSuite.simpleNameForTest
 import FixtureSuite.argsArrayForTestName
 import org.scalatest.events._
-import org.scalatest.Suite._
+import Suite.anErrorThatShouldCauseAnAbort
 
 /**
  * <code>Suite</code> that can pass a fixture object into its tests.
@@ -115,8 +117,10 @@ import org.scalatest.Suite._
  *   }
  * 
  *   // (You can also write tests methods that don't take a fixture parameter.)
- *   def testWithoutAFixture() {
- *     assert(1 + 1 === 2)
+ *   def testWithoutAFixture() { 
+ *     without fixture {
+ *       assert(1 + 1 === 2)
+ *     }
  *   }
  * }
  * </pre>
@@ -276,7 +280,7 @@ import org.scalatest.Suite._
  *     )
  *
  *     // Grab the file name from the configMap
- *     val FileName = test.configMap("TempFileName").asInstanceOf[String]
+ *     val FileName = test.configMap("TempFileName")
  *
  *     // Set up the temp file needed by the test
  *     val writer = new FileWriter(FileName)
@@ -333,11 +337,11 @@ import org.scalatest.Suite._
  *
  *    def testHello(configMap: Map[String, Any]) {
  *      // Use the configMap passed to runTest in the test
- *      assert(configMap.contains("hello"))
+ *      assert(configMap.contains("hello")
  *    }
  *
  *    def testWorld(configMap: Map[String, Any]) {
- *      assert(configMap.contains("world"))
+ *      assert(configMap.contains("world")
  *    }
  *  }
  * </pre>
@@ -346,7 +350,7 @@ import org.scalatest.Suite._
  * Note: because a <code>FixtureSuite</code>'s test methods are invoked with reflection at runtime, there is no good way to
  * create a <code>FixtureSuite</code> containing test methods that take different fixtures. If you find you need to do this,
  * you may want to split your class into multiple <code>FixtureSuite</code>s, each of which contains test methods that take the
- * common <code>FixtureParam</code> type defined in that class, or use a <a href="MultipleFixtureFunSuite.html"><code>MultipleFixtureFunSuite</code></a>. 
+ * common <code>Fixture</code> type defined in that class, or use a <a href="MultipleFixtureFunSuite.html"><code>MultipleFixtureFunSuite</code></a>. 
  * </p>
  *
  * @author Bill Venners
@@ -380,7 +384,7 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
    * <a href="FixtureSuite.html">documentation for trait <code>FixtureSuite</code></a>.
    * </p>
    */
-  protected trait OneArgTest extends (FixtureParam => Unit) { thisOneArgTest =>
+  protected trait OneArgTest extends (FixtureParam => Unit) {
 
     /**
      * The name of this test.
@@ -397,39 +401,41 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
      * to configure the fixture and test.
      */
     def configMap: Map[String, Any]
+  }
+
+  /*
+   * Trait whose instances encapsulate a test function that takes no fixture and config map.
+   *
+   * <p>
+   * The <code>FixtureSuite</code> trait's implementation of <code>runTest</code> passes instances of this trait
+   * to <code>FixtureSuite</code>'s <code>withFixture</code> method for test methods that take no
+   * fixture, such as:
+   * </p>
+   *
+   * <pre>
+   * def testSomething() {
+   *   // ...
+   * }
+   * def testSomethingElse(info: Informer) {
+   *   // ...
+   * }
+   * </pre>
+   *
+   * <p>
+   * This trait enables <code>withFixture</code> method implementatinos to detect test that
+   * don't require a fixture. If a fixture is expensive to create and cleanup, <code>withFixture</code>
+   * method implementations can opt to not create fixtures for tests that don't need them.
+   * For more detail and examples, see the
+   * <a href="FixtureSuite.html">documentation for trait <code>FixtureSuite</code></a>.
+   * </p>
+   */
+  /* protected trait FixturelessTest extends OneArgTest with (() => Unit) {
 
     /**
-     * Convert this <code>OneArgTest</code> to a <code>NoArgTest</code> whose
-     * <code>name</code> and <code>configMap</code> methods return the same values
-     * as this <code>OneArgTest</code>, and whose <code>apply</code> method invokes
-     * this <code>OneArgTest</code>'s apply method,
-     * passing in the given <code>fixture</code>.
-     *
-     * <p>
-     * This method makes it easier to invoke the <code>withFixture</code> method
-     * that takes a <code>NoArgTest</code>. For example, if a <code>FixtureSuite</code> 
-     * mixes in <code>SeveredStackTraces</code>, it will inherit an implementation
-     * of <code>withFixture(NoArgTest)</code> provided by
-     * <code>SeveredStackTraces</code> that implements the stack trace severing
-     * behavior. If the <code>FixtureSuite</code> does not delegate to that
-     * <code>withFixture(NoArgTest)</code> method, the stack trace severing behavior
-     * will not happen. Here's how that might look in a <code>FixtureSuite</code>
-     * whose <code>FixtureParam</code> is <code>StringBuilder</code>:
-     * </p>
-     *
-     * <pre>
-     * def withFixture(test: OneArgTest) {
-     *   withFixture(test.toNoArgTest(new StringBuilder))
-     * }
-     * </pre>
+     * Run the test that takes no <code>Fixture</code>.
      */
-    def toNoArgTest(fixture: FixtureParam) =
-      new NoArgTest {
-        val name = thisOneArgTest.name
-        def configMap = thisOneArgTest.configMap
-        def apply() { thisOneArgTest(fixture) }
-      }
-  }
+    def apply()
+  } */
 
   /**
    *  Run the passed test function with a fixture created by this method.
@@ -459,7 +465,34 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
     def apply() { test() }
   }
 
+  // Need to override this one becaue it call getMethodForTestName
+  override def tags: Map[String, Set[String]] = {
+
+    def getTags(testName: String) =
+/* AFTER THE DEPRECATION CYCLE FOR GROUPS TO TAGS (0.9.8), REPLACE THE FOLLOWING FOR LOOP WITH THIS COMMENTED OUT ONE
+   THAT MAKES SURE ANNOTATIONS ARE TAGGED WITH TagAnnotation.
+      for {
+        a <- getMethodForTestName(testName).getDeclaredAnnotations
+        annotationClass = a.annotationType
+        if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
+      } yield annotationClass.getName
+*/
+      for (a <- getMethodForTestName(testName).getDeclaredAnnotations)
+        yield a.annotationType.getName
+
+    val elements =
+      for (testName <- testNames; if !getTags(testName).isEmpty)
+        yield testName -> (Set() ++ getTags(testName))
+
+    Map() ++ elements
+  }
+
   override def testNames: Set[String] = {
+
+    def takesInformer(m: Method) = {
+      val paramTypes = m.getParameterTypes
+      paramTypes.length == 1 && classOf[Informer].isAssignableFrom(paramTypes(0))
+    }
 
     def takesTwoParamsOfTypesAnyAndInformer(m: Method) = {
       val paramTypes = m.getParameterTypes
@@ -471,8 +504,18 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
 
     def isTestMethod(m: Method) = {
 
-      // Factored out to share code with Suite.testNames
-      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames) = isTestMethodGoodies(m)
+      val isInstanceMethod = !Modifier.isStatic(m.getModifiers())
+
+      // name must have at least 4 chars (minimum is "test")
+      val simpleName = m.getName
+      val firstFour = if (simpleName.length >= 4) simpleName.substring(0, 4) else "" 
+
+      val paramTypes = m.getParameterTypes
+      val hasNoParams = paramTypes.length == 0
+
+      // Discover testNames(Informer) because if we didn't it might be confusing when someone
+      // actually wrote a testNames(Informer) method and it was silently ignored.
+      val isTestNames = simpleName == "testNames"
 
       // Also, will discover both
       // testNames(Object) and testNames(Object, Informer). Reason is if I didn't discover these
@@ -496,14 +539,26 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
 
   protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    checkRunTestParamsForNull(testName, reporter, stopper, configMap, tracker)
+    if (testName == null || reporter == null || stopper == null || configMap == null || tracker == null)
+      throw new NullPointerException
 
-    val (stopRequested, report, method, hasPublicNoArgConstructor, rerunnable, testStartTime) =
-      getSuiteRunTestGoodies(stopper, reporter, testName)
+    val stopRequested = stopper
+    val report = wrapReporterIfNecessary(reporter)
+    val method = getMethodForTestName(testName)
 
-    reportTestStarting(thisSuite, report, tracker, testName, rerunnable)
+    // Create a Rerunner if the Suite has a no-arg constructor
+    val hasPublicNoArgConstructor = checkForPublicNoArgConstructor(getClass)
 
-    val formatter = getIndentedText(testName, 1, true)
+    val rerunnable =
+      if (hasPublicNoArgConstructor)
+        Some(new TestRerunner(getClass.getName, testName))
+      else
+        None
+
+    val testStartTime = System.currentTimeMillis
+
+    report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, None, rerunnable))
+
 
     try {
       if (testMethodTakesAFixtureAndInformer(testName) || testMethodTakesAFixture(testName)) {
@@ -517,7 +572,7 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
                     def apply(message: String) {
                       if (message == null)
                         throw new NullPointerException
-                      reportInfoProvided(thisSuite, report, tracker, Some(testName), message, 2, true)
+                      report(InfoProvided(tracker.nextOrdinal(), message, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
                     }
                   }
                 Array(anyRefFixture, informer)
@@ -540,7 +595,7 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
                     def apply(message: String) {
                       if (message == null)
                         throw new NullPointerException
-                      reportInfoProvided(thisSuite, report, tracker, Some(testName), message, 2, true)
+                      report(InfoProvided(tracker.nextOrdinal(), message, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
                     }
                   }
                 Array(informer)
@@ -555,14 +610,14 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
       }
 
       val duration = System.currentTimeMillis - testStartTime
-      reportTestSucceeded(thisSuite, report, tracker, testName, duration, formatter, rerunnable)
+      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(duration), None, rerunnable))
     }
     catch { 
       case ite: InvocationTargetException =>
         val t = ite.getTargetException
         t match {
           case _: TestPendingException =>
-            reportTestPending(thisSuite, report, tracker, testName, formatter)
+            report(TestPending(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName))
           case e if !anErrorThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
             handleFailedTest(t, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
@@ -575,8 +630,20 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
     }
   }
 
-  // Overriding this in FixtureSuite to reduce duplication of tags method
-  private[scalatest] override def getMethodForTestName(testName: String) = {
+  // TODO: This is identical with the one in Suite. Factor it out to an object somewhere.
+  private def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+      rerunnable: Option[Rerunner], report: Reporter, tracker: Tracker, duration: Long) {
+
+    val message =
+      if (throwable.getMessage != null) // [bv: this could be factored out into a helper method]
+        throwable.getMessage
+      else
+        throwable.toString
+
+    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), None, rerunnable))
+  }
+
+  private def getMethodForTestName(testName: String) = {
     val candidateMethods = getClass.getMethods.filter(_.getName == simpleNameForTest(testName))
     val found =
       if (testMethodTakesAFixtureAndInformer(testName))
@@ -609,6 +676,48 @@ trait FixtureSuite extends org.scalatest.Suite { thisSuite =>
          throw new IllegalArgumentException(Resources("testNotFound", testName))
      }
   }
+
+   /*
+  /*
+   * Object that encapsulates a test function, which does not take a fixture,
+   * and a config map.
+   *
+   * <p>
+   * The <code>FixtureSuite</code> trait's implementation of <code>runTest</code> passes instances of this trait
+   * to <code>FixtureSuite</code>'s <code>withFixture</code> method for tests that do not require a fixture to
+   * be passed.  For more detail and examples, see the
+   * <a href="FixtureSuite.html">documentation for trait <code>FixtureSuite</code></a>.
+   * </p>
+   */
+  protected trait NoArgTestFunction extends (FixtureParam => Any) {
+
+    /**
+     * Run the test, ignoring the passed <code>Fixture</code>.
+     *
+     * <p>
+     * This traits implementation of this method invokes the overloaded form
+     * of <code>apply</code> that takes no parameters.
+     * </p>
+     */
+    final def apply(fixture: Fixture): Any = {
+      apply()
+    }
+
+    /**
+     * Run the test without a <code>Fixture</code>.
+     */
+    def apply()
+  }
+
+  protected class WithoutWord {
+    def fixture(fun: => Any): NoArgTestFunction = {
+      new NoArgTestFunction {
+        def apply() { fun }
+      }
+    }
+  }
+
+  protected def without = new WithoutWord  */
 }
 
 private object FixtureSuite {
@@ -617,6 +726,7 @@ private object FixtureSuite {
   val FixtureInParens = "(FixtureParam)"
 
   private def testMethodTakesAFixtureAndInformer(testName: String) = testName.endsWith(FixtureAndInformerInParens)
+  private def testMethodTakesAnInformer(testName: String) = testName.endsWith(InformerInParens)
   private def testMethodTakesAFixture(testName: String) = testName.endsWith(FixtureInParens)
 
   private def simpleNameForTest(testName: String) =

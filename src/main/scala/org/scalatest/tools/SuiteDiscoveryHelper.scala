@@ -91,11 +91,11 @@ private[scalatest] class SuiteDiscoveryHelper() {
             }
           }
           else {
-            processFileNames(getFileNamesSetFromFile(new File(path), fileSeparator).iterator, fileSeparator, loader)
+            processFileNames(getFileNamesSetFromFile(new File(path), fileSeparator).elements, fileSeparator, loader)
           }
         }
 
-    Set() ++ listOfSets.flatMap(_.iterator.toList)
+    Set() ++ listOfSets.flatMap(_.elements.toList)
   }
 
   private def transformToClassName(fileName: String, fileSeparator: Char): Option[String] = {

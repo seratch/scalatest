@@ -33,7 +33,7 @@ class FixtureSpecSpec extends org.scalatest.Spec with PrivateMethodTester with S
       }
 
       expect(List("should do that", "should do this")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new FixtureSpec {
@@ -42,7 +42,7 @@ class FixtureSpecSpec extends org.scalatest.Spec with PrivateMethodTester with S
       }
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new FixtureSpec {
@@ -55,7 +55,7 @@ class FixtureSpecSpec extends org.scalatest.Spec with PrivateMethodTester with S
       }
 
       expect(List("should do this", "should do that")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
     }
 
@@ -587,7 +587,7 @@ class FixtureSpecSpec extends org.scalatest.Spec with PrivateMethodTester with S
       assert(e.expectedTestCount(Filter(None, Set("org.scalatest.SlowAsMolasses"))) === 0)
       assert(e.expectedTestCount(Filter()) === 2)
 
-      val f = new Suites(a, b, c, d, e)
+      val f = new SuperSuite(List(a, b, c, d, e))
       assert(f.expectedTestCount(Filter()) === 10)
     }
     it("should generate a TestPending message when the test body is (pending)") {

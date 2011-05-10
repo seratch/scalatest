@@ -31,13 +31,13 @@ class JUnitSuiteSpec extends Spec with SharedHelpers {
       }
 
       expect(List("doThat", "doThis")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new JUnitSuite {}
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new JUnitSuite {
@@ -46,7 +46,7 @@ class JUnitSuiteSpec extends Spec with SharedHelpers {
       }
 
       expect(List("doThat", "doThis")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
     }
 

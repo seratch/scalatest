@@ -3,7 +3,6 @@ package org.scalatest.tools
 import org.scalatools.testing._
 import org.scalatest.tools.Runner.parsePropertiesArgsIntoMap
 import org.scalatest.tools.Runner.parseCompoundArgIntoSet
-import StringReporter.colorizeLinesIndividually
 
 /**
  * Class that makes ScalaTest tests visible to sbt.
@@ -80,7 +79,6 @@ class ScalaTestFramework extends Framework {
     def run(testClassName: String, fingerprint: TestFingerprint, eventHandler: EventHandler, args: Array[String]) {
       val testClass = Class.forName(testClassName, true, testLoader).asSubclass(classOf[Suite])
 
-println("sbt args: " + args.toList)
       if (isAccessibleSuite(testClass)) {
 
         val (propertiesArgsList, includesArgsList,
@@ -90,20 +88,19 @@ println("sbt args: " + args.toList)
         val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
         val filter = org.scalatest.Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
 
-        val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) =
+        val (presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces) =
           repoArg match {
             case Some(arg) => (
               arg contains 'D',
               !(arg contains 'W'),
-              arg contains 'S',
               arg contains 'F'
              )
-             case None => (false, true, false, false)
+             case None => (false, true, false)
           }
 
         //  def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
         //              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-        val repo = new ScalaTestReporter(eventHandler, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces)
+        val repo = new ScalaTestReporter(eventHandler, presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces)
         testClass.newInstance.run(None, repo, new Stopper {},
           filter, propertiesMap, None, new Tracker)
       }
@@ -137,16 +134,15 @@ println("sbt args: " + args.toList)
 */
 
     private class ScalaTestReporter(eventHandler: EventHandler, presentAllDurations: Boolean,
-        presentInColor: Boolean, presentStackTraces: Boolean, presentFullStackTraces: Boolean) extends StringReporter(
-        presentAllDurations, presentInColor, true, presentFullStackTraces) {
+        presentInColor: Boolean, presentTestFailedExceptionStackTraces: Boolean) extends StringReporter(
+        presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces) {
 
       import org.scalatest.events._
 
       protected def printPossiblyInColor(text: String, ansiColor: String) {
         import PrintReporter.ansiReset
         loggers.foreach { logger =>
-          // logger.info(if (logger.ansiCodesSupported && presentInColor) ansiColor + text + ansiReset else text)
-          logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
+          logger.info(if (logger.ansiCodesSupported && presentInColor) ansiColor + text + ansiReset else text)
         }
       }
 
@@ -198,7 +194,7 @@ println("sbt args: " + args.toList)
       val excludes = new ListBuffer[String]()
       var repoArg: Option[String] = None
 
-      val it = args.iterator
+      val it = args.elements
       while (it.hasNext) {
 
         val s = it.next

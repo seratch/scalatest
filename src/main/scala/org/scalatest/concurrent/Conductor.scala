@@ -527,8 +527,7 @@ final class Conductor {
       currentState set TestStarted
 
     // wait until all threads are definitely ready to go
-    if (threads.size > 0)
-      testThreadsStartingCounter.waitUntilAllTestThreadsHaveStarted()
+    testThreadsStartingCounter.waitUntilAllTestThreadsHaveStarted()
 
     // release the latch, allowing all threads to start
     // wait for all the test threads to start before starting the clock
@@ -846,7 +845,7 @@ final class Conductor {
   /**
    * Base class for the possible states of the Conductor.
    */
-  private sealed class ConductorState(val testWasStarted: Boolean, val testIsFinished: Boolean)
+  private sealed case class ConductorState(testWasStarted: Boolean, testIsFinished: Boolean)
 
   /**
    * The initial state of the Conductor.

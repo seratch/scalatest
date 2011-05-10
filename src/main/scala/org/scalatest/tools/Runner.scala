@@ -195,6 +195,19 @@ path&gt; [...]]
  * </p>
  *
  * <p>
+ * <strong>Deprecation Note: Prior to 1.0, ScalaTest's <code>Runner</code> allowed you specify configuration parameters on reports that
+ * indicated a particular event should be <em>presented</em>. This meant that people could opt to not show
+ * test failures, suite aborted events, <em>etc</em>. To prevent important events from being dropped accidentally,
+ * starting in 1.0 the configuration parameters indicate which events should <em>not</em> be presented, and important
+ * events can't be dropped at all. For two releases,
+ * the old config parameters will be tolerated, but have no effect (except for F, which turns on printing of <code>TestFailedException</code>
+ * stack traces). Only the new parameters will have any effect,
+ * and none of the new ones overlap with any of the old ones. So you have two releases to change your scripts to
+ * use the new config parameters. Starting with 1.2, using the old parameters&mdash;Y, Z, T, F, G, U, P, B, I, S, A, R&mdash;will
+ * cause <code>Runner</code> to abort with an error message and not run the tests.</strong>
+ * </p>
+ *
+ * <p>
  * The following three reporter configuration parameters may additionally be used on standard output (-o), standard error (-e),
  * and file (-f) reporters: 
  * </p>
@@ -202,12 +215,11 @@ path&gt; [...]]
  * <ul>
  * <li> <code><b>W</b></code> - without color</li>
  * <li> <code><b>D</b></code> - show all durations</li>
- * <li> <code><b>F</b></code> - show short stack traces</li>
- * <li> <code><b>F</b></code> - show full stack traces</li>
+ * <li> <code><b>F</b></code> - show <code>TestFailedException</code> stack traces</li>
  * </ul>
  *
  * <p>
- * If you specify a W, D, S, or F for any reporter other than standard output, standard error, or file reporters, <code>Runner</code>
+ * If you specify a W, D, or F for any reporter other than standard output, standard error, or file reporters, <code>Runner</code>
  * will complain with an error message and not perform the run.
  * </p>
  *
@@ -579,7 +591,7 @@ object Runner {
       case None => { // Run the test without a GUI
         withClassLoaderAndDispatchReporter(runpathList, reporterConfigs, None, passFailReporter) {
           (loader, dispatchReporter) => {
-            doRunRunRunDaDoRunRun(dispatchReporter, suitesList, junitsList, new Stopper {}, filter,
+            doRunRunRunADoRunRun(dispatchReporter, suitesList, junitsList, new Stopper {}, filter,
                 propertiesMap, concurrent, membersOnlyList, wildcardList, testNGList, runpathList, loader, new RunDoneListener {}, 1, numThreads) 
           }
         }
@@ -596,7 +608,7 @@ object Runner {
   private[scalatest] def checkArgsForValidity(args: Array[String]) = {
 
     val lb = new ListBuffer[String]
-    val it = args.iterator
+    val it = args.elements
     while (it.hasNext) {
       val s = it.next
       // Style advice
@@ -650,7 +662,7 @@ object Runner {
     val wildcard = new ListBuffer[String]()
     val testNGXMLFiles = new ListBuffer[String]()
 
-    val it = args.iterator
+    val it = args.elements
     while (it.hasNext) {
 
       val s = it.next
@@ -785,21 +797,22 @@ object Runner {
     // The reporterArg passed includes the initial -, as in "-oFI",
     // so the first config param will be at index 2
     val configString = reporterArg.substring(2)
-    val it = configString.iterator
+    val it = configString.elements
     var set = Set[ReporterConfigParam]()
     while (it.hasNext) 
       it.next match {
-        case 'Y' =>  throw new IllegalArgumentException("Use of Y was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'Z' => throw new IllegalArgumentException("Use of Z was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'T' => // Use for Dots
-        case 'U' => throw new IllegalArgumentException("Use of U was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'P' =>throw new IllegalArgumentException("Use of P was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'B' =>throw new IllegalArgumentException("Use of B was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'I' =>throw new IllegalArgumentException("Use of I was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        // case 'S' => // Use for Short Stack Traces
-        case 'A' =>throw new IllegalArgumentException("Use of A was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'R' =>throw new IllegalArgumentException("Use of R was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
-        case 'G' =>throw new IllegalArgumentException("Use of G was deprecated in ScalaTest 1.0 and removed in 1.5. Please check the Scaladoc documentation of org.scalatest.Runner for information on valid Reporter config parameters.")
+        case 'Y' => // Allow the old ones for the two-release deprecation cycle, starting in 1.0
+        case 'Z' => // But they have no effect. After that, drop these cases so these will generate an error.
+        case 'T' =>
+        // case 'F' => I decided to reuse F already, but not for a filter so it is OK
+        case 'U' =>
+        case 'P' =>
+        case 'B' =>
+        case 'I' =>
+        case 'S' =>
+        case 'A' =>
+        case 'R' =>
+        case 'G' =>
         case 'N' => set += FilterTestStarting
         case 'C' => set += FilterTestSucceeded
         case 'X' => set += FilterTestIgnored
@@ -808,8 +821,7 @@ object Runner {
         case 'L' => set += FilterSuiteCompleted
         case 'O' => set += FilterInfoProvided
         case 'W' => set += PresentWithoutColor
-        case 'F' => set += PresentFullStackTraces
-        case 'S' => set += PresentShortStackTraces
+        case 'F' => set += PresentTestFailedExceptionStackTraces
         case 'D' => set += PresentAllDurations
         case c: Char => { 
 
@@ -857,7 +869,7 @@ object Runner {
 
     // TODO: also check and print a user friendly message for this
     // again here, i had to skip some things, so I had to use an iterator.
-    val it = args.iterator
+    val it = args.elements
     while (it.hasNext)
       it.next.take(2).toString match {
         case "-g" =>
@@ -897,10 +909,8 @@ object Runner {
       args.find(arg => arg.startsWith("-g")) match {
         case Some(dashGString) =>
           val configSet = parseConfigSet(dashGString)
-          if (configSet.contains(PresentShortStackTraces))
-            throw new IllegalArgumentException("Cannot specify an S (present short stack traces) configuration parameter for the graphic reporter (because it shows them anyway): " + dashGString)
-          if (configSet.contains(PresentFullStackTraces))
-            throw new IllegalArgumentException("Cannot specify an F (present full stack traces) configuration parameter for the graphic reporter (because it shows them anyway): " + dashGString)
+          if (configSet.contains(PresentTestFailedExceptionStackTraces))
+            throw new IllegalArgumentException("Cannot specify an F (present TestFailedException stack traces) configuration parameter for the graphic reporter (because it shows them anyway): " + dashGString)
           if (configSet.contains(PresentWithoutColor))
             throw new IllegalArgumentException("Cannot specify a W (present without color) configuration parameter for the graphic reporter: " + dashGString)
           if (configSet.contains(PresentAllDurations))
@@ -910,7 +920,7 @@ object Runner {
       }
 
     def buildFileReporterConfigurationList(args: List[String]) = {
-      val it = args.iterator
+      val it = args.elements
       val lb = new ListBuffer[FileReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
@@ -922,7 +932,7 @@ object Runner {
     val fileReporterConfigurationList = buildFileReporterConfigurationList(args)
 
     def buildXmlReporterConfigurationList(args: List[String]) = {
-      val it = args.iterator
+      val it = args.elements
       val lb = new ListBuffer[XmlReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
@@ -935,7 +945,7 @@ object Runner {
     val xmlReporterConfigurationList = buildXmlReporterConfigurationList(args)
 
     def buildHtmlReporterConfigurationList(args: List[String]) = {
-      val it = args.iterator
+      val it = args.elements
       val lb = new ListBuffer[HtmlReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
@@ -959,7 +969,7 @@ object Runner {
       }
 
     def buildCustomReporterConfigurationList(args: List[String]) = {
-      val it = args.iterator
+      val it = args.elements
       val lb = new ListBuffer[CustomReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
@@ -967,10 +977,8 @@ object Runner {
           val dashRString = arg
           val customReporterClassName = it.next
           val configSet = parseConfigSet(dashRString)
-          if (configSet.contains(PresentShortStackTraces))
-            throw new IllegalArgumentException("Cannot specify an S (present short stack traces) configuration parameter for a custom reporter: " + dashRString + " " + customReporterClassName)
-          if (configSet.contains(PresentFullStackTraces))
-            throw new IllegalArgumentException("Cannot specify an F (present full stack traces) configuration parameter for a custom reporter: " + dashRString + " " + customReporterClassName)
+          if (configSet.contains(PresentTestFailedExceptionStackTraces))
+            throw new IllegalArgumentException("Cannot specify an F (present TestFailedException stack traces) configuration parameter for a custom reporter: " + dashRString + " " + customReporterClassName)
           if (configSet.contains(PresentWithoutColor))
             throw new IllegalArgumentException("Cannot specify a W (without color) configuration parameter for a custom reporter: " + dashRString + " " + customReporterClassName)
           if (configSet.contains(PresentAllDurations))
@@ -1007,7 +1015,7 @@ object Runner {
       throw new NullPointerException("dashArg invalid: " + dashArg)
 
     val lb = new ListBuffer[String]
-    val it = args.iterator
+    val it = args.elements
     while (it.hasNext) {
       val dashS = it.next
       if (dashS != dashArg)
@@ -1177,7 +1185,7 @@ object Runner {
 */
 
   private def configSetMinusNonFilterParams(configSet: Set[ReporterConfigParam]) =
-    (((configSet - PresentShortStackTraces) - PresentFullStackTraces) - PresentWithoutColor) - PresentAllDurations
+    ((configSet - PresentTestFailedExceptionStackTraces) - PresentWithoutColor) - PresentAllDurations
 
   private[scalatest] def getDispatchReporter(reporterSpecs: ReporterConfigurations, graphicReporter: Option[Reporter], passFailReporter: Option[Reporter], loader: ClassLoader) = {
 
@@ -1189,16 +1197,14 @@ object Runner {
             new StandardOutReporter(
               configSet.contains(PresentAllDurations),
               !configSet.contains(PresentWithoutColor),
-              configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-              configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+              configSet.contains(PresentTestFailedExceptionStackTraces)
             )
           else
             new FilterReporter(
               new StandardOutReporter(
                 configSet.contains(PresentAllDurations),
                 !configSet.contains(PresentWithoutColor),
-                configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-                configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+                configSet.contains(PresentTestFailedExceptionStackTraces)
               ),
               configSet
             )
@@ -1208,16 +1214,14 @@ object Runner {
           new StandardErrReporter(
             configSet.contains(PresentAllDurations),
             !configSet.contains(PresentWithoutColor),
-            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-            configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+            configSet.contains(PresentTestFailedExceptionStackTraces)
           )
         else
           new FilterReporter(
             new StandardErrReporter(
               configSet.contains(PresentAllDurations),
               !configSet.contains(PresentWithoutColor),
-              configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-              configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+              configSet.contains(PresentTestFailedExceptionStackTraces)
             ),
             configSet
           )
@@ -1228,8 +1232,7 @@ object Runner {
             fileName,
             configSet.contains(PresentAllDurations),
             !configSet.contains(PresentWithoutColor),
-            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-            configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+            configSet.contains(PresentTestFailedExceptionStackTraces)
           )
         else
           new FilterReporter(
@@ -1237,8 +1240,7 @@ object Runner {
               fileName,
               configSet.contains(PresentAllDurations),
               !configSet.contains(PresentWithoutColor),
-              configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-              configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+              configSet.contains(PresentTestFailedExceptionStackTraces)
             ),
             configSet
           )
@@ -1252,8 +1254,7 @@ object Runner {
               fileName,
               configSet.contains(PresentAllDurations),
               !configSet.contains(PresentWithoutColor),
-              configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-              configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+              configSet.contains(PresentTestFailedExceptionStackTraces)
             )
           else
             new FilterReporter(
@@ -1261,8 +1262,7 @@ object Runner {
                 fileName,
                 configSet.contains(PresentAllDurations),
                 !configSet.contains(PresentWithoutColor),
-                configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-                configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+                configSet.contains(PresentTestFailedExceptionStackTraces)
               ),
               configSet
             )
@@ -1335,7 +1335,7 @@ object Runner {
     }
   }
 
-  private[scalatest] def doRunRunRunDaDoRunRun(
+  private[scalatest] def doRunRunRunADoRunRun(
     dispatch: DispatchReporter,
     suitesList: List[String],
     junitsList: List[String],
@@ -1594,7 +1594,7 @@ object Runner {
   
               // file.toURL may throw MalformedURLException too, but for now
               // just let that propagate up.
-              file.toURI.toURL // If a dir, comes back terminated by a slash
+              file.toURL() // If a dir, comes back terminated by a slash
             }
           }
         }

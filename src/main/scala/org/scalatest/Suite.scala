@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2011 Artima, Inc.
+ * Copyright 2001-2008 Artima, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,25 +30,13 @@ import Suite.parseSimpleName
 import Suite.stripDollars
 import Suite.formatterForSuiteStarting
 import Suite.formatterForSuiteCompleted
-import Suite.checkForPublicNoArgConstructor
 import Suite.formatterForSuiteAborted
 import Suite.anErrorThatShouldCauseAnAbort
 import Suite.getSimpleNameOfAnObjectsClass
-import Suite.takesInformer
-import Suite.isTestMethodGoodies
-import Suite.testMethodTakesAnInformer
 import scala.collection.immutable.TreeSet
-import Suite.getIndentedText
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
-import Suite.checkRunTestParamsForNull
-import Suite.getIndentedTextForInfo
-import Suite.getMessageForException
-import Suite.reportTestStarting
-import Suite.reportTestIgnored
-import Suite.reportTestSucceeded
-import Suite.reportTestPending
-import Suite.reportInfoProvided
+
 
 /**
  * A suite of tests. A <code>Suite</code> instance encapsulates a conceptual
@@ -163,9 +151,10 @@ import Suite.reportInfoProvided
  * </p>
  *
  * <pre>
- * MySuite:
- * - testAddition
- * - testSubtraction
+ * Test Starting - MySuite: testAddition
+ * Test Succeeded - MySuite: testAddition
+ * Test Starting - MySuite: testSubtraction
+ * Test Succeeded - MySuite: testSubtraction
  * </pre>
  *
  * <p>
@@ -181,8 +170,8 @@ import Suite.reportInfoProvided
  * </p>
  *
  * <pre>
- * MySuite:
- * - testAddition
+ * Test Starting - MySuite: testAddition
+ * Test Succeeded - MySuite: testAddition
  * </pre>
  *
  * <p>
@@ -416,22 +405,17 @@ import Suite.reportInfoProvided
  *
  * <pre>
  * import org.scalatest.Suite
- * import org.scalatest.NestedSuites
  *
- * class ASuite extends Suite {
- *   def testA() {}
- * }
- * class BSuite extends Suite {
- *   def testB() {}
- * }
- * class CSuite extends Suite {
- *   def testC() {}
- * }
+ * class ASuite extends Suite
+ * class BSuite extends Suite
+ * class CSuite extends Suite
  *
- * class AlphabetSuite extends NestedSuites(
- *   new ASuite,
- *   new BSuite,
- *   new CSuite
+ * class AlphabetSuite extends SuperSuite(
+ *   List(
+ *     new ASuite,
+ *     new BSuite,
+ *     new CSuite
+ *   )
  * )
  * </pre>
  *
@@ -440,24 +424,14 @@ import Suite.reportInfoProvided
  * </p>
  *
  * <pre>
- * scala> (new AlphabetSuite).execute()
+ * scala> (new AlphabetSuite).run()
  * </pre>
  *
  * <p>
  * You will see reports printed to the standard output that indicate nested
  * suites&#8212;<code>ASuite</code>, <code>BSuite</code>, and
- * <code>CSuite</code>&#8212;were run:
+ * <code>CSuite</code>&#8212;were run.
  * </p>
- *
- * <pre>
- * AlphabetSuite:
- * ASuite:
- * - testA
- * BSuite:
- * - testB
- * CSuite:
- * - testC
- * </pre>
  *
  * <p>
  * Note that <code>Runner</code> can discover <code>Suite</code>s automatically, so you need not
@@ -904,9 +878,9 @@ import Suite.reportInfoProvided
  * </p>
  *
  * <pre>
- * MySuite:
- * - testAddition
- * - testSubtraction !!! IGNORED !!!
+ * Test Starting - MySuite: testAddition
+ * Test Succeeded - MySuite: testAddition
+ * Test Ignored - MySuite: testSubtraction
  * </pre>
  * 
  * <p>
@@ -973,9 +947,10 @@ import Suite.reportInfoProvided
  * </p>
  *
  * <pre>
- * MySuite:
- * - testAddition
- * - testSubtraction (pending)
+ * Test Starting - MySuite: testAddition
+ * Test Succeeded - MySuite: testAddition
+ * Test Starting - MySuite: testSubtraction
+ * Test Pending - MySuite: testSubtraction
  * </pre>
  * 
  * <h2>Informers</h2>
@@ -1009,9 +984,10 @@ import Suite.reportInfoProvided
  *
  * <pre>
  * scala> (new MySuite).run()
- * MySuite:
- * - testAddition(Informer)
- *   + Addition seems to work 
+ * Test Starting - MySuite: testAddition(Reporter)
+ * Info Provided - MySuite: testAddition(Reporter)
+ *   Addition seems to work
+ * Test Succeeded - MySuite: testAddition(Reporter)
  * </pre>
  *
  * <h2>Executing suites in parallel</h2>
@@ -1025,8 +1001,7 @@ import Suite.reportInfoProvided
  * <code>Suite</code>s put into the <code>Distributor</code> to be run in parallel via a pool of threads.
  * </p>
  *
- * <a name="errorHandling"></a>
- * <h2>Treatment of <code>java.lang.Error</code>s</h2>
+ * <h2>Treatement of <code>java.lang.Error</code>s</h2>
  *
  * <p>
  * The Javadoc documentation for <code>java.lang.Error</code> states:
@@ -1043,7 +1018,7 @@ import Suite.reportInfoProvided
  * have arisen that should cause the run to abort. For example, if a test completes abruptly with an <code>OutOfMemoryError</code>, 
  * it will not be reported as a test failure, but will instead cause the run to abort. Because not everyone uses <code>Error</code>s only to represent serious
  * problems, however, ScalaTest only behaves this way for the following exception types (and their subclasses):
- * </p>
+ * <p>
  *
  * <ul>
  * <li><code>java.lang.annotation.AnnotationFormatError</code></li>
@@ -1129,6 +1104,16 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
 
   import Suite.TestMethodPrefix, Suite.InformerInParens, Suite.IgnoreAnnotation
 
+/*
+* @param nestedSuites A <CODE>List</CODE> of <CODE>Suite</CODE>
+* objects. The specified <code>List</code> must be non-empty. Each element must be non-<code>null</code> and an instance
+* of <CODE>org.scalatest.Suite</CODE>.
+*
+* @throws NullPointerException if <CODE>nestedSuites</CODE>
+* is <CODE>null</CODE> or any element of <CODE>nestedSuites</CODE>
+* set is <CODE>null</CODE>.
+*/
+  
   /**
    * A test function taking no arguments, which also provides a test name and config map.
    *
@@ -1159,6 +1144,7 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
     def configMap: Map[String, Any]
   }
 
+  // should nestedSuites return a Set[String] instead?
   /**
   * A <code>List</code> of this <code>Suite</code> object's nested <code>Suite</code>s. If this <code>Suite</code> contains no nested <code>Suite</code>s,
   * this method returns an empty <code>List</code>. This trait's implementation of this method returns an empty <code>List</code>.
@@ -1202,11 +1188,12 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
    * <code>junit.framework.TestCase</code>, which enables the creating of classes that
    * can be run with either ScalaTest or JUnit 3.
    * </p>
-   *
+   */
   final def execute() {
     run(None, new StandardOutReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
   }
 
+  /**
    * Executes this <code>Suite</code> with the specified <code>configMap</code>, printing results to the standard output.
    *
    * <p>
@@ -1238,11 +1225,12 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
    * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
    *
    * @throws NullPointerException if the passed <code>configMap</code> parameter is <code>null</code>.
-   *
+   */
   final def execute(configMap: Map[String, Any]) {
     run(None, new StandardOutReporter, new Stopper {}, Filter(), configMap, None, new Tracker)
   }
 
+  /**
    * Executes the test specified as <code>testName</code> in this <code>Suite</code>, printing results to the standard output.
    *
    * <p>
@@ -1276,242 +1264,51 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
    * @throws NullPointerException if the passed <code>testName</code> parameter is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
-   *
+   */
   final def execute(testName: String) {
     run(Some(testName), new StandardOutReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
   }
-*/
 
   /**
-   * Executes one or more tests in this <code>Suite</code>, printing results to the standard output.
+   * Executes the test specified as <code>testName</code> in this <code>Suite</code> with the specified <code>configMap</code>, printing
+   * results to the standard output.
    *
    * <p>
-   * This method invokes <code>run</code> on itself, passing in values that can be configured via the parameters to this
-   * method, all of which have default values. This behavior is convenient when working with ScalaTest in the Scala interpreter.
-   * Here's a summary of this method's parameters and how you can use them:
+   * This method implementation calls <code>run</code> on this <code>Suite</code>, passing in:
    * </p>
    *
-   * <p>
-   * <strong>The <code>testName</code> parameter</strong>
-   * </p>
-   *
-   * <p>
-   * If you leave <code>testName</code> at its default value (of <code>null</code>), this method will pass <code>None</code> to
-   * the <code>testName</code> parameter of <code>run</code>, and as a result all the tests in this suite will be executed. If you
-   * specify a <code>testName</code>, this method will pass <code>Some(testName)</code> to <code>run</code>, and only that test
-   * will be run. Thus to run all tests in a suite from the Scala interpreter, you can write:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute()
-   * </pre>
-   *
-   * <p>
-   * To run just the test named <code>"my favorite test"</code> in a suite from the Scala interpreter, you would write:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute("my favorite test")
-   * </pre>
-   *
-   * <p>
-   * Or:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(testName = "my favorite test")
-   * </pre>
-   *
-   * <p>
-   * <strong>The <code>configMap</code> parameter</strong>
-   * </p>
-   *
-   * <p>
-   * If you provide a value for the <code>configMap</code> parameter, this method will pass it to <code>run</code>. If not, the default value
-   * of an empty <code>Map</code> will be passed. For more information on how to use a config map to configure your test suites, see
-   * the <a href="#configMapSection">config map section</a> in the main documentation for this trait. Here's an example in which you configure
-   * a run with the name of an input file:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(configMap = Map("inputFileName" -> "in.txt")
-   * </pre>
-   *
-   * <p>
-   * <strong>The <code>color</code> parameter</strong>
-   * </p>
-   *
-   * <p>
-   * If you leave the <code>color</code> parameter unspecified, this method will configure the reporter it passes to <code>run</code> to print
-   * to the standard output in color (via ansi escape characters). If you don't want color output, specify false for <code>color</code>, like this:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(color = false)
-   * </pre>
-   *
-   * <p>
-   * <strong>The <code>durations</code> parameter</strong>
-   * </p>
-   *
-   * <p>
-   * If you leave the <code>durations</code> parameter unspecified, this method will configure the reporter it passes to <code>run</code> to
-   * <em>not</em> print durations for tests and suites to the standard output. If you want durations printed, specify true for <code>durations</code>,
-   * like this:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(durations = true)
-   * </pre>
-   *
-   * <p>
-   * <strong>The <code>shortStacks</code> and <code>fullStacks</code> parameters</strong>
-   * </p>
-   *
-   * <p>
-   * If you leave both the <code>shortStacks</code> and <code>fullStacks</code> parameters unspecified, this method will configure the reporter
-   * it passes to <code>run</code> to <em>not</em> print stack traces for failed tests if it has a stack depth that identifies the offending
-   * line of test code. If you prefer a short stack trace (10 to 15 stack frames) to be printed with any test failure, specify true for
-   * <code>shortStacks</code>:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(shortStacks = true)
-   * </pre>
-   *
-   * <p>
-   * For full stack traces, set <code>fullStacks</code> to true:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(fullStacks = true)
-   * </pre>
-   *
-   * <p>
-   * If you specify true for both <code>shortStacks</code> and <code>fullStacks</code>, you'll get full stack traces.
-   * </p>
-   *
-   * <p>
-   * <strong>The <code>stats</code> parameter</strong>
-   * </p>
-   *
-   * <p>
-   * If you leave the <code>stats</code> parameter unspecified, this method will <em>not</em> fire <code>RunStarting</code> and either <code>RunCompleted</code>
-   * or <code>RunAborted</code> events to the reporter it passes to <code>run</code>.
-   * If you specify true for <code>stats</code>, this method will fire the run events to the reporter, and the reporter will print the
-   * expected test count before the run, and various statistics after, including the number of suites completed and number of tests that
-   * succeeded, failed, were ignored or marked pending. Here's how you get the stats:
-   * </p>
-   *
-   * <pre>
-   * scala> (new MySuite).execute(stats = true)
-   * </pre>
-   *
-   *
-   * <p>
-   * To summarize, this method will pass to <code>run</code>:
-   * </p>
    * <ul>
-   * <li><code>testName</code> - <code>None</code> if this method's <code>testName</code> parameter is left at its default value of <code>null</code>, else <code>Some(testName)</code>.
+   * <li><code>testName</code> - <code>Some(testName)</code></li>
    * <li><code>reporter</code> - a reporter that prints to the standard output</li>
    * <li><code>stopper</code> - a <code>Stopper</code> whose <code>apply</code> method always returns <code>false</code></li>
    * <li><code>filter</code> - a <code>Filter</code> constructed with <code>None</code> for <code>tagsToInclude</code> and <code>Set()</code>
    *   for <code>tagsToExclude</code></li>
-   * <li><code>configMap</code> - the <code>configMap</code> passed to this method</li>
+   * <li><code>configMap</code> - the specified <code>configMap</code> <code>Map[String, Any]</code></li>
    * <li><code>distributor</code> - <code>None</code></li>
    * <li><code>tracker</code> - a new <code>Tracker</code></li>
    * </ul>
    *
    * <p>
+   * This method serves as a convenient way to execute a single test, passing in some objects via the <code>configMap</code>, especially from
+   * within the Scala interpreter.
+   * </p>
+   *
+   * <p>
    * Note:  In ScalaTest, the terms "execute" and "run" basically mean the same thing and
-   * can be used interchangably. The reason this method isn't named <code>run</code> is that it takes advantage of
-   * default arguments, and you can't mix overloaded methods and default arguments in Scala. (If named <code>run</code>,
-   * this method would have the same name but different arguments than the main <a href="#run"><code>run</code> method</a> that
-   * takes seven arguments. Thus it would overload and couldn't be used with default argument values.)
+   * can be used interchangably. The reason this convenience method and its three overloaded forms
+   * aren't named <code>run</code> is described the documentation of the overloaded form that
+   * takes no parameters: <a href="#execute%28%29">execute()</a>.
    * </p>
    *
    * @param testName the name of one test to run.
    * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param color a boolean that configures whether output is printed in color
-   * @param durations a boolean that configures whether test and suite durations are printed to the standard output
-   * @param shortStacks a boolean that configures whether short stack traces should be printed for test failures
-   * @param fullStacks a boolean that configures whether full stack traces should be printed for test failures
-   * @param stats a boolean that configures whether test and suite statistics are printed to the standard output
    *
-   * @throws NullPointerException if the passed <code>configMap</code> parameter is <code>null</code>.
+   * @throws NullPointerException if either of the passed <code>testName</code> or <code>configMap</code> parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  final def execute(
-    testName: String = null,
-    configMap: Map[String, Any] = Map(),
-    color: Boolean = true,
-    durations: Boolean = false,
-    shortStacks: Boolean = false,
-    fullStacks: Boolean = false,
-    stats: Boolean = false
-  ) {
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (testName != null && !testNames.contains(testName))
-      throw new IllegalArgumentException(Resources("testNotFound", testName))
-
-    val dispatch = new DispatchReporter(List(new StandardOutReporter(durations, color, shortStacks, fullStacks)))
-    val tracker = new Tracker
-    val filter = Filter()
-    val runStartTime = System.currentTimeMillis
-    if (stats)
-      dispatch(RunStarting(tracker.nextOrdinal(), expectedTestCount(filter), configMap))
-
-    val suiteStartTime = System.currentTimeMillis
-    def dispatchSuiteAborted(e: Throwable) {
-      val rawString = Resources("runOnSuiteException")
-      val formatter = formatterForSuiteAborted(thisSuite, rawString)
-      val duration = System.currentTimeMillis - suiteStartTime
-      dispatch(SuiteAborted(tracker.nextOrdinal(), rawString, thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(e), Some(duration), formatter, None))
-    }
-
-    try {
-
-      val formatter = formatterForSuiteStarting(thisSuite)
-      dispatch(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), formatter))
-
-      run(
-        //if (testName != null) Some(testName) else None,
-        Option(testName),
-        dispatch,
-        new Stopper {},
-        filter,
-        configMap,
-        None,
-        tracker
-      )
-
-      val suiteCompletedFormatter = formatterForSuiteCompleted(thisSuite)
-      val duration = System.currentTimeMillis - suiteStartTime
-      dispatch(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(duration), suiteCompletedFormatter))
-      if (stats) {
-        val duration = System.currentTimeMillis - runStartTime
-        dispatch(RunCompleted(tracker.nextOrdinal(), Some(duration)))
-      }
-    }
-    catch {
-      case e: InstantiationException =>
-        dispatchSuiteAborted(e)
-        dispatch(RunAborted(tracker.nextOrdinal(), Resources("cannotInstantiateSuite", e.getMessage), Some(e), Some(System.currentTimeMillis - runStartTime)))
-      case e: IllegalAccessException =>
-        dispatchSuiteAborted(e)
-        dispatch(RunAborted(tracker.nextOrdinal(), Resources("cannotInstantiateSuite", e.getMessage), Some(e), Some(System.currentTimeMillis - runStartTime)))
-      case e: NoClassDefFoundError =>
-        dispatchSuiteAborted(e)
-        dispatch(RunAborted(tracker.nextOrdinal(), Resources("cannotLoadClass", e.getMessage), Some(e), Some(System.currentTimeMillis - runStartTime)))
-      case e: Throwable =>
-        dispatchSuiteAborted(e)
-        dispatch(RunAborted(tracker.nextOrdinal(), Resources.bigProblems(e), Some(e), Some(System.currentTimeMillis - runStartTime)))
-    }
-    finally {
-      dispatch.dispatchDisposeAndWaitUntilDone()
-    }
+  final def execute(testName: String, configMap: Map[String, Any]) {
+    run(Some(testName), new StandardOutReporter, new Stopper {}, Filter(), configMap, None, new Tracker)
   }
 
   /**
@@ -1532,15 +1329,28 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
    * should never return an empty <code>Set</code> as a value. If a tag has no tests, its name should not appear as a key in the
    * returned <code>Map</code>.
    * </p>
+   * 
+   * <p>
+   * <strong>Note, the <code>TagAnnotation</code> annotation was introduced in ScalaTest 1.0, when "groups" were renamed
+   * to "tags." In 1.0 and 1.1, the <code>TagAnnotation</code> will continue to not be required by an annotation on a <code>Suite</code>
+   * method. Any annotation on a <code>Suite</code> method will be considered a tag until 1.2, to give users time to add
+   * <code>TagAnnotation</code>s on any tag annotations they made prior to the 1.0 release. From 1.2 onward, only annotations
+   * themselves annotated by <code>TagAnnotation</code> will be considered tag annotations.</strong>
+   * </p>
    */
   def tags: Map[String, Set[String]] = {
 
     def getTags(testName: String) =
+/* AFTER THE DEPRECATION CYCLE FOR GROUPS TO TAGS (1.2), REPLACE THE FOLLOWING FOR LOOP WITH THIS COMMENTED OUT ONE
+   THAT MAKES SURE ANNOTATIONS ARE TAGGED WITH TagAnnotation.
       for {
         a <- getMethodForTestName(testName).getDeclaredAnnotations
         annotationClass = a.annotationType
         if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
       } yield annotationClass.getName
+*/
+      for (a <- getMethodForTestName(testName).getDeclaredAnnotations)
+        yield a.annotationType.getName
 
     val elements =
       for (testName <- testNames; if !getTags(testName).isEmpty)
@@ -1548,6 +1358,13 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
 
     Map() ++ elements
   }
+
+  /**
+   * <strong>The <code>groups</code> methods has been deprecated and will be removed in a future version of ScalaTest.
+   * Please call (and override) <code>tags</code> instead.</strong>
+   */
+  @deprecated // deprecated in 1.0, so remove in 1.4
+  final def groups: Map[String, Set[String]] = tags
 
   /**
   * An <code>Set</code> of test names. If this <code>Suite</code> contains no tests, this method returns an empty <code>Set</code>.
@@ -1594,10 +1411,25 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
   */
   def testNames: Set[String] = {
 
+    def takesInformer(m: Method) = {
+      val paramTypes = m.getParameterTypes
+      paramTypes.length == 1 && classOf[Informer].isAssignableFrom(paramTypes(0))
+    }
+
     def isTestMethod(m: Method) = {
 
-      // Factored out to share code with FixtureSuite.testNames
-      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames) = isTestMethodGoodies(m)
+      val isInstanceMethod = !Modifier.isStatic(m.getModifiers())
+
+      // name must have at least 4 chars (minimum is "test")
+      val simpleName = m.getName
+      val firstFour = if (simpleName.length >= 4) simpleName.substring(0, 4) else "" 
+
+      val paramTypes = m.getParameterTypes
+      val hasNoParams = paramTypes.length == 0
+
+      // Discover testNames(Informer) because if we didn't it might be confusing when someone
+      // actually wrote a testNames(Informer) method and it was silently ignored.
+      val isTestNames = simpleName == "testNames"
 
       isInstanceMethod && (firstFour == "test") && ((hasNoParams && !isTestNames) || takesInformer(m))
     }
@@ -1609,19 +1441,13 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
     TreeSet[String]() ++ testNameArray
   }
 
-  private[scalatest] def getMethodForTestName(testName: String) =
-    try {
-      getClass.getMethod(
-        simpleNameForTest(testName),
-        (if (testMethodTakesAnInformer(testName)) Array(classOf[Informer]) else new Array[Class[_]](0)): _*
-      )
-    }
-    catch {
-      case e: NoSuchMethodException =>
-        throw new IllegalArgumentException(Resources("testNotFound", testName))
-      case e =>
-        throw e
-    }
+  private def testMethodTakesInformer(testName: String) = testName.endsWith(InformerInParens)
+
+  private def getMethodForTestName(testName: String) =
+    getClass.getMethod(
+      simpleNameForTest(testName),
+      (if (testMethodTakesInformer(testName)) Array(classOf[Informer]) else new Array[Class[_]](0)): _*
+    )
 
   /**
    *  Run the passed test function in the context of a fixture established by this method.
@@ -1649,33 +1475,6 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
    */
   protected def withFixture(test: NoArgTest) {
     test()
-  }
-
-  // Factored out to share this with FixtureSuite.runTest
-  private[scalatest] def getSuiteRunTestGoodies(stopper: Stopper, reporter: Reporter, testName: String) = {
-    val (stopRequested, report, hasPublicNoArgConstructor, rerunnable, testStartTime) = getRunTestGoodies(stopper, reporter, testName)
-    val method = getMethodForTestName(testName)
-    (stopRequested, report, method, hasPublicNoArgConstructor, rerunnable, testStartTime)
-  }
-
-  // Sharing this with FunSuite and FixtureFunSuite as well as Suite and FixtureSuite
-  private[scalatest] def getRunTestGoodies(stopper: Stopper, reporter: Reporter, testName: String) = {
-
-    val stopRequested = stopper
-    val report = wrapReporterIfNecessary(reporter)
-
-    // Create a Rerunner if the Suite has a no-arg constructor
-    val hasPublicNoArgConstructor = checkForPublicNoArgConstructor(getClass)
-
-    val rerunnable =
-      if (hasPublicNoArgConstructor)
-        Some(new TestRerunner(getClass.getName, testName))
-      else
-        None
-
-    val testStartTime = System.currentTimeMillis
-
-    (stopRequested, report, hasPublicNoArgConstructor, rerunnable, testStartTime)
   }
 
   /**
@@ -1706,37 +1505,49 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
    */
   protected def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    checkRunTestParamsForNull(testName, reporter, stopper, configMap, tracker)
+    if (testName == null || reporter == null || stopper == null || configMap == null || tracker == null)
+      throw new NullPointerException
 
-    val (stopRequested, report, method, hasPublicNoArgConstructor, rerunnable, testStartTime) =
-      getSuiteRunTestGoodies(stopper, reporter, testName)
+    val stopRequested = stopper
+    val report = wrapReporterIfNecessary(reporter)
+    val method =
+      try {
+        getMethodForTestName(testName)
+      }
+      catch {
+        case e: NoSuchMethodException =>
+          throw new IllegalArgumentException(Resources("testNotFound", testName))
+        case e =>
+          throw e
+      }
 
-    reportTestStarting(this, report, tracker, testName, rerunnable)
+    // Create a Rerunner if the Suite has a no-arg constructor
+    val hasPublicNoArgConstructor = Suite.checkForPublicNoArgConstructor(getClass)
 
-    val formatter = getIndentedText(testName, 1, true)
+    val rerunnable =
+      if (hasPublicNoArgConstructor)
+        Some(new TestRerunner(getClass.getName, testName))
+      else
+        None
 
-    val informerForThisTest =
-      MessageRecordingInformer2(
-        (message, isConstructingThread, testWasPending) => reportInfoProvided(thisSuite, report, tracker, Some(testName), message, 2, isConstructingThread, true, Some(testWasPending))
-      )
+    val testStartTime = System.currentTimeMillis
+
+    report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, None, rerunnable))
 
     val args: Array[Object] =
-      if (testMethodTakesAnInformer(testName)) {
-/*
+      if (testMethodTakesInformer(testName)) {
         val informer =
           new Informer {
             def apply(message: String) {
               if (message == null)
                 throw new NullPointerException
-              reportInfoProvided(thisSuite, report, tracker, Some(testName), message, 2, true)
+              report(InfoProvided(tracker.nextOrdinal(), message, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
             }
           }
-*/
-        Array(informerForThisTest)  
+        Array(informer)  
       }
       else Array()
 
-    var testWasPending = false
     try {
       val theConfigMap = configMap
       withFixture(
@@ -1747,15 +1558,14 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
         }
       )
       val duration = System.currentTimeMillis - testStartTime
-      reportTestSucceeded(this, report, tracker, testName, duration, formatter, rerunnable)
+      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(duration), None, rerunnable))
     }
     catch { 
       case ite: InvocationTargetException =>
         val t = ite.getTargetException
         t match {
           case _: TestPendingException =>
-            reportTestPending(this, report, tracker, testName, formatter)
-            testWasPending = true // Set so info's printed out in the finally clause show up yellow
+            report(TestPending(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName))
           case e if !anErrorThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
             handleFailedTest(t, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
@@ -1765,9 +1575,6 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
         val duration = System.currentTimeMillis - testStartTime
         handleFailedTest(e, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
       case e => throw e  
-    }
-    finally {
-      informerForThisTest.fireRecordedMessages(testWasPending)
     }
   }
 
@@ -1873,15 +1680,11 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
       case Some(tn) => runTest(tn, report, stopRequested, configMap, tracker)
       case None =>
 
-      for ((tn, ignoreTest) <- filter(testNames, tags)) {
-        if (!stopRequested()) {
-          if (ignoreTest) {
-            reportTestIgnored(thisSuite, report, tracker, tn, tn, 1)
-          }
-          else
-            runTest(tn, report, stopRequested, configMap, tracker)
-        }
-      }
+      for ((tn, ignoreTest) <- filter(testNames, tags))
+        if (ignoreTest)
+          report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), tn))
+        else
+          runTest(tn, report, stopRequested, configMap, tracker)
     }
   }
 
@@ -1974,12 +1777,16 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
     }
   }
 
-  private[scalatest] def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+  private def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
       rerunnable: Option[Rerunner], report: Reporter, tracker: Tracker, duration: Long) {
 
-    val message = getMessageForException(throwable)
-    val formatter = getIndentedText(testName, 1, true)
-    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), Some(formatter), rerunnable))
+    val message =
+      if (throwable.getMessage != null) // [bv: this could be factored out into a helper method]
+        throwable.getMessage
+      else
+        throwable.toString
+
+    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), None, rerunnable))
   }
 
   /**
@@ -2065,7 +1872,7 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
           val formatter = formatterForSuiteCompleted(nestedSuite)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          report(SuiteCompleted(tracker.nextOrdinal(), nestedSuite.suiteName, Some(nestedSuite.getClass.getName), Some(duration), formatter, rerunnable))
+          report(SuiteCompleted(tracker.nextOrdinal(), nestedSuite.suiteName, Some(thisSuite.getClass.getName), Some(duration), formatter, rerunnable))
         }
         catch {       
           case e: RuntimeException => {
@@ -2074,20 +1881,14 @@ trait Suite extends Assertions with AbstractSuite { thisSuite =>
             val formatter = formatterForSuiteAborted(nestedSuite, rawString)
 
             val duration = System.currentTimeMillis - suiteStartTime
-            report(SuiteAborted(tracker.nextOrdinal(), rawString, nestedSuite.suiteName, Some(nestedSuite.getClass.getName), Some(e), Some(duration), formatter, rerunnable))
+            report(SuiteAborted(tracker.nextOrdinal(), rawString, nestedSuite.suiteName, Some(thisSuite.getClass.getName), Some(e), Some(duration), formatter, rerunnable))
           }
         }
       }
     }
 
     distributor match {
-      case None =>
-        val nestedSuitesArray = nestedSuites.toArray
-        for (i <- 0 until nestedSuitesArray.length) {
-          if (!stopRequested()) {
-            callExecuteOnSuite(nestedSuitesArray(i))
-          }
-        }
+      case None => nestedSuites.foreach(callExecuteOnSuite)
       case Some(distribute) =>
         for (nestedSuite <- nestedSuites)
           distribute(nestedSuite, tracker.nextTracker())
@@ -2338,13 +2139,32 @@ private[scalatest] object Suite {
     }
 
   private[scalatest] def formatterForSuiteStarting(suite: Suite): Option[Formatter] =
-      Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
+    suite match {
+      case spec: Spec => Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
+      case spec: FlatSpec => Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
+      case spec: WordSpec => Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
+      case spec: FeatureSpec => Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
+      case _ => None
+    }
 
   private[scalatest] def formatterForSuiteCompleted(suite: Suite): Option[Formatter] =
-      Some(MotionToSuppress)
+    suite match {
+      case spec: Spec => Some(MotionToSuppress)
+      case spec: FlatSpec => Some(MotionToSuppress)
+      case spec: WordSpec => Some(MotionToSuppress)
+      case spec: FeatureSpec => Some(MotionToSuppress)
+      case _ => None
+    }
 
-  private[scalatest] def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] =
-      Some(IndentedText(message, message, 0))
+  private[scalatest] def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] = {
+    suite match {
+      case spec: Spec => Some(IndentedText(message, message, 0))
+      case spec: FlatSpec => Some(IndentedText(message, message, 0))
+      case spec: WordSpec => Some(IndentedText(message, message, 0))
+      case spec: FeatureSpec => Some(IndentedText(message, message, 0))
+      case _ => None
+    }
+  }
 
   private def simpleNameForTest(testName: String) =
     if (testName.endsWith(InformerInParens))
@@ -2364,212 +2184,4 @@ private[scalatest] object Suite {
       case _: VirtualMachineError => true
       case _ => false
     }
-
-  def takesInformer(m: Method) = {
-    val paramTypes = m.getParameterTypes
-    paramTypes.length == 1 && classOf[Informer].isAssignableFrom(paramTypes(0))
-  }
-
-  def isTestMethodGoodies(m: Method) = {
-
-    val isInstanceMethod = !Modifier.isStatic(m.getModifiers())
-
-    // name must have at least 4 chars (minimum is "test")
-    val simpleName = m.getName
-    val firstFour = if (simpleName.length >= 4) simpleName.substring(0, 4) else "" 
-
-    val paramTypes = m.getParameterTypes
-    val hasNoParams = paramTypes.length == 0
-
-    // Discover testNames(Informer) because if we didn't it might be confusing when someone
-    // actually wrote a testNames(Informer) method and it was silently ignored.
-    val isTestNames = simpleName == "testNames"
-
-    (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames)
-  }
-
-  def testMethodTakesAnInformer(testName: String) = testName.endsWith(InformerInParens)
-
-  def checkRunTestParamsForNull(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
-    if (testName == null)
-      throw new NullPointerException("testName was null")
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (tracker == null)
-      throw new NullPointerException("tracker was null")
-  }
- 
-  /*
-   For info and test names, the formatted text should have one level shaved off so that the text will
-   line up correctly, and the icon is over to the left of that even with the enclosing level.
-
-   If a test is at the top level (not nested inside a describe, it's level is 0. So no need to subtract 1
-   to make room for the icon in that case. An info inside such a test will have level 1. And agin, in that
-   case no need to subtract 1. Such a test is "outermost test" and the info inside is "in outermost test" in:
-
-class ArghSpec extends Spec with GivenWhenThen {
-  info("in ArghSpec")
-  it("outermost test") {
-    info("in outermost test")
-  }
-  describe("Apple") {
-    info("in Apple")
-    describe("Boat") {
-      info("in Boat")
-      describe("Cat") {
-        info("in Cat")
-        describe("Dog") {
-          info("in Dog")
-          describe("Elephant") {
-            info("in Elephant")
-            it("Factory") {
-              info("in Factory (test)")
-              given("an empty Stack")
-              when("push is invoked")
-              then("it should have size 1")
-              and("pop should return the pushed value")
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-It should (and at this point does) output this:
-
-[scalatest] ArghSpec:
-[scalatest] + in ArghSpec 
-[scalatest] - outermost test (5 milliseconds)
-[scalatest]   + in outermost test 
-[scalatest] Apple 
-[scalatest] + in Apple 
-[scalatest]   Boat 
-[scalatest]   + in Boat 
-[scalatest]     Cat 
-[scalatest]     + in Cat 
-[scalatest]       Dog 
-[scalatest]       + in Dog 
-[scalatest]         Elephant 
-[scalatest]         + in Elephant 
-[scalatest]         - Factory (1 millisecond)
-[scalatest]           + in Factory (test) 
-[scalatest]           + Given an empty Stack 
-[scalatest]           + When push is invoked 
-[scalatest]           + Then it should have size 1 
-[scalatest]           + And pop should return the pushed value 
-
-FeatureSpec doesn't want any icons printed out. So adding includeIcon here. It
-was already in getIndentedTextForInfo because of descriptions being printed out
-without icons.
-
-This should really be named getIndentedTextForTest maybe, because I think it is just
-used for test events like succeeded/failed, etc.
-  */
-  def getIndentedText(testText: String, level: Int, includeIcon: Boolean) = {
-    val formattedText =
-      if (includeIcon) {
-        val testSucceededIcon = Resources("testSucceededIconChar")
-        ("  " * (if (level == 0) 0 else (level - 1))) + Resources("iconPlusShortName", testSucceededIcon, testText)
-      }
-      else {
-        ("  " * level) + testText
-      }
-    IndentedText(formattedText, testText, level)
-  }
-
-  // The icon is not included for branch description text, but is included for things sent via info(), given(),
-  // when(), then(), etc. When it is included, reduce the level by 1, unless it is already 1 or 0.
-  def getIndentedTextForInfo(message: String, level: Int, includeIcon: Boolean, infoIsInsideATest: Boolean) = {
-    val formattedText =
-      if (includeIcon) {
-        val infoProvidedIcon = Resources("infoProvidedIconChar")
-        //
-        // Inside a test, you want level 1 to stay 1
-        // [scalatest] - outermost test (5 milliseconds)
-        // [scalatest]   + in outermost test
-        //
-        // But outside a test, level 1 should be transformed to 0
-        // [scalatest] Apple
-        // [scalatest] + in Apple
-        //
-        val indentationLevel =
-          level match {
-            case 0 => 0
-            case 1 if infoIsInsideATest => 1
-            case _ => level - 1
-          }
-        ("  " * indentationLevel) + Resources("iconPlusShortName", infoProvidedIcon, message)
-        // ("  " * (if (level <= 1) level else (level - 1))) + Resources("iconPlusShortName", infoProvidedIcon, message)
-      }
-      else {
-        ("  " * level) + message
-      }
-    IndentedText(formattedText, message, level)
-  }
-
-  def getMessageForException(e: Throwable): String =
-    if (e.getMessage != null)
-      e.getMessage
-    else
-      Resources("exceptionThrown", e.getClass.getName) // Say something like, "java.lang.Exception was thrown."
-
-  def indentation(level: Int) = "  " * level
-
-  def reportTestFailed(theSuite: Suite, report: Reporter, throwable: Throwable, testName: String, testText: String,
-      rerunnable: Option[Rerunner], tracker: Tracker, duration: Long, level: Int, includeIcon: Boolean) {
-
-    val message = getMessageForException(throwable)
-    val formatter = getIndentedText(testText, level, includeIcon)
-    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(throwable), Some(duration), Some(formatter), rerunnable))
-  }
-
-  def reportTestStarting(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, rerunnable: Option[Rerunner]) {
-    report(TestStarting(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(MotionToSuppress), rerunnable))
-  }
-
-  def reportTestPending(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, formatter: Formatter) {
-    report(TestPending(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(formatter)))
-  }
-
-  def reportTestSucceeded(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, duration: Long, formatter: Formatter, rerunnable: Option[Rerunner]) {
-    report(TestSucceeded(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(duration), Some(formatter), rerunnable))
-  }
-
-  def reportTestIgnored(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, level: Int) {
-    val testSucceededIcon = Resources("testSucceededIconChar")
-    val formattedText = indentation(level - 1) + Resources("iconPlusShortName", testSucceededIcon, testText)
-    report(TestIgnored(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(IndentedText(formattedText, testText, level))))
-  }
-
-  // If not fired in the context of a test, then testName will be None
-  def reportInfoProvided(
-    theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    testName: Option[String],
-    message: String,
-    level: Int,
-    includeNameInfo: Boolean,
-    includeIcon: Boolean = true,
-    aboutAPendingTest: Option[Boolean] = None
-  ) {
-    report(
-      InfoProvided(
-        tracker.nextOrdinal(),
-        message,
-        if (includeNameInfo)
-          Some(NameInfo(theSuite.suiteName, Some(theSuite.getClass.getName), testName))
-        else
-          None,
-        aboutAPendingTest,
-        None,
-        Some(getIndentedTextForInfo(message, level, includeIcon, testName.isDefined))
-      )
-    )
-  }
 }

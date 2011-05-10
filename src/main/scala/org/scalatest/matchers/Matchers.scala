@@ -22,8 +22,6 @@ import scala.util.matching.Regex
 import java.lang.reflect.Field
 import scala.reflect.Manifest
 import Helper.transformOperatorChars
-import scala.collection.Traversable
-import Assertions.areEqualComparingArraysStructurally
 
 // TODO: drop generic support for be as an equality comparison, in favor of specific ones.
 // TODO: mention on JUnit and TestNG docs that you can now mix in ShouldMatchers or MustMatchers
@@ -61,9 +59,9 @@ private[scalatest] object Helper {
 
     // methodNameToInvokeWithGet would be "getTitle"
     val prefix = if (isBooleanProperty) "is" else "get"
-    val methodNameToInvokeWithGet = prefix + mangledPropertyName(0).toUpper + mangledPropertyName.substring(1)
+    val methodNameToInvokeWithGet = prefix + mangledPropertyName(0).toUpperCase + mangledPropertyName.substring(1)
 
-    val firstChar = propertyName(0).toLower
+    val firstChar = propertyName(0).toLowerCase
     val methodNameStartsWithVowel = firstChar == 'a' || firstChar == 'e' || firstChar == 'i' ||
       firstChar == 'o' || firstChar == 'u'
 
@@ -130,6 +128,7 @@ private[scalatest] object Helper {
     }
     builder.toString
   }
+
 }
 
 import Helper.accessProperty
@@ -146,7 +145,6 @@ trait Matchers extends Assertions { matchers =>
     val fileNames = List("Matchers.scala", "ShouldMatchers.scala", "MustMatchers.scala")
     val temp = new RuntimeException
     val stackDepth = temp.getStackTrace.takeWhile(stackTraceElement => fileNames.exists(_ == stackTraceElement.getFileName) || stackTraceElement.getMethodName == "newTestFailedException").length
-    // if (stackDepth != 4) throw new OutOfMemoryError("stackDepth in Matchers.scala is: " + stackDepth)
     new TestFailedException(message, stackDepth)
   }
 
@@ -166,9 +164,9 @@ trait Matchers extends Assertions { matchers =>
         val methodNameToInvoke = mangledPropertyName
 
         // methodNameToInvokeWithIs would be "isEmpty"
-        val methodNameToInvokeWithIs = "is"+ mangledPropertyName(0).toUpper + mangledPropertyName.substring(1)
+        val methodNameToInvokeWithIs = "is"+ mangledPropertyName(0).toUpperCase + mangledPropertyName.substring(1)
 
-        val firstChar = propertyName(0).toLower
+        val firstChar = propertyName(0).toLowerCase
         val methodNameStartsWithVowel = firstChar == 'a' || firstChar == 'e' || firstChar == 'i' ||
           firstChar == 'o' || firstChar == 'u'
 
@@ -1737,6 +1735,7 @@ trait Matchers extends Assertions { matchers =>
    * @author Bill Venners
    */
   final class ResultOfContainWordForMap[K, V](left: scala.collection.Map[K, V], shouldBeTrue: Boolean) {
+  // class ResultOfContainWordForMap[K, V](left: scala.collection.Map[K, V], shouldBeTrue: Boolean) extends ResultOfContainWordForIterable[Tuple2[K, V]](left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -1821,57 +1820,50 @@ trait Matchers extends Assertions { matchers =>
     }
   }
 
-  /** 
+  /**
    * This implicit conversion method enables the following syntax (<code>javaColl</code> is a <code>java.util.Collection</code>):
    *
    * <pre>
    * javaColl should contain ("two")
    * </pre>
    *
-   * The <code>(contain ("two"))</code> expression will result in a <code>Matcher[Traversable[String]]</code>. This
+   * The <code>(contain element ("two"))</code> expression will result in a <code>Matcher[scala.Iterable[String]]</code>. This
    * implicit conversion method will convert that matcher to a <code>Matcher[java.util.Collection[String]]</code>.
    */
-  implicit def convertTraversableMatcherToJavaCollectionMatcher[T](traversableMatcher: Matcher[Traversable[T]]) = 
+  implicit def convertIterableMatcherToJavaCollectionMatcher[T](iterableMatcher: Matcher[Iterable[T]]) = 
     new Matcher[java.util.Collection[T]] {
       def apply(left: java.util.Collection[T]) = {
-        val traversable = new Traversable[T] {
-          def foreach[U](f: (T) => U) {
-            val javaIterator = left.iterator
-            while (javaIterator.hasNext)
-              f(javaIterator.next)
+        val iterable = new Iterable[T] {
+          override def iterator = new Iterator[T] { // For 2.8
+          // def elements = new Iterator[T] { // For 2.7
+            private val javaIterator = left.iterator
+            def next: T = javaIterator.next
+            def hasNext: Boolean = javaIterator.hasNext
           }
           override def toString = left.toString
         }
-        traversableMatcher.apply(traversable)
+        iterableMatcher.apply(iterable)
       }
     }
 
-  /**
-   * This implicit conversion method enables the following syntax:
-   *
-   * <pre>
-   * Array(1, 2) should (not contain (3) and not contain (2))
-   * </pre>
-   *
-   * The <code>(not contain ("two"))</code> expression will result in a <code>Matcher[Traversable[String]]</code>. This
-   * implicit conversion method will convert that matcher to a <code>Matcher[Array[String]]</code>.
-  */
-  implicit def convertTraversableMatcherToArrayMatcher[T](traversableMatcher: Matcher[Traversable[T]]) =
+  // XXX
+  implicit def convertIterableMatcherToArraytMatcher[T](iterableMatcher: Matcher[Iterable[T]]) =
     new Matcher[Array[T]] {
       def apply(left: Array[T]) = {
-        val traversable = new Traversable[T] {
-          def foreach[U](f: (T) => U) {
-            var index = 0
-            while (index < left.length) {
+        val iterable = new Iterable[T] {
+          override def iterator = new Iterator[T] { // For 2.8
+            private var index = 0
+            def hasNext: Boolean = index < left.length
+            def next: T = {
               index += 1
-              f(left(index - 1))
+              left(index - 1)
             }
           }
           // Need to prettify the array's toString, because by the time it gets to decorateToStringValue, the array
-          // has been wrapped in this Traversable and so it won't get prettified anymore by FailureMessages.decorateToStringValue.
+          // has been wrapped in this Iterable and so it won't get prettified anymore by FailureMessages.decorateToStringValue.
           override def toString = FailureMessages.prettifyArrays(left).toString
         }
-        traversableMatcher.apply(traversable)
+        iterableMatcher.apply(iterable)
       }
     }
 
@@ -1921,7 +1913,7 @@ trait Matchers extends Assertions { matchers =>
     }
 
   // Ack. The above conversion doesn't apply to java.util.Maps, because java.util.Map is not a subinterface
-  // of java.util.Collection. But right now Matcher[Traversable] supports only "contain" and "have size"
+  // of java.util.Collection. But right now Matcher[Iterable] supports only "contain" and "have size"
   // syntax, and thus that should work on Java maps too, why not. Well I'll tell you why not. It is too complicated.
   // Since java Map is not a java Collection, I'll say the contain syntax doesn't work on it. But you can say
   // have key.
@@ -1942,11 +1934,11 @@ trait Matchers extends Assertions { matchers =>
      *                             ^
      * </pre>
      */
-    def apply[T](expectedElement: T): Matcher[Traversable[T]] =
-      new Matcher[Traversable[T]] {
-        def apply(left: Traversable[T]) =
+    def apply[T](expectedElement: T): Matcher[Iterable[T]] =
+      new Matcher[Iterable[T]] {
+        def apply(left: Iterable[T]) =
           MatchResult(
-            left.exists(_ == expectedElement), 
+            left.elements.contains(expectedElement), 
             FailureMessages("didNotContainExpectedElement", left, expectedElement),
             FailureMessages("containedExpectedElement", left, expectedElement)
           )
@@ -2564,7 +2556,7 @@ trait Matchers extends Assertions { matchers =>
               val methodNameToInvoke = mangledPropertyName
 
               // methodNameToInvokeWithGet would be "getTitle"
-              val methodNameToInvokeWithGet = "get"+ mangledPropertyName(0).toUpper + mangledPropertyName.substring(1)
+              val methodNameToInvokeWithGet = "get"+ mangledPropertyName(0).toUpperCase + mangledPropertyName.substring(1)
 
               throw newTestFailedException(Resources("propertyNotFound", methodNameToInvoke, expectedValue.toString, methodNameToInvokeWithGet))
 
@@ -2673,7 +2665,7 @@ trait Matchers extends Assertions { matchers =>
      * </pre>
      *
      * <p>
-     * Currently, this method will produce a <code>Matcher[AnyRef]</code>, and if the
+     * Currently (as of ScalaTest 0.9.5), this method will produce a <code>Matcher[AnyRef]</code>, and if the
      * <code>AnyRef</code> passed to that matcher's <code>apply</code> method does not have the appropriate <code>size</code> property
      * structure, all will compile but a <code>TestFailedException</code> will result at runtime explaining the problem.
      * In a future ScalaTest release, this may be tightened so that all is statically checked at compile time.
@@ -2689,9 +2681,9 @@ trait Matchers extends Assertions { matchers =>
                 FailureMessages("didNotHaveExpectedSize", left, expectedSize),
                 FailureMessages("hadExpectedSize", left, expectedSize)
               )
-            case leftTrav: Traversable[_] =>
+            case leftSeq: Collection[_] =>
               MatchResult(
-                leftTrav.size == expectedSize, 
+                leftSeq.size == expectedSize, 
                 FailureMessages("didNotHaveExpectedSize", left, expectedSize),
                 FailureMessages("hadExpectedSize", left, expectedSize)
               )
@@ -2799,19 +2791,19 @@ trait Matchers extends Assertions { matchers =>
   }
 
   //
-  // This class is used as the return type of the overloaded should method (in TraversableShouldWrapper) 
+  // This class is used as the return type of the overloaded should method (in CollectionShouldWrapper)
   // that takes a HaveWord. It's size method will be called in situations like this:
   //
   // list should have size 1
   //
   // This gets changed to :
   //
-  // convertToTraversableShouldWrapper(list).should(have).size(1)
+  // convertToCollectionShouldWrapper(list).should(have).size(1)
   //
-  // Thus, the list is wrapped in a convertToTraversableShouldWrapper call via an implicit conversion, which results in
-  // a TraversableShouldWrapper. This has a should method that takes a HaveWord. That method returns a
-  // ResultOfHaveWordForTraverablePassedToShould that remembers the map to the left of should. Then this class
-  // has a size method that takes a T type, type parameter of the Traversable. It does the assertion thing.
+  // Thus, the list is wrapped in a convertToCollectionShouldWrapper call via an implicit conversion, which results in
+  // a CollectionShouldWrapper. This has a should method that takes a HaveWord. That method returns a
+  // ResultOfHaveWordForCollectionPassedToShould that remembers the map to the left of should. Then this class
+  // has a size method that takes a T type, type parameter of the iterable. It does the assertion thing.
   // 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -2819,7 +2811,7 @@ trait Matchers extends Assertions { matchers =>
    *
    * @author Bill Venners
    */
-  sealed class ResultOfHaveWordForTraversable[T](left: Traversable[T], shouldBeTrue: Boolean) {
+  sealed class ResultOfHaveWordForCollection[T](left: Collection[T], shouldBeTrue: Boolean) {
 
     /**
      * This method enables the following syntax:
@@ -2900,7 +2892,7 @@ trait Matchers extends Assertions { matchers =>
    *
    * @author Bill Venners
    */
-  final class ResultOfHaveWordForSeq[T](left: Seq[T], shouldBeTrue: Boolean) extends ResultOfHaveWordForTraversable[T](left, shouldBeTrue) {
+  final class ResultOfHaveWordForSeq[T](left: Seq[T], shouldBeTrue: Boolean) extends ResultOfHaveWordForCollection[T](left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -2972,8 +2964,9 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  sealed class ResultOfNotWordForTraversable[E, T <: Traversable[E]](left: T, shouldBeTrue: Boolean)
+  sealed class ResultOfNotWordForIterable[E, T <: Iterable[E]](left: T, shouldBeTrue: Boolean)
       extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
+
 
     /**
      * This method enables the following syntax:
@@ -2995,6 +2988,16 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+  }
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  sealed class ResultOfNotWordForCollection[E, T <: Collection[E]](left: T, shouldBeTrue: Boolean)
+      extends ResultOfNotWordForIterable[E, T](left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -3077,7 +3080,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfNotWordForMap[K, V](left: scala.collection.Map[K, V], shouldBeTrue: Boolean)
-      extends ResultOfNotWordForTraversable[(K, V), scala.collection.Map[K, V]](left, shouldBeTrue) {
+      extends ResultOfNotWordForCollection[(K, V), scala.collection.Map[K, V]](left, shouldBeTrue) {
 
 
     /**
@@ -3182,7 +3185,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfNotWordForSeq[E, T <: Seq[E]](left: T, shouldBeTrue: Boolean)
-      extends ResultOfNotWordForTraversable[E, T](left, shouldBeTrue) {
+      extends ResultOfNotWordForCollection[E, T](left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -4479,8 +4482,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * <p>
    * The <code>left should equal (right)</code> syntax works by calling <code>==</code> on the <code>left</code>
-   * value, passing in the <code>right</code> value, on every type except arrays. If both <code>left</code> and right are arrays, <code>deep</code>
-   * will be invoked on both <code>left</code> and <code>right</code> before comparing them with <em>==</em>. Thus, even though this expression
+   * value, passing in the <code>right</code> value, on every type except arrays. If <code>left</code> is an array, <code>deepEquals</code>
+   * will be invoked on <code>left</code>, passing in <code>right</code>. Thus, even though this expression
    * will yield false, because <code>Array</code>'s <code>equals</code> method compares object identity:
    * </p>
    * 
@@ -4489,7 +4492,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * </pre>
    *
    * <p>
-   * The following expression will <em>not</em> result in a <code>TestFailedException</code>, because ScalaTest will compare
+   * The following expression will <em>not</em> result in a <code>TestFailedException</code>, because <code>deepEquals</code> compares
    * the two arrays structurally, taking into consideration the equality of the array's contents:
    * </p>
    *
@@ -4506,12 +4509,22 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
   def equal(right: Any): Matcher[Any] =
       new Matcher[Any] {
         def apply(left: Any) =
-          MatchResult(
-            areEqualComparingArraysStructurally(left, right),
-            FailureMessages("didNotEqual", left, right),
-            FailureMessages("equaled", left, right)
-          )
+          left match {
+            case leftArray: Array[_] => 
+              MatchResult(
+                leftArray.deepEquals(right), // TODO: Change to leftArray.deep equals (right.deep)
+                FailureMessages("didNotEqual", left, right),
+                FailureMessages("equaled", left, right)
+              )
+            case _ => 
+              MatchResult(
+                left == right,
+                FailureMessages("didNotEqual", left, right),
+                FailureMessages("equaled", left, right)
+              )
+        }
       }
+
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -4763,11 +4776,20 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def ===(right: Any): Matcher[Any] =
       new Matcher[Any] {
         def apply(left: Any) =
-          MatchResult(
-            areEqualComparingArraysStructurally(left, right),
-            FailureMessages("wasNotEqualTo", left, right),
-            FailureMessages("wasEqualTo", left, right)
-          )
+          left match {
+            case leftArray: Array[_] =>
+              MatchResult(
+                leftArray.deepEquals(right),
+                FailureMessages("wasNotEqualTo", left, right),
+                FailureMessages("wasEqualTo", left, right)
+              )
+            case _ =>
+              MatchResult(
+                left == right,
+                FailureMessages("wasNotEqualTo", left, right),
+                FailureMessages("wasEqualTo", left, right)
+              )
+        }
       }
 
     /**
@@ -5098,9 +5120,15 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
                 FailureMessages("wasNotNull", right),
                 FailureMessages("midSentenceWasNull")
               )
+            case leftArray: Array[_] => 
+              MatchResult(
+                leftArray.deepEquals(right),
+                FailureMessages("wasNotEqualTo", left, right),
+                FailureMessages("wasEqualTo", left, right)
+              )
             case _ => 
               MatchResult(
-                areEqualComparingArraysStructurally(left, right),
+                left == right,
                 FailureMessages("wasNotEqualTo", left, right),
                 FailureMessages("wasEqualTo", left, right)
               )
@@ -5650,9 +5678,15 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
                 FailureMessages("midSentenceWasNull"),
                 FailureMessages("wasNotNull", right)
               )
+            case leftArray: Array[_] => 
+              MatchResult(
+                !leftArray.deepEquals(right),
+                FailureMessages("wasEqualTo", left, right),
+                FailureMessages("wasNotEqualTo", left, right)
+              )
             case _ => 
               MatchResult(
-                !areEqualComparingArraysStructurally(left, right),
+                left != right,
                 FailureMessages("wasEqualTo", left, right),
                 FailureMessages("wasNotEqualTo", left, right)
               )
@@ -5809,9 +5843,9 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                         ^
      * </pre>
      */
-    def contain[T](expectedElement: T): Matcher[Traversable[T]] = {
-      new Matcher[Traversable[T]] {
-        def apply(left: Traversable[T]) = {
+    def contain[T](expectedElement: T): Matcher[Iterable[T]] = {
+      new Matcher[Iterable[T]] {
+        def apply(left: Iterable[T]) = {
           MatchResult(
             !(left.exists(_ == expectedElement)),
             FailureMessages("containedExpectedElement", left, expectedElement),
@@ -6731,7 +6765,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method is ultimately invoked for objects that have a <code>size</code> property structure
      * of type <code>Int</code>,
      * but is of a type that is not handled by implicit conversions from nominal types such as
-     * <code>Traversable</code> and <code>java.util.Collection</code>.
+     * <code>scala.Collection</code> and <code>java.util.Collection</code>.
      * </p>
      */
     def size(expectedSize: Int) {
@@ -6756,7 +6790,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method is ultimately invoked for objects that have a <code>size</code> property structure
      * of type <code>Long</code>,
      * but is of a type that is not handled by implicit conversions from nominal types such as
-     * <code>Traversable</code> and <code>java.util.Collection</code>.
+     * <code>scala.Collection</code> and <code>java.util.Collection</code>.
      * </p>
      */
     def size(expectedSize: Long) {

@@ -35,7 +35,7 @@ class FixtureWordSpecSpec extends org.scalatest.Spec with PrivateMethodTester wi
       }
 
       expect(List("Something should do that", "Something should do this")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new FixtureWordSpec {
@@ -44,7 +44,7 @@ class FixtureWordSpecSpec extends org.scalatest.Spec with PrivateMethodTester wi
       }
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new FixtureWordSpec {
@@ -59,7 +59,7 @@ class FixtureWordSpecSpec extends org.scalatest.Spec with PrivateMethodTester wi
       }
 
       expect(List("Something should do this", "Something should do that")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
     }
 
@@ -669,7 +669,7 @@ class FixtureWordSpecSpec extends org.scalatest.Spec with PrivateMethodTester wi
       assert(e.expectedTestCount(Filter(None, Set("org.scalatest.SlowAsMolasses"))) === 0)
       assert(e.expectedTestCount(Filter()) === 2)
 
-      val f = new Suites(a, b, c, d, e)
+      val f = new SuperSuite(List(a, b, c, d, e))
       assert(f.expectedTestCount(Filter()) === 10)
     }
 

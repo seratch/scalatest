@@ -85,8 +85,8 @@ class SpecSuite extends FunSuite with SharedHelpers {
     val a = new MySpec
     a.execute()
     assert(a.testNames.size === 2)
-    assert(a.testNames.iterator.toList(0) === "should get invoked")
-    assert(a.testNames.iterator.toList(1) === "should also get invoked")
+    assert(a.testNames.elements.toList(0) === "should get invoked")
+    assert(a.testNames.elements.toList(1) === "should also get invoked")
   }
  
   test("plain-old specifier test names should include an enclosing describe string, separated by a space") {
@@ -98,8 +98,8 @@ class SpecSuite extends FunSuite with SharedHelpers {
     }
     val a = new MySpec
     assert(a.testNames.size === 2)
-    assert(a.testNames.iterator.toList(0) === "A Stack must allow me to pop")
-    assert(a.testNames.iterator.toList(1) === "A Stack must allow me to push")
+    assert(a.testNames.elements.toList(0) === "A Stack must allow me to pop")
+    assert(a.testNames.elements.toList(1) === "A Stack must allow me to push")
   }
 
   test("plain-old test names should properly nest plain-old descriptions in test names") {
@@ -115,12 +115,12 @@ class SpecSuite extends FunSuite with SharedHelpers {
     }
     val a = new MySpec
     assert(a.testNames.size === 2)
-    assert(a.testNames.iterator.toList(0) === "A Stack (when not empty) must allow me to pop")
-    assert(a.testNames.iterator.toList(1) === "A Stack (when not full) must allow me to push")
+    assert(a.testNames.elements.toList(0) === "A Stack (when not empty) must allow me to pop")
+    assert(a.testNames.elements.toList(1) === "A Stack (when not full) must allow me to push")
   }
   
-  test("should be able to mix in BeforeAndAfterEach with BeforeAndAfterAll without any problems") {
-    class MySpec extends Spec with ShouldMatchers with BeforeAndAfterEach with BeforeAndAfterAll {
+  test("should be able to mix in BeforeAndAfter without any problems") {
+    class MySpec extends Spec with ShouldMatchers with BeforeAndAfter {
       describe("A Stack") {
         describe("(when not empty)") {
           it("should allow me to pop") {}
@@ -411,15 +411,14 @@ class SpecSuite extends FunSuite with SharedHelpers {
 
   
   // Tests for good strings in report for nested-two-levels examples
-  test("Nested-two-levels plain-old specifiers should yield good strings in a TestSucceeded report") { //ZZZ
+  test("Nested-two-levels plain-old specifiers should yield good strings in a TestSucceeded report") {
     var infoReportHadCorrectTestName = false
     var infoReportHadCorrectSpecText = false
     var infoReportHadCorrectFormattedSpecText = false
     var reportHadCorrectTestName = false
     var reportHadCorrectSpecText = false
     var reportHadCorrectFormattedSpecText = false
-    var infoProvidedHasBeenInvokedOnce = false
-    var infoProvidedHasBeenInvokedTwice = false
+    var infoProvidedHasBeenInvoked = false
     var theOtherMethodHasBeenInvoked = false
     class MyReporter extends Reporter {
       def apply(event: Event) {
@@ -427,35 +426,20 @@ class SpecSuite extends FunSuite with SharedHelpers {
           case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, throwable, formatter, payload, threadName, timeStamp) =>
             // infoProvided should be invoked before the other method
             assert(!theOtherMethodHasBeenInvoked)
-            if (!infoProvidedHasBeenInvokedOnce) { 
-              infoProvidedHasBeenInvokedOnce = true
-              if (message.indexOf("My") >= 0)
-                infoReportHadCorrectTestName = true
-              formatter match {
-                case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
-                  if (rawText == "My")
-                    infoReportHadCorrectSpecText = true
-                  if (formattedText == "My")
-                    infoReportHadCorrectFormattedSpecText = true
-                case _ =>
-              }
-            }
-            else {
-              infoProvidedHasBeenInvokedTwice = true
-              if (message.indexOf("Spec") < 0)
-                infoReportHadCorrectTestName = false
-              formatter match {
-                case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
-                  if (rawText != "Spec")
-                    infoReportHadCorrectSpecText = false
-                  if (formattedText != "  Spec")
-                    infoReportHadCorrectFormattedSpecText = false
-                case _ =>
-              }
+            infoProvidedHasBeenInvoked = true
+            if (message.indexOf("My Spec") != -1)
+              infoReportHadCorrectTestName = true
+            formatter match {
+              case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
+                if (rawText == "My Spec")
+                  infoReportHadCorrectSpecText = true
+                if (formattedText == "My Spec")
+                  infoReportHadCorrectFormattedSpecText = true
+              case _ =>
             }
           case TestSucceeded(ordinal, suiteName, suiteClassName, testName, duration, formatter, rerunnable, payload, threadName, timeStamp) =>
             // infoProvided should be invoked before the this method
-            assert(infoProvidedHasBeenInvokedTwice)
+            assert(infoProvidedHasBeenInvoked)
             theOtherMethodHasBeenInvoked = true
             if (testName.indexOf("My Spec must start with proper words") != -1)
               reportHadCorrectTestName = true
@@ -463,7 +447,7 @@ class SpecSuite extends FunSuite with SharedHelpers {
               case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
                 if (rawText == "must start with proper words")
                   reportHadCorrectSpecText = true
-                if (formattedText == "  - must start with proper words")
+                if (formattedText == "- must start with proper words")
                   reportHadCorrectFormattedSpecText = true
               case _ =>
             }
@@ -488,15 +472,14 @@ class SpecSuite extends FunSuite with SharedHelpers {
     assert(infoReportHadCorrectFormattedSpecText)
   }
 
-  test("Nested-two-levels plain-old specifiers should yield good strings in a TestFailed report") { //YYY
+  test("Nested-two-levels plain-old specifiers should yield good strings in a testSucceeded report") {
     var infoReportHadCorrectTestName = false
     var infoReportHadCorrectSpecText = false
     var infoReportHadCorrectFormattedSpecText = false
     var reportHadCorrectTestName = false
     var reportHadCorrectSpecText = false
     var reportHadCorrectFormattedSpecText = false
-    var infoProvidedHasBeenInvokedOnce = false
-    var infoProvidedHasBeenInvokedTwice = false
+    var infoProvidedHasBeenInvoked = false
     var theOtherMethodHasBeenInvoked = false
     class MyReporter extends Reporter {
       def apply(event: Event) {
@@ -504,35 +487,81 @@ class SpecSuite extends FunSuite with SharedHelpers {
           case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, throwable, formatter, payload, threadName, timeStamp) =>
             // infoProvided should be invoked before the other method
             assert(!theOtherMethodHasBeenInvoked)
-            if (!infoProvidedHasBeenInvokedOnce) { 
-              infoProvidedHasBeenInvokedOnce = true
-              if (message.indexOf("My") >= 0)
-                infoReportHadCorrectTestName = true
-              formatter match {
-                case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
-                  if (rawText == "My")
-                    infoReportHadCorrectSpecText = true
-                  if (formattedText == "My")
-                    infoReportHadCorrectFormattedSpecText = true
-                case _ =>
-              }
+            infoProvidedHasBeenInvoked = true
+            if (message.indexOf("My Spec") != -1)
+              infoReportHadCorrectTestName = true
+            formatter match {
+              case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
+                if (rawText == "My Spec")
+                  infoReportHadCorrectSpecText = true
+                if (formattedText == "My Spec")
+                  infoReportHadCorrectFormattedSpecText = true
+              case _ =>
             }
-            else {
-              infoProvidedHasBeenInvokedTwice = true
-              if (message.indexOf("Spec") < 0)
-                infoReportHadCorrectTestName = false
-              formatter match {
-                case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
-                  if (rawText != "Spec")
-                    infoReportHadCorrectSpecText = false
-                  if (formattedText != "  Spec")
-                    infoReportHadCorrectFormattedSpecText = false
-                case _ =>
-              }
+          case TestSucceeded(ordinal, suiteName, suiteClassName, testName, duration, formatter, rerunnable, payload, threadName, timeStamp) =>
+            // infoProvided should be invoked before the this method
+            assert(infoProvidedHasBeenInvoked)
+            theOtherMethodHasBeenInvoked = true
+            if (testName.indexOf("My Spec must start with proper words") != -1)
+              reportHadCorrectTestName = true
+            formatter match {
+              case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
+                if (rawText == "must start with proper words")
+                  reportHadCorrectSpecText = true
+                if (formattedText == "- must start with proper words")
+                  reportHadCorrectFormattedSpecText = true
+              case _ =>
+            }
+          case _ =>
+        }
+      }
+    }
+    class MySpec extends Spec with ShouldMatchers {
+      describe("My") {
+        describe("Spec") {
+          it("must start with proper words") {}
+        }
+      }
+    }
+    val a = new MySpec
+    a.run(None, new MyReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
+    assert(reportHadCorrectTestName)
+    assert(reportHadCorrectSpecText)
+    assert(reportHadCorrectFormattedSpecText)
+    assert(infoReportHadCorrectTestName)
+    assert(infoReportHadCorrectSpecText)
+    assert(infoReportHadCorrectFormattedSpecText)
+  }
+
+  test("Nested-two-levels plain-old specifiers should yield good strings in a TestFailed report") {
+    var infoReportHadCorrectTestName = false
+    var infoReportHadCorrectSpecText = false
+    var infoReportHadCorrectFormattedSpecText = false
+    var reportHadCorrectTestName = false
+    var reportHadCorrectSpecText = false
+    var reportHadCorrectFormattedSpecText = false
+    var infoProvidedHasBeenInvoked = false
+    var theOtherMethodHasBeenInvoked = false
+    class MyReporter extends Reporter {
+      def apply(event: Event) {
+        event match {
+          case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, throwable, formatter, payload, threadName, timeStamp) =>
+            // infoProvided should be invoked before the other method
+            assert(!theOtherMethodHasBeenInvoked)
+            infoProvidedHasBeenInvoked = true
+            if (message.indexOf("My Spec") != -1)
+              infoReportHadCorrectTestName = true
+            formatter match {
+              case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
+                if (rawText == "My Spec")
+                  infoReportHadCorrectSpecText = true
+                if (formattedText == "My Spec")
+                  infoReportHadCorrectFormattedSpecText = true
+              case _ =>
             }
           case event: TestFailed =>
             // infoProvided should be invoked before the this method
-            assert(infoProvidedHasBeenInvokedTwice)
+            assert(infoProvidedHasBeenInvoked)
             theOtherMethodHasBeenInvoked = true
             if (event.testName.indexOf("My Spec must start with proper words") != -1)
               reportHadCorrectTestName = true
@@ -540,7 +569,7 @@ class SpecSuite extends FunSuite with SharedHelpers {
               case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
                 if (rawText == "must start with proper words")
                   reportHadCorrectSpecText = true
-                if (formattedText == "  - must start with proper words")
+                if (formattedText == "- must start with proper words")
                   reportHadCorrectFormattedSpecText = true
               case _ =>
             }
@@ -1104,7 +1133,7 @@ class SpecSuite extends FunSuite with SharedHelpers {
  
   // Testing Shared behaviors
   test("a shared specifier invoked with 'should behave like a' should get invoked") {
-    class MySpec extends Spec with BeforeAndAfterEach with BeforeAndAfterAll {
+    class MySpec extends Spec with BeforeAndAfter {
       var sharedExampleInvoked = false
       def invocationVerifier(i: Int) {
         it("should be invoked") {
@@ -1127,7 +1156,7 @@ class SpecSuite extends FunSuite with SharedHelpers {
   }
   
   test("two examples in a shared behavior should get invoked") {
-    class MySpec extends Spec with BeforeAndAfterEach with BeforeAndAfterAll {
+    class MySpec extends Spec with BeforeAndAfter {
       var sharedExampleInvoked = false
       var sharedExampleAlsoInvoked = false
       def invocationVerifier(i: Int) {
@@ -1223,7 +1252,7 @@ class SpecSuite extends FunSuite with SharedHelpers {
         }
       }
     }
-    class MySpec extends Spec with BeforeAndAfterEach with BeforeAndAfterAll {
+    class MySpec extends Spec with BeforeAndAfter {
       var sharedExampleInvoked = false
       def invocationVerifier(i: Int) {
         it("it should be invoked") {

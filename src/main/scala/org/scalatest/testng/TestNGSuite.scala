@@ -19,11 +19,6 @@ import org.scalatest._
 import org.scalatest.Suite
 import org.scalatest.TestRerunner
 import org.scalatest.events._
-import Suite.getIndentedText
-import Suite.formatterForSuiteAborted
-import Suite.formatterForSuiteStarting
-import Suite.formatterForSuiteCompleted
-import events.MotionToSuppress
 
 import org.testng.TestNG
 import org.testng.TestListenerAdapter
@@ -48,13 +43,13 @@ import org.testng.TestListenerAdapter
  *   var sb: StringBuilder = _
  *   var lb: ListBuffer[String] = _
  * 
- *   @ Configuration(beforeTestMethod = true)
+ *   @ Configuration { val beforeTestMethod = true }
  *   def setUpFixture() {
  *     sb = new StringBuilder("ScalaTest is ")
  *     lb = new ListBuffer[String]
  *   }
  * 
- *   @ Test(invocationCount = 3)
+ *   @ Test { val invocationCount = 3 }
  *   def easyTest() {
  *     sb.append("easy!")
  *     assert(sb.toString === "ScalaTest is easy!")
@@ -62,7 +57,7 @@ import org.testng.TestListenerAdapter
  *     lb += "sweet"
  *   }
  * 
- *   @ Test(groups = Array("com.mycompany.groups.SlowTest"))
+ *   @ Test { val groups = Array("com.mycompany.groups.SlowTest") }
  *   def funTest() {
  *     sb.append("fun!")
  *     assert(sb.toString === "ScalaTest is fun!")
@@ -103,7 +98,7 @@ trait TestNGSuite extends Suite { thisSuite =>
     
     runTestNG(testName, reporter, filter, tracker)
   }
-
+  
   /**
    * Runs TestNG with no test name, no groups. All tests in the class will be executed.
    * @param   reporter   the reporter to be notified of test events (success, failure, etc)
@@ -111,7 +106,7 @@ trait TestNGSuite extends Suite { thisSuite =>
   private[testng] def runTestNG(reporter: Reporter, tracker: Tracker) {
     runTestNG(None, reporter, Filter(), tracker)
   }
-
+ 
   /**
    * Runs TestNG, running only the test method with the given name. 
    * @param   testName   the name of the method to run
@@ -218,8 +213,6 @@ trait TestNGSuite extends Suite { thisSuite =>
     
     // TODO: Put the tracker in an atomic, because TestNG can go multithreaded?
 
-    val report = reporter
-
     import org.testng.ITestContext
     import org.testng.ITestResult
     
@@ -232,8 +225,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      * and/or chat with Cedric to determine if its possible to get this number from TestNG.
      */
     override def onStart(itc: ITestContext) = {
-      val formatter = formatterForSuiteStarting(thisSuite)
-      report(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), formatter))
+      reporter(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName)))
     }
 
     /**
@@ -242,8 +234,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      * in the ITestContext object into ScalaTest Reports and fire InfoProvided
      */
     override def onFinish(itc: ITestContext) = {
-      val formatter = formatterForSuiteCompleted(thisSuite)
-      report(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), None, formatter))
+      reporter(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName)))
     }
     
     /**
@@ -251,8 +242,8 @@ trait TestNGSuite extends Suite { thisSuite =>
      * and pass it to the Reporter.
      */
     override def onTestStart(result: ITestResult) = {
-      report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), result.getName + params(result),
-          Some(MotionToSuppress), Some(new TestRerunner(className, result.getName))))
+      reporter(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), result.getName + params(result),
+          None, Some(new TestRerunner(className, result.getName))))
     }
 
     /**
@@ -260,10 +251,8 @@ trait TestNGSuite extends Suite { thisSuite =>
      * a report and pass it to the Reporter.
      */
     override def onTestSuccess(result: ITestResult) = {
-      val testName = result.getName + params(result)
-      val formatter = getIndentedText(testName, 1, true)
-      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName,
-          None, Some(formatter), Some(new TestRerunner(className, result.getName)))) // Can I add a duration?
+      reporter(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), result.getName + params(result),
+          None, None, Some(new TestRerunner(className, result.getName)))) // Can I add a duration?
     }
 
     /**
@@ -271,9 +260,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      * a report and pass it to the Reporter.
      */
     override def onTestSkipped(result: ITestResult) = {
-      val testName = result.getName + params(result)
-      val formatter = getIndentedText(testName, 1, true)
-      report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(formatter)))
+      reporter(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), result.getName + params(result)))
     }
 
     /**
@@ -283,9 +270,7 @@ trait TestNGSuite extends Suite { thisSuite =>
       val throwableOrNull = result.getThrowable
       val throwable = if (throwableOrNull != null) Some(throwableOrNull) else None
       val message = if (throwableOrNull != null && throwableOrNull.getMessage != null) throwableOrNull.getMessage else Resources("testNGConfigFailed")
-      val testName = result.getName + params(result)
-      val formatter = getIndentedText(testName, 1, true)
-      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, throwable, None, Some(formatter), Some(new TestRerunner(className, result.getName)))) // Can I add a duration?
+      reporter(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), result.getName + params(result), throwable, None, None, Some(new TestRerunner(className, result.getName)))) // Can I add a duration?
     }
 
     /**
@@ -298,8 +283,7 @@ trait TestNGSuite extends Suite { thisSuite =>
       val throwableOrNull = result.getThrowable
       val throwable = if (throwableOrNull != null) Some(throwableOrNull) else None
       val message = if (throwableOrNull != null && throwableOrNull.getMessage != null) throwableOrNull.getMessage else Resources("testNGConfigFailed")
-      val formatter = formatterForSuiteAborted(thisSuite, message)
-      report(SuiteAborted(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), throwable, None, formatter))
+      reporter(SuiteAborted(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), throwable))
     }
 
     /**
@@ -309,8 +293,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      * show up in your face on the UI, and so doesn't clutter the UI. 
      */
     override def onConfigurationSuccess(result: ITestResult) = { // TODO: Work on this report
-      // For now don't print anything. Succeed with silence. Is adding clutter.
-      // report(InfoProvided(tracker.nextOrdinal(), result.getName, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None))))
+      reporter(InfoProvided(tracker.nextOrdinal(), result.getName, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None))))
     }
 
     private def params(itr: ITestResult): String = {
