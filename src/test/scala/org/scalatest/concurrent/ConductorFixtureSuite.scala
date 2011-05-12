@@ -21,158 +21,54 @@ import org.scalatest.matchers.ShouldMatchers
 import _root_.java.util.concurrent.{Callable, CountDownLatch}
 import java.lang.Thread.State._
 
-// On Mac got: "ABCFEDGHI" was not equal to "ABCDEFGHI"
-// Finally Got: "ABDEFGHI" was not equal to "ABCDEFGHI" Didn't get a C, so that means
-// one thread is not seeing the other thread's changes. A concurrency bug in the test.
-/*
 class VolatileString {
   @volatile private var value = ""
   def s = value
   def s_=(newValue: String) { value = newValue }
 }
-*/
 
 class ConductorFixtureSuite extends FixtureFunSuite with ConductorFixture with ShouldMatchers {
     
-  @volatile var aa = false
-  @volatile var bb = false
-  @volatile var cc = false
-  @volatile var dd = false
-  @volatile var ee = false
-  @volatile var ff = false
-  @volatile var gg = false
-  @volatile var hh = false
-  @volatile var ii = false
-
-  // On Mac, got "BACDEFGHI" was not equal to "ABCDEFGHI"
-  // And got: "ABDCEFGHI" was not equal to "ABCDEFGHI"
-  // And "ABCFDEGHI" was not equal to "ABCDEFGHI"
   test("metronome order") { conductor => import conductor._
+
+    val volatileString = new VolatileString
+    import volatileString._
 
     thread("t1") {
       waitForBeat(1)
-      aa should be (false)
-      bb should be (false)
-      cc should be (false)
-      dd should be (false)
-      ee should be (false)
-      ff should be (false)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      aa = true
+      s = s + "A"
 
       waitForBeat(3)
-      aa should be (true)
-      bb should be (true)
-      cc should be (false)
-      dd should be (false)
-      ee should be (false)
-      ff should be (false)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      cc = true
+      s = s + "C"
 
       waitForBeat(6)
-      aa should be (true)
-      bb should be (true)
-      cc should be (true)
-      dd should be (true)
-      ee should be (true)
-      ff should be (false)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      ff = true
+      s = s + "F"
     }
 
     thread("t2") {
       waitForBeat(2)
-      aa should be (true)
-      bb should be (false)
-      cc should be (false)
-      dd should be (false)
-      ee should be (false)
-      ff should be (false)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      bb = true
+      s = s + "B"
 
       waitForBeat(5)
-      aa should be (true)
-      bb should be (true)
-      cc should be (true)
-      dd should be (true)
-      ee should be (false)
-      ff should be (false)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      ee = true
+      s = s + "E"
 
       waitForBeat(8)
-      aa should be (true)
-      bb should be (true)
-      cc should be (true)
-      dd should be (true)
-      ee should be (true)
-      ff should be (true)
-      gg should be (true)
-      hh should be (false)
-      ii should be (false)
-      hh = true
+      s = s + "H"
     }
 
     thread("t3") {
       waitForBeat(4)
-      aa should be (true)
-      bb should be (true)
-      cc should be (true) // this failed once
-      dd should be (false)
-      ee should be (false)
-      ff should be (false)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      dd = true
+      s = s + "D"
 
       waitForBeat(7)
-      aa should be (true)
-      bb should be (true)
-      cc should be (true)
-      dd should be (true)
-      ee should be (true)
-      ff should be (true)
-      gg should be (false)
-      hh should be (false)
-      ii should be (false)
-      gg = true
+      s = s + "G"
 
       waitForBeat(9)
-      aa should be (true)
-      bb should be (true)
-      cc should be (true)
-      dd should be (true)
-      ee should be (true)
-      ff should be (true)
-      gg should be (true)
-      hh should be (true)
-      ii should be (false)
-      ii = true
+      s = s + "I"
     }
 
     whenFinished {
-      aa should be (true)
-      bb should be (true)
-      cc should be (true)
-      dd should be (true)
-      ee should be (true)
-      ff should be (true)
-      gg should be (true)
-      hh should be (true)
-      ii should be (true)
+      s should be ("ABCDEFGHI") // "Threads were not called in correct order"
     }
   }
 
@@ -191,7 +87,7 @@ class ConductorFixtureSuite extends FixtureFunSuite with ConductorFixture with S
 
     thread {
       waitForBeat(1)
-      c.getCount should be (1) // Failed with 2 was not equal to 1
+      c.getCount should be (1)
       waitForBeat(2) // advances quickly
       c.getCount should be (1)
       c.countDown()
@@ -208,28 +104,25 @@ class ConductorFixtureSuite extends FixtureFunSuite with ConductorFixture with S
   // or just wake up temporarily. So even though this fails very occasionally, it probably
   // doesn't indicate a bug. (The ConductorMethodsSuite version of this failed on the
   // Azul server after I cleaned up the bugs in Conductor.)
-  // I got it again on the Mac. Same error message. Decided to go ahead and allow RUNNABLE
-  // in the test, because it is actually possible. - bv 4/8/11
   test("wait for beat blocks thread") { conductor => import conductor._
 
     val t1 = thread {waitForBeat(2)}
 
     thread {
       waitForBeat(1)
-      t1.getState should (be (WAITING) or be (BLOCKED) or be (RUNNABLE))
+      t1.getState should (be(WAITING) or be(BLOCKED))
     }
   }
 
   // On Mac, failed with RUNNABLE was not equal to TERMINATED
-  // Same thing. Things can show up as RUNNABLE spuriously, so allow it in the test - bv 4/8/11
   test("thread terminates before finish called") { conductor => import conductor._
 
     val t1 = thread {1 should be (1)}
     val t2 = thread {1 should be (1)}
 
     whenFinished {
-      t1.getState should (be (TERMINATED) or be (RUNNABLE))
-      t2.getState should (be (TERMINATED) or be (RUNNABLE))
+      t1.getState should be (TERMINATED)
+      t2.getState should be (TERMINATED)
     }
   }
 
@@ -267,7 +160,7 @@ class ConductorFixtureSuite extends FixtureFunSuite with ConductorFixture with S
        "prior to conduct being called.") { conductor => import conductor._
     val anotherConductor = new Conductor
     val t = anotherConductor.thread{ 1 should be (1) }
-    thread{ t.getState should (be (WAITING) or be (RUNNABLE)) } // Got RUNNABLE. Decided to accept it.
+    thread{ t.getState should be (WAITING) }
   }
 
   test("nested thread calls result in a running thread that is allowed to execute immediately") (pending)

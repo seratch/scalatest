@@ -22,19 +22,17 @@ import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.StackDepthExceptionHelper.getStackDepth
 import org.scalatest.events._
 import Suite.anErrorThatShouldCauseAnAbort
-import FunSuite.IgnoreTagName 
-import Suite.checkRunTestParamsForNull
 
 /**
  * A sister trait to <code>org.scalatest.FunSuite</code> that can pass a fixture object into its tests.
  *
  * <p>
  * This trait behaves similarly to trait <code>org.scalatest.FunSuite</code>, except that tests may take a fixture object. The type of the
- * fixture object passed is defined by the abstract <code>FixtureParam</code> type, which is declared as a member of this trait (inherited
+ * fixture object passed is defined by the abstract <code>Fixture</code> type, which is declared as a member of this trait (inherited
  * from supertrait <code>FixtureSuite</code>).
  * This trait also inherits the abstract method <code>withFixture</code> from supertrait <code>FixtureSuite</code>. The <code>withFixture</code> method
  * takes a <code>OneArgTest</code>, which is a nested trait defined as a member of supertrait <code>FixtureSuite</code>.
- * <code>OneArgTest</code> has an <code>apply</code> method that takes a <code>FixtureParam</code>.
+ * <code>OneArgTest</code> has an <code>apply</code> method that takes a <code>Fixture</code>.
  * This <code>apply</code> method is responsible for running a test.
  * This trait's <code>runTest</code> method delegates the actual running of each test to <code>withFixture</code>, passing
  * in the test code to run via the <code>OneArgTest</code> argument. The <code>withFixture</code> method (abstract in this trait) is responsible
@@ -46,9 +44,9 @@ import Suite.checkRunTestParamsForNull
  * </p>
  * 
  * <ol>
- * <li>define the type of the fixture object by specifying type <code>FixtureParam</code></li>
+ * <li>define the type of the fixture object by specifying type <code>Fixture</code></li>
  * <li>define the <code>withFixture</code> method</li>
- * <li>write tests that take a <code>FixtureParam</code> (You can also define tests that don't take a <code>FixtureParam</code>.)</li>
+ * <li>write tests that take a <code>Fixture</code> (You can also define tests that don't take a <code>Fixture</code>.)</li>
  * </ol>
  *
  * <p>
@@ -272,7 +270,7 @@ import Suite.checkRunTestParamsForNull
  *     )
  *
  *     // Grab the file name from the configMap
- *     val FileName = test.configMap("TempFileName").asInstanceOf[String]
+ *     val FileName = test.configMap("TempFileName")
  *
  *     // Set up the temp file needed by the test
  *     val writer = new FileWriter(FileName)
@@ -329,11 +327,11 @@ import Suite.checkRunTestParamsForNull
  *
  *    test("hello") { configMap =>
  *      // Use the configMap passed to runTest in the test
- *      assert(configMap.contains("hello"))
+ *      assert(configMap.contains("hello")
  *    }
  *
  *    test("world") { configMap =>
- *      assert(configMap.contains("world"))
+ *      assert(configMap.contains("world")
  *    }
  *  }
  * </pre>
@@ -347,8 +345,64 @@ import Suite.checkRunTestParamsForNull
  */
 trait FixtureFunSuite extends FixtureSuite { thisSuite =>
 
-  private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFunSuiteMod", "FixtureFunSuite")
-  import engine._
+  private val IgnoreTagName = "org.scalatest.Ignore"
+
+  private abstract class FunNode
+  private case class TestNode(testName: String, fun: FixtureParam => Any) extends FunNode
+  private case class InfoNode(message: String) extends FunNode
+
+  // Access to the testNamesList, testsMap, and tagsMap must be synchronized, because the test methods are invoked by
+  // the primary constructor, but testNames, tags, and runTest get invoked directly or indirectly
+  // by run. When running tests concurrently with ScalaTest Runner, different threads can
+  // instantiate and run the suite. Instead of synchronizing, I put them in an immutable Bundle object (and
+  // all three collections--testNamesList, testsMap, and tagsMap--are immuable collections), then I put the Bundle
+  // in an AtomicReference. Since the expected use case is the test method will be called
+  // from the primary constructor, which will be all done by one thread, I just in effect use optimistic locking on the Bundle.
+  // If two threads ever called test at the same time, they could get a ConcurrentModificationException.
+  // Test names are in reverse order of test registration method invocations
+  private class Bundle private(
+    val testNamesList: List[String],
+    val doList: List[FunNode],
+    val testsMap: Map[String, TestNode],
+    val tagsMap: Map[String, Set[String]],
+    val registrationClosed: Boolean
+  ) {
+    def unpack = (testNamesList, doList, testsMap, tagsMap, registrationClosed)
+  }
+
+  private object Bundle {
+    def apply(
+      testNamesList: List[String],
+      doList: List[FunNode],
+      testsMap: Map[String, TestNode],
+      tagsMap: Map[String, Set[String]],
+      registrationClosed: Boolean
+    ): Bundle =
+      new Bundle(testNamesList, doList,testsMap, tagsMap, registrationClosed)
+  }
+
+  private val atomic = new AtomicReference[Bundle](Bundle(List(), List(), Map(), Map(), false))
+
+  private def updateAtomic(oldBundle: Bundle, newBundle: Bundle) {
+    val shouldBeOldBundle = atomic.getAndSet(newBundle)
+    if (!(shouldBeOldBundle eq oldBundle))
+      throw new ConcurrentModificationException(Resources("concurrentFixtureFunSuiteBundleMod"))
+  }
+
+  private class RegistrationInformer extends Informer {
+    def apply(message: String) {
+      if (message == null)
+        throw new NullPointerException
+      val oldBundle = atomic.get
+      var (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+      doList ::= InfoNode(message)
+      updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, registrationClosed))
+    }
+  }
+
+  // The informer will be a registration informer until run is called for the first time. (This
+  // is the registration phase of a FixtureFunSuite's lifecycle.)
+  private final val atomicInformer = new AtomicReference[Informer](new RegistrationInformer)
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
@@ -359,6 +413,16 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
+
+  private val zombieInformer =
+    new Informer {
+      private val complaint = Resources("cantCallInfoNow", "FixtureFunSuite")
+      def apply(message: String) {
+        if (message == null)
+          throw new NullPointerException
+        throw new IllegalStateException(complaint)
+      }
+    }
 
   /**
    * Register a test with the specified name, optional tags, and function value that takes no arguments.
@@ -374,8 +438,31 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    * @throws NullPointerException if <code>testName</code> or any passed test tag is <code>null</code>
    */
-  protected def test(testName: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerTest(testName, testFun, "testCannotAppearInsideAnotherTest", "FixtureFunSuite.scala", "test", testTags: _*)
+  protected def test(testName: String, testTags: Tag*)(f: FixtureParam => Any) {
+
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("testCannotAppearInsideAnotherTest"), getStackDepth("FunSuite.scala", "test"))
+
+    if (atomic.get.testsMap.keySet.contains(testName))
+      throw new DuplicateTestNameException(Resources("duplicateTestName", testName), getStackDepth("FunSuite.scala", "test"))
+
+    val oldBundle = atomic.get
+    var (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+
+    val testNode = TestNode(testName, f)
+    testsMap += (testName -> testNode)
+    testNamesList ::= testName
+    doList ::= testNode
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    if (!tagNames.isEmpty)
+      tagsMap += (testName -> tagNames)
+
+    updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, registrationClosed))
   }
 
   /**
@@ -393,8 +480,25 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    */
-  protected def ignore(testName: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerIgnoredTest(testName, testFun, "ignoreCannotAppearInsideATest", "FixtureFunSuite.scala", "ignore", testTags: _*)
+  protected def ignore(testName: String, testTags: Tag*)(f: FixtureParam => Any) {
+
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("ignoreCannotAppearInsideATest"), getStackDepth("FunSuite.scala", "ignore"))
+
+    test(testName)(f) // Call test without passing the tags
+
+    val oldBundle = atomic.get
+    var (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    tagsMap += (testName -> (tagNames + IgnoreTagName))
+
+    updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, registrationClosed))
   }
 
   /**
@@ -410,6 +514,7 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
+  // runTest should throw IAE if a test name is passed that doesn't exist. Looks like right now it just reports a test failure.
   /**
    * Run a test. This trait's implementation runs the test registered with the name specified by <code>testName</code>.
    *
@@ -417,27 +522,86 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * @param reporter the <code>Reporter</code> to which results will be reported
    * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
    * @param configMap a <code>Map</code> of properties that can be used by the executing <code>Suite</code> of tests.
-   * @throws IllegalArgumentException if <code>testName</code> is defined but a test with that name does not exist on this <code>FixtureFunSuite</code>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
   protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    def invokeWithFixture(theTest: TestLeaf) {
-      theTest.testFun match {
-        case wrapper: NoArgTestWrapper[_] =>
-          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
-        case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
-      }
-    }
+    if (testName == null || reporter == null || stopper == null || configMap == null)
+      throw new NullPointerException
 
-    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
+    val stopRequested = stopper
+    val report = wrapReporterIfNecessary(reporter)
+
+    // Create a Rerunner if the FunSuite has a no-arg constructor
+    val hasPublicNoArgConstructor = org.scalatest.Suite.checkForPublicNoArgConstructor(getClass)
+
+    val rerunnable =
+      if (hasPublicNoArgConstructor)
+        Some(new TestRerunner(getClass.getName, testName))
+      else
+        None
+
+    val testStartTime = System.currentTimeMillis
+    report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, None, rerunnable))
+
+    try {
+
+      val theTest = atomic.get.testsMap(testName)
+
+      val informerForThisTest =
+        new ConcurrentInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName))) {
+          def apply(message: String) {
+            if (message == null)
+              throw new NullPointerException
+            report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread))
+          }
+        }
+
+      val oldInformer = atomicInformer.getAndSet(informerForThisTest)
+      var swapAndCompareSucceeded = false
+      try {
+        theTest.fun match {
+          case wrapper: NoArgTestWrapper[_] =>
+            withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
+          case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
+        }
+      }
+      finally {
+        val shouldBeInformerForThisTest = atomicInformer.getAndSet(oldInformer)
+        swapAndCompareSucceeded = shouldBeInformerForThisTest eq informerForThisTest
+      }
+      if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+        throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
+
+      val duration = System.currentTimeMillis - testStartTime
+      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(duration), None, rerunnable))
+    }
+    catch {
+      case _: TestPendingException =>
+        report(TestPending(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName))
+      case e if !anErrorThatShouldCauseAnAbort(e) =>
+        val duration = System.currentTimeMillis - testStartTime
+        handleFailedTest(e, false, testName, rerunnable, report, tracker, duration)
+      case e => throw e
+    }
+  }
+
+  private def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+      rerunnable: Option[Rerunner], reporter: Reporter, tracker: Tracker, duration: Long) {
+
+    val message =
+      if (throwable.getMessage != null) // [bv: this could be factored out into a helper method]
+        throwable.getMessage
+      else
+        throwable.toString
+
+    reporter(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), None, rerunnable))
   }
 
   /**
-   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>FixtureFunSuite</code> belong, and values
-   * the <code>Set</code> of test names that belong to each tag. If this <code>FixtureFunSuite</code> contains no tags, this method returns an empty
-   * <code>Map</code>.
+   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>FunSuite</code> belong, and values
+   * the <code>Set</code> of test names that belong to each tag. If this <code>FunSuite</code> contains no tags, this method returns an empty <code>Map</code>.
    *
    * <p>
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to
@@ -449,13 +613,85 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
   protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+
+    val stopRequested = stopper
+
+    // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+    // so that exceptions are caught and transformed
+    // into error messages on the standard error stream.
+    val report = wrapReporterIfNecessary(reporter)
+
+    // If a testName is passed to run, just run that, else run the tests returned
+    // by testNames.
+    testName match {
+      case Some(tn) => runTest(tn, report, stopRequested, configMap, tracker)
+      case None =>
+
+        val doList = atomic.get.doList.reverse
+        for (node <- doList) {
+          node match {
+            case InfoNode(message) => info(message)
+            case TestNode(tn, _) =>
+              val (filterTest, ignoreTest) = filter(tn, tags)
+              if (!filterTest)
+                if (ignoreTest)
+                  report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), tn))
+                else
+                  runTest(tn, report, stopRequested, configMap, tracker)
+          }
+        }
+    }
   }
 
   override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
+    val stopRequested = stopper
+
+    // Set the flag that indicates registration is closed (because run has now been invoked),
+    // which will disallow any further invocations of "test" or "ignore" with
+    // an RegistrationClosedException.
+    val oldBundle = atomic.get
+    val (testNamesList, doList, testsMap, tagsMap, registrationClosed) = oldBundle.unpack
+    if (!registrationClosed)
+      updateAtomic(oldBundle, Bundle(testNamesList, doList, testsMap, tagsMap, true))
+
+    val report = wrapReporterIfNecessary(reporter)
+
+    val informerForThisSuite =
+      new ConcurrentInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)) {
+        def apply(message: String) {
+          if (message == null)
+            throw new NullPointerException
+          report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread))
+        }
+      }
+
+    atomicInformer.set(informerForThisSuite)
+    var swapAndCompareSucceeded = false
+    try {
+      super.run(testName, report, stopRequested, filter, configMap, distributor, tracker)
+    }
+    finally {
+      val shouldBeInformerForThisSuite = atomicInformer.getAndSet(zombieInformer)
+      swapAndCompareSucceeded = shouldBeInformerForThisSuite eq informerForThisSuite
+    }
+    if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+      throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
   }
 
   /**
@@ -482,8 +718,8 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
 
   /**
    * Implicitly converts a function that takes no parameters and results in <code>PendingNothing</code> to
-   * a function from <code>FixtureParam</code> to <code>Any</code>, to enable pending tests to registered as by-name parameters
-   * by methods that require a test function that takes a <code>FixtureParam</code>.
+   * a function from <code>Fixture</code> to <code>Any</code>, to enable pending tests to registered as by-name parameters
+   * by methods that require a test function that takes a <code>Fixture</code>.
    *
    * <p>
    * This method makes it possible to write pending tests as simply <code>(pending)</code>, without needing
@@ -496,8 +732,8 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
 
   /**
    * Implicitly converts a function that takes no parameters and results in <code>Any</code> to
-   * a function from <code>FixtureParam</code> to <code>Any</code>, to enable no-arg tests to registered
-   * by methods that require a test function that takes a <code>FixtureParam</code>.
+   * a function from <code>Fixture</code> to <code>Any</code>, to enable no-arg tests to registered
+   * by methods that require a test function that takes a <code>Fixture</code>.
    */
   protected implicit def convertNoArgToFixtureFunction(fun: () => Any): (FixtureParam => Any) =
     new NoArgTestWrapper(fun)

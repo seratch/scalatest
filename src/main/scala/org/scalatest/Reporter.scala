@@ -92,18 +92,19 @@ import org.scalatest.events.Event
  * <h2>Extensibility</h2>
  *
  * <p>
- * You can create classes that extend <code>Reporter</code> to report test results in custom ways, and to
+ * You can create classes that extend <code>ReportFunction</code> to report test results in custom ways, and to
  * report custom information passed as an event "payload." For more information on the latter
  * use case, see the <em>Extensibility</em> section of the <a href="Event.html"><code>Event</code> documentation</a>.
  * </p>
  *
  * <p>
- * <code>Reporter</code> classes can handle events in any manner, including doing nothing.
+ * Reporter classes can handle events in any manner, including doing nothing.
+ * For convenience, trait <code>ReporterFunction</code> includes a default implentation of <code>apply</code> that does nothing.
  * </p>
  *
  * @author Bill Venners
  */
-trait Reporter /* extends (Event => Unit) */ {
+trait Reporter extends (Event => Unit) {
 
   /**
    * Invoked to report an event that subclasses may wish to report in some way to the user.
@@ -123,33 +124,7 @@ trait Reporter /* extends (Event => Unit) */ {
    */
 }
 
-/**
- * Companion object to Reporter that holds a deprecated implicit conversion.
- */
-object Reporter {
-
-  /**
-   * Converts a <code>Reporter</code> to a function type that prior to the ScalaTest 1.5 release the
-   * <code>Reporter</code> extended.
-   *
-   * <p>
-   * Prior to ScalaTest 1.5, <code>Reporter</code> extended function type <code>(Event) => Unit</code>.
-   * This inheritance relationship was severed in 1.5 to make it possible to implement <code>Reporter</code>s in Java, a request by an IDE
-   * vendor to isolate their ScalaTest integration from binary incompatibility between different Scala/ScalaTest releases.
-   * To make a trait easily implementable in Java, it needs to have no concrete methods. <code>Reporter</code> itself does not declare
-   * any concrete methods, but <code>Function1</code> does.
-   * </p>
-   *
-   * <p>
-   * This implicit conversion was added in ScalaTest 1.5 to avoid breaking any source code that was actually using
-   * <code>Reporter</code> as an <code>(Event) => Unit</code> function. It is unlikely anyone was actually doing that, but if you were
-   * and now get the deprecation warning, please email scalatest-users@googlegroups.com if you believe this implicit conversion should
-   * be retained. If no one steps forward with a compelling justification, it will be removed in a future version of ScalaTest.
-   * </p>
-   */
-  @deprecated("See the documentation for Reporter.convertReporterToFunction for information")
-  implicit def convertReporterToFunction(repo: Reporter): (Event) => Unit =
-    (e: Event) => repo(e)
+private[scalatest] object Reporter {
 
   private[scalatest] def indentStackTrace(stackTrace: String, level: Int): String = {
     val indentation = if (level > 0) "  " * level else ""

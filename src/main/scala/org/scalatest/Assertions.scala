@@ -200,7 +200,7 @@ import Assertions.areEqualComparingArraysStructurally
  * The <code>withClue</code> method will only prepend the clue string to the detail
  * message of exception types that mix in the <code>ModifiableMessage</code> trait.
  * See the documentation for <a href="ModifiableMessage.html"><code>ModifiableMessage</code></a> for more information.
- *
+
  * @author Bill Venners
  */
 trait Assertions {
@@ -335,6 +335,7 @@ trait Assertions {
   def assert(condition: Boolean, clue: Any) {
     if (!condition)
       throw newAssertionFailedException(Some(clue), None, 4)
+      //throw new TestFailedException(message.toString, 2)
   }
 
   /**
@@ -368,6 +369,7 @@ trait Assertions {
   def assert(o: Option[String], clue: Any) {
     o match {
       case Some(s) => throw newAssertionFailedException(Some(clue + "\n" + s), None, 4)
+      // case Some(s) => throw new TestFailedException(message + "\n" + s, 2)
       case None =>
     }
   }
@@ -399,6 +401,7 @@ trait Assertions {
   def assert(o: Option[String]) {
     o match {
       case Some(s) => throw newAssertionFailedException(Some(s), None, 4)
+      // case Some(s) => throw new TestFailedException(s, 2)
       case None =>
     }
   }
@@ -468,6 +471,7 @@ trait Assertions {
         if (!clazz.isAssignableFrom(u.getClass)) {
           val s = Resources("wrongException", clazz.getName, u.getClass.getName)
           throw newAssertionFailedException(Some(messagePrefix + s), Some(u), 4)
+          // throw new TestFailedException(messagePrefix + s, u, 2)
         }
         else {
           Some(u)
@@ -478,6 +482,7 @@ trait Assertions {
       case None =>
         val message = messagePrefix + Resources("exceptionExpected", clazz.getName)
         throw newAssertionFailedException(Some(message), None, 4)
+        // throw new TestFailedException(message, 2)
       case Some(e) => e.asInstanceOf[T] // I know this cast will succeed, becuase iSAssignableFrom succeeded above
     }
   }
@@ -520,6 +525,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
         if (!clazz.isAssignableFrom(u.getClass)) {
           val s = Resources("wrongException", clazz.getName, u.getClass.getName)
           throw newAssertionFailedException(Some(s), Some(u), 4)
+          // throw new TestFailedException(s, u, 2)
         }
         else {
           Some(u)
@@ -530,6 +536,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
       case None =>
         val message = Resources("exceptionExpected", clazz.getName)
         throw newAssertionFailedException(Some(message), None, 4)
+        // throw new TestFailedException(message, 2)
       case Some(e) => e.asInstanceOf[T] // I know this cast will succeed, becuase iSAssignableFrom succeeded above
     }
   }
@@ -588,6 +595,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
       val (act, exp) = Suite.getObjectsForFailureMessage(actual, expected)
       val s = FailureMessages("expectedButGot", exp, act)
       throw newAssertionFailedException(Some(clue + "\n" + s), None, 4)
+      // throw new TestFailedException(message + "\n" + s, 2)
     }
   }
 
@@ -607,6 +615,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
       val (act, exp) = Suite.getObjectsForFailureMessage(actual, expected)
       val s = FailureMessages("expectedButGot", exp, act)
       throw newAssertionFailedException(Some(s), None, 4)
+      // throw new TestFailedException(s, 2)
     }
   }
   
@@ -816,11 +825,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
 object Assertions extends Assertions {
   private[scalatest] def areEqualComparingArraysStructurally(left: Any, right: Any) = {
       left match {
-        case leftArray: Array[_] =>
-          right match {
-            case rightArray: Array[_] => leftArray.deep.equals(rightArray.deep)
-            case _ => left == right
-        }
+        case leftArray: Array[_] => leftArray.deepEquals(right)
         case _ => left == right
     }
   }

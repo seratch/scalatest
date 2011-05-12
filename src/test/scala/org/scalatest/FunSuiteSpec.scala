@@ -29,13 +29,13 @@ class FunSuiteSpec extends Spec with SharedHelpers {
       }
 
       expect(List("test this", "test that")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new FunSuite {}
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new FunSuite {
@@ -44,7 +44,7 @@ class FunSuiteSpec extends Spec with SharedHelpers {
       }
 
       expect(List("test that", "test this")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
     }
 
@@ -161,6 +161,19 @@ class FunSuiteSpec extends Spec with SharedHelpers {
     }
 
     describe("(with info calls)") {
+      it("should, when the info appears in the code of a successful test, report the info between the TestStarting and TestSucceeded") {
+        val msg = "hi there, dude"
+        val testName = "test name"
+        class MySuite extends FunSuite {
+          test(testName) {
+            info(msg)
+          }
+        }
+        val (infoProvidedIndex, testStartingIndex, testSucceededIndex) =
+          getIndexesForInformerEventOrderTests(new MySuite, testName, msg)
+        assert(testStartingIndex < infoProvidedIndex)
+        assert(infoProvidedIndex < testSucceededIndex)
+      }
       it("should, when the info appears in the body before a test, report the info before the test") {
         val msg = "hi there, dude"
         val testName = "test name"
@@ -620,7 +633,7 @@ class FunSuiteSpec extends Spec with SharedHelpers {
       assert(e.expectedTestCount(Filter(None, Set("org.scalatest.SlowAsMolasses"))) === 0)
       assert(e.expectedTestCount(Filter()) === 2)
 
-      val f = new Suites(a, b, c, d, e)
+      val f = new SuperSuite(List(a, b, c, d, e))
       assert(f.expectedTestCount(Filter()) === 10)
     }
     it("should generate a TestPending message when the test body is (pending)") {
@@ -716,17 +729,6 @@ class FunSuiteSpec extends Spec with SharedHelpers {
 
         val spec = new MySuite
         ensureTestFailedEventReceived(spec, "should blow up")
-      }
-    }
-
-    it("should throw IllegalArgumentException if passed a testName that doesn't exist") {
-      class MySuite extends FunSuite {
-        test("one") {}
-        test("two") {}
-      }
-      val suite = new MySuite
-      intercept[IllegalArgumentException] {
-        suite.run(Some("three"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       }
     }
   }

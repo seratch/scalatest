@@ -29,9 +29,6 @@ import java.io.StringWriter
 import org.scalatest.events._
 import PrintReporter._
 import org.scalatest.junit.JUnitTestFailedError
-import org.scalatest.prop.PropertyCheckFailedException
-import org.scalatest.prop.TableDrivenPropertyCheckFailedException
-import Suite.indentation
 
 /**
  * A <code>Reporter</code> that prints test status information to
@@ -40,7 +37,7 @@ import Suite.indentation
  * @author Bill Venners
  */
 private[scalatest] abstract class StringReporter(presentAllDurations: Boolean,
-        presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) extends ResourcefulReporter {
+        presentInColor: Boolean, presentTestFailedExceptionStackTraces: Boolean) extends ResourcefulReporter {
 
   private def withPossibleLineNumber(stringToPrint: String, throwable: Option[Throwable]): String = {
     throwable match {
@@ -109,52 +106,6 @@ Or show a truncated one like this:
 
 If F is specified for the reporter, then show the full stack trace (or if it is not a StackDepth). But
 if a StackDepth and no F specified, then show the truncated form.
-
-Now want to change from:
-- should do something interesting *** FAILED *** (<console>:18) (0 milliseconds)
-  org.scalatest.TestFailedException: 2 did not equal 3
-
-To:
-
-- should do something interesting *** FAILED *** (0 milliseconds)
-  2 did not equal 3 (<console>:18)
-  org.scalatest.TestFailedException: 
-
-The second line would only be printed out if there was an exception. That way
-when I add noStacks option, I get:
-
-- should do something interesting *** FAILED *** (0 milliseconds)
-  2 did not equal 3 (<console>:18)
-
-Or for a prop check get:
-
-- should do something interesting *** FAILED *** (0 milliseconds)
-  Property check failed. (InfoInsideTestFiredAfterTestProp.scala:24)
-  Message: 2 was not less than 1
-  Location: InfoInsideTestFiredAfterTestProp.scala:27
-  Occurred at table row 0 (zero based, not counting headings), which had values ( / This shouldb e had value without the s
-    suite = org.scalatest.InfoInsideTestFiredAfterTestProp$$anon$3@18a4edc4
-  )
-
-Easiest thing is if the exception message just printed this out. Then StringReporter would just print the message always,
-and not print it after the outermost exception
-org.scalatest.prop.TableDrivenPropertyCheckFailedException:
-...
-
-And does print it out after the subsequent ones:
-org.scalatest.TestFailedException: 2 did not equal 3
-
-And it would not need to put the line number there. It would already be in the message. It would use the message sent with
-the event. Message should just be the throwable's message, or "<exception class> was thrown" Then it is easy. Always
-use the message from the event.
-
-org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException (included as this exception's cause) was thrown during property evaluation.
-[scalatest]   Message: 
-[scalatest]   Location: InfoInsideTestFiredAfterTestProp.scala:27
-[scalatest]   Occurred at table row 0 (zero based, not counting headings), which had values (
-[scalatest]     suite = org.scalatest.InfoInsideTestFiredAfterTestProp$$anon$3@18a4edc4
-[scalatest]   )
-
  */
   // Called for TestFailed, InfoProvided (because it can have a throwable in it), SuiteAborted, and RunAborted
   private def stringsToPrintOnError(noteResourceName: String, errorResourceName: String, message: String, throwable: Option[Throwable],
@@ -175,99 +126,94 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
             // Should not get here with built-in ScalaTest stuff, but custom stuff could get here.
             case None => Resources(errorResourceName, Resources("noNameSpecified"))
           }
-      }
+    }
 
-    val stringToPrintWithPossibleDuration =
+    val stringToPrintWithPossibleLineNumber = withPossibleLineNumber(stringToPrint, throwable)
+
+    val stringToPrintWithPossibleLineNumberAndDuration =
       duration match {
         case Some(milliseconds) =>
           if (presentAllDurations)
-            Resources("withDuration", stringToPrint, makeDurationString(milliseconds))
+            Resources("withDuration", stringToPrintWithPossibleLineNumber, makeDurationString(milliseconds))
           else
-            stringToPrint
-        case None => stringToPrint
+            stringToPrintWithPossibleLineNumber
+        case None => stringToPrintWithPossibleLineNumber
       }
 
-    // If there's a message, put it on the next line, indented two spaces
-    val possiblyEmptyMessage = Reporter.messageOrThrowablesDetailMessage(message, throwable)
-
-    val possiblyEmptyMessageWithPossibleLineNumber =
-      throwable match {
-        case Some(e: PropertyCheckFailedException) => possiblyEmptyMessage // PCFEs already include the line number
-        case Some(e: StackDepth) => withPossibleLineNumber(possiblyEmptyMessage, throwable) // Show it in the stack depth case
-        case _ => "" // Don't show it in the non-stack depth case. It will be shown after the exception class name and colon.
-      }
-
-    val whiteSpace =
+    // If there's a message, put it on the next line, indented two spaces, unless this is an IndentedText
+    val possiblyEmptyMessage =
       formatter match {
-        case Some(IndentedText(_, _, indentationLevel)) => indentation(indentationLevel)
-        case _ => indentation(1)
+        case Some(IndentedText(_, _, _)) => ""
+        case _ =>
+          Reporter.messageOrThrowablesDetailMessage(message, throwable)
+      }
+
+    // I don't want to put a second line out there if the event's message contains the throwable's message,
+    // or if niether the event message or throwable message has any message in it.
+    val throwableIsAStackDepthWithRedundantMessage =
+      throwable match {
+        case Some(t: Throwable with StackDepth) =>
+          ((t.getMessage != null &&
+          !t.getMessage.trim.isEmpty && possiblyEmptyMessage.indexOf(t.getMessage.trim) != -1) || // This part is where a throwable message exists
+          (possiblyEmptyMessage.isEmpty && (t.getMessage == null || t.getMessage.trim.isEmpty))) // This part detects when both have no message
+        case _ => false
       }
 
     def getStackTrace(throwable: Option[Throwable]): List[String] =
       throwable match {
         case Some(throwable) =>
 
-          def stackTrace(throwable: Throwable, isCause: Boolean): List[String] = {
+          def useTruncatedStackTrace =
+            !presentTestFailedExceptionStackTraces && (
+              throwable match {
+                case e: Throwable with StackDepth => e.cause.isEmpty // If there's a cause inside, show the whole stack trace
+                case _ => false
+              }
+            )
 
+          def stackTrace(throwable: Throwable, isCause: Boolean): List[String] = {
             val className = throwable.getClass.getName 
             val labeledClassName = if (isCause) Resources("DetailsCause") + ": " + className else className
-            // Only show the : message if a cause, because first one will have its message printed out 
-            // Or if it is a non-StackDepth exception, because if they throw Exception with no message, the
-            // message was coming out as "java.lang.Exception" then on the next line it repeated it. In the
-            // case of no exception message, I think it looks best to just say the class name followed by a colon
-            // and nothing else.
-            val colonMessageOrJustColon =
-              if ((throwable.getMessage != null && !throwable.getMessage.trim.isEmpty) && (isCause || !(throwable.isInstanceOf[StackDepth])))
+            val colonMessageOrEmptyString =
+              if (throwable.getMessage != null && !throwable.getMessage.trim.isEmpty)
                 ": " + throwable.getMessage.trim
               else
-                ":"
-
+                ""
             val labeledClassNameWithMessage =
-              whiteSpace + labeledClassName + colonMessageOrJustColon
+              "  " + labeledClassName + colonMessageOrEmptyString
 
-            if (presentShortStackTraces || presentFullStackTraces || !(throwable.isInstanceOf[StackDepth])) {
-
-              // Indent each stack trace item two spaces, and prepend that with an "at "
-              val stackTraceElements = throwable.getStackTrace.toList map { whiteSpace + "at " + _.toString }
+               // Indent each stack trace item two spaces, and prepend that with an "at "
+              val stackTraceElements = throwable.getStackTrace.toList map { "  at " + _.toString }
               val cause = throwable.getCause
 
               val stackTraceThisThrowable = labeledClassNameWithMessage :: stackTraceElements
-
-              if (presentFullStackTraces) {
+              if (!useTruncatedStackTrace) {
                 if (cause == null)
                   stackTraceThisThrowable
                 else
                   stackTraceThisThrowable ::: stackTrace(cause, true) // Not tail recursive, but shouldn't be too deep
               }
               else {
-
-                // The drop(1) or drop(stackDepth + 1) that extra one is the labeledClassNameWithMessage
-                val stackTraceThisThrowableTruncated = 
+                val stackDepth =
                   throwable match {
-                    case e: Throwable with StackDepth =>
-                      val stackDepth = e.failedCodeStackDepth
-                      stackTraceThisThrowable.head :: (whiteSpace + "...") :: stackTraceThisThrowable.drop(stackDepth + 1).take(7) ::: List(whiteSpace + "...")
-                    case _ => // In case of IAE or what not, show top 10 stack frames
-                      stackTraceThisThrowable.head :: stackTraceThisThrowable.drop(1).take(10) ::: List(whiteSpace + "...")
+                    case e: Throwable with StackDepth => e.failedCodeStackDepth
+                    case _ => 0
                   }
-    
-                if (cause == null)
-                  stackTraceThisThrowableTruncated
-                else
-                  stackTraceThisThrowableTruncated ::: stackTrace(cause, true) // Not tail recursive, but shouldn't be too deep
+
+                stackTraceThisThrowable.head :: "  ..." :: stackTraceThisThrowable.drop(stackDepth + 1).take(7) ::: List("  ...")
               }
-            }
-            else
-              Nil
           }
           stackTrace(throwable, false)
+         /* if (!throwableIsAStackDepthWithRedundantMessage || !useTruncatedStackTrace)
+            stackTrace(throwable, false)
+          else List() */
         case None => List()
       }
 
-    if (possiblyEmptyMessageWithPossibleLineNumber.isEmpty)
-      stringToPrintWithPossibleDuration :: getStackTrace(throwable)
+    if (possiblyEmptyMessage.isEmpty)
+      stringToPrintWithPossibleLineNumberAndDuration :: getStackTrace(throwable)
     else
-      stringToPrintWithPossibleDuration :: (whiteSpace + possiblyEmptyMessageWithPossibleLineNumber) :: getStackTrace(throwable)
+      stringToPrintWithPossibleLineNumberAndDuration :: "  " + possiblyEmptyMessage :: getStackTrace(throwable)
   }
 
   private def stringToPrintWhenNoError(resourceName: String, formatter: Option[Formatter], suiteName: String, testName: Option[String]): Option[String] =
@@ -313,7 +259,7 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
 
         if (testCount < 0)
           throw new IllegalArgumentException
-
+  
         val string = Resources("runStarting", testCount.toString)
         printPossiblyInColor(string, ansiCyan)
 
@@ -478,18 +424,3 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
   //  else Resources("indentOnce", indent(s, times - 1))
 }
  
-private[scalatest] object StringReporter {
-  def countTrailingEOLs(s: String): Int = s.length - s.lastIndexWhere(_ != '\n') - 1
-  def countLeadingEOLs(s: String): Int = {
-    val idx = s.findIndexOf(_ != '\n')
-    if (idx != -1) idx else 0
-  }
-  def colorizeLinesIndividually(text: String, ansiColor: String): String =
-    if (text.trim.isEmpty) text
-    else {
-      ("\n" * countLeadingEOLs(text)) +
-      text.split("\n").dropWhile(_.isEmpty).map(ansiColor + _ + ansiReset).mkString("\n") +
-      ("\n" * countTrailingEOLs(text))
-    }
-}
-

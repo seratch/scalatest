@@ -133,8 +133,6 @@ import org.scalatest._
 */
 trait HavePropertyMatcher[-T, P] extends Function1[T, HavePropertyMatchResult[P]] {
 
-  thisHavePropertyMatcher =>
-
   /**
    * Check to see if a property on the specified object, <code>objectWithProperty</code>, matches its
    * expected value, and report the result in
@@ -150,56 +148,5 @@ trait HavePropertyMatcher[-T, P] extends Function1[T, HavePropertyMatchResult[P]
    * @return the <code>HavePropertyMatchResult</code> that represents the result of the match
    */
   def apply(objectWithProperty: T): HavePropertyMatchResult[P]
-
-  /**
-   * Compose this <code>HavePropertyMatcher</code> with the passed function, returning a new <code>HavePropertyMatcher</code>.
-   *
-   * <p>
-   * This method overrides <code>compose</code> on <code>Function1</code> to
-   * return a more specific function type of <code>HavePropertyMatcher</code>.
-   * </p>
-   */
-  override def compose[U](g: U => T): HavePropertyMatcher[U, P] =
-    new HavePropertyMatcher[U, P] {
-      def apply(u: U) = thisHavePropertyMatcher.apply(g(u))
-    }
 }
 
-/**
- * Companion object for trait <code>HavePropertyMatcher</code> that provides a
- * factory method that creates a <code>HavePropertyMatcher[T]</code> from a
- * passed function of type <code>(T => HavePropertyMatchResult)</code>.
- *
- * @author Bill Venners
- */
-object HavePropertyMatcher {
-
-  /**
-   * Factory method that creates a <code>HavePropertyMatcher[T]</code> from a
-   * passed function of type <code>(T => HavePropertyMatchResult)</code>.
-   *
-   * <p>
-   * This allows you to create a <code>HavePropertyMatcher</code> in a slightly
-   * more concise way, for example:
-   * </p>
-   *
-   * <pre>
-   *  case class Person(name: String)
-   *  def name(expectedName: String) = {
-   *    HavePropertyMatcher { 
-   *      (person: Person) => HavePropertyMatchResult(
-   *        person.name == expectedName,
-   *        "name",
-   *        expectedName,
-   *        person.name
-   *      ) 
-   *    } 
-   * </pre>
-   *
-   * @author Bill Venners
-   */
-  def apply[T, P](fun: T => HavePropertyMatchResult[P]): HavePropertyMatcher[T, P] =
-    new HavePropertyMatcher[T, P] {
-      def apply(left: T) = fun(left)
-    }
-}

@@ -119,7 +119,7 @@ package org.scalatest
  * 
  * @author Bill Venners
  */
-trait Informer extends (String => Unit) {
+trait Informer {
 
   /**
    * Provide information to the <code>Reporter</code> as the .

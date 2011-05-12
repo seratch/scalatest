@@ -29,7 +29,6 @@ import java.io.StringWriter
 import org.scalatest.events._
 import PrintReporter._
 import org.scalatest.junit.JUnitTestFailedError
-import StringReporter.colorizeLinesIndividually
 
 /**
  * A <code>Reporter</code> that prints test status information to
@@ -38,8 +37,8 @@ import StringReporter.colorizeLinesIndividually
  * @author Bill Venners
  */
 private[scalatest] abstract class PrintReporter(pw: PrintWriter, presentAllDurations: Boolean,
-        presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) extends StringReporter(
-presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) {
+        presentInColor: Boolean, presentTestFailedExceptionStackTraces: Boolean) extends StringReporter(
+presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces) {
 
   /**
   * Construct a <code>PrintReporter</code> with passed
@@ -54,8 +53,7 @@ presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTr
     os: OutputStream,
     presentAllDurations: Boolean,
     presentInColor: Boolean,
-    presentShortStackTraces: Boolean,
-    presentFullStackTraces: Boolean
+    presentTestFailedExceptionStackTraces: Boolean
   ) =
     this(
       new PrintWriter(
@@ -65,8 +63,7 @@ presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTr
       ),
       presentAllDurations,
       presentInColor,
-      presentShortStackTraces,
-      presentFullStackTraces
+      presentTestFailedExceptionStackTraces
     )
 
   /**
@@ -83,19 +80,17 @@ presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTr
     filename: String,
     presentAllDurations: Boolean,
     presentInColor: Boolean,
-    presentShortStackTraces: Boolean,
-    presentFullStackTraces: Boolean
+    presentTestFailedExceptionStackTraces: Boolean
   ) =
     this(
       new PrintWriter(new BufferedOutputStream(new FileOutputStream(new File(filename)), BufferSize)),
       presentAllDurations,
       presentInColor,
-      presentShortStackTraces,
-      presentFullStackTraces
+      presentTestFailedExceptionStackTraces
     )
 
   protected def printPossiblyInColor(text: String, ansiColor: String) {
-    pw.println(if (presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
+    pw.println(if (presentInColor) ansiColor + text + ansiReset else text)
   }
 
   override def apply(event: Event) {

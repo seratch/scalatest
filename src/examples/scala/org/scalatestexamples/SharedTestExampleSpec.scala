@@ -16,11 +16,10 @@
 package org.scalatestexamples
 
 import org.scalatest.Spec
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfter
 import org.scalatestexamples.helpers.Stack
 
-trait StackBehaviors extends BeforeAndAfterEach with BeforeAndAfterAll { this: Spec =>
+trait StackBehaviors extends BeforeAndAfter { this: Spec =>
 
   def nonEmptyStack(lastItemAdded: Int)(implicit stack: Stack[Int]) {
 

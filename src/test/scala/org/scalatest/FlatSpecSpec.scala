@@ -30,13 +30,13 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
       }
 
       expect(List("should test this", "should test that")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new FlatSpec {}
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new FlatSpec {
@@ -45,7 +45,7 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
       }
 
       expect(List("should test that", "should test this")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
 
       val d = new FlatSpec {
@@ -55,7 +55,7 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
       }
 
       expect(List("A Tester should test that", "A Tester should test this")) {
-        d.testNames.iterator.toList
+        d.testNames.elements.toList
       }
 
       val e = new FlatSpec {
@@ -65,7 +65,7 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
       }
 
       expect(List("A Tester should test this", "A Tester should test that")) {
-        e.testNames.iterator.toList
+        e.testNames.elements.toList
       }
     }
 
@@ -255,15 +255,15 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
           spec.callInfo()
         }
       }
-      it("should send an InfoProvided with an IndentedText formatter with level 0 when called outside a test") {
+      it("should send an InfoProvided with an IndentedText formatter with level 1 when called outside a test") {
         val spec = new InfoBeforeTestFlatSpec
         val indentedText = getIndentedTextFromInfoProvided(spec)
-        assert(indentedText === IndentedText("+ " + spec.msg, spec.msg, 0))
+        assert(indentedText === IndentedText("+ " + spec.msg, spec.msg, 1))
       }
-      it("should send an InfoProvided with an IndentedText formatter with level 1 when called within a test") {
+      it("should send an InfoProvided with an IndentedText formatter with level 2 when called within a test") {
         val spec = new InfoInsideTestFlatSpec
         val indentedText = getIndentedTextFromInfoProvided(spec)
-        assert(indentedText === IndentedText("  + " + spec.msg, spec.msg, 1))
+        assert(indentedText === IndentedText("  + " + spec.msg, spec.msg, 2))
       }
       it("should work when using the shorthand notation for 'behavior of'") {
         val e = new FlatSpec with ShouldMatchers {
@@ -272,7 +272,7 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
         }
 
         expect(List("A Tester should test this", "A Tester should test that")) {
-          e.testNames.iterator.toList
+          e.testNames.elements.toList
         }
 
       }
@@ -1083,7 +1083,7 @@ class FlatSpecSpec extends Spec with SharedHelpers with GivenWhenThen {
       assert(e.expectedTestCount(Filter(None, Set("org.scalatest.SlowAsMolasses"))) === 0)
       assert(e.expectedTestCount(Filter()) === 2)
 
-      val f = new Suites(a, b, c, d, e)
+      val f = new SuperSuite(List(a, b, c, d, e))
       assert(f.expectedTestCount(Filter()) === 10)
     }
 
