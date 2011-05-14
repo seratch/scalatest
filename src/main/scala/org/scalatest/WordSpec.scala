@@ -63,11 +63,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <p>
  * <em>Note: Trait <code>WordSpec</code> is in part inspired by class <code>org.specs.Specification</code>, designed by
- * Eric Torreborre for the <a href="http://code.google.com/p/specs/" target="_blank">specs framework</a>.</em>
- * </p>
- *
- * <p>
- * See also: <a href="http://www.scalatest.org/getting_started_with_word_spec" target="_blank">Getting started with <code>WordSpec</code>.</a>
+ * Eric Torreborre for the <a href="http://code.google.com/p/specs/">Specs framework</a>.</em>
  * </p>
  *
  * <p>
@@ -150,22 +146,20 @@ import Suite.anErrorThatShouldCauseAnAbort
  * 
  * <pre>
  * scala> (new StackSpec).execute()
- * StackSpec:
- * A Stack
- *   when empty
- *   - should be empty
- *   - should complain on peek
- *   - should complain on pop
- *   when full
- *   - should be full
- *   - should complain on push
+ * A Stack (when empty) 
+ * - should be empty 
+ * - should complain on peek
+ * - should complain on pop
+ * A Stack (when full) 
+ * - should be full
+ * - should complain on push
  * </pre>
  *
  * <p>
  * Note that the output does not exactly match the input in an effort to maximize readability.
  * Although the <code>WordSpec</code> code is nested, which can help you eliminate any repeated phrases
- * in the specification portion of your code, the output printed moves <code>when</code> and <code>should</code>
- * down to the beginning of the next line.
+ * in the specification portion of your code, the output printed will have one line per subject per situation, and
+ * one line per test.
  * </p>
  *
  * <p>
@@ -204,7 +198,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  *     "provide an and operator" that {
  *       "returns silently when evaluating true and true" in {}
  *       "throws a TestFailedException when evaluating true and false" in {}
- *       "throws a TestFailedException when evaluating false and true" in {}
+ *       "that throws a TestFailedException when evaluating false and true" in {}
  *       "throws a TestFailedException when evaluating false and false" in {}
  *     }
  *     "provide an or operator" that {
@@ -216,31 +210,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  *   }
  * }
  * </pre>
- *
- * <p>
- * Running the above <code>AndOrSpec</code> in the interpreter would yield:
- * </p>
- * 
- * <pre>
- * scala> (new AndOrSpec).execute()
- * AndOrSpec:
- * The ScalaTest Matchers DSL
- *   should provide an and operator that
- *   - returns silently when evaluating true and true
- *   - throws a TestFailedException when evaluating true and false
- *   - throws a TestFailedException when evaluating false and true
- *   - throws a TestFailedException when evaluating false and false
- *   should provide an or operator that
- *   - returns silently when evaluating true or true
- *   - returns silently when evaluating true or false
- *   - returns silently when evaluating false or true
- *   - throws a TestFailedException when evaluating false or false
- * </pre>
- * 
- * <p>
- * Note that unlike <code>when</code> and <code>should</code>/<code>must</code>/<code>can</code>, a <code>that</code> appears
- * in the output right where you put it in the input, at the end of the line, to maximize readability.
- * </p>
  *
  * <p>
  * <a name="AfterWords">If</a> a word or phrase is repeated at the beginning of each string contained in a block, you can eliminate
@@ -275,27 +244,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  * }
  * </pre>
  * 
- *  <p>
- *  Running the above version of <code>AndOrSpec</code> with the <code>provide</code> after word in the interpreter would give you:
- *  </p>
- * 
- * <pre>
- * scala> (new AndOrSpec).execute()
- * AndOrSpec:
- * The ScalaTest Matchers DSL
- *   should provide
- *     an and operator that
- *     - returns silently when evaluating true and true
- *     - throws a TestFailedException when evaluating true and false
- *     - that throws a TestFailedException when evaluating false and true
- *     - throws a TestFailedException when evaluating false and false
- *     an or operator that
- *     - returns silently when evaluating true or true
- *     - returns silently when evaluating true or false
- *     - returns silently when evaluating false or true
- *     - throws a TestFailedException when evaluating false or false
- * </pre>
- *
  * <p>
  * Once you've defined an after word, you can place it after <code>when</code>, a verb
  * (<code>should</code>, <code>must</code>, or <code>can</code>), or
@@ -332,15 +280,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <pre>
  * scala> (new ScalaTestGUISpec).execute()
- * ScalaTestGUISpec:
- * The ScalaTest GUI
- *   when the user clicks on an event report in the list box
- *     should display
- *     - a blue background in the clicked-on row in the list box
- *     - the details for the event in the details area
- *       a rerun button that is
- *       - enabled if the clicked-on event is rerunnable
- *       - disabled if the clicked-on event is not rerunnable
+ * The ScalaTest GUI (when the user clicks on an event report in the list box) 
+ * - should display a blue background in the clicked-on row in the list box
+ * - should display the details for the event in the details area
+ * - should display a rerun button that is enabled if the clicked-on event is rerunnable
+ * - should display a rerun button that is disabled if the clicked-on event is not rerunnable
  * </pre>
  *
  * <p>
@@ -888,6 +832,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  *       behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
  *       behave like nonFullStack(stackWithOneItem)
  *     }
+ *
  *     
  *     "it contains one item less than capacity" should {
  *       behave like nonEmptyStack(stackWithOneItemLessThanCapacity, lastValuePushed)
@@ -918,59 +863,64 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <pre>
  * scala> (new SharedTestExampleSpec).execute()
- * SharedTestExampleSpec:
- * A Stack
- *   when empty
- *   - should be empty
- *   - should complain on peek
- *   - should complain on pop
- *   when it contains one item
- *   - should be non-empty
- *   - should return the top item on peek
- *   - should not remove the top item on peek
- *   - should remove the top item on pop
- *   - should not be full
- *   - should add to the top on push
- *   when it contains one item less than capacity
- *   - should be non-empty
- *   - should return the top item on peek
- *   - should not remove the top item on peek
- *   - should remove the top item on pop
- *   - should not be full
- *   - should add to the top on push
- *   when full
- *   - should be full
- *   - should be non-empty
- *   - should return the top item on peek
- *   - should not remove the top item on peek
- *   - should remove the top item on pop
- *   - should complain on a push
+ * A Stack (when empty) 
+ * - should be empty
+ * - should complain on peek
+ * - should complain on pop
+ * A Stack (when it contains one item) 
+ * - should be non-empty
+ * - should return the top item on peek
+ * - should not remove the top item on peek
+ * - should remove the top item on pop
+ * - should not be full
+ * - should add to the top on push
+ * A Stack (when it contains one item less than capacity) 
+ * - should be non-empty
+ * - should return the top item on peek
+ * - should not remove the top item on peek
+ * - should remove the top item on pop
+ * - should not be full
+ * - should add to the top on push
+ * A Stack (when full) 
+ * - should be full
+ * - should be non-empty
+ * - should return the top item on peek
+ * - should not remove the top item on peek
+ * - should remove the top item on pop
+ * - should complain on a push
  * </pre>
  * 
  * <p>
  * One thing to keep in mind when using shared tests is that in ScalaTest, each test in a suite must have a unique name.
  * If you register the same tests repeatedly in the same suite, one problem you may encounter is an exception at runtime
- * complaining that multiple tests are being registered with the same test name. A good way to solve this problem in a <code>WordSpec</code> is to make sure
- * each invocation of a behavior function is in the context of a different surrounding <code>when</code>, 
- * <code>should</code>/<code>must</code>/<code>can</code>, or <code>that</code> clause, because a test's name is the concatenation of its
- * surrounding clauses and after words, followed by the "spec text".
- * For example, the following code in a <code>WordSpec</code> would register a test with the name <code>"A Stack when empty should be empty"</code>:
+ * complaining that multiple tests are being registered with the same test name. A good way to solve this problem in a <code>FlatSpec</code> is to make sure
+ * each invocation of a behavior function is in the context of a different <code>behavior of</code> clause, which will prepend a string to each test name.
+ * For example, the following code in a <code>FlatSpec</code> would register a test with the name <code>"A Stack (when empty) should be empty"</code>:
  * </p>
  *
  * <pre>
- * "A Stack" when {
- *   "empty" should {
- *     "be empty" in {
- *       assert(emptyStack.empty)
- *     }
+ *   behavior of "A Stack (when empty)"
+ *       
+ *   it should "be empty" in {
+ *     assert(emptyStack.empty)
  *   }
- * }
- * // ...
+ *   // ...
  * </pre>
  *
  * <p>
- * If the <code>"be empty"</code> test was factored out into a behavior function, it could be called repeatedly so long
- * as each invocation of the behavior function is in the context of a different surrounding <code>when</code> clauses.
+ * Or, using the shorthand notation:
+ * </p>
+ *
+ * <pre>
+ *   "A Stack (when empty)" should "be empty" in {
+ *     assert(emptyStack.empty)
+ *   }
+ *   // ...
+ * </pre>
+ *
+ * <p>
+ * If the <code>"should be empty"</code> test was factored out into a behavior function, it could be called repeatedly so long
+ * as each invocation of the behavior function is in the context of a different <code>behavior of</code> clause.
  * </p>
  *
  * <h2>Tagging tests</h2>
@@ -1084,7 +1034,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  * </p>
  *
  * <pre>
- * StackSpec:
  * A Stack
  * - should pop values in last-in-first-out order !!! IGNORED !!!
  * - should throw NoSuchElementException if an empty stack is popped
@@ -1133,7 +1082,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <pre>
  * scala> (new ArithmeticSpec).execute()
- * ArithmeticSpec:
  * The Scala language 
  * - should add correctly
  *   + addition seems to work 
@@ -1190,7 +1138,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <pre>
  * scala> (new ArithmeticSpec).execute()
- * ArithmeticSpec:
  * The Scala language 
  * - should add correctly
  *   + Given two integers 
@@ -1312,8 +1259,89 @@ import Suite.anErrorThatShouldCauseAnAbort
  */
 trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSuite =>
 
-  private final val engine = new Engine("concurrentWordSpecMod", "WordSpec")
-  import engine._
+  private val IgnoreTagName = "org.scalatest.Ignore"
+
+  private class Bundle private(
+    val trunk: Trunk,
+    val currentBranch: Branch,
+    val tagsMap: Map[String, Set[String]],
+
+    // All tests, in reverse order of registration
+    val testsList: List[TestLeaf],
+
+    // Used to detect at runtime that they've stuck a describe or an it inside an it,
+    // which should result in a TestRegistrationClosedException
+    val registrationClosed: Boolean
+  ) {
+    def unpack = (trunk, currentBranch, tagsMap, testsList, registrationClosed)
+  }
+
+  private object Bundle {
+    def apply(
+      trunk: Trunk,
+      currentBranch: Branch,
+      tagsMap: Map[String, Set[String]],
+      testsList: List[TestLeaf],
+      registrationClosed: Boolean
+    ): Bundle =
+      new Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed)
+
+    def initialize(
+      trunk: Trunk,
+      tagsMap: Map[String, Set[String]],
+      testsList: List[TestLeaf],
+      registrationClosed: Boolean
+    ): Bundle =
+      new Bundle(trunk, trunk, tagsMap, testsList, registrationClosed)
+  }
+
+  private val atomic =
+    new AtomicReference[Bundle](
+      Bundle.initialize(new Trunk, Map(), List[TestLeaf](), false)
+    )
+
+  private def updateAtomic(oldBundle: Bundle, newBundle: Bundle) {
+    val shouldBeOldBundle = atomic.getAndSet(newBundle)
+    if (!(shouldBeOldBundle eq oldBundle))
+      throw new ConcurrentModificationException(Resources("concurrentWordSpecBundleMod"))
+  }
+
+  private def registerTest(specText: String, f: () => Unit) = {
+
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+    val testName = getTestName(specText, currentBranch)
+    if (testsList.exists(_.testName == testName)) {
+      throw new DuplicateTestNameException(testName, getStackDepth("Spec.scala", "it"))
+    }
+    val testShortName = specText
+    val test = TestLeaf(currentBranch, testName, specText, f)
+    currentBranch.subNodes ::= test
+    testsList ::= test
+
+    updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
+
+    testName
+  }
+
+  private class RegistrationInformer extends Informer {
+    def apply(message: String) {
+      if (message == null)
+        throw new NullPointerException
+
+      val oldBundle = atomic.get
+      var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+      currentBranch.subNodes ::= InfoLeaf(currentBranch, message)
+
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
+    }
+  }
+
+  // The informer will be a registration informer until run is called for the first time. (This
+  // is the registration phase of a WordSpec's lifecycle.)
+  private final val atomicInformer = new AtomicReference[Informer](new RegistrationInformer)
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
@@ -1324,6 +1352,16 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
+
+  private val zombieInformer =
+    new Informer {
+      private val complaint = Resources("cantCallInfoNow", "WordSpec")
+      def apply(message: String) {
+        if (message == null)
+          throw new NullPointerException
+        throw new IllegalStateException(complaint)
+      }
+    }
 
   /**
    * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
@@ -1344,9 +1382,46 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], testFun: () => Unit) {
-    // TODO: This is what was being used before but it is wrong
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "WordSpec.scala", "it", testTags: _*)
+
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("itCannotAppearInsideAnotherIt"), getStackDepth("Spec.scala", "it"))
+    if (specText == null)
+      throw new NullPointerException("specText was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+
+    val testName = registerTest(specText, testFun)
+
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed2) = oldBundle.unpack
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    if (!tagNames.isEmpty)
+      tagsMap += (testName -> tagNames)
+
+    updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed2))
   }
+
+  /**
+   * Register a test with the given spec text and test function value that takes no arguments.
+   *
+   * This method will register the test for later execution via an invocation of one of the <code>execute</code>
+   * methods. The name of the test will be a concatenation of the text of all surrounding describers,
+   * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
+   * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
+   * this <code>Spec</code> instance.
+   *
+   * @param specText the specification text, which will be combined with the descText of any surrounding describers
+   * to form the test name
+   * @param testFun the test function
+   * @throws DuplicateTestNameException if a test with the same name has been registered previously
+   * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
+   * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
+   */
+  /* protected def it(specText: String)(testFun: => Unit) {
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("itCannotAppearInsideAnotherIt"), getStackDepth("Spec.scala", "it"))
+    it(specText, Array[Tag](): _*)(testFun)
+  } */
 
   /**
    * Register a test to ignore, which has the given spec text, optional tags, and test function value that takes no arguments.
@@ -1367,15 +1442,96 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], testFun: () => Unit) {
-
-    // TODO: This is how these were, but it needs attention. Mentions "it".
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpec.scala", "ignore", testTags: _*)
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("ignoreCannotAppearInsideAnIt"), getStackDepth("Spec.scala", "ignore"))
+    if (specText == null)
+      throw new NullPointerException("specText was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+    val testName = registerTest(specText, testFun)
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+    tagsMap += (testName -> (tagNames + IgnoreTagName))
+    updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
   }
 
-  private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
+  /**
+   * Register a test to ignore, which has the given spec text and test function value that takes no arguments.
+   * This method will register the test for later ignoring via an invocation of one of the <code>execute</code>
+   * methods. This method exists to make it easy to ignore an existing test by changing the call to <code>it</code>
+   * to <code>ignore</code> without deleting or commenting out the actual test code. The test will not be executed, but a
+   * report will be sent that indicates the test was ignored. The name of the test will be a concatenation of the text of all surrounding describers,
+   * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
+   * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
+   * this <code>Spec</code> instance.
+   *
+   * @param specText the specification text, which will be combined with the descText of any surrounding describers
+   * to form the test name
+   * @param testFun the test function
+   * @throws DuplicateTestNameException if a test with the same name has been registered previously
+   * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
+   * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
+   */
+  /* protected def ignore(specText: String)(testFun: => Unit) {
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("ignoreCannotAppearInsideAnIt"), getStackDepth("Spec.scala", "ignore"))
+    ignore(specText, Array[Tag](): _*)(testFun)
+  } */
+  
+  /**
+   * Describe a &#8220;subject&#8221; being specified and tested by the passed function value. The
+   * passed function value may contain more describers (defined with <code>describe</code>) and/or tests
+   * (defined with <code>it</code>). This trait's implementation of this method will register the
+   * description string and immediately invoke the passed function.
+   */
+  private def registerVerbBranch(description: String, verb: String, f: () => Unit) {
+    registerBranch(
+      f,
+      currentBranch => {
+        val desc =
+          currentBranch match { // TODO, probably make a WhenDescriptionBranch so this is more type safe than looking for (when at the end
+            case DescriptionBranch(parent, descriptionName) if descriptionName.endsWith(" (when") =>
+              description + ")"
+            case _ => description
+          }
+        VerbBranch(currentBranch, desc, verb)
+      }
+    )
+  }
 
-    // TODO: Fix the resource name and method name
-    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpec.scala", "describe")
+  private def registerDescriptionBranch(description: String, f: () => Unit) {
+    registerBranch(f, DescriptionBranch(_, description))
+  }
+
+  private def registerBranch(f: () => Unit, constructBranch: Branch => Branch) {
+
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("describeCannotAppearInsideAnIt"), getStackDepth("Spec.scala", "describe"))
+
+    def createNewBranch() = {
+      val oldBundle = atomic.get
+      var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+      val newBranch = constructBranch(currentBranch)
+      // val newBranch = VerbBranch(currentBranch, description, verb)
+      val oldBranch = currentBranch
+      currentBranch.subNodes ::= newBranch
+      currentBranch = newBranch
+
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
+
+      oldBranch
+    }
+
+    val oldBranch = createNewBranch()
+
+    f()
+
+    val oldBundle = atomic.get
+    val (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+    updateAtomic(oldBundle, Bundle(trunk, oldBranch, tagsMap, testsList, registrationClosed))
   }
 
   /**
@@ -1566,7 +1722,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def when(f: => Unit) {
-      registerBranch(string, Some("when"), f _)
+      registerDescriptionBranch(string + " (when", f _)
     }
 
     /**
@@ -1588,7 +1744,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def when(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string, Some("when " + resultOfAfterWordApplication.text), resultOfAfterWordApplication.f)
+      registerDescriptionBranch(string + " (when " + resultOfAfterWordApplication.text, resultOfAfterWordApplication.f)
     }
 
     /**
@@ -1608,7 +1764,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def that(f: => Unit) {
-      registerBranch(string + " that", None, f _)
+      registerDescriptionBranch(string + " that", f _)
     }
 
     /**
@@ -1630,7 +1786,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def that(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string + " that " + resultOfAfterWordApplication.text, None, resultOfAfterWordApplication.f)
+      registerDescriptionBranch(string + " that " + resultOfAfterWordApplication.text, resultOfAfterWordApplication.f)
     }
   }
 
@@ -1797,7 +1953,7 @@ one error found
    */
   protected implicit val subjectRegistrationFunction: StringVerbBlockRegistration =
     new StringVerbBlockRegistration {
-      def apply(left: String, verb: String, f: () => Unit) = registerBranch(left, Some(verb), f)
+      def apply(left: String, verb: String, f: () => Unit) = registerVerbBranch(left, verb, f)
     }
 
   /**
@@ -1826,9 +1982,9 @@ one error found
     (left, verb, resultOfAfterWordApplication) => {
       val afterWordFunction =
         () => {
-          registerBranch(resultOfAfterWordApplication.text, None, resultOfAfterWordApplication.f)
+          registerDescriptionBranch(resultOfAfterWordApplication.text, resultOfAfterWordApplication.f)
         }
-      registerBranch(left, Some(verb), afterWordFunction)
+      registerVerbBranch(left, verb, afterWordFunction)
     }
   }
 
@@ -1842,6 +1998,49 @@ one error found
    * </p>
    */
   override def tags: Map[String, Set[String]] = atomic.get.tagsMap
+
+  private def runTestsInBranch(branch: Branch, reporter: Reporter, stopper: Stopper, filter: Filter, configMap: Map[String, Any], tracker: Tracker) {
+
+    val stopRequested = stopper
+    // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+    // so that exceptions are caught and transformed
+    // into error messages on the standard error stream.
+    val report = wrapReporterIfNecessary(reporter)
+    branch match {
+      case desc @ VerbBranch(_, descriptionName, verb) =>
+
+        // Need to use the full name of the description, which includes all the descriptions it is nested inside
+        // Call getPrefix and pass in this Desc, to get the full name
+        val descriptionFullName = getPrefixWithoutVerb(desc).trim
+
+        report(InfoProvided(tracker.nextOrdinal(), descriptionFullName, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)), None, None, Some(IndentedText(descriptionFullName, descriptionFullName, 0))))
+
+      case _ =>
+    }
+    branch.subNodes.reverse.foreach(
+      _ match {
+        case TestLeaf(parent, tn, specText, _) =>
+          if (!stopRequested()) { // TODO: Seems odd to me to check for stop here but still fire infos
+            val (filterTest, ignoreTest) = filter(tn, tags)
+            if (!filterTest)
+              if (ignoreTest) {
+                val testSucceededIcon = Resources("testSucceededIconChar")
+                val formattedSpecText = Resources("iconPlusShortName", testSucceededIcon, getFormattedSpecTextPrefix(parent) + " " + specText)
+                report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), tn, Some(IndentedText(formattedSpecText, specText, 1))))
+              }
+              else
+                runTest(tn, report, stopRequested, configMap, tracker)
+          }
+        case InfoLeaf(_, message) =>
+          val infoProvidedIcon = Resources("infoProvidedIconChar")
+          val formattedText = Resources("iconPlusShortName", infoProvidedIcon, message)
+          report(InfoProvided(tracker.nextOrdinal(), message,
+            Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)), None,
+              None, Some(IndentedText(formattedText, message, 1))))
+        case branch: Branch => runTestsInBranch(branch, reporter, stopRequested, filter, configMap, tracker)
+      }
+    )
+  }
 
   /**
    * Run a test. This trait's implementation runs the test registered with the name specified by
@@ -1858,18 +2057,101 @@ one error found
    */
   protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    def invokeWithFixture(theTest: TestLeaf) {
-      val theConfigMap = configMap
-      withFixture(
-        new NoArgTest {
-          def name = testName
-          def apply() { theTest.testFun() }
-          def configMap = theConfigMap
-        }
-      )
-    }
+    if (testName == null || reporter == null || stopper == null || configMap == null)
+      throw new NullPointerException
 
-    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
+    atomic.get.testsList.find(_.testName == testName) match {
+      case None => throw new IllegalArgumentException("Requested test doesn't exist: " + testName)
+      case Some(test) => {
+        val report = wrapReporterIfNecessary(reporter)
+
+        val testSucceededIcon = Resources("testSucceededIconChar")
+        val formattedSpecText = Resources("iconPlusShortName", testSucceededIcon, getFormattedSpecTextPrefix(test.parent) + " " + test.specText)
+
+        // Create a Rerunner if the Spec has a no-arg constructor
+        val hasPublicNoArgConstructor = Suite.checkForPublicNoArgConstructor(getClass)
+
+        val rerunnable =
+          if (hasPublicNoArgConstructor)
+            Some(new TestRerunner(getClass.getName, testName))
+          else
+            None
+
+        val testStartTime = System.currentTimeMillis
+
+        // A TestStarting event won't normally show up in a specification-style output, but
+        // will show up in a test-style output.
+        report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), test.testName, Some(MotionToSuppress), rerunnable))
+
+        val formatter = IndentedText(formattedSpecText, getFormattedSpecTextPrefix(test.parent) + " " + test.specText, 1)
+        val informerForThisTest =
+          new MessageRecordingInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName))) {
+            def apply(message: String) {
+              if (message == null)
+                throw new NullPointerException
+              if (shouldRecord)
+                record(message)
+              else {
+                val infoProvidedIcon = Resources("infoProvidedIconChar")
+                val formattedText = "  " + Resources("iconPlusShortName", infoProvidedIcon, message)
+                report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread, None, None, Some(IndentedText(formattedText, message, 2))))
+              }
+            }
+          }
+
+        val oldInformer = atomicInformer.getAndSet(informerForThisTest)
+        var testWasPending = false
+        var swapAndCompareSucceeded = false
+        try {
+          val theConfigMap = configMap
+          withFixture(
+            new NoArgTest {
+              def name = testName
+              def apply() { test.f() }
+              def configMap = theConfigMap
+            }
+          )
+
+          val duration = System.currentTimeMillis - testStartTime
+          report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), test.testName, Some(duration), Some(formatter), rerunnable))
+        }
+        catch {
+          case _: TestPendingException =>
+            report(TestPending(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), test.testName, Some(formatter)))
+            testWasPending = true
+          case e if !anErrorThatShouldCauseAnAbort(e) =>
+            val duration = System.currentTimeMillis - testStartTime
+            handleFailedTest(e, false, test.testName, test, formattedSpecText, rerunnable, report, tracker, duration)
+          case e => throw e
+        }
+        finally {
+          // send out any recorded messages
+          for (message <- informerForThisTest.recordedMessages) {
+            val infoProvidedIcon = Resources("infoProvidedIconChar")
+            val formattedText = "  " + Resources("iconPlusShortName", infoProvidedIcon, message)
+            report(InfoProvided(tracker.nextOrdinal(), message, informerForThisTest.nameInfoForCurrentThread, Some(testWasPending), None, Some(IndentedText(formattedText, message, 2))))
+          }
+
+          val shouldBeInformerForThisTest = atomicInformer.getAndSet(oldInformer)
+          swapAndCompareSucceeded = shouldBeInformerForThisTest eq informerForThisTest
+        }
+        if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+          throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
+      }
+    }
+  }
+
+  private def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+      test: TestLeaf, formattedSpecText: String, rerunnable: Option[Rerunner], report: Reporter, tracker: Tracker, duration: Long) {
+
+    val message =
+      if (throwable.getMessage != null) // [bv: this could be factored out into a helper method]
+        throwable.getMessage
+      else
+        throwable.toString
+
+    val formatter = IndentedText(formattedSpecText, getFormattedSpecTextPrefix(test.parent) + " " + test.specText, 1)
+    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), Some(formatter), rerunnable))
   }
 
   /**
@@ -1934,7 +2216,27 @@ one error found
   protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     
-    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+
+    val stopRequested = stopper
+
+    testName match {
+      case None => runTestsInBranch(atomic.get.trunk, reporter, stopRequested, filter, configMap, tracker)
+      case Some(tn) => runTest(tn, reporter, stopRequested, configMap, tracker)
+    }
   }
 
   /**
@@ -1973,15 +2275,44 @@ one error found
    * "A Stack (when not full) must allow me to push"
    * </pre>
    */
-  override def testNames: Set[String] = {
-    // I'm returning a ListSet here so that they tests will be run in registration order
-    ListSet(atomic.get.testNamesList.toArray: _*)
-  }
+  override def testNames: Set[String] = ListSet(atomic.get.testsList.map(_.testName): _*)
 
   override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
+    val stopRequested = stopper
+
+    // Set the flag that indicates registration is closed (because run has now been invoked),
+    // which will disallow any further invocations of "describe", it", or "ignore" with
+    // an RegistrationClosedException.
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+    if (!registrationClosed)
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, true))
+
+    val report = wrapReporterIfNecessary(reporter)
+
+    val informerForThisSuite =
+      new ConcurrentInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)) {
+        def apply(message: String) {
+          if (message == null)
+            throw new NullPointerException
+          report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread))
+        }
+      }
+
+    atomicInformer.set(informerForThisSuite)
+
+    var swapAndCompareSucceeded = false
+    try {
+      super.run(testName, report, stopRequested, filter, configMap, distributor, tracker)
+    }
+    finally {
+      val shouldBeInformerForThisSuite = atomicInformer.getAndSet(zombieInformer)
+      swapAndCompareSucceeded = shouldBeInformerForThisSuite eq informerForThisSuite
+    }
+    if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+      throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
   }
 
   /**

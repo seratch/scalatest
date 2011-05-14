@@ -22,107 +22,28 @@ package org.scalatest
  * Having a stack depth is more useful in a testing environment in which test failures are implemented as
  * thrown exceptions, as is the case in ScalaTest's built-in suite traits.
  *
- * @param messageFun an function that produces an optional detail message for this <code>StackDepthException</code>.
+ * @param message an optional detail message for this <code>StackDepthException</code>.
  * @param cause an optional cause, the <code>Throwable</code> that caused this <code>StackDepthException</code> to be thrown.
- * @param failedCodeStackDepthFun a function that produces the depth in the stack trace of this exception at which the line of test code that failed resides.
+ * @param failedCodeStackDepth the depth in the stack trace of this exception at which the line of test code that failed resides.
  *
- * @throws NullPointerException if either <code>messageFun</code>, <code>cause</code> or <code>failedCodeStackDepthFun</code> is <code>null</code>, or <code>Some(null)</code>.
+ * @throws NullPointerException if either <code>message</code> of <code>cause</code> is <code>null</code>, or <code>Some(null)</code>.
  *
  * @author Bill Venners
  */
-abstract class StackDepthException(
-  val messageFun: StackDepthException => Option[String],
-  val cause: Option[Throwable],
-  val failedCodeStackDepthFun: StackDepthException => Int
-) extends RuntimeException(if (cause.isDefined) cause.get else null) with StackDepth {
+abstract class StackDepthException(val message: Option[String], val cause: Option[Throwable], val failedCodeStackDepth: Int)
+    extends RuntimeException(if (message.isDefined) message.get else "", if (cause.isDefined) cause.get else null) with StackDepth {
 
-  if (messageFun == null) throw new NullPointerException("messageFun was null")
+  if (message == null) throw new NullPointerException("message was null")
+  message match {
+    case Some(null) => throw new NullPointerException("message was a Some(null)")
+    case _ =>
+  }
 
   if (cause == null) throw new NullPointerException("cause was null")
   cause match {
     case Some(null) => throw new NullPointerException("cause was a Some(null)")
     case _ =>
   }
-
-  if (failedCodeStackDepthFun == null) throw new NullPointerException("failedCodeStackDepthFun was null")
-
-  /**
-   * Constructs a <code>StackDepthException</code> with an optional pre-determined <code>message</code>, optional cause, and
-   * a <code>failedCodeStackDepth</code> function.
-   *
-   * @param message an optional detail message for this <code>StackDepthException</code>.
-   * @param cause an optional cause, the <code>Throwable</code> that caused this <code>StackDepthException</code> to be thrown.
-   * @param failedCodeStackDepth the depth in the stack trace of this exception at which the line of test code that failed resides.
-   *
-   * @throws NullPointerException if either <code>message</code> or <code>cause</code> is <code>null</code> or <code>Some(null)</code>, or <code>failedCodeStackDepthFun</code> is <code>null</code>.
-   */
-  def this(message: Option[String], cause: Option[Throwable], failedCodeStackDepthFun: StackDepthException => Int) =
-    this(
-      message match {
-        case null => throw new NullPointerException("message was null")
-        case Some(null) => throw new NullPointerException("message was a Some(null)")
-        case _ => (e: StackDepthException) => message
-      },
-      cause,
-      failedCodeStackDepthFun
-    )
-
-  /**
-   * Constructs a <code>StackDepthException</code> with an optional pre-determined <code>message</code>,
-   * optional <code>cause</code>, and and <code>failedCodeStackDepth</code>. (This was
-   * the primary constructor form prior to ScalaTest 1.5.)
-   *
-   * @param message an optional detail message for this <code>StackDepthException</code>.
-   * @param cause an optional cause, the <code>Throwable</code> that caused this <code>StackDepthException</code> to be thrown.
-   * @param failedCodeStackDepth the depth in the stack trace of this exception at which the line of test code that failed resides.
-   *
-   * @throws NullPointerException if either <code>message</code> of <code>cause</code> is <code>null</code>, or <code>Some(null)</code>.
-   */
-  def this(message: Option[String], cause: Option[Throwable], failedCodeStackDepth: Int) =
-    this(
-      message match {
-        case null => throw new NullPointerException("message was null")
-        case Some(null) => throw new NullPointerException("message was a Some(null)")
-        case _ => (e: StackDepthException) => message
-      },
-      cause,
-      (e: StackDepthException) => failedCodeStackDepth
-    )
-
-  /**
-   * An optional detail message for this <code>StackDepth</code> exception.
-   *
-   * <p>
-   * One reason this is lazy is to delay any searching of the stack trace until it is actually needed. It will
-   * usually be needed, but not always. For example, exceptions thrown during a shrink phase of a failed property
-   * will often be <code>StackDepthException</code>s, but whose <code>message</code> will never be used. Another related reason is to remove the need
-   * to create a different exception before creating this one just for the purpose of searching through its stack
-   * trace for the proper stack depth. Still one more reason is to allow the message to contain information about the
-   * stack depth, such as the failed file name and line number.
-   * </p>
-   */
-  lazy val message: Option[String] = messageFun(this)
- 
-  /**
-   * The depth in the stack trace of this exception at which the line of test code that failed resides.
-   *
-   * <p>
-   * One reason this is lazy is to delay any searching of the stack trace until it is actually needed. It will
-   * usually be needed, but not always. For example, exceptions thrown during a shrink phase of a failed property
-   * will often be <code>StackDepthException</code>s, but whose <code>failedCodeStackDepth</code> will never be used. Another reason is to remove the need
-   * to create a different exception before creating this one just for the purpose of searching through its stack
-   * trace for the proper stack depth. Still one more reason is to allow the message to contain information about the
-   * stack depth, such as the failed file name and line number.
-   * </p>
-   */
-  lazy val failedCodeStackDepth: Int = failedCodeStackDepthFun(this)
-
-  /**
-   * Returns the detail message string of this <code>StackDepthException</code>.
-   *
-   * @return the detail message string of this <code>StackDepthException</code> instance (which may be <code>null</code>).
-   */
-  override def getMessage: String = message.orNull
 
   /*
   * Throws <code>IllegalStateException</code>, because <code>StackDepthException</code>s are
@@ -228,222 +149,40 @@ passed methodName will be "ignore":
 0 org.scalatest.FunSuite$class.ignore(FunSuite.scala:624)
 1 org.scalatest.Q36Suite.ignore(ShouldBehaveLikeSpec.scala:23)
 2 org.scalatest.Q36Suite$$anonfun$1.apply(ShouldBehaveLikeSpec.scala:25)
-
-Not sure yet what to do with TableDrivenPropertyCheckFailedExeptions. It seems to 
-work fine hard-coded at 7. Can't find a case that doesn't work. Will release it hard-coded at 7 and see
-if someone else runs across one, and if so, I'll fix it then. (So the code that throws that exception
-doesn't call the getStackDepth helper method at this point.)
-
-0 org.scalatest.prop.TableFor2$$anonfun$apply$4.apply(Table.scala:356)
-1 org.scalatest.prop.TableFor2$$anonfun$apply$4.apply(Table.scala:347)
-2 scala.collection.mutable.ResizableArray$class.foreach(ResizableArray.scala:57)
-3 scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:43)
-4 org.scalatest.prop.TableFor2.apply(Table.scala:347)
-5 org.scalatest.prop.TableDrivenPropertyChecks$class.forAll(TableDrivenPropertyChecks.scala:215)
-6 org.scalatest.prop.PropertyChecksSuite.forAll(PropertyChecksSuite.scala:21)
-org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:48) <-- this should not be cut
-
-Conductor from conduct method: Stack depth should be 3 or 4. Both of which are the same
-
-[scalatest] org.scalatest.NotAllowedException: A Conductor's conduct method can only be invoked once.
-[scalatest] 	at org.scalatest.concurrent.Conductor.conduct(Conductor.scala:525)
-[scalatest] 	at org.scalatest.concurrent.Conductor.conduct(Conductor.scala:476)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite$$anonfun$1$$anonfun$2.apply(ConductorSuite.scala:30)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite$$anonfun$1$$anonfun$2.apply(ConductorSuite.scala:30)
-[scalatest] 	at org.scalatest.Assertions$class.intercept(Assertions.scala:515)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite.intercept(ConductorSuite.scala:23)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite$$anonfun$1.apply(ConductorSuite.scala:30)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite$$anonfun$1.apply(ConductorSuite.scala:27)
-[scalatest] 	at org.scalatest.FunSuite$$anon$1.apply(FunSuite.scala:1031)
-[scalatest] 	at org.scalatest.Suite$class.withFixture(Suite.scala:1450)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite.withFixture(ConductorSuite.scala:23)
-[scalatest] 	at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1028)
-[scalatest] 	at org.scalatest.concurrent.ConductorSuite.runTest(ConductorSuite.scala:23)
 */
 private[scalatest] object StackDepthExceptionHelper {
 
-  def getStackDepth(fileName: String, methodName: String): (StackDepthException => Int) = { sde =>
+  def getStackDepth(fileName: String, methodName: String): Int = {
 
-    val stackTraceList = sde.getStackTrace.toList
+    val temp = new RuntimeException
+    val stackTraceList = temp.getStackTrace.toList.tail // drop the first one, which is this getStackDepth method
 
-    val fileNameIsDesiredList: List[Boolean] =
+    val fileNameIsCheckersDotScalaList: List[Boolean] =
       for (element <- stackTraceList) yield
         element.getFileName == fileName // such as "Checkers.scala"
 
-    val methodNameIsDesiredList: List[Boolean] =
+    val methodNameIsCheckList: List[Boolean] =
       for (element <- stackTraceList) yield
         element.getMethodName == methodName // such as "check"
 
-    // For element 0, the previous file name was not desired, because there is no previous
+    // For element 0, the previous file name was not Checkers.scala, because there is no previous
     // one, so you start with false. For element 1, it depends on whether element 0 of the stack trace
-    // had the desired file name, and so forth.
-    val previousFileNameIsDesiredList: List[Boolean] = false :: (fileNameIsDesiredList.dropRight(1))
+    // had file name Checkers.scala, and so forth.
+    val previousFileNameIsCheckersDotScalaList: List[Boolean] = false :: (fileNameIsCheckersDotScalaList.dropRight(1))
 
     // Zip these two related lists together. They now have two boolean values together, when both
-    // are true, that's a stack trace element that should be included in the stack depth.
-    val zipped1 = methodNameIsDesiredList zip previousFileNameIsDesiredList
-    val methodNameAndPreviousFileNameAreDesiredList: List[Boolean] =
-      for ((methodNameIsDesired, previousFileNameIsDesired) <- zipped1) yield
-        methodNameIsDesired && previousFileNameIsDesired
+    // are true, that's a stack trace element that should be included in the stack depth. In the 
+    val zipped1 = methodNameIsCheckList zip previousFileNameIsCheckersDotScalaList
+    val methodNameIsCheckAndPreviousFileNameIsCheckersDotScalaList: List[Boolean] =
+      for ((methodNameIsCheck, previousFileNameIsCheckersDotScala) <- zipped1) yield
+        methodNameIsCheck && previousFileNameIsCheckersDotScala
 
     // Zip the two lists together, that when one or the other is true is an include.
-    val zipped2 = fileNameIsDesiredList zip methodNameAndPreviousFileNameAreDesiredList
+    val zipped2 = fileNameIsCheckersDotScalaList zip methodNameIsCheckAndPreviousFileNameIsCheckersDotScalaList
     val includeInStackDepthList: List[Boolean] =
-      for ((fileNameIsDesired, methodNameAndPreviousFileNameAreDesired) <- zipped2) yield
-        fileNameIsDesired || methodNameAndPreviousFileNameAreDesired
+      for ((fileNameIsCheckersDotScala, methodNameIsCheckAndPreviousFileNameIsCheckersDotScala) <- zipped2) yield
+        fileNameIsCheckersDotScala || methodNameIsCheckAndPreviousFileNameIsCheckersDotScala
 
     includeInStackDepthList.takeWhile(include => include).length
-  }
-
-/*
-mixing in trait GeneratorDrivenPropertyChecks:
-
-at org.scalatest.prop.Checkers$.doCheck(Checkers.scala:234)
-at org.scalatest.prop.GeneratorDrivenPropertyChecks$class.forAll(GeneratorDrivenPropertyChecks.scala:51)
-at org.scalatest.prop.PropertyChecksSuite.forAll(PropertyChecksSuite.scala:23)
-at org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:37) <-- actual stack depth
-at org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:37) <-- add one to zap duplication
-at org.scalatest.FunSuite$$anon$4.apply(FunSuite.scala:1146)
-at org.scalatest.Suite$class.withFixture(Suite.scala:1478)
-at org.scalatest.prop.PropertyChecksSuite.withFixture(PropertyChecksSuite.scala:23)
-at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1143)
-at org.scalatest.prop.PropertyChecksSuite.runTest(PropertyChecksSuite.scala:23)
-at org.scalatest.FunSuite$$anonfun$runTests$1.apply(FunSuite.scala:1252)
-
-importing GeneratorDrivenPropertyChecks._
-
-at org.scalatest.prop.Checkers$.doCheck(Checkers.scala:234)
-at org.scalatest.prop.GeneratorDrivenPropertyChecks$class.forAll(GeneratorDrivenPropertyChecks.scala:51)
-at org.scalatest.prop.GeneratorDrivenPropertyChecks$.forAll(GeneratorDrivenPropertyChecks.scala:55)
-at org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:38) <-- actual stack depth
-at org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:38) <-- add one to zap duplication
-at org.scalatest.FunSuite$$anon$4.apply(FunSuite.scala:1146)
-at org.scalatest.Suite$class.withFixture(Suite.scala:1478)
-at org.scalatest.prop.PropertyChecksSuite.withFixture(PropertyChecksSuite.scala:24)
-at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1143)
-at org.scalatest.prop.PropertyChecksSuite.runTest(PropertyChecksSuite.scala:24)
-at org.scalatest.FunSuite$$anonfun$runTests$1.apply(FunSuite.scala:1252)
-
-What I'm doing here is including everything up to the first appearance of the desired method one stack
-trace element beyond an appearance of the desired file name.
-
-mixing in trait TableDrivenPropertyChecks:
-
-at org.scalatest.prop.TableFor2$$anonfun$apply$4.apply(Table.scala:396)
-at org.scalatest.prop.TableFor2$$anonfun$apply$4.apply(Table.scala:387)
-at scala.collection.mutable.ResizableArray$class.foreach(ResizableArray.scala:57)
-at scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:43)
-at org.scalatest.prop.TableFor2.apply(Table.scala:387)
-at org.scalatest.prop.TableDrivenPropertyChecks$class.forAll(TableDrivenPropertyChecks.scala:350)
-at org.scalatest.prop.OtherSuite.forAll(OtherSuite.scala:21)
-at org.scalatest.prop.OtherSuite$$anonfun$2.apply(OtherSuite.scala:48) <-- stack depth should be 7
-at org.scalatest.prop.OtherSuite$$anonfun$2.apply(OtherSuite.scala:33)
-at org.scalatest.FunSuite$$anon$4.apply(FunSuite.scala:1146)
-at org.scalatest.Suite$class.withFixture(Suite.scala:1478)
-at org.scalatest.prop.OtherSuite.withFixture(OtherSuite.scala:21)
-at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1143)
-at org.scalatest.prop.OtherSuite.runTest(OtherSuite.scala:21)
-
-importing TableDrivenPropertyChecks._:
-
-at org.scalatest.prop.TableFor2$$anonfun$apply$4.apply(Table.scala:396)
-at org.scalatest.prop.TableFor2$$anonfun$apply$4.apply(Table.scala:387)
-at scala.collection.mutable.ResizableArray$class.foreach(ResizableArray.scala:57)
-at scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:43)
-at org.scalatest.prop.TableFor2.apply(Table.scala:387)
-at org.scalatest.prop.TableDrivenPropertyChecks$class.forAll(TableDrivenPropertyChecks.scala:350)
-at org.scalatest.prop.TableDrivenPropertyChecks$.forAll(TableDrivenPropertyChecks.scala:619)
-at org.scalatest.prop.OtherSuite$$anonfun$2.apply(OtherSuite.scala:49) <-- stack depth should be 7
-at org.scalatest.prop.OtherSuite$$anonfun$2.apply(OtherSuite.scala:34)
-at org.scalatest.FunSuite$$anon$4.apply(FunSuite.scala:1146)
-at org.scalatest.Suite$class.withFixture(Suite.scala:1478)
-at org.scalatest.prop.OtherSuite.withFixture(OtherSuite.scala:22)
-at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1143)
-at org.scalatest.prop.OtherSuite.runTest(OtherSuite.scala:22)
-at org.scalatest.FunSuite$$anonfun$runTests$1.apply(FunSuite.scala:1252)
-
-forAll (minSize(10), maxSize(20)) { fun... } form. Stack trace is:
-The proper stack depth here should be the second one that has ack.scala:27
-Had bug. But turned out same algo works, but needed to send "apply" not "forAll"
-
-[scalatest]   org.scalatest.prop.GeneratorDrivenPropertyCheckFailedException: org.scalatest.TestFailedException (included as this exception's cause) was thrown during property evaluation.
-[scalatest]   at org.scalatest.prop.Checkers$.doCheck(Checkers.scala:269)
-[scalatest]   at org.scalatest.prop.GeneratorDrivenPropertyChecks$ConfiguredPropertyCheck.apply(GeneratorDrivenPropertyChecks.scala:432)
-[scalatest]   at org.scalatest.prop.AckSuite$$anonfun$1.apply(ack.scala:27)
-[scalatest]   at org.scalatest.prop.AckSuite$$anonfun$1.apply(ack.scala:27)
-[scalatest]   at org.scalatest.FunSuite$$anon$4.apply(FunSuite.scala:1146)
-[scalatest]   at org.scalatest.Suite$class.withFixture(Suite.scala:1478)
-[scalatest]   at org.scalatest.prop.AckSuite.withFixture(ack.scala:23)
-[scalatest]   at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1143)
-[scalatest]   at org.scalatest.prop.AckSuite.runTest(ack.scala:23)
-[scalatest]   at org.scalatest.FunSuite$$anonfun$runTests$1.apply(FunSuite.scala:1252)
-[scalatest]   at org.scalatest.FunSuite$$anonfun$runTests$1.apply(FunSuite.scala:1243)
-[scalatest]   at scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:61)
-[scalatest]   at scala.collection.immutable.List.foreach(List.scala:45)
-[scalatest]   at org.scalatest.FunSuite$class.runTests(FunSuite.scala:1243)
-[scalatest]   at org.scalatest.prop.AckSuite.runTests(ack.scala:23)
-[scalatest]   at org.scalatest.Suite$class.run(Suite.scala:1773)
-[scalatest]   at org.scalatest.prop.AckSuite.org$scalatest$FunSuite$$super$run(ack.scala:23)
-[scalatest]   at org.scalatest.FunSuite$class.run(FunSuite.scala:1289)
-[scalatest]   at org.scalatest.prop.AckSuite.run(ack.scala:23)
-[scalatest]   at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:59)
-[scalatest]   at org.scalatest.tools.Runner$$anonfun$doRunRunRunDaDoRunRun$3.apply(Runner.scala:1515)
-[scalatest]   at org.scalatest.tools.Runner$$anonfun$doRunRunRunDaDoRunRun$3.apply(Runner.scala:1512)
-[scalatest]   at scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:61)
-[scalatest]   at scala.collection.immutable.List.foreach(List.scala:45)
-[scalatest]   at org.scalatest.tools.Runner$.doRunRunRunDaDoRunRun(Runner.scala:1512)
-[scalatest]   at org.scalatest.tools.Runner$$anonfun$runOptionallyWithPassFailReporter$2.apply(Runner.scala:594)
-[scalatest]   at org.scalatest.tools.Runner$$anonfun$runOptionallyWithPassFailReporter$2.apply(Runner.scala:593)
-[scalatest]   at org.scalatest.tools.Runner$.withClassLoaderAndDispatchReporter(Runner.scala:1556)
-
-*/
-  def getStackDepthForPropCheck(fileName: String, methodName: String): (StackDepthException => Int) = { sde =>
-
-    val stackTraceList = sde.getStackTrace.toList
-
-    val fileNameIsDesiredList: List[Boolean] =
-      for (element <- stackTraceList) yield
-        element.getFileName == fileName // such as "Checkers.scala"
-
-    val methodNameIsDesiredList: List[Boolean] =
-      for (element <- stackTraceList) yield
-        element.getMethodName == methodName // such as "check"
-
-    // For element 0, the previous file name was not desired, because there is no previous
-    // one, so you start with false. For element 1, it depends on whether element 0 of the stack trace
-    // had the desired file name, and so forth.
-    val previousFileNameIsDesiredList: List[Boolean] = false :: (fileNameIsDesiredList.dropRight(1))
-
-    // Zip these two related lists together. They now have two boolean values together, when both
-    // are true, that's a stack trace element that should be included in the stack depth.
-    val zipped1 = methodNameIsDesiredList zip previousFileNameIsDesiredList
-    val methodNameAndPreviousFileNameAreDesiredList: List[Boolean] =
-      for ((methodNameIsDesired, previousFileNameIsDesired) <- zipped1) yield
-        methodNameIsDesired && previousFileNameIsDesired
-
-    // Include all falses up to the first true in the stack depth count
-    val result = methodNameAndPreviousFileNameAreDesiredList.takeWhile(b => !b).length + 1
-
-    def hasSameFileNameAndLineNumber(e1: StackTraceElement, e2: StackTraceElement) = {
-      if (e1.getFileName == null || e1.getLineNumber < 0 || e2.getFileName == null || e2.getLineNumber < 0) false
-      else (e1.getFileName == e2.getFileName && e1.getLineNumber == e2.getLineNumber)
-    }
-
-    // For some reason, the same filename and line number is showing up twice at the stack depth for
-    // GeneratorDrivenPropertyChecks. Would look prettier to cut off one of them.
-    //
-    // TEST FAILED - PropertyChecksSuite: fraction property check (PropertyChecksSuite.scala:38) (202 milliseconds)
-    //   Gave up after 0 successful property evaluations. 500 evaluations were discarded.
-    //   org.scalatest.prop.GeneratorDrivenPropertyCheckFailedException: Gave up after 0 successful property evaluations. 500 evaluations were discarded.
-    //   ...
-    //   at org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:38)
-    //   at org.scalatest.prop.PropertyChecksSuite$$anonfun$2.apply(PropertyChecksSuite.scala:38)
-    //   at org.scalatest.FunSuite$$anon$4.apply(FunSuite.scala:1146)
-    //   at org.scalatest.Suite$class.withFixture(Suite.scala:1478)
-    //   at org.scalatest.prop.PropertyChecksSuite.withFixture(PropertyChecksSuite.scala:24)
-    //   at org.scalatest.FunSuite$class.runTest(FunSuite.scala:1143)
-    //   at org.scalatest.prop.PropertyChecksSuite.runTest(PropertyChecksSuite.scala:24)
-    //   ...
-    if ((stackTraceList.length > result + 1) && hasSameFileNameAndLineNumber(stackTraceList(result), stackTraceList(result + 1))) result + 1 else result
   }
 }

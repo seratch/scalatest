@@ -15,17 +15,14 @@
  */
 package org.scalatest
 
+import NodeFamily._
 import scala.collection.immutable.ListSet
-import java.util.ConcurrentModificationException
-import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.StackDepthExceptionHelper.getStackDepth
+import java.util.concurrent.atomic.AtomicReference
+import java.util.ConcurrentModificationException
 import org.scalatest.events._
 import Suite.anErrorThatShouldCauseAnAbort
-import Suite.checkRunTestParamsForNull
-import Suite.indentation
 import verb.BehaveWord
-import Suite.reportInfoProvided
-import Suite.reportTestIgnored
 
 /**
  * Trait that facilitates a &#8220;behavior-driven&#8221; style of development (BDD), in which tests
@@ -112,14 +109,6 @@ import Suite.reportTestIgnored
  * - should pop values in last-in-first-out order
  * - should throw NoSuchElementException if an empty stack is popped
  * </pre>
- *
- * <p>
- * <em>Note: Trait <code>Spec</code>'s syntax is in great part inspired by <a href="http://rspec.info/" target="_blank">RSpec</a>, a Ruby BDD framework.</em>
- *</p>
- *
- * <p>
- * See also: <a href="http://www.scalatest.org/getting_started_with_spec" target="_blank">Getting started with <code>Spec</code>.</a>
- * </p>
  *
  * <h2>Shared fixtures</h2>
  *
@@ -908,8 +897,89 @@ import Suite.reportTestIgnored
  */
 trait Spec extends Suite { thisSuite =>
 
-  private final val engine = new Engine("concurrentSpecMod", "Spec")
-  import engine._
+  private val IgnoreTagName = "org.scalatest.Ignore"
+
+  private class Bundle private(
+    val trunk: Trunk,
+    val currentBranch: Branch,
+    val tagsMap: Map[String, Set[String]],
+
+    // All tests, in reverse order of registration
+    val testsList: List[TestLeaf],
+
+    // Used to detect at runtime that they've stuck a describe or an it inside an it,
+    // which should result in a TestRegistrationClosedException
+    val registrationClosed: Boolean
+  ) {
+    def unpack = (trunk, currentBranch, tagsMap, testsList, registrationClosed)
+  }
+
+  private object Bundle {
+    def apply(
+      trunk: Trunk,
+      currentBranch: Branch,
+      tagsMap: Map[String, Set[String]],
+      testsList: List[TestLeaf],
+      registrationClosed: Boolean
+    ): Bundle =
+      new Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed)
+
+    def initialize(
+      trunk: Trunk,
+      tagsMap: Map[String, Set[String]],
+      testsList: List[TestLeaf],
+      registrationClosed: Boolean
+    ): Bundle =
+      new Bundle(trunk, trunk, tagsMap, testsList, registrationClosed)
+  }
+
+  private val atomic =
+    new AtomicReference[Bundle](
+      Bundle.initialize(new Trunk, Map(), List[TestLeaf](), false)
+    )
+
+  private def updateAtomic(oldBundle: Bundle, newBundle: Bundle) {
+    val shouldBeOldBundle = atomic.getAndSet(newBundle)
+    if (!(shouldBeOldBundle eq oldBundle))
+      throw new ConcurrentModificationException(Resources("concurrentSpecBundleMod"))
+  }
+
+  private def registerTest(specText: String, f: => Unit) = {
+
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+    val testName = getTestName(specText, currentBranch)
+    if (testsList.exists(_.testName == testName)) {
+      throw new DuplicateTestNameException(testName, getStackDepth("Spec.scala", "it"))
+    }
+    val testShortName = specText
+    val test = TestLeaf(currentBranch, testName, specText, f _)
+    currentBranch.subNodes ::= test
+    testsList ::= test
+
+    updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
+
+    testName
+  }
+
+  private class RegistrationInformer extends Informer {
+    def apply(message: String) {
+      if (message == null)
+        throw new NullPointerException
+
+      val oldBundle = atomic.get
+      var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+      currentBranch.subNodes ::= InfoLeaf(currentBranch, message)
+
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
+    }
+  }
+
+  // The informer will be a registration informer until run is called for the first time. (This
+  // is the registration phase of a Spec's lifecycle.)
+  private final val atomicInformer = new AtomicReference[Informer](new RegistrationInformer)
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
@@ -920,6 +990,16 @@ trait Spec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
+
+  private val zombieInformer =
+    new Informer {
+      private val complaint = Resources("cantCallInfoNow", "Spec")
+      def apply(message: String) {
+        if (message == null)
+          throw new NullPointerException
+        throw new IllegalStateException(complaint)
+      }
+    }
 
   /**
    * Class that, via an instance referenced from the <code>it</code> field,
@@ -968,7 +1048,45 @@ trait Spec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: => Unit) {
-      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", "Spec.scala", "apply", testTags: _*)
+
+      if (atomic.get.registrationClosed)
+        throw new TestRegistrationClosedException(Resources("itCannotAppearInsideAnotherIt"), getStackDepth("Spec.scala", "it"))
+      if (specText == null)
+        throw new NullPointerException("specText was null")
+      if (testTags.exists(_ == null))
+        throw new NullPointerException("a test tag was null")
+
+      val testName = registerTest(specText, testFun)
+
+      val oldBundle = atomic.get
+      var (trunk, currentBranch, tagsMap, testsList, registrationClosed2) = oldBundle.unpack
+      val tagNames = Set[String]() ++ testTags.map(_.name)
+      if (!tagNames.isEmpty)
+        tagsMap += (testName -> tagNames)
+
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed2))
+    }
+
+    /**
+     * Register a test with the given spec text and test function value that takes no arguments.
+     *
+     * This method will register the test for later execution via an invocation of one of the <code>execute</code>
+     * methods. The name of the test will be a concatenation of the text of all surrounding describers,
+     * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
+     * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
+     * this <code>Spec</code> instance.
+     *
+     * @param specText the specification text, which will be combined with the descText of any surrounding describers
+     * to form the test name
+     * @param testFun the test function
+     * @throws DuplicateTestNameException if a test with the same name has been registered previously
+     * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
+     * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
+     */
+    def apply(specText: String)(testFun: => Unit) {
+      if (atomic.get.registrationClosed)
+        throw new TestRegistrationClosedException(Resources("itCannotAppearInsideAnotherIt"), getStackDepth("Spec.scala", "it"))
+      apply(specText, Array[Tag](): _*)(testFun)
     }
 
     /**
@@ -1051,19 +1169,347 @@ trait Spec extends Suite { thisSuite =>
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  protected def ignore(testText: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", "Spec.scala", "ignore", testTags: _*)
+  protected def ignore(specText: String, testTags: Tag*)(testFun: => Unit) {
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("ignoreCannotAppearInsideAnIt"), getStackDepth("Spec.scala", "ignore"))
+    if (specText == null)
+      throw new NullPointerException("specText was null")
+    if (testTags.exists(_ == null))
+      throw new NullPointerException("a test tag was null")
+    val testName = registerTest(specText, testFun)
+    val tagNames = Set[String]() ++ testTags.map(_.name)
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+    tagsMap += (testName -> (tagNames + IgnoreTagName))
+    updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
   }
 
+  /**
+   * Register a test to ignore, which has the given spec text and test function value that takes no arguments.
+   * This method will register the test for later ignoring via an invocation of one of the <code>execute</code>
+   * methods. This method exists to make it easy to ignore an existing test by changing the call to <code>it</code>
+   * to <code>ignore</code> without deleting or commenting out the actual test code. The test will not be executed, but a
+   * report will be sent that indicates the test was ignored. The name of the test will be a concatenation of the text of all surrounding describers,
+   * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
+   * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
+   * this <code>Spec</code> instance.
+   *
+   * @param specText the specification text, which will be combined with the descText of any surrounding describers
+   * to form the test name
+   * @param testFun the test function
+   * @throws DuplicateTestNameException if a test with the same name has been registered previously
+   * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
+   * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
+   */
+  protected def ignore(specText: String)(testFun: => Unit) {
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("ignoreCannotAppearInsideAnIt"), getStackDepth("Spec.scala", "ignore"))
+    ignore(specText, Array[Tag](): _*)(testFun)
+  }
+  
   /**
    * Describe a &#8220;subject&#8221; being specified and tested by the passed function value. The
    * passed function value may contain more describers (defined with <code>describe</code>) and/or tests
    * (defined with <code>it</code>). This trait's implementation of this method will register the
    * description string and immediately invoke the passed function.
    */
-  protected def describe(description: String)(fun: => Unit) {
+  protected def describe(description: String)(f: => Unit) {
 
-    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", "Spec.scala", "describe")
+    if (atomic.get.registrationClosed)
+      throw new TestRegistrationClosedException(Resources("describeCannotAppearInsideAnIt"), getStackDepth("Spec.scala", "describe"))
+
+    def createNewBranch() = {
+      val oldBundle = atomic.get
+      var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+      val newBranch = DescriptionBranch(currentBranch, description)
+      val oldBranch = currentBranch
+      currentBranch.subNodes ::= newBranch
+      currentBranch = newBranch
+
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, registrationClosed))
+
+      oldBranch
+    }
+
+    val oldBranch = createNewBranch()
+
+    f
+
+    val oldBundle = atomic.get
+    val (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+
+    updateAtomic(oldBundle, Bundle(trunk, oldBranch, tagsMap, testsList, registrationClosed))
+  }
+
+  /**
+   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>Spec</code> belong, and values
+   * the <code>Set</code> of test names that belong to each tag. If this <code>Spec</code> contains no tags, this method returns an empty <code>Map</code>.
+   *
+   * <p>
+   * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to 
+   * methods <code>test</code> and <code>ignore</code>. 
+   * </p>
+   */
+  override def tags: Map[String, Set[String]] = atomic.get.tagsMap
+
+  private def runTestsInBranch(branch: Branch, reporter: Reporter, stopper: Stopper, filter: Filter, configMap: Map[String, Any], tracker: Tracker) {
+
+    val stopRequested = stopper
+    // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+    // so that exceptions are caught and transformed
+    // into error messages on the standard error stream.
+    val report = wrapReporterIfNecessary(reporter)
+    branch match {
+      case desc @ DescriptionBranch(_, descriptionName) =>
+
+        def sendInfoProvidedMessage() {
+          // Need to use the full name of the description, which includes all the descriptions it is nested inside
+          // Call getPrefix and pass in this Desc, to get the full name
+          val descriptionFullName = getPrefix(desc).trim
+         
+
+          report(InfoProvided(tracker.nextOrdinal(), descriptionFullName, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)), None, None, Some(IndentedText(descriptionFullName, descriptionFullName, 0))))
+        }
+        
+        // Only send an infoProvided message if the first thing in the subNodes is *not* sub-description, i.e.,
+        // it is a test, because otherwise we get a lame description that doesn't have any tests under it.
+        // But send it if the list is empty.
+        if (desc.subNodes.isEmpty)
+          sendInfoProvidedMessage() 
+        else
+          desc.subNodes.reverse.head match {
+            case ex: TestLeaf => sendInfoProvidedMessage()
+            case _ => // Do nothing in this case
+          }
+
+      case _ =>
+    }
+    branch.subNodes.reverse.foreach(
+      _ match {
+        case TestLeaf(_, tn, specText, _) =>
+          if (!stopRequested()) { // TODO: Seems odd to me to check for stop here but still fire infos
+            val (filterTest, ignoreTest) = filter(tn, tags)
+            if (!filterTest)
+              if (ignoreTest) {
+                val testSucceededIcon = Resources("testSucceededIconChar")
+                val formattedSpecText = Resources("iconPlusShortName", testSucceededIcon, specText)
+                report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), tn, Some(IndentedText(formattedSpecText, specText, 1))))
+              }
+              else
+                runTest(tn, report, stopRequested, configMap, tracker)
+          }
+        case InfoLeaf(_, message) =>
+          val infoProvidedIcon = Resources("infoProvidedIconChar")
+          val formattedText = Resources("iconPlusShortName", infoProvidedIcon, message)
+          report(InfoProvided(tracker.nextOrdinal(), message,
+            Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)), None,
+              None, Some(IndentedText(formattedText, message, 1))))
+        case branch: Branch => runTestsInBranch(branch, reporter, stopRequested, filter, configMap, tracker)
+      }
+    )
+  }
+
+  /**
+   * Run a test. This trait's implementation runs the test registered with the name specified by
+   * <code>testName</code>. Each test's name is a concatenation of the text of all describers surrounding a test,
+   * from outside in, and the test's  spec text, with one space placed between each item. (See the documenation
+   * for <code>testNames</code> for an example.)
+   *
+   * @param testName the name of one test to execute.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>Spec</code>'s executing tests.
+   * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
+   *     is <code>null</code>.
+   */
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+
+    if (testName == null || reporter == null || stopper == null || configMap == null)
+      throw new NullPointerException
+
+    atomic.get.testsList.find(_.testName == testName) match {
+      case None => throw new IllegalArgumentException("Requested test doesn't exist: " + testName)
+      case Some(test) => {
+        val report = wrapReporterIfNecessary(reporter)
+
+        val testSucceededIcon = Resources("testSucceededIconChar")
+        val formattedSpecText = Resources("iconPlusShortName", testSucceededIcon, test.specText)
+
+        // Create a Rerunner if the Spec has a no-arg constructor
+        val hasPublicNoArgConstructor = Suite.checkForPublicNoArgConstructor(getClass)
+
+        val rerunnable =
+          if (hasPublicNoArgConstructor)
+            Some(new TestRerunner(getClass.getName, testName))
+          else
+            None
+
+        val testStartTime = System.currentTimeMillis
+
+        // A TestStarting event won't normally show up in a specification-style output, but
+        // will show up in a test-style output.
+        report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), test.testName, Some(MotionToSuppress), rerunnable))
+
+        val formatter = IndentedText(formattedSpecText, test.specText, 1)
+        val informerForThisTest =
+          new MessageRecordingInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(testName))) {
+            def apply(message: String) {
+              if (message == null)
+                throw new NullPointerException
+              if (shouldRecord)
+                record(message)
+              else {
+                val infoProvidedIcon = Resources("infoProvidedIconChar")
+                val formattedText = "  " + Resources("iconPlusShortName", infoProvidedIcon, message)
+                report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread, None, None, Some(IndentedText(formattedText, message, 2))))
+              }
+            }
+          }
+
+        val oldInformer = atomicInformer.getAndSet(informerForThisTest)
+        var testWasPending = false
+        var swapAndCompareSucceeded = false
+        try {
+          val theConfigMap = configMap
+          withFixture(
+            new NoArgTest {
+              def name = testName
+              def apply() { test.f() }
+              def configMap = theConfigMap
+            }
+          )
+
+          val duration = System.currentTimeMillis - testStartTime
+          report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), test.testName, Some(duration), Some(formatter), rerunnable))
+        }
+        catch {
+          case _: TestPendingException =>
+            report(TestPending(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), test.testName, Some(formatter)))
+            testWasPending = true
+          case e if !anErrorThatShouldCauseAnAbort(e) =>
+            val duration = System.currentTimeMillis - testStartTime
+            handleFailedTest(e, false, test.testName, test.specText, formattedSpecText, rerunnable, report, tracker, duration)
+          case e => throw e
+        }
+        finally {
+          // send out any recorded messages
+          for (message <- informerForThisTest.recordedMessages) {
+            val infoProvidedIcon = Resources("infoProvidedIconChar")
+            val formattedText = "  " + Resources("iconPlusShortName", infoProvidedIcon, message)
+            report(InfoProvided(tracker.nextOrdinal(), message, informerForThisTest.nameInfoForCurrentThread, Some(testWasPending), None, Some(IndentedText(formattedText, message, 2))))
+          }
+
+          val shouldBeInformerForThisTest = atomicInformer.getAndSet(oldInformer)
+          swapAndCompareSucceeded = shouldBeInformerForThisTest eq informerForThisTest
+          if (!swapAndCompareSucceeded) {
+            if (shouldBeInformerForThisTest == null) println("shouldBeInformerForThisTest was null")
+            else if (shouldBeInformerForThisTest eq zombieInformer) println("shouldBeInformerForThisTest was the zombie")
+            else println("shouldBeInformerForThisTest's class was: " + shouldBeInformerForThisTest.getClass.getName)
+          }
+        }
+        if (!swapAndCompareSucceeded)  // Do outside finally to workaround Scala compiler bug
+          throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
+      }
+    }
+  }
+
+  private def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+      specText: String, formattedSpecText: String, rerunnable: Option[Rerunner], report: Reporter, tracker: Tracker, duration: Long) {
+
+    val message =
+      if (throwable.getMessage != null) // [bv: this could be factored out into a helper method]
+        throwable.getMessage
+      else
+        throwable.toString
+
+    val formatter = IndentedText(formattedSpecText, specText, 1)
+    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), Some(formatter), rerunnable))
+  }
+
+  /**
+   * Run zero to many of this <code>Spec</code>'s tests.
+   *
+   * <p>
+   * This method takes a <code>testName</code> parameter that optionally specifies a test to invoke.
+   * If <code>testName</code> is <code>Some</code>, this trait's implementation of this method
+   * invokes <code>runTest</code> on this object, passing in:
+   * </p>
+   *
+   * <ul>
+   * <li><code>testName</code> - the <code>String</code> value of the <code>testName</code> <code>Option</code> passed
+   *   to this method</li>
+   * <li><code>reporter</code> - the <code>Reporter</code> passed to this method, or one that wraps and delegates to it</li>
+   * <li><code>stopper</code> - the <code>Stopper</code> passed to this method, or one that wraps and delegates to it</li>
+   * <li><code>configMap</code> - the <code>configMap</code> passed to this method, or one that wraps and delegates to it</li>
+   * </ul>
+   *
+   * <p>
+   * This method takes a <code>Set</code> of tag names that should be included (<code>tagsToInclude</code>), and a <code>Set</code>
+   * that should be excluded (<code>tagsToExclude</code>), when deciding which of this <code>Suite</code>'s tests to execute.
+   * If <code>tagsToInclude</code> is empty, all tests will be executed
+   * except those those belonging to tags listed in the <code>tagsToExclude</code> <code>Set</code>. If <code>tagsToInclude</code> is non-empty, only tests
+   * belonging to tags mentioned in <code>tagsToInclude</code>, and not mentioned in <code>tagsToExclude</code>
+   * will be executed. However, if <code>testName</code> is <code>Some</code>, <code>tagsToInclude</code> and <code>tagsToExclude</code> are essentially ignored.
+   * Only if <code>testName</code> is <code>None</code> will <code>tagsToInclude</code> and <code>tagsToExclude</code> be consulted to
+   * determine which of the tests named in the <code>testNames</code> <code>Set</code> should be run. For more information on trait tags, see the main documentation for this trait.
+   * </p>
+   *
+   * <p>
+   * If <code>testName</code> is <code>None</code>, this trait's implementation of this method
+   * invokes <code>testNames</code> on this <code>Suite</code> to get a <code>Set</code> of names of tests to potentially execute.
+   * (A <code>testNames</code> value of <code>None</code> essentially acts as a wildcard that means all tests in
+   * this <code>Suite</code> that are selected by <code>tagsToInclude</code> and <code>tagsToExclude</code> should be executed.)
+   * For each test in the <code>testName</code> <code>Set</code>, in the order
+   * they appear in the iterator obtained by invoking the <code>elements</code> method on the <code>Set</code>, this trait's implementation
+   * of this method checks whether the test should be run based on the <code>tagsToInclude</code> and <code>tagsToExclude</code> <code>Set</code>s.
+   * If so, this implementation invokes <code>runTest</code>, passing in:
+   * </p>
+   *
+   * <ul>
+   * <li><code>testName</code> - the <code>String</code> name of the test to run (which will be one of the names in the <code>testNames</code> <code>Set</code>)</li>
+   * <li><code>reporter</code> - the <code>Reporter</code> passed to this method, or one that wraps and delegates to it</li>
+   * <li><code>stopper</code> - the <code>Stopper</code> passed to this method, or one that wraps and delegates to it</li>
+   * <li><code>configMap</code> - the <code>configMap</code> passed to this method, or one that wraps and delegates to it</li>
+   * </ul>
+   *
+   * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
+   *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   * @throws NullPointerException if any of the passed parameters is <code>null</code>.
+   * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
+   *     exists in this <code>Suite</code>
+   */
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+    
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+
+    val stopRequested = stopper
+
+    testName match {
+      case None => runTestsInBranch(atomic.get.trunk, reporter, stopRequested, filter, configMap, tracker)
+      case Some(tn) => runTest(tn, reporter, stopRequested, configMap, tracker)
+    }
   }
 
   /**
@@ -1102,77 +1548,55 @@ trait Spec extends Suite { thisSuite =>
    * "A Stack (when not full) must allow me to push"
    * </pre>
    */
-  override def testNames: Set[String] = {
-    // I'm returning a ListSet here so that they tests will be run in registration order
-    ListSet(atomic.get.testNamesList.toArray: _*)
-  }
+  override def testNames: Set[String] = ListSet(atomic.get.testsList.map(_.testName): _*)
 
-  /**
-   * Run a test. This trait's implementation runs the test registered with the name specified by
-   * <code>testName</code>. Each test's name is a concatenation of the text of all describers surrounding a test,
-   * from outside in, and the test's  spec text, with one space placed between each item. (See the documenation
-   * for <code>testNames</code> for an example.)
-   *
-   * @param testName the name of one test to execute.
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param configMap a <code>Map</code> of properties that can be used by this <code>Spec</code>'s executing tests.
-   * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
-   *     is <code>null</code>.
-   */
-  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
-
-    def invokeWithFixture(theTest: TestLeaf) {
-      val theConfigMap = configMap
-      withFixture(
-        new NoArgTest {
-          def name = testName
-          def apply() { theTest.testFun() }
-          def configMap = theConfigMap
-        }
-      )
-    }
-
-    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
-  }
-
-  /**
-   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>Spec</code> belong, and values
-   * the <code>Set</code> of test names that belong to each tag. If this <code>Spec</code> contains no tags, this method returns an empty <code>Map</code>.
-   *
-   * <p>
-   * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to 
-   * methods <code>test</code> and <code>ignore</code>. 
-   * </p>
-   */
-  override def tags: Map[String, Set[String]] = atomic.get.tagsMap
-
-  /**
-   * Run zero to many of this <code>Spec</code>'s tests.
-   *
-   * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
-   *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param filter a <code>Filter</code> with which to filter tests based on their tags
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
-   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
-   * @throws NullPointerException if any of the passed parameters is <code>null</code>.
-   * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
-   *     exists in this <code>Suite</code>
-   */
-  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-
-    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
-  }
-
+  @volatile private var wasRunBefore = false
   override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
+    if (wasRunBefore)
+      println(thisSuite.getClass.getName + ", a Spec, is being run again")
+    else
+      wasRunBefore = true
+    
+    val stopRequested = stopper
+
+    // Set the flag that indicates registration is closed (because run has now been invoked),
+    // which will disallow any further invocations of "describe", it", or "ignore" with
+    // an RegistrationClosedException.
+    val oldBundle = atomic.get
+    var (trunk, currentBranch, tagsMap, testsList, registrationClosed) = oldBundle.unpack
+    if (!registrationClosed)
+      updateAtomic(oldBundle, Bundle(trunk, currentBranch, tagsMap, testsList, true))
+
+    val report = wrapReporterIfNecessary(reporter)
+
+    val informerForThisSuite =
+      new ConcurrentInformer(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), None)) {
+        def apply(message: String) {
+          if (message == null)
+            throw new NullPointerException
+          report(InfoProvided(tracker.nextOrdinal(), message, nameInfoForCurrentThread))
+        }
+      }
+
+    atomicInformer.set(informerForThisSuite)
+
+    var swapAndCompareSucceeded = false
+    try {
+      super.run(testName, report, stopRequested, filter, configMap, distributor, tracker)
+    }
+    finally {
+      val shouldBeInformerForThisSuite = atomicInformer.getAndSet(zombieInformer)
+      swapAndCompareSucceeded = shouldBeInformerForThisSuite eq informerForThisSuite
+      if (!swapAndCompareSucceeded) {
+        if (shouldBeInformerForThisSuite == null) println("shouldBeInformerForThisSuite was null")
+        else if (shouldBeInformerForThisSuite eq zombieInformer) println("shouldBeInformerForThisSuite was the zombie")
+        else println("shouldBeInformerForThisSuite's class was: " + shouldBeInformerForThisSuite.getClass.getName)
+      }
+    }
+    if (!swapAndCompareSucceeded) // Do outside finally to workaround Scala compiler bug
+      throw new ConcurrentModificationException(Resources("concurrentInformerMod", thisSuite.getClass.getName))
   }
 
   /**

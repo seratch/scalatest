@@ -38,13 +38,13 @@ class SuiteSpec extends Spec with PrivateMethodTester with SharedHelpers {
       }
 
       expect(List("testThat", "testThis")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new Suite {}
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new Suite {
@@ -53,7 +53,7 @@ class SuiteSpec extends Spec with PrivateMethodTester with SharedHelpers {
       }
 
       expect(List("testThat", "testThis")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
     }
     
@@ -484,7 +484,7 @@ class SuiteSpec extends Spec with PrivateMethodTester with SharedHelpers {
       assert(e.expectedTestCount(Filter(None, Set("org.scalatest.SlowAsMolasses"))) === 0)
       assert(e.expectedTestCount(Filter()) === 2)
 
-      val f = new Suites(a, b, c, d, e)
+      val f = new SuperSuite(List(a, b, c, d, e))
       assert(f.expectedTestCount(Filter()) === 10)
     }
 
@@ -599,184 +599,6 @@ class SuiteSpec extends Spec with PrivateMethodTester with SharedHelpers {
             assert(1 + 2 === 3)
           }
         }
-      }
-    }
-    it("should, when a test methods takes an Informer and writes to it, report the info after the test completion event") {
-      val msg = "hi there dude"
-      class MySuite extends Suite {
-        def testWithInformer(info: Informer) {
-          info(msg)
-        }
-      }
-      val (infoProvidedIndex, testStartingIndex, testSucceededIndex) =
-        getIndexesForInformerEventOrderTests(new MySuite, "testWithInformer(Informer)", msg)
-      assert(testStartingIndex < testSucceededIndex)
-      assert(testSucceededIndex < infoProvidedIndex)
-    }
-  }
-  describe("the stopper") {
-    it("should stop nested suites from being executed") {
-      class SuiteA extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-        }
-      }
-      class SuiteB extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-        }
-      }
-      class SuiteC extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-        }
-      }
-      class SuiteD extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-          stopper match {
-            case s: MyStopper => s.stop = true
-            case _ =>
-          }
-        }
-      }
-      class SuiteE extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-        }
-      }
-      class SuiteF extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-        }
-      }
-      class SuiteG extends Suite {
-        var executed = false;
-        override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-          executed = true
-          super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
-        }
-      }
-
-      val a = new SuiteA
-      val b = new SuiteB
-      val c = new SuiteC
-      val d = new SuiteD
-      val e = new SuiteE
-      val f = new SuiteF
-      val g = new SuiteG
-
-      val x = Suites(a, b, c, d, e, f, g)
-      x.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
-
-      assert(a.executed)
-      assert(b.executed)
-      assert(c.executed)
-      assert(d.executed)
-      assert(e.executed)
-      assert(f.executed)
-      assert(g.executed)
-
-      class MyStopper extends Stopper {
-        var stop = false
-        override def apply() = stop
-      }
-
-      val h = new SuiteA
-      val i = new SuiteB
-      val j = new SuiteC
-      val k = new SuiteD
-      val l = new SuiteE
-      val m = new SuiteF
-      val n = new SuiteG
-
-      val y = Suites(h, i, j, k, l, m, n)
-      y.run(None, SilentReporter, new MyStopper, Filter(), Map(), None, new Tracker)
-
-      assert(k.executed)
-      assert(i.executed)
-      assert(j.executed)
-      assert(k.executed)
-      assert(!l.executed)
-      assert(!m.executed)
-      assert(!n.executed)
-    }
-
-    it("should stop tests from being executed") {
-
-      class MySuite extends Suite {
-        var testsExecutedCount = 0
-        def test1() { testsExecutedCount += 1 }
-        def test2() { testsExecutedCount += 1 }
-        def test3() { testsExecutedCount += 1 }
-        def test4() {
-          testsExecutedCount += 1
-        }
-        def test5() { testsExecutedCount += 1 }
-        def test6() { testsExecutedCount += 1 }
-        def test7() { testsExecutedCount += 1 }
-      }
-
-      val x = new MySuite
-      x.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
-      assert(x.testsExecutedCount === 7)
-
-      class MyStopper extends Stopper {
-        var stop = false
-        override def apply() = stop
-      }
-
-      val myStopper = new MyStopper
-
-      class MyStoppingSuite extends Suite {
-        var testsExecutedCount = 0
-        def test1() { testsExecutedCount += 1 }
-        def test2() { testsExecutedCount += 1 }
-        def test3() { testsExecutedCount += 1 }
-        def test4() {
-          testsExecutedCount += 1
-          myStopper.stop = true
-        }
-        def test5() { testsExecutedCount += 1 }
-        def test6() { testsExecutedCount += 1 }
-        def test7() { testsExecutedCount += 1 }
-      }
-
-      val y = new MyStoppingSuite
-      y.run(None, SilentReporter, myStopper, Filter(), Map(), None, new Tracker)
-      assert(y.testsExecutedCount === 4)
-    }
-  }
-  describe("A Suite's execute method") {
-    it("should throw NPE if passed null for configMap") {
-      class MySuite extends Suite
-      intercept[NullPointerException] {
-        (new MySuite).execute(configMap = null)
-      }
-    }
-    it("should throw IAE if a testName is passed that does not exist on the suite") {
-      class MySuite extends Suite
-      intercept[IllegalArgumentException] {
-        (new MySuite).execute(testName = "fred")
       }
     }
   }

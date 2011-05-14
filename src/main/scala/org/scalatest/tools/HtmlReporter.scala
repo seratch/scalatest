@@ -33,7 +33,7 @@ import PrintReporter._
  * A <code>Reporter</code> that prints test status information in HTML format to a file.
  */
 private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Boolean,
-        presentInColor: Boolean, presentStackTraces: Boolean, presentFullStackTraces: Boolean) extends ResourcefulReporter {
+        presentInColor: Boolean, presentTestFailedExceptionStackTraces: Boolean) extends ResourcefulReporter {
 
   /**
   * Construct a <code>PrintReporter</code> with passed
@@ -49,15 +49,13 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     filename: String,
     presentAllDurations: Boolean,
     presentInColor: Boolean,
-    presentShortStackTraces: Boolean,
-    presentFullStackTraces: Boolean
+    presentTestFailedExceptionStackTraces: Boolean
   ) =
     this(
       new PrintWriter(new BufferedOutputStream(new FileOutputStream(new File(filename)), BufferSize)),
       presentAllDurations,
       presentInColor,
-      presentShortStackTraces,
-      presentFullStackTraces
+      presentTestFailedExceptionStackTraces
     )
 
   private def withPossibleLineNumber(stringToPrint: String, throwable: Option[Throwable]): String = {
@@ -133,7 +131,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         case Some(throwable) =>
 
           def useConciseTestFailedExceptionForm =
-            !presentFullStackTraces && (
+            !presentTestFailedExceptionStackTraces && (
               throwable match {
                 case tfe: TestFailedException => tfe.cause.isEmpty // If there's a cause inside, show the whole stack trace
                 case _ => false

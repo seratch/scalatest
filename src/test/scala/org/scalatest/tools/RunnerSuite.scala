@@ -293,7 +293,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     expect(Set(PresentAllDurations)) {
       Runner invokePrivate parseConfigSet("-oD")
     }
-    expect(Set(PresentFullStackTraces)) {
+    expect(Set(PresentTestFailedExceptionStackTraces)) {
       Runner invokePrivate parseConfigSet("-oF")
     }
     expect(Set[ReporterConfigParam]()) {
@@ -319,7 +319,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       FilterTestSucceeded,
       PresentAllDurations,
       PresentWithoutColor,
-      PresentFullStackTraces
+      PresentTestFailedExceptionStackTraces
     )
     expect(allOpts) {
       Runner invokePrivate parseConfigSet("-oNCXEHLOWDF")
@@ -381,7 +381,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set())), Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-e"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set(PresentFullStackTraces))), Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set(PresentTestFailedExceptionStackTraces))), Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-eF"))
     }
     expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(), "theFilename")), Nil, None, None, Nil, Nil)) {

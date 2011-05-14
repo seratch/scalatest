@@ -28,7 +28,8 @@ import org.junit.runner.Description
  suite class name to Report, just to satisfy JUnit integration.
 */
 /**
- * A JUnit <code>Runner</code> that knows how to run any ScalaTest <code>Suite</code>.
+ * A JUnit <code>Runner</code> that knows how to run any ScalaTest <code>Suite</code>
+ * (or <code>Spec</code>, which extends <code>Suite</code>).
  * This enables you to provide a JUnit <code>RunWith</code> annotation on any
  * ScalaTest <code>Suite</code>. Here's an example:
  *
@@ -79,7 +80,6 @@ final class JUnitRunner(suiteClass: java.lang.Class[Suite]) extends org.junit.ru
     }
     description
   }
-
   /**
    * Run this <code>Suite</code> of tests, reporting results to the passed <code>RunNotifier</code>.
    * This class's implementation of this method invokes <code>run</code> on an instance of the

@@ -32,7 +32,7 @@ class FixtureFunSuiteSpec extends org.scalatest.Spec with PrivateMethodTester wi
       }
 
       expect(List("that", "this")) {
-        a.testNames.iterator.toList
+        a.testNames.elements.toList
       }
 
       val b = new FixtureFunSuite {
@@ -41,7 +41,7 @@ class FixtureFunSuiteSpec extends org.scalatest.Spec with PrivateMethodTester wi
       }
 
       expect(List[String]()) {
-        b.testNames.iterator.toList
+        b.testNames.elements.toList
       }
 
       val c = new FixtureFunSuite {
@@ -54,7 +54,7 @@ class FixtureFunSuiteSpec extends org.scalatest.Spec with PrivateMethodTester wi
       }
 
       expect(List("this", "that")) {
-        c.testNames.iterator.toList
+        c.testNames.elements.toList
       }
     }
 
@@ -588,7 +588,7 @@ class FixtureFunSuiteSpec extends org.scalatest.Spec with PrivateMethodTester wi
       assert(e.expectedTestCount(Filter(None, Set("org.scalatest.SlowAsMolasses"))) === 0)
       assert(e.expectedTestCount(Filter()) === 2)
 
-      val f = Suites(a, b, c, d, e)
+      val f = new SuperSuite(List(a, b, c, d, e))
       assert(f.expectedTestCount(Filter()) === 10)
     }
     it("should generate a TestPending message when the test body is (pending)") {
@@ -895,21 +895,6 @@ class FixtureFunSuiteSpec extends org.scalatest.Spec with PrivateMethodTester wi
 
         val spec = new MySuite
         ensureTestFailedEventReceived(spec, "should blow up")
-      }
-    }
-
-    it("should throw IllegalArgumentException if passed a testName that doesn't exist") {
-      class MySuite extends FixtureFunSuite {
-        type FixtureParam = String
-        def withFixture(test: OneArgTest) {
-          test("hi")
-        }
-        test("one") {s => () }
-        test("two") {s => () }
-      }
-      val suite = new MySuite
-      intercept[IllegalArgumentException] {
-        suite.run(Some("three"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       }
     }
   }

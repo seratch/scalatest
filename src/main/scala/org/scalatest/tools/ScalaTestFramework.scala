@@ -3,22 +3,21 @@ package org.scalatest.tools
 import org.scalatools.testing._
 import org.scalatest.tools.Runner.parsePropertiesArgsIntoMap
 import org.scalatest.tools.Runner.parseCompoundArgIntoSet
-import StringReporter.colorizeLinesIndividually
 
 /**
  * Class that makes ScalaTest tests visible to sbt.
  *
  * <p>
- * To use ScalaTest from within sbt, simply add a line like this to your project file, replacing 1.5 with whatever version you desire:
+ * To use ScalaTest from within sbt, simply add a line like this to your project file, replacing 1.3 with whatever version you desire:
  * </p>
  *
  * <pre>
- * val scalatest = "org.scalatest" % "scalatest_2.8.1" % "1.5"
+ * val scalatest = "org.scalatest" % "scalatest" % "1.3"
  * </pre>
  *
  * <p>
- * You can configure the output shown when running with sbt in four ways: 1) turn off color, 2) show
- * short stack traces, 3) full stack traces, and 4) show durations for everything. To do that
+ * You can configure the output shown when running with sbt in three ways: 1) turn off color, 2) show
+ * full stack traces, and 3) show durations for everything. To do that
  * you need to add test options, like this:
  * </p>
  *
@@ -33,13 +32,12 @@ import StringReporter.colorizeLinesIndividually
  *
  * <ul>
  * <li>D - show durations</li>
- * <li>S - show short stack traces</li>
  * <li>F - show full stack traces</li>
  * <li>W - without color</li>
  * </ul>
  *
  * <p>
- * For example, "-oDF" would show full stack traces and durations (the amount
+ * For example, "-oDF" would show complete stack traces and durations (the amount
  * of time spent in each test).
  * </p>
  *
@@ -81,7 +79,6 @@ class ScalaTestFramework extends Framework {
     def run(testClassName: String, fingerprint: TestFingerprint, eventHandler: EventHandler, args: Array[String]) {
       val testClass = Class.forName(testClassName, true, testLoader).asSubclass(classOf[Suite])
 
-      // println("sbt args: " + args.toList)
       if (isAccessibleSuite(testClass)) {
 
         val (propertiesArgsList, includesArgsList,
@@ -91,20 +88,19 @@ class ScalaTestFramework extends Framework {
         val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
         val filter = org.scalatest.Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
 
-        val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) =
+        val (presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces) =
           repoArg match {
             case Some(arg) => (
               arg contains 'D',
               !(arg contains 'W'),
-              arg contains 'S',
               arg contains 'F'
              )
-             case None => (false, false, false, false)
+             case None => (false, true, false)
           }
 
         //  def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
         //              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-        val repo = new ScalaTestReporter(eventHandler, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces)
+        val repo = new ScalaTestReporter(eventHandler, presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces)
         testClass.newInstance.run(None, repo, new Stopper {},
           filter, propertiesMap, None, new Tracker)
       }
@@ -138,16 +134,15 @@ class ScalaTestFramework extends Framework {
 */
 
     private class ScalaTestReporter(eventHandler: EventHandler, presentAllDurations: Boolean,
-        presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) extends StringReporter(
-        presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) {
+        presentInColor: Boolean, presentTestFailedExceptionStackTraces: Boolean) extends StringReporter(
+        presentAllDurations, presentInColor, presentTestFailedExceptionStackTraces) {
 
       import org.scalatest.events._
 
       protected def printPossiblyInColor(text: String, ansiColor: String) {
         import PrintReporter.ansiReset
         loggers.foreach { logger =>
-          // logger.info(if (logger.ansiCodesSupported && presentInColor) ansiColor + text + ansiReset else text)
-          logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
+          logger.info(if (logger.ansiCodesSupported && presentInColor) ansiColor + text + ansiReset else text)
         }
       }
 
@@ -199,7 +194,7 @@ class ScalaTestFramework extends Framework {
       val excludes = new ListBuffer[String]()
       var repoArg: Option[String] = None
 
-      val it = args.iterator
+      val it = args.elements
       while (it.hasNext) {
 
         val s = it.next

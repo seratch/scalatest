@@ -397,22 +397,4 @@ class ShouldBeMatcherSpec extends Spec with ShouldMatchers with Checkers with Re
       assert(caught2.getMessage === "The dish was not to my liking")
     }
   }
-  describe("the compose method on BeMatcher") {
-    it("should return another BeMatcher") {
-      val oddAsInt = odd compose { (s: String) => s.toInt }
-      "3" should be (oddAsInt)
-      "4" should not be (oddAsInt)
-    }
-  }
-  describe("A factory method on BeMatcher's companion object") {
-    it("should produce a be-matcher that executes the passed function when its apply is called") {
-      val f = { (s: String) => MatchResult(s.length < 3, "s was not less than 3", "s was less than 3") }
-      val lessThanThreeInLength = BeMatcher(f)
-      "" should be (lessThanThreeInLength)
-      "x" should be (lessThanThreeInLength)
-      "xx" should be (lessThanThreeInLength)
-      "xxx" should not be (lessThanThreeInLength)
-      "xxxx" should not be (lessThanThreeInLength)
-    }
-  }
 }
