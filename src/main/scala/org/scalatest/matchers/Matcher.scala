@@ -32,14 +32,14 @@ import org.scalatest._
  * </p>
  *
  * <p>
- * If none of the built-in matcher syntax satisfies a particular need you have, you can create
+ * If none of the built-in matcher syntax  satisfy a particular need you have, you can create
  * custom <code>Matcher</code>s that allow
  * you to place your own syntax directly after <code>should</code> or <code>must</code>. For example, class <code>java.io.File</code> has a method <code>exists</code>, which
  * indicates whether a file of a certain path and name exists. Because the <code>exists</code> method takes no parameters and returns <code>Boolean</code>,
  * you can call it using <code>be</code> with a symbol or <code>BePropertyMatcher</code>, yielding assertions like:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre class="indent">
  * file should be ('exists)  // using a symbol
  * file should be (inExistance)   // using a BePropertyMatcher
  * </pre>
@@ -51,7 +51,7 @@ import org.scalatest._
  * named <code>exist</code>, which you could then use to write expressions like:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre class="indent">
  * // using a plain-old Matcher
  * file should exist
  * file should not (exist)
@@ -63,7 +63,7 @@ import org.scalatest._
  * traits that you can then mix into the suites or specs that need them. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * trait CustomMatchers {
  * 
  *   class FileExistsMatcher extends Matcher[java.io.File] {
@@ -117,7 +117,7 @@ import org.scalatest._
  * does this in the first argument passed to the <code>MatchResult</code> factory method:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  *         left.exists,
  * </pre>
  *
@@ -126,7 +126,7 @@ import org.scalatest._
  * The next argument to <code>MatchResult</code>'s factory method produces the failure message string:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  *         "The " + failureMessageSuffix,
  * </pre>
  *
@@ -149,7 +149,7 @@ import org.scalatest._
  * which you mix in the trait:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class ExampleSpec extends Spec with ShouldMatchers with CustomMatchers {
  * 
  *   describe("A temp file") {
@@ -185,7 +185,7 @@ import org.scalatest._
  * an option is defined like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * Some("hi") should be ('defined)
  * </pre>
  *
@@ -193,7 +193,7 @@ import org.scalatest._
  * If you wanted to get rid of the tick mark, you could simply define <code>defined</code> like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val defined = 'defined
  * </pre>
  *
@@ -201,7 +201,7 @@ import org.scalatest._
  * Now you can check that an option is defined without the tick mark:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * Some("hi") should be (defined)
  * </pre>
  *
@@ -210,7 +210,7 @@ import org.scalatest._
  * get rid of them with another one-liner:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val beDefined = be (defined)
  * </pre>
  *
@@ -218,7 +218,7 @@ import org.scalatest._
  * Now you can check that an option is defined without the tick mark or the parentheses:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * Some("hi") should beDefined
  * </pre>
  *
@@ -226,7 +226,7 @@ import org.scalatest._
  * You can also use ScalaTest matchers' logical operators to combine existing matchers into new ones, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val beWithinTolerance = be >= 0 and be <= 10
  * </pre>
  *
@@ -234,7 +234,7 @@ import org.scalatest._
  * Now you could check that a number is within the tolerance (in this case, between 0 and 10, inclusive), like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * num should beWithinTolerance
  * </pre>
  *
@@ -243,7 +243,7 @@ import org.scalatest._
  * object. For example, instead of writing this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val beOdd =
  *   new Matcher[Int] {
  *     def apply(left: Int) =
@@ -259,7 +259,7 @@ import org.scalatest._
  * You could alternately write this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val beOdd =
  *   Matcher { (left: Int) =>
  *     MatchResult(
@@ -274,7 +274,7 @@ import org.scalatest._
  * Either way you define the <code>beOdd</code> matcher, you could use it like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * 3 should beOdd
  * 4 should not (beOdd)
  * </pre>
@@ -286,7 +286,7 @@ import org.scalatest._
  * a function that converts a string to an <code>Int</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val beOddAsInt = beOdd compose { (s: String) => s.toInt }
  * </pre>
  *
@@ -297,7 +297,7 @@ import org.scalatest._
  * <code>beOddAsInt</code> like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * "3" should beOddAsInt
  * "4" should not (beOddAsInt)
  * </pre>
@@ -309,7 +309,7 @@ import org.scalatest._
  * As an example, consider the hierarchy:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class Fruit
  * class Orange extends Fruit
  * class ValenciaOrange extends Orange
@@ -319,7 +319,7 @@ import org.scalatest._
  * Given an orange:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * val orange = Orange
  * </pre>
  *
@@ -352,7 +352,7 @@ trait Matcher[-T] extends Function1[T, MatchResult] { thisMatcher =>
    * usually the value to the left of a <code>should</code> or <code>must</code> invocation. For example,
    * in:
    *
-   * <pre class="stHighlight">
+   * <pre>
    * list should equal (List(1, 2, 3))
    * </pre>
    *
@@ -376,7 +376,7 @@ trait Matcher[-T] extends Function1[T, MatchResult] { thisMatcher =>
    * a <code>beOdd</code> matcher defined like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * val beOdd =
    *   new Matcher[Int] {
    *     def apply(left: Int) =
@@ -392,7 +392,7 @@ trait Matcher[-T] extends Function1[T, MatchResult] { thisMatcher =>
    * You could use <code>beOdd</code> like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * 3 should beOdd
    * 4 should not (beOdd)
    * </pre>
@@ -404,7 +404,7 @@ trait Matcher[-T] extends Function1[T, MatchResult] { thisMatcher =>
    * a function that converts a string to an <code>Int</code>, like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * val beOddAsInt = beOdd compose { (s: String) => s.toInt }
    * </pre>
    *
@@ -415,7 +415,7 @@ trait Matcher[-T] extends Function1[T, MatchResult] { thisMatcher =>
    * <code>beOddAsInt</code> like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * "3" should beOddAsInt
    * "4" should not (beOddAsInt)
    * </pre>

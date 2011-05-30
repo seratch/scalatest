@@ -39,7 +39,7 @@ import Suite.checkRunTestParamsForNull
  * For example, given this <code>Fraction</code> class:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class Fraction(n: Int, d: Int) {
  *   require(d != 0)
  *   require(d != Integer.MIN_VALUE)
@@ -56,7 +56,7 @@ import Suite.checkRunTestParamsForNull
  * You could write a <code>PropSpec</code> in the ScalaTest property style that specifies the <code>Fraction</code> behavior like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.PropSpec
  * import org.scalatest.prop.PropertyChecks
  * import org.scalatest.matchers.ShouldMatchers
@@ -170,7 +170,7 @@ import Suite.checkRunTestParamsForNull
  * create matching groups for <code>PropSpec</code>s like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Tag
  *
  * object SlowTest extends Tag("com.mycompany.tags.SlowTest")
@@ -181,7 +181,7 @@ import Suite.checkRunTestParamsForNull
  * Given these definitions, you could tag a <code>PropSpec</code>'s tests like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.PropSpec
  * import org.scalatest.prop.PropertyChecks
  * import org.scalatest.matchers.ShouldMatchers
@@ -222,7 +222,7 @@ import Suite.checkRunTestParamsForNull
  * disable the test named <code>addition</code>, just change &#8220;<code>property</code>&#8221; into &#8220;<code>ignore</code>,&#8221; like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.PropSpec
  * import org.scalatest.prop.PropertyChecks
  * import org.scalatest.matchers.ShouldMatchers
@@ -243,7 +243,7 @@ import Suite.checkRunTestParamsForNull
  * If you run this version of <code>MySuite</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new MathSpec).execute()
  * </pre>
  *
@@ -251,10 +251,10 @@ import Suite.checkRunTestParamsForNull
  * It will run only <code>subtraction</code> and report that <code>addition</code> was ignored:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">MySuite:</span>
- * <span class="stYellow">- addition !!! IGNORED !!!</span>
- * <span class="stGreen">- subtraction</span>
+ * <pre>
+ * MySuite:
+ * - addition !!! IGNORED !!!
+ * - subtraction
  * </pre>
  *
  * <h2>Pending tests</h2>
@@ -284,7 +284,7 @@ import Suite.checkRunTestParamsForNull
  * <code>org.scalatest.Spec</code>, you can also use it in <code>PropSpec</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.PropSpec
  * import org.scalatest.prop.PropertyChecks
  * import org.scalatest.matchers.ShouldMatchers
@@ -305,7 +305,7 @@ import Suite.checkRunTestParamsForNull
  * If you run this version of <code>MathSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new MathSpec).execute()
  * </pre>
  *
@@ -313,10 +313,10 @@ import Suite.checkRunTestParamsForNull
  * It will run both tests, but report that <code>subtraction</code> is pending. You'll see:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">MySuite:
- * - addition</span>
- * <span class="stYellow">- subtraction (pending)</span>
+ * <pre>
+ * MySuite:
+ * - addition
+ * - subtraction (pending)
  * </pre>
  * 
  * <h2>Informers</h2>
@@ -335,7 +335,7 @@ import Suite.checkRunTestParamsForNull
  * Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.PropSpec
  * import org.scalatest.prop.PropertyChecks
  * import org.scalatest.matchers.ShouldMatchers
@@ -356,10 +356,10 @@ import Suite.checkRunTestParamsForNull
  * If you run this <code>Suite</code> from the interpreter, you will see the following message
  * included in the printed report:
  *
- * <pre class="stREPL">
- * <span class="stGreen">MySuite:
+ * <pre>
+ * MySuite:
  * - addition
- *   + Addition seems to work</span> 
+ *   + Addition seems to work 
  * </pre>
  *
  * @author Bill Venners
@@ -502,7 +502,7 @@ trait PropSpec extends Suite { thisSuite =>
    * This method enables the following syntax for shared tests in a <code>PropSpec</code>:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * propertiesFor(nonEmptyStack(lastValuePushed))
    * </pre>
    *

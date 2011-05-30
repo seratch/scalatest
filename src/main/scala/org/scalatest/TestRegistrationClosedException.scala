@@ -29,7 +29,7 @@ package org.scalatest
  * can happen, for example, if an attempt is made to nest tests, such as in a <code>FunSuite</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * test("this test is fine") {
  *   test("but this nested test is not allowed") {
  *   }

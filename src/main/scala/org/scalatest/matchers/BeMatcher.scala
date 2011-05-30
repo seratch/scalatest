@@ -36,7 +36,7 @@ import org.scalatest._
  * Given this pair of <code>BeMatcher</code>s, you could check whether an <code>Int</code> was odd or even with expressions like:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre class="indent">
  * num should be (odd)
  * num should not be (even)
  * </pre>
@@ -45,7 +45,7 @@ import org.scalatest._
  * Here's is how you might define the odd and even <code>BeMatchers</code>:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * trait CustomMatchers {
  *
  *   class OddMatcher extends BeMatcher[Int] {
@@ -77,7 +77,7 @@ import org.scalatest._
  * Here's an rather contrived example of how you might use <code>odd</code> and <code>even</code>: 
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class DoubleYourPleasureSuite extends FunSuite with MustMatchers with CustomMatchers {
  *
  *   def doubleYourPleasure(i: Int): Int = i * 2
@@ -99,7 +99,7 @@ import org.scalatest._
  * The last assertion in the above test will fail with this failure message:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * 6 was even
  * </pre>
  *
@@ -120,7 +120,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
    * usually the value to the left of a <code>should</code> or <code>must</code> invocation. For example,
    * in:
    *
-   * <pre class="stHighlight">
+   * <pre>
    * num should be (odd)
    * </pre>
    *
@@ -145,7 +145,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
    * an <code>odd</code> matcher defined like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * val odd =
    *   new BeMatcher[Int] {
    *     def apply(left: Int) =
@@ -161,7 +161,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
    * You could use <code>odd</code> like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * 3 should be (odd)
    * 4 should not be (odd)
    * </pre>
@@ -173,7 +173,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
    * a function that converts a string to an <code>Int</code>, like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * val oddAsInt = odd compose { (s: String) => s.toInt }
    * </pre>
    *
@@ -184,7 +184,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
    * <code>oddAsInt</code> like this:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * "3" should be (oddAsInt)
    * "4" should not be (oddAsInt)
    * </pre>

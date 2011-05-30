@@ -35,7 +35,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * you specification text is structured by placing words after strings.
  * Here's an example <code>WordSpec</code>:
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * import scala.collection.mutable.Stack
  *
@@ -79,7 +79,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * examples:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * "A Stack" should {
  *   // ...
  * }
@@ -97,7 +97,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * the subject may be in using a string, each followed by a verb. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * "A Stack" when {
  *   "empty" should {
  *     // ...
@@ -116,7 +116,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * contains the code of the test. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * 
  * class StackSpec extends WordSpec {
@@ -148,17 +148,17 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Running the above <code>StackSpec</code> in the interpreter would yield:
  * </p>
  * 
- * <pre class="stREPL">
- * <span class="stGreen">scala> (new StackSpec).execute()
+ * <pre>
+ * scala> (new StackSpec).execute()
  * StackSpec:
  * A Stack
  *   when empty
- * &nbsp; - should be empty
- * &nbsp; - should complain on peek
- * &nbsp; - should complain on pop
- * &nbsp; when full
- * &nbsp; - should be full
- * &nbsp; - should complain on push</span>
+ *   - should be empty
+ *   - should complain on peek
+ *   - should complain on pop
+ *   when full
+ *   - should be full
+ *   - should complain on push
  * </pre>
  *
  * <p>
@@ -173,7 +173,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * in which the phrase "provide an and/or operator that" is repeated:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * 
  * class AndOrSpec extends WordSpec {
@@ -195,7 +195,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * In such situations you can place <code>that</code> clauses inside the verb clause, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * 
  * class AndOrSpec extends WordSpec {
@@ -221,20 +221,20 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Running the above <code>AndOrSpec</code> in the interpreter would yield:
  * </p>
  * 
- * <pre class="stREPL">
+ * <pre>
  * scala> (new AndOrSpec).execute()
- * <span class="stGreen">AndOrSpec:
+ * AndOrSpec:
  * The ScalaTest Matchers DSL
  *   should provide an and operator that
- * &nbsp; - returns silently when evaluating true and true
- * &nbsp; - throws a TestFailedException when evaluating true and false
- * &nbsp; - throws a TestFailedException when evaluating false and true
- * &nbsp; - throws a TestFailedException when evaluating false and false
- * &nbsp; should provide an or operator that
- * &nbsp; - returns silently when evaluating true or true
- * &nbsp; - returns silently when evaluating true or false
- * &nbsp; - returns silently when evaluating false or true
- * &nbsp; - throws a TestFailedException when evaluating false or false</span>
+ *   - returns silently when evaluating true and true
+ *   - throws a TestFailedException when evaluating true and false
+ *   - throws a TestFailedException when evaluating false and true
+ *   - throws a TestFailedException when evaluating false and false
+ *   should provide an or operator that
+ *   - returns silently when evaluating true or true
+ *   - returns silently when evaluating true or false
+ *   - returns silently when evaluating false or true
+ *   - throws a TestFailedException when evaluating false or false
  * </pre>
  * 
  * <p>
@@ -251,7 +251,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * 
  * class AndOrSpec extends WordSpec {
@@ -279,21 +279,21 @@ import Suite.anErrorThatShouldCauseAnAbort
  *  Running the above version of <code>AndOrSpec</code> with the <code>provide</code> after word in the interpreter would give you:
  *  </p>
  * 
- * <pre class="stREPL">
+ * <pre>
  * scala> (new AndOrSpec).execute()
- * <span class="stGreen">AndOrSpec:
+ * AndOrSpec:
  * The ScalaTest Matchers DSL
  *   should provide
  *     an and operator that
- * &nbsp;   - returns silently when evaluating true and true
- * &nbsp;   - throws a TestFailedException when evaluating true and false
- * &nbsp;   - that throws a TestFailedException when evaluating false and true
- * &nbsp;   - throws a TestFailedException when evaluating false and false
- * &nbsp;   an or operator that
- * &nbsp;   - returns silently when evaluating true or true
- * &nbsp;   - returns silently when evaluating true or false
- * &nbsp;   - returns silently when evaluating false or true
- * &nbsp;   - throws a TestFailedException when evaluating false or false</span>
+ *     - returns silently when evaluating true and true
+ *     - throws a TestFailedException when evaluating true and false
+ *     - that throws a TestFailedException when evaluating false and true
+ *     - throws a TestFailedException when evaluating false and false
+ *     an or operator that
+ *     - returns silently when evaluating true or true
+ *     - returns silently when evaluating true or false
+ *     - returns silently when evaluating false or true
+ *     - throws a TestFailedException when evaluating false or false
  * </pre>
  *
  * <p>
@@ -304,7 +304,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * places:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * 
  * class ScalaTestGUISpec extends WordSpec {
@@ -330,17 +330,17 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Running the previous <code>WordSpec</code> in the Scala interpreter would yield:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ScalaTestGUISpec).execute()
- * <span class="stGreen">ScalaTestGUISpec:
+ * ScalaTestGUISpec:
  * The ScalaTest GUI
  *   when the user clicks on an event report in the list box
  *     should display
- * &nbsp;   - a blue background in the clicked-on row in the list box
- * &nbsp;   - the details for the event in the details area
- * &nbsp;     a rerun button that is
- * &nbsp;     - enabled if the clicked-on event is rerunnable
- * &nbsp;     - disabled if the clicked-on event is not rerunnable</span>
+ *     - a blue background in the clicked-on row in the list box
+ *     - the details for the event in the details area
+ *       a rerun button that is
+ *       - enabled if the clicked-on event is rerunnable
+ *       - disabled if the clicked-on event is not rerunnable
  * </pre>
  *
  * <p>
@@ -378,7 +378,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * to <code>shared</code> is used by multiple test functions:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  *
  * class ArithmeticSpec extends WordSpec {
@@ -415,7 +415,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * test that needs the fixture, storing the fixture object or objects in local variables. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * import scala.collection.mutable.ListBuffer
  *
@@ -465,7 +465,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * For example, you could create a temporary file before each test, and delete it afterwords, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * import org.scalatest.BeforeAndAfterEach
  * import java.io.FileReader
@@ -535,7 +535,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * implementation of <code>withFixture(NoArgTest)</code> simply invokes the function, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * // Default implementation
  * protected def withFixture(test: NoArgTest) {
  *   test()
@@ -547,7 +547,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Thus, the previous temp file example could also be implemented without mixing in <code>BeforeAndAfterEach</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * import org.scalatest.BeforeAndAfterEach
  * import java.io.FileReader
@@ -623,7 +623,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * by overriding the <code>withFixture(OneArgTest)</code> method of a <code>FixtureWordSpec</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureWordSpec
  * import java.io.FileReader
  * import java.io.FileWriter
@@ -714,7 +714,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * contain will be registered as tests in that <code>WordSpec</code>.  For example, given this stack class:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import scala.collection.mutable.ListBuffer
  * 
  * class Stack[T] {
@@ -768,7 +768,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * defined in a trait along with another method containing shared tests for non-full stacks:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * trait StackBehaviors { this: WordSpec =>
  * 
  *   def nonEmptyStack(stack: Stack[Int], lastItemAdded: Int) {
@@ -816,7 +816,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * which looks like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
  * behave like nonFullStack(stackWithOneItem)
  * </pre>
@@ -828,7 +828,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * in scope already inside the behavior function. In that case, your code would look like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * behave like nonEmptyStack // assuming lastValuePushed is also in scope inside nonEmptyStack
  * behave like nonFullStack
  * </pre>
@@ -837,7 +837,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * The recommended style, however, is the functional, pass-all-the-needed-values-in style. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class SharedTestExampleSpec extends WordSpec with StackBehaviors {
  * 
  *   // Stack fixture creation methods
@@ -916,35 +916,35 @@ import Suite.anErrorThatShouldCauseAnAbort
  * you'll see:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new SharedTestExampleSpec).execute()
- * <span class="stGreen">SharedTestExampleSpec:
+ * SharedTestExampleSpec:
  * A Stack
  *   when empty
- * &nbsp; - should be empty
- * &nbsp; - should complain on peek
- * &nbsp; - should complain on pop
- * &nbsp; when it contains one item
- * &nbsp; - should be non-empty
- * &nbsp; - should return the top item on peek
- * &nbsp; - should not remove the top item on peek
- * &nbsp; - should remove the top item on pop
- * &nbsp; - should not be full
- * &nbsp; - should add to the top on push
- * &nbsp; when it contains one item less than capacity
- * &nbsp; - should be non-empty
- * &nbsp; - should return the top item on peek
- * &nbsp; - should not remove the top item on peek
- * &nbsp; - should remove the top item on pop
- * &nbsp; - should not be full
- * &nbsp; - should add to the top on push
- * &nbsp; when full
- * &nbsp; - should be full
- * &nbsp; - should be non-empty
- * &nbsp; - should return the top item on peek
- * &nbsp; - should not remove the top item on peek
- * &nbsp; - should remove the top item on pop
- * &nbsp; - should complain on a push</span>
+ *   - should be empty
+ *   - should complain on peek
+ *   - should complain on pop
+ *   when it contains one item
+ *   - should be non-empty
+ *   - should return the top item on peek
+ *   - should not remove the top item on peek
+ *   - should remove the top item on pop
+ *   - should not be full
+ *   - should add to the top on push
+ *   when it contains one item less than capacity
+ *   - should be non-empty
+ *   - should return the top item on peek
+ *   - should not remove the top item on peek
+ *   - should remove the top item on pop
+ *   - should not be full
+ *   - should add to the top on push
+ *   when full
+ *   - should be full
+ *   - should be non-empty
+ *   - should return the top item on peek
+ *   - should not remove the top item on peek
+ *   - should remove the top item on pop
+ *   - should complain on a push
  * </pre>
  * 
  * <p>
@@ -957,7 +957,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * For example, the following code in a <code>WordSpec</code> would register a test with the name <code>"A Stack when empty should be empty"</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * "A Stack" when {
  *   "empty" should {
  *     "be empty" in {
@@ -988,7 +988,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * create matching groups for <code>Spec</code>s like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Tag
  *
  * object SlowTest extends Tag("com.mycompany.groups.SlowTest")
@@ -999,7 +999,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Given these definitions, you could place <code>WordSpec</code> tests into groups like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  *
  * class MySuite extends WordSpec {
@@ -1045,7 +1045,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * change &#8220;<code>in</code>&#8221; into &#8220;<code>ignore</code>,&#8221; like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * import scala.collection.mutable.Stack
  *
@@ -1075,7 +1075,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * If you run this version of <code>StackSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
  * </pre>
  *
@@ -1083,11 +1083,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  * It will run only the second test and report that the first test was ignored:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">StackSpec:
- * A Stack</span>
- * <span class="stYellow">- should pop values in last-in-first-out order !!! IGNORED !!!</span>
- * <span class="stGreen">- should throw NoSuchElementException if an empty stack is popped</span>
+ * <pre>
+ * StackSpec:
+ * A Stack
+ * - should pop values in last-in-first-out order !!! IGNORED !!!
+ * - should throw NoSuchElementException if an empty stack is popped
  * </pre>
  *
  * <h2>Informers</h2>
@@ -1106,7 +1106,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  *
  * class ArithmeticSpec extends WordSpec {
@@ -1131,13 +1131,13 @@ import Suite.anErrorThatShouldCauseAnAbort
  * included in the printed report:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticSpec).execute()
- * <span class="stGreen">ArithmeticSpec:
+ * ArithmeticSpec:
  * The Scala language 
  * - should add correctly
  *   + addition seems to work 
- * - should subtract correctly</span>
+ * - should subtract correctly
  * </pre>
  *
  * <p>
@@ -1146,7 +1146,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * to pass such information to the reporter. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  * import org.scalatest.GivenWhenThen
  * 
@@ -1188,9 +1188,9 @@ import Suite.anErrorThatShouldCauseAnAbort
  * included in the printed report:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticSpec).execute()
- * <span class="stGreen">ArithmeticSpec:
+ * ArithmeticSpec:
  * The Scala language 
  * - should add correctly
  *   + Given two integers 
@@ -1199,7 +1199,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * - should subtract correctly
  *   + Given two integers 
  *   + When one is subtracted from the other 
- *   + Then the result is the difference of the two numbers</span> 
+ *   + Then the result is the difference of the two numbers 
  * </pre>
  *
  * <h2>Pending tests</h2>
@@ -1225,7 +1225,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * You can mark tests as pending in a <code>WordSpec</code> like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.WordSpec
  *
  * class ArithmeticSpec extends WordSpec {
@@ -1248,7 +1248,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * If you run this version of <code>ArithmeticSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticSpec).execute()
  * </pre>
  *
@@ -1256,10 +1256,10 @@ import Suite.anErrorThatShouldCauseAnAbort
  * It will run both tests but report that <code>The Scala language should subtract correctly</code> is pending. You'll see:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">The Scala language
- * - should add correctly</span>
- * <span class="stYellow">- should subtract correctly (pending)</span>
+ * <pre>
+ * The Scala language
+ * - should add correctly
+ * - should subtract correctly (pending)
  * </pre>
  * 
  * <p>
@@ -1285,7 +1285,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * that used the <code>GivenWhenThen</code> trait. For example, the following snippet in a <code>WordSpec</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  *  "The Scala language" should {
  *     "add correctly" in { 
  *       given("two integers")
@@ -1300,12 +1300,12 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Would yield the following output when run in the interpreter:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">The Scala language</span>
- * <span class="stYellow">- should add correctly (pending)
+ * <pre>
+ * The Scala language
+ * - should add correctly (pending)
  *   + Given two integers 
  *   + When they are added 
- *   + Then the result is the sum of the two numbers</span> 
+ *   + Then the result is the sum of the two numbers 
  * </pre>
  *
  * @author Bill Venners
@@ -1397,7 +1397,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) in { ... }
      *                                       ^
      * </pre>
@@ -1417,7 +1417,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) is (pending)
      *                                       ^
      * </pre>
@@ -1437,7 +1437,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) ignore { ... }
      *                                       ^
      * </pre>
@@ -1475,7 +1475,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" in { ... }
      *                    ^
      * </pre>
@@ -1495,7 +1495,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" ignore { ... }
      *                    ^
      * </pre>
@@ -1515,7 +1515,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" is (pending)
      *                    ^
      * </pre>
@@ -1535,7 +1535,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) in { ... }
      *                    ^
      * </pre>
@@ -1556,7 +1556,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "A Stack" when { ... }
      *           ^
      * </pre>
@@ -1576,7 +1576,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * val theUser = afterWord("the user")
      *
      * "A Stack" when theUser { ... }
@@ -1598,7 +1598,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "a rerun button" that {
      *                  ^
      * </pre>
@@ -1618,7 +1618,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * def is = afterWord("is")
      *
      * "a rerun button" that is {
@@ -1648,7 +1648,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * places:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * import org.scalatest.WordSpec
    * 
    * class ScalaTestGUISpec extends WordSpec {
@@ -1674,13 +1674,13 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * Running the previous <code>WordSpec</code> in the Scala interpreter would yield:
    * </p>
    *
-   * <pre class="stREPL">
+   * <pre>
    * scala> (new ScalaTestGUISpec).execute()
-   * <span class="stGreen">The ScalaTest GUI (when the user clicks on an event report in the list box) 
+   * The ScalaTest GUI (when the user clicks on an event report in the list box) 
    * - should display a blue background in the clicked-on row in the list box
    * - should display the details for the event in the details area
    * - should display a rerun button that is enabled if the clicked-on event is rerunnable
-   * - should display a rerun button that is disabled if the clicked-on event is not rerunnable</span>
+   * - should display a rerun button that is disabled if the clicked-on event is not rerunnable
    * </pre>
    */
   protected final class AfterWord(text: String) {
@@ -1711,7 +1711,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * places:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * import org.scalatest.WordSpec
    * 
    * class ScalaTestGUISpec extends WordSpec {
@@ -1737,13 +1737,13 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * Running the previous <code>WordSpec</code> in the Scala interpreter would yield:
    * </p>
    *
-   * <pre class="stREPL">
+   * <pre>
    * scala> (new ScalaTestGUISpec).execute()
-   * <span class="stGreen">The ScalaTest GUI (when the user clicks on an event report in the list box) 
+   * The ScalaTest GUI (when the user clicks on an event report in the list box) 
    * - should display a blue background in the clicked-on row in the list box
    * - should display the details for the event in the details area
    * - should display a rerun button that is enabled if the clicked-on event is rerunnable
-   * - should display a rerun button that is disabled if the clicked-on event is not rerunnable</span>
+   * - should display a rerun button that is disabled if the clicked-on event is not rerunnable
    * </pre>
    */
   protected def afterWord(text: String) = new AfterWord(text)
@@ -1782,7 +1782,7 @@ one error found
    * For example, this method enables syntax such as the following:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * "A Stack" should { ...
    *           ^
    * </pre>
@@ -1807,7 +1807,7 @@ one error found
    * For example, this method enables syntax such as the following:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * def provide = afterWord("provide")
    *
    * "The ScalaTest Matchers DSL" can provide { ... }
@@ -1948,7 +1948,7 @@ one error found
    * example itself, with all components separated by a space. For example, consider this <code>WordSpec</code>:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * import org.scalatest.WordSpec
    *
    * class StackSpec {
@@ -1968,7 +1968,7 @@ one error found
    * two test name strings:
    * </p>
    *
-   * <pre class="stExamples">
+   * <pre>
    * "A Stack (when not empty) must allow me to pop"
    * "A Stack (when not full) must allow me to push"
    * </pre>
@@ -1991,7 +1991,7 @@ one error found
    * This field enables syntax such as the following:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * behave like nonFullStack(stackWithOneItem)
    * ^
    * </pre>

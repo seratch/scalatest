@@ -35,7 +35,7 @@ import Suite.reportTestIgnored
  * the word <em>test</em> will be used, for clarity and to be consistent with the rest of ScalaTest.)
  * Here's an example <code>Spec</code>:
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  * import scala.collection.mutable.Stack
  *
@@ -99,7 +99,7 @@ import Suite.reportTestIgnored
  * For example, if you ran <code>StackSpec</code> from within the Scala interpreter:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
  * </pre>
  *
@@ -107,10 +107,10 @@ import Suite.reportTestIgnored
  * You would see:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">A Stack
+ * <pre>
+ * A Stack
  * - should pop values in last-in-first-out order
- * - should throw NoSuchElementException if an empty stack is popped</span>
+ * - should throw NoSuchElementException if an empty stack is popped
  * </pre>
  *
  * <p>
@@ -140,7 +140,7 @@ import Suite.reportTestIgnored
  * to <code>shared</code> is used by multiple test functions:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  *
  * class ArithmeticSpec extends Spec {
@@ -175,7 +175,7 @@ import Suite.reportTestIgnored
  * test that needs the fixture, storing the fixture object or objects in local variables. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  * import scala.collection.mutable.ListBuffer
  *
@@ -222,7 +222,7 @@ import Suite.reportTestIgnored
  * For example, you could create a temporary file before each test, and delete it afterwords, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  * import org.scalatest.BeforeAndAfterEach
  * import java.io.FileReader
@@ -290,7 +290,7 @@ import Suite.reportTestIgnored
  * implementation of <code>withFixture(NoArgTest)</code> simply invokes the function, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * // Default implementation
  * protected def withFixture(test: NoArgTest) {
  *   test()
@@ -302,7 +302,7 @@ import Suite.reportTestIgnored
  * Thus, the previous temp file example could also be implemented without mixing in <code>BeforeAndAfterEach</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  * import org.scalatest.BeforeAndAfterEach
  * import java.io.FileReader
@@ -376,7 +376,7 @@ import Suite.reportTestIgnored
  * by overriding the <code>withFixture(OneArgTest)</code> method of a <code>FixtureSpec</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureSpec
  * import java.io.FileReader
  * import java.io.FileWriter
@@ -467,7 +467,7 @@ import Suite.reportTestIgnored
  * For example, given this stack class:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import scala.collection.mutable.ListBuffer
  * 
  * class Stack[T] {
@@ -520,7 +520,7 @@ import Suite.reportTestIgnored
  * method containing shared tests for non-full stacks:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * trait StackBehaviors { this: Spec =>
  * 
  *   def nonEmptyStack(stack: Stack[Int], lastItemAdded: Int) {
@@ -567,7 +567,7 @@ import Suite.reportTestIgnored
  * which looks like this:
  * </p>
  *
- * <pre class="stExamples">
+ * <pre>
  * it should behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
  * it should behave like nonFullStack(stackWithOneItem)
  * </pre>
@@ -579,7 +579,7 @@ import Suite.reportTestIgnored
  * in scope already inside the behavior function. In that case, your code would look like this:
  * </p>
  *
- * <pre class="stExamples">
+ * <pre>
  * it should behave like nonEmptyStack // assuming lastValuePushed is also in scope inside nonEmptyStack
  * it should behave like nonFullStack
  * </pre>
@@ -588,7 +588,7 @@ import Suite.reportTestIgnored
  * The recommended style, however, is the functional, pass-all-the-needed-values-in style. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class SharedTestExampleSpec extends Spec with StackBehaviors {
  * 
  *   // Stack fixture creation methods
@@ -670,9 +670,9 @@ import Suite.reportTestIgnored
  * you'll see:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
- * <span class="stGreen">A Stack (when empty) 
+ * A Stack (when empty) 
  * - should be empty
  * - should complain on peek
  * - should complain on pop
@@ -696,7 +696,7 @@ import Suite.reportTestIgnored
  * - should return the top item on peek
  * - should not remove the top item on peek
  * - should remove the top item on pop
- * - should complain on a push</span>
+ * - should complain on a push
  * </pre>
  * 
  * <p>
@@ -707,7 +707,7 @@ import Suite.reportTestIgnored
  * For example, the following code in a <code>Spec</code> would register a test with the name <code>"A Stack (when empty) should be empty"</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  *   describe("A Stack") {
  * 
  *     describe("(when empty)") {
@@ -738,7 +738,7 @@ import Suite.reportTestIgnored
  * create matching groups for <code>Spec</code>s like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Tag
  *
  * object SlowTest extends Tag("com.mycompany.groups.SlowTest")
@@ -749,7 +749,7 @@ import Suite.reportTestIgnored
  * Given these definitions, you could place <code>Spec</code> tests into groups like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  *
  * class MySuite extends Spec {
@@ -792,7 +792,7 @@ import Suite.reportTestIgnored
  * disable the test with the name <code>"should pop values in last-in-first-out order"</code>, just change &#8220;<code>it</code>&#8221; into &#8220;<code>ignore</code>,&#8221; like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  * import scala.collection.mutable.Stack
  *
@@ -822,7 +822,7 @@ import Suite.reportTestIgnored
  * If you run this version of <code>StackSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
  * </pre>
  *
@@ -830,10 +830,10 @@ import Suite.reportTestIgnored
  * It will run only the second test and report that the first test was ignored:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">A Stack</span>
- * <span class="stYellow">- should pop values in last-in-first-out order !!! IGNORED !!!</span>
- * <span class="stGreen">- should throw NoSuchElementException if an empty stack is popped</span>
+ * <pre>
+ * A Stack
+ * - should pop values in last-in-first-out order !!! IGNORED !!!
+ * - should throw NoSuchElementException if an empty stack is popped
  * </pre>
  *
  * <h2>Pending tests</h2>
@@ -863,7 +863,7 @@ import Suite.reportTestIgnored
  * test name, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Spec
  * import scala.collection.mutable.Stack
  *
@@ -890,7 +890,7 @@ import Suite.reportTestIgnored
  * If you run this version of <code>StackSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
  * </pre>
  *
@@ -898,10 +898,10 @@ import Suite.reportTestIgnored
  * It will run both tests, but report that the test named "<code>A stack should pop values in last-in-first-out order</code>" is pending. You'll see:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">A Stack 
- * - should pop values in last-in-first-out order</span>
- * <span class="stYellow">- should throw NoSuchElementException if an empty stack is popped (pending)</span>
+ * <pre>
+ * A Stack 
+ * - should pop values in last-in-first-out order
+ * - should throw NoSuchElementException if an empty stack is popped (pending)
  * </pre>
  * 
  * @author Bill Venners
@@ -929,7 +929,7 @@ trait Spec extends Suite { thisSuite =>
    * This class supports syntax such as the following test registration:
    * </p>
    *
-   * <pre class="stExamples">
+   * <pre>
    * it("should be empty")
    * ^
    * </pre>
@@ -938,7 +938,7 @@ trait Spec extends Suite { thisSuite =>
    * and the following shared test registration:
    * </p>
    *
-   * <pre class="stExamples">
+   * <pre>
    * it should behave like nonFullStack(stackWithOneItem)
    * ^
    * </pre>
@@ -978,7 +978,7 @@ trait Spec extends Suite { thisSuite =>
      * This method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stExamples">
+     * <pre>
      * it should behave like nonFullStack(stackWithOneItem)
      *    ^
      * </pre>
@@ -997,7 +997,7 @@ trait Spec extends Suite { thisSuite =>
      * This method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stExamples">
+     * <pre>
      * it must behave like nonFullStack(stackWithOneItem)
      *    ^
      * </pre>
@@ -1017,12 +1017,12 @@ trait Spec extends Suite { thisSuite =>
    * This field supports syntax such as the following:
    * </p>
    *
-   * <pre class="stExamples">
+   * <pre>
    * it("should be empty")
    * ^
    * </pre>
    *
-   * <pre> class="stExamples"
+   * <pre>
    * it should behave like nonFullStack(stackWithOneItem)
    * ^
    * </pre>
@@ -1077,7 +1077,7 @@ trait Spec extends Suite { thisSuite =>
    * example itself, with all components separated by a space. For example, consider this <code>Spec</code>:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * import org.scalatest.Spec
    *
    * class StackSpec extends Spec{
@@ -1097,7 +1097,7 @@ trait Spec extends Suite { thisSuite =>
    * two test name strings:
    * </p>
    *
-   * <pre class="stExamples">
+   * <pre>
    * "A Stack (when not empty) must allow me to pop"
    * "A Stack (when not full) must allow me to push"
    * </pre>
@@ -1182,7 +1182,7 @@ trait Spec extends Suite { thisSuite =>
    * This field supports syntax such as the following:
    * </p>
    *
-   * <pre class="stExamples">
+   * <pre>
    * it should behave like nonFullStack(stackWithOneItem)
    *           ^
    * </pre>

@@ -55,7 +55,7 @@ import Suite.checkRunTestParamsForNull
  * Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureFunSuite
  * import java.io.FileReader
  * import java.io.FileWriter
@@ -110,7 +110,7 @@ import Suite.checkRunTestParamsForNull
  *     assert(reader.read() === 'H')
  *   }
  * 
- *   // You can also write tests that don't take a fixture parameter.
+ *   // (You can also write tests that don't take a fixture parameter.)
  *   test("without a fixture") { () =>
  *     assert(1 + 1 === 2)
  *   }
@@ -120,17 +120,16 @@ import Suite.checkRunTestParamsForNull
  * <p>
  * If the fixture you want to pass into your tests consists of multiple objects, you will need to combine
  * them into one object to use this trait. One good approach to passing multiple fixture objects is
- * to encapsulate them in a case class. Here's an example:
+ * to encapsulate them in a tuple. Here's an example that takes the tuple approach:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureFunSuite
  * import scala.collection.mutable.ListBuffer
  *
  * class MyFunSuite extends FixtureFunSuite {
  *
- *   case class F(builder: StringBuilder, buffer: ListBuffer[String])
- *   type FixtureParam = F
+ *   type FixtureParam = (StringBuilder, ListBuffer[String])
  *
  *   def withFixture(test: OneArgTest) {
  *
@@ -139,21 +138,106 @@ import Suite.checkRunTestParamsForNull
  *     val listBuffer = new ListBuffer[String]
  *
  *     // Invoke the test function, passing in the mutable objects
- *     test(F(stringBuilder, listBuffer))
+ *     test(stringBuilder, listBuffer)
  *   }
  *
- *   test("easy") { f =>
- *     f.builder.append("easy!")
- *     assert(f.builder.toString === "ScalaTest is easy!")
- *     assert(f.buffer.isEmpty)
- *     f.buffer += "sweet"
+ *   test("easy") { fixture => 
+ *     val (builder, buffer) = fixture
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
  *   }
  *
- *   test("fun") { f =>
- *     f.builder.append("fun!")
- *     assert(f.builder.toString === "ScalaTest is fun!")
- *     assert(f.buffer.isEmpty)
+ *   test("fun") { fixture =>
+ *     val (builder, buffer) = fixture
+ *     builder.append("fun!")
+ *     assert(builder.toString === "ScalaTest is fun!")
+ *     assert(buffer.isEmpty)
  *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * When using a tuple to pass multiple fixture objects, it is usually helpful to give names to each
+ * individual object in the tuple with a pattern-match assignment, as is done at the beginning
+ * of each test here with:
+ * </p>
+ *
+ * <pre>
+ * val (builder, buffer) = fixture
+ * </pre>
+ *
+ * <p>
+ * Another good approach to passing multiple fixture objects is
+ * to encapsulate them in a case class. Here's an example that takes the case class approach:
+ * </p>
+ *
+ * <pre>
+ * import org.scalatest.fixture.FixtureFunSuite
+ * import scala.collection.mutable.ListBuffer
+ *
+ * class MyFunSuite extends FixtureFunSuite {
+ *
+ *   case class FixtureHolder(builder: StringBuilder, buffer: ListBuffer[String])
+ *
+ *   type FixtureParam = FixtureHolder
+ *
+ *   def withFixture(test: OneArgTest) {
+ *
+ *     // Create needed mutable objects
+ *     val stringBuilder = new StringBuilder("ScalaTest is ")
+ *     val listBuffer = new ListBuffer[String]
+ *
+ *     // Invoke the test function, passing in the mutable objects
+ *     test(FixtureHolder(stringBuilder, listBuffer))
+ *   }
+ *
+ *   test("easy") { fixture =>
+ *     import fixture._
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
+ *   }
+ *
+ *   test("fun") { fixture =>
+ *     fixture.builder.append("fun!")
+ *     assert(fixture.builder.toString === "ScalaTest is fun!")
+ *     assert(fixture.buffer.isEmpty)
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * When using a case class to pass multiple fixture objects, it can be helpful to make the names of each
+ * individual object available as a single identifier with an import statement. This is the approach
+ * taken by the <code>testEasy</code> method in the previous example. Because it imports the members
+ * of the fixture object, the test code can just use them as unqualified identifiers:
+ * </p>
+ *
+ * <pre>
+ * test("easy") { fixture =>
+ *   import fixture._
+ *   builder.append("easy!")
+ *   assert(builder.toString === "ScalaTest is easy!")
+ *   assert(buffer.isEmpty)
+ *   buffer += "sweet"
+ * }
+ * </pre>
+ *
+ * <p>
+ * Alternatively, you may sometimes prefer to qualify each use of a fixture object with the name
+ * of the fixture parameter. This approach, taken by the <code>testFun</code> method in the previous
+ * example, makes it more obvious which variables in your test 
+ * are part of the passed-in fixture:
+ * </p>
+ *
+ * <pre>
+ * test("fun") { fixture =>
+ *   fixture.builder.append("fun!")
+ *   assert(fixture.builder.toString === "ScalaTest is fun!")
+ *   assert(fixture.buffer.isEmpty)
  * }
  * </pre>
  *
@@ -170,7 +254,7 @@ import Suite.checkRunTestParamsForNull
  * Here's an example in which the name of a temp file is taken from the passed <code>configMap</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureFunSuite
  * import java.io.FileReader
  * import java.io.FileWriter
@@ -237,7 +321,7 @@ import Suite.checkRunTestParamsForNull
  * example of how it looks:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  *  import org.scalatest.fixture.FixtureFunSuite
  *  import org.scalatest.fixture.ConfigMapFixture
  *
@@ -381,7 +465,7 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * This method enables the following syntax for shared tests in a <code>FixtureFunSuite</code>:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * testsFor(nonEmptyStack(lastValuePushed))
    * </pre>
    *

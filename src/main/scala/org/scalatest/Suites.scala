@@ -24,7 +24,7 @@ package org.scalatest
  * nested suites like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class StepsSuite extends Suites {
  *   new Step1Suite,
  *   new Step2Suite,
@@ -69,7 +69,7 @@ class Suites(suitesToNest: Suite*) extends Suite {
  * One use case for this object is to run multiple specification-style suites in the Scala interpreter, like this:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> Suites(new MyFirstSuite, new MyNextSuite).execute()
  * </pre>
  */

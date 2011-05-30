@@ -33,7 +33,7 @@ package org.scalatest
  * subclass:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest._
  * 
  * class MySuite extends Suite {
@@ -47,11 +47,11 @@ package org.scalatest
  * If you run this <code>Suite</code> from the interpreter, you will see the message
  * included in the printed report:
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new MySuite).execute()
- * <span class="stGreen">Test Starting - MySuite.testAddition(Reporter)
+ * Test Starting - MySuite.testAddition(Reporter)
  * Info Provided - MySuite.testAddition(Reporter): Addition seems to work
- * Test Succeeded - MySuite.testAddition(Reporter)</span>
+ * Test Succeeded - MySuite.testAddition(Reporter)
  * </pre>
  *
  * <p>
@@ -62,7 +62,7 @@ package org.scalatest
  * Here's an example of a <code>FeatureSpec</code> that mixes in <code>GivenWhenThen</code>:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FeatureSpec
  * import org.scalatest.GivenWhenThen
  * 
@@ -104,9 +104,9 @@ package org.scalatest
  * included in the printed report:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticFeatureSpec).run()
- * <span class="stGreen">Feature: Integer arithmetic 
+ * Feature: Integer arithmetic 
  *   Scenario: addition
  *     Given two integers 
  *     When they are added 
@@ -114,7 +114,7 @@ package org.scalatest
  *   Scenario: subtraction
  *     Given two integers 
  *     When one is subtracted from the other 
- *     Then the result is the difference of the two numbers</span> 
+ *     Then the result is the difference of the two numbers 
  * </pre>
  * 
  * @author Bill Venners

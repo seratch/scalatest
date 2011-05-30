@@ -37,7 +37,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Here's an example <code>FreeSpec</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * import scala.collection.mutable.Stack
  *
@@ -68,7 +68,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * test in curly braces, like this:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * "should pop values in last-in-first-out order" in {
  *   // ...
  * }
@@ -79,7 +79,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * and a block, like this:  
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * "A Stack" - {
  *   // ...
  * }
@@ -90,7 +90,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * a word like <code>should</code>, you are free to structure the text however you wish. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * 
  * class StackSpec extends FreeSpec {
@@ -124,18 +124,18 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Running the above <code>StackSpec</code> in the interpreter would yield:
  * </p>
  * 
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
- * <span class="stGreen">StackSpec:
+ * StackSpec:
  * A Stack 
  *   whenever it is empty 
  *     certainly ought to 
- * &nbsp;   - be empty
- * &nbsp;   - complain on peek
- * &nbsp;   - complain on pop
- * &nbsp; but when full, by contrast, must 
- * &nbsp; - be full
- * &nbsp; - complain on push</span>
+ *     - be empty
+ *     - complain on peek
+ *     - complain on pop
+ *   but when full, by contrast, must 
+ *   - be full
+ *   - complain on push
  * </pre>
  *
  * <p>
@@ -143,7 +143,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  *
  * class ComputerRoomRulesSpec extends FreeSpec {
@@ -184,20 +184,20 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Running the above <code>ComputerRoomRulesSpec</code> in the interpreter would yield:
  * </p>
  * 
- * <pre class="stREPL">
- * <span class="stGreen">(new ComputerRoomRulesSpec).execute()
+ * <pre>
+ * (new ComputerRoomRulesSpec).execute()
  * ComputerRoomRulesSpec:
  * Achtung! 
  *   Alle touristen und non-technischen lookenpeepers! 
- * &nbsp; - Das machine is nicht fuer fingerpoken und mittengrabben.
- * &nbsp;   Is easy 
- * &nbsp;   - schnappen der springenwerk
- * &nbsp;   - blowenfusen
- * &nbsp;   - und poppencorken mit spitzen sparken.
- * &nbsp; - Das machine is diggen by experten only.
- * &nbsp; - Is nicht fuer gerwerken by das dummkopfen.
- * &nbsp; - Das rubbernecken sightseeren keepen das cottenpicken hands in das pockets.
- * &nbsp; - Relaxen und watchen das blinkenlights.</span>
+ *   - Das machine is nicht fuer fingerpoken und mittengrabben.
+ *     Is easy 
+ *     - schnappen der springenwerk
+ *     - blowenfusen
+ *     - und poppencorken mit spitzen sparken.
+ *   - Das machine is diggen by experten only.
+ *   - Is nicht fuer gerwerken by das dummkopfen.
+ *   - Das rubbernecken sightseeren keepen das cottenpicken hands in das pockets.
+ *   - Relaxen und watchen das blinkenlights.
  * </pre>
  *
  * <p>
@@ -241,7 +241,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * to <code>shared</code> is used by multiple test functions:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  *
  * class ArithmeticSpec extends FreeSpec {
@@ -278,7 +278,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * test that needs the fixture, storing the fixture object or objects in local variables. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * import scala.collection.mutable.ListBuffer
  *
@@ -328,7 +328,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * For example, you could create a temporary file before each test, and delete it afterwords, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * import org.scalatest.BeforeAndAfterEach
  * import java.io.FileReader
@@ -398,7 +398,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * implementation of <code>withFixture(NoArgTest)</code> simply invokes the function, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * // Default implementation
  * protected def withFixture(test: NoArgTest) {
  *   test()
@@ -410,7 +410,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Thus, the previous temp file example could also be implemented without mixing in <code>BeforeAndAfterEach</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * import org.scalatest.BeforeAndAfterEach
  * import java.io.FileReader
@@ -486,7 +486,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * by overriding the <code>withFixture(OneArgTest)</code> method of a <code>FixtureFreeSpec</code>, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureFreeSpec
  * import java.io.FileReader
  * import java.io.FileWriter
@@ -577,7 +577,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * contain will be registered as tests in that <code>FreeSpec</code>.  For example, given this stack class:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import scala.collection.mutable.ListBuffer
  * 
  * class Stack[T] {
@@ -631,7 +631,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * defined in a trait along with another method containing shared tests for non-full stacks:
  * </p>
  * 
- * <pre class="stHighlight">
+ * <pre>
  * trait StackBehaviors { this: FreeSpec =>
  * 
  *   def nonEmptyStack(stack: Stack[Int], lastItemAdded: Int) {
@@ -700,7 +700,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * The recommended style, however, is the functional, pass-all-the-needed-values-in style. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class SharedTestExampleSpec extends FreeSpec with StackBehaviors {
  * 
  *   // Stack fixture creation methods
@@ -785,38 +785,38 @@ import Suite.anErrorThatShouldCauseAnAbort
  * you'll see:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new SharedTestExampleSpec).execute()
- * <span class="stGreen">SharedTestExampleSpec:
+ * SharedTestExampleSpec:
  * A Stack 
  *   when empty 
- * &nbsp; - should be empty
- * &nbsp; - should complain on peek
- * &nbsp; - should complain on pop
- * &nbsp; when it contains one item 
- * &nbsp;   should 
- * &nbsp;   - be non-empty
- * &nbsp;   - return the top item on peek
- * &nbsp;   - not remove the top item on peek
- * &nbsp;   - remove the top item on pop
- * &nbsp;   - not be full
- * &nbsp;   - add to the top on push
- * &nbsp; when it contains one item less than capacity 
- * &nbsp;   should 
- * &nbsp;   - be non-empty
- * &nbsp;   - return the top item on peek
- * &nbsp;   - not remove the top item on peek
- * &nbsp;   - remove the top item on pop
- * &nbsp;   - not be full
- * &nbsp;   - add to the top on push
- * &nbsp; when full 
- * &nbsp; - should be full
- * &nbsp;   should 
- * &nbsp;   - be non-empty
- * &nbsp;   - return the top item on peek
- * &nbsp;   - not remove the top item on peek
- * &nbsp;   - remove the top item on pop
- * &nbsp; - should complain on a push</span>
+ *   - should be empty
+ *   - should complain on peek
+ *   - should complain on pop
+ *   when it contains one item 
+ *     should 
+ *     - be non-empty
+ *     - return the top item on peek
+ *        - not remove the top item on peek
+ *     - remove the top item on pop
+ *     - not be full
+ *     - add to the top on push
+ *   when it contains one item less than capacity 
+ *     should 
+ *     - be non-empty
+ *     - return the top item on peek
+ *     - not remove the top item on peek
+ *     - remove the top item on pop
+ *     - not be full
+ *     - add to the top on push
+ *   when full 
+ *   - should be full
+ *     should 
+ *     - be non-empty
+ *     - return the top item on peek
+ *     - not remove the top item on peek
+ *     - remove the top item on pop
+ *   - should complain on a push
  * </pre>
  * 
  * <p>
@@ -828,7 +828,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * For example, the following code in a <code>FreeSpec</code> would register a test with the name <code>"A Stack when empty should be empty"</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * "A Stack" - {
  *   "when empty" - {
  *     "should be empty" in {
@@ -859,7 +859,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * create matching tags for <code>Spec</code>s like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.Tag
  *
  * object SlowTest extends Tag("com.mycompany.tags.SlowTest")
@@ -870,7 +870,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Given these definitions, you could tag <code>FreeSpec</code> tests like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  *
  * class MySuite extends FreeSpec {
@@ -916,7 +916,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * change &#8220;<code>in</code>&#8221; into &#8220;<code>ignore</code>,&#8221; like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * import scala.collection.mutable.Stack
  *
@@ -946,7 +946,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * If you run this version of <code>StackSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new StackSpec).execute()
  * </pre>
  *
@@ -954,11 +954,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  * It will run only the second test and report that the first test was ignored:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">StackSpec:
- * A Stack</span>
- * <span class="stYellow">- should pop values in last-in-first-out order !!! IGNORED !!!</span>
- * <span class="stGreen">- should throw NoSuchElementException if an empty stack is popped</span>
+ * <pre>
+ * StackSpec:
+ * A Stack
+ * - should pop values in last-in-first-out order !!! IGNORED !!!
+ * - should throw NoSuchElementException if an empty stack is popped
  * </pre>
  *
  * <h2>Informers</h2>
@@ -977,7 +977,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  *
  * class ArithmeticSpec extends FreeSpec {
@@ -1002,13 +1002,13 @@ import Suite.anErrorThatShouldCauseAnAbort
  * included in the printed report:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticSpec).execute()
- * <span class="stGreen">ArithmeticSpec:
+ * ArithmeticSpec:
  * The Scala language 
  * - should add correctly
  *   + addition seems to work 
- * - should subtract correctly</span>
+ * - should subtract correctly
  * </pre>
  *
  * <p>
@@ -1017,7 +1017,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * to pass such information to the reporter. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  * import org.scalatest.GivenWhenThen
  * 
@@ -1059,9 +1059,9 @@ import Suite.anErrorThatShouldCauseAnAbort
  * included in the printed report:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticSpec).execute()
- * <span class="stGreen">ArithmeticSpec:
+ * ArithmeticSpec:
  * The Scala language 
  * - should add correctly
  *   + Given two integers 
@@ -1070,7 +1070,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * - should subtract correctly
  *   + Given two integers 
  *   + When one is subtracted from the other 
- *   + Then the result is the difference of the two numbers</span> 
+ *   + Then the result is the difference of the two numbers 
  * </pre>
  *
  * <h2>Pending tests</h2>
@@ -1096,7 +1096,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * You can mark tests as pending in a <code>FreeSpec</code> like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.FreeSpec
  *
  * class ArithmeticSpec extends FreeSpec {
@@ -1119,7 +1119,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * If you run this version of <code>ArithmeticSpec</code> with:
  * </p>
  *
- * <pre class="stREPL">
+ * <pre>
  * scala> (new ArithmeticSpec).execute()
  * </pre>
  *
@@ -1127,10 +1127,10 @@ import Suite.anErrorThatShouldCauseAnAbort
  * It will run both tests but report that <code>The Scala language should subtract correctly</code> is pending. You'll see:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">The Scala language
- * - should add correctly</span>
- * <span class="stYellow">- should subtract correctly (pending)</span>
+ * <pre>
+ * The Scala language
+ * - should add correctly
+ * - should subtract correctly (pending)
  * </pre>
  * 
  * <p>
@@ -1156,7 +1156,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * that used the <code>GivenWhenThen</code> trait. For example, the following snippet in a <code>FreeSpec</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  *  "The Scala language" should {
  *     "add correctly" in { 
  *       given("two integers")
@@ -1171,12 +1171,12 @@ import Suite.anErrorThatShouldCauseAnAbort
  * Would yield the following output when run in the interpreter:
  * </p>
  *
- * <pre class="stREPL">
- * <span class="stGreen">The Scala language</span>
- * <span class="stYellow">- should add correctly (pending)
+ * <pre>
+ * The Scala language
+ * - should add correctly (pending)
  *   + Given two integers 
  *   + When they are added 
- *   + Then the result is the sum of the two numbers</span> 
+ *   + Then the result is the sum of the two numbers 
  * </pre>
  *
  * @author Bill Venners
@@ -1262,7 +1262,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) in { ... }
      *                                       ^
      * </pre>
@@ -1282,7 +1282,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) is (pending)
      *                                       ^
      * </pre>
@@ -1302,7 +1302,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) ignore { ... }
      *                                       ^
      * </pre>
@@ -1343,7 +1343,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" in { ... }
      *                    ^
      * </pre>
@@ -1363,7 +1363,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" ignore { ... }
      *                    ^
      * </pre>
@@ -1383,7 +1383,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" is (pending)
      *                    ^
      * </pre>
@@ -1403,7 +1403,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * For example, this method supports syntax such as the following:
      * </p>
      *
-     * <pre class="stHighlight">
+     * <pre>
      * "complain on peek" taggedAs(SlowTest) in { ... }
      *                    ^
      * </pre>
@@ -1541,7 +1541,7 @@ trait FreeSpec extends Suite { thisSuite =>
    * example itself, with all components separated by a space. For example, consider this <code>FreeSpec</code>:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * import org.scalatest.FreeSpec
    *
    * class StackSpec {
@@ -1584,7 +1584,7 @@ trait FreeSpec extends Suite { thisSuite =>
    * This field enables syntax such as the following:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    * behave like nonFullStack(stackWithOneItem)
    * ^
    * </pre>

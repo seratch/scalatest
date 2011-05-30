@@ -41,7 +41,7 @@ import org.scalatest._
  * property assertions similar to the dynamic ones that use symbols:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * tempFile should be a ('file) // dynamic: uses reflection
  * tempFile should be a (file)  // type safe: only works on Files; no reflection used
  * </pre>
@@ -52,7 +52,7 @@ import org.scalatest._
  * includes two <code>BePropertyMatcher</code>s:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * trait CustomMatchers {
  * 
  *   class FileBePropertyMatcher extends BePropertyMatcher[java.io.File] {
@@ -77,7 +77,7 @@ import org.scalatest._
  * matcher expressions that test whether a <code>java.io.File</code> is a file or a directory. Here's an example:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class ExampleSpec extends Spec with ShouldMatchers with CustomMatchers {
  * 
  *   describe("A temp file") {
@@ -102,7 +102,7 @@ import org.scalatest._
  * These matches should succeed, but if for example the first match, <code>tempFile should be a (file)</code>, were to fail, you would get an error message like:
  * </p>
  *
- * <pre class="stExamples">
+ * <pre>
  * /tmp/delme1234me was not a file
  * </pre>
  *
@@ -126,7 +126,7 @@ trait BePropertyMatcher[-T] extends Function1[T, BePropertyMatchResult] {
    * usually the value to the left of a <code>should</code> or <code>must</code> invocation. For example, <code>tempFile</code>
    * would be passed as the <code>objectWithProperty</code> in:
    *
-   * <pre class="stHighlight">
+   * <pre>
    * tempFile should be a (file)
    * </pre>
    *

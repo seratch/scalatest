@@ -26,7 +26,7 @@ import org.scalatest.fixture.FixtureSuite
  * class from <code>java.util.concurrent</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * import org.scalatest.fixture.FixtureFunSuite
  * import org.scalatest.concurrent.ConductorFixture
  * import org.scalatest.matchers.ShouldMatchers

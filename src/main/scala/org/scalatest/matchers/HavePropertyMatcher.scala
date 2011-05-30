@@ -42,7 +42,7 @@ import org.scalatest._
  * property assertions similar to the dynamic ones that use symbols:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * book should have ('title ("Moby Dick")) // dynamic: uses reflection
  * book should have (title ("Moby Dick"))  // type safe: only works on Books; no reflection used
  * </pre>
@@ -53,7 +53,7 @@ import org.scalatest._
  * includes two methods that produce <code>HavePropertyMatcher</code>s:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * case class Book(val title: String, val author: String)
  *
  * trait CustomMatchers {
@@ -95,7 +95,7 @@ import org.scalatest._
  * Here's an example that uses these <code>HavePropertyMatchers</code>:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * class ExampleSpec extends Spec with ShouldMatchers with CustomMatchers {
  * 
  *   describe("A book") {
@@ -117,7 +117,7 @@ import org.scalatest._
  * These matches should succeed, but if for example the first property, <code>title ("Moby Dick")</code>, were to fail, you would get an error message like:
  * </p>
  *
- * <pre class="stExamples">
+ * <pre>
  * The title property had value "A Tale of Two Cities", instead of its expected value "Moby Dick",
  * on object Book(A Tale of Two Cities,Dickens)
  * </pre>
@@ -142,7 +142,7 @@ trait HavePropertyMatcher[-T, P] extends Function1[T, HavePropertyMatchResult[P]
    * usually the value to the left of a <code>should</code> or <code>must</code> invocation. For example, <code>book</code>
    * would be passed as the <code>objectWithProperty</code> in:
    *
-   * <pre class="stHighlight">
+   * <pre>
    * book should have (title ("Moby Dick"))
    * </pre>
    *
@@ -183,7 +183,7 @@ object HavePropertyMatcher {
    * more concise way, for example:
    * </p>
    *
-   * <pre class="stHighlight">
+   * <pre>
    *  case class Person(name: String)
    *  def name(expectedName: String) = {
    *    HavePropertyMatcher { 

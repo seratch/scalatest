@@ -23,7 +23,7 @@ import java.lang.reflect.{InvocationTargetException, Method, Modifier}
  * To test a private method, mix in trait <code>PrivateMethodTester</code> and
  * create a <code>PrivateMethod</code> object, like this: 
  *
- * <pre class="stHighlight">
+ * <pre>
  * val decorateToStringValue = PrivateMethod[String]('decorateToStringValue)
  * </pre>
  *
@@ -34,7 +34,7 @@ import java.lang.reflect.{InvocationTargetException, Method, Modifier}
  * the private method, use the <code>invokePrivate</code> operator, like this:
  * </p>
  *
- * <pre class="stHighlight">
+ * <pre>
  * targetObject invokePrivate decorateToStringValue(1)
  * </pre>
  *
@@ -264,26 +264,26 @@ trait PrivateMethodTester {
  * an alternative to mixing it in. One use case is to import <code>PrivateMethodTester</code> members so you can use
  * them in the Scala interpreter:
  *
- * <pre class="stREPL">
+ * <pre>
  * $scala -classpath scalatest.jar
  * Welcome to Scala version 2.7.5.final (Java HotSpot(TM) Client VM, Java 1.5.0_16).
  * Type in expressions to have them evaluated.
  * Type :help for more information.
- * &nbsp;
+ * 
  * scala> import org.scalatest.PrivateMethodTester._                 
  * import org.scalatest.PrivateMethodTester._
- * &nbsp;
+ * 
  * scala> class Example {
  *      |   private def addSesame(prefix: String) = prefix + " sesame"
  *      | }
  * defined class Example
- * &nbsp;
+ * 
  * scala> val example = new Example
  * example: Example = Example@d8b6fe
- * &nbsp;
+ * 
  * scala> val addSesame = PrivateMethod[String]('addSesame)           
  * addSesame: org.scalatest.PrivateMethodTester.PrivateMethod[String] = org.scalatest.PrivateMethodTester$PrivateMethod@5cdf95
- * &nbsp;
+ * 
  * scala> example invokePrivate addSesame("open")                     
  * res0: String = open sesame
  * <pre>
