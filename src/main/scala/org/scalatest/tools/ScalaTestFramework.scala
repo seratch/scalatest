@@ -10,26 +10,16 @@ import org.scalatest.Suite.formatterForSuiteAborted
 import org.scalatest.events.SuiteStarting
 import org.scalatest.events.SuiteCompleted
 import org.scalatest.events.SuiteAborted
-import org.scalatest.events.SeeStackDepthException
-import org.scalatest.events.TopOfClass
 
 /**
  * Class that makes ScalaTest tests visible to sbt.
  *
  * <p>
- * To use ScalaTest from within sbt, simply add a line like this to your project file (for sbt 0.1.0 or higher):
+ * To use ScalaTest from within sbt, simply add a line like this to your project file, replacing 1.5 with whatever version you desire:
  * </p>
  *
  * <pre class="stExamples">
- * libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test"
- * </pre>
- *
- * <p>
- * The above line of code will work for any version of Scala 2.9 (for example, it works for Scala 2.9.0-1).
- * </p>
- *
- * <pre class="stExamples">
- * libraryDependencies += "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test"
+ * val scalatest = "org.scalatest" % "scalatest_2.8.1" % "1.5"
  * </pre>
  *
  * <p>
@@ -118,62 +108,32 @@ tasks & commands. commands have full control over everything.
 tasks are more integrated, don't need to know as much.
 write a sbt plugin to deploy the task.
 
-Commands that should work:
-
--Ddbname=testdb -Dserver=192.168.1.188
-Can't do a runpath
-Can add more reporters. -g seems odd, but could be done, -o seems odd. Maybe it is a no-op. -e could work. -r for sure. -u for sure.
-Ask Mark about -o. If there's some way to turn off his output, then that could mean -o. Or maybe -o is the default, which I think
-it should be for runner anyway, and then if you say -g you don't get -o. Meaning I don't send the strings to log. yes, -o maybe
-means log in the sbt case.
-
-Reporters can be configured.
-
-Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests NetworkTests"
-
-
      */
     def run(testClassName: String, fingerprint: TestFingerprint, eventHandler: EventHandler, args: Array[String]) {
       val suiteClass = Class.forName(testClassName, true, testLoader).asSubclass(classOf[Suite])
-       //println("sbt args: " + args.toList)
-      if (SuiteDiscoveryHelper.isAccessibleSuite(suiteClass)) {
 
-        // Why are we getting rid of empty strings? Were empty strings coming in from sbt? -bv 11/09/2011
-        val translator = new SbtFriendlyParamsTranslator();
-        val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
-            suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
-        
+      // println("sbt args: " + args.toList)
+      if (isAccessibleSuite(suiteClass)) {
+
+        val (propertiesArgsList, includesArgsList,
+        excludesArgsList, repoArg) = parsePropsAndTags(args.filter(!_.equals("")))
         val configMap: Map[String, String] = parsePropertiesArgsIntoMap(propertiesArgsList)
         val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
         val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
         val filter = org.scalatest.Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
-        
-        // If no reporters specified, just give them a default stdout reporter
-        val fullReporterConfigurations: ReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
-          val reporterConfigs: ReporterConfigurations =
-            fullReporterConfigurations.graphicReporterConfiguration match {
-              case None => fullReporterConfigurations
-              case Some(grs) => {
-                new ReporterConfigurations(
-                  None,
-                  fullReporterConfigurations.fileReporterConfigurationList,
-                  fullReporterConfigurations.junitXmlReporterConfigurationList,
-                  fullReporterConfigurations.dashboardReporterConfigurationList,
-                  fullReporterConfigurations.xmlReporterConfigurationList,
-                  fullReporterConfigurations.standardOutReporterConfiguration,
-                  fullReporterConfigurations.standardErrReporterConfiguration,
-                  fullReporterConfigurations.htmlReporterConfigurationList,
-                  fullReporterConfigurations.customReporterConfigurationList
-                )
-             }
-            }
-        
-        // TODO: Chee Seng, when you add support for the graphic reporter, I think it makes sense to hold up the build tool until
-        // the graphic reporter is exited. This is what we do in Runner for the ant task I think.
-        // Actually, I wonder if don't want some kind of private[tools] run method in Runner that takes command line arguments
-        // and a classloader, and this gets called by the public main and run methods. We can talk about that over the phone.
-        // After discussion -> TODO this in the custom task.
-        val report:Reporter = new SbtReporter(eventHandler, Some(Runner.getDispatchReporter(reporterConfigs, None, None, testLoader)))
+
+        val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) =
+          repoArg match {
+            case Some(arg) => (
+              arg contains 'D',
+              !(arg contains 'W'),
+              arg contains 'S',
+              arg contains 'F'
+             )
+             case None => (false, true, false, false)
+          }
+
+        val report = new ScalaTestReporter(eventHandler, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces)
 
         val tracker = new Tracker
         val suiteStartTime = System.currentTimeMillis
@@ -182,7 +142,7 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
 
         val formatter = formatterForSuiteStarting(suite)
 
-        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteID, Some(suiteClass.getName), suite.decodedSuiteName, formatter, Some(TopOfClass(suiteClass.getName))))
+        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, Some(suiteClass.getName), formatter, None))
 
         try {
           suite.run(None, report, new Stopper {}, filter, configMap, None, tracker)
@@ -190,20 +150,18 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
           val formatter = formatterForSuiteCompleted(suite)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteID, Some(suiteClass.getName), suite.decodedSuiteName, Some(duration), formatter, Some(TopOfClass(suiteClass.getName))))
+          report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, Some(suiteClass.getName), Some(duration), formatter, None))
         }
         catch {       
           case e: Exception => {
 
             // TODO: Could not get this from Resources. Got:
             // java.util.MissingResourceException: Can't find bundle for base name org.scalatest.ScalaTestBundle, locale en_US
-            // TODO Chee Seng, I wonder why we couldn't access resources, and if that's still true. I'd rather get this stuff
-            // from the resource file so we can later localize.
             val rawString = "Exception encountered when attempting to run a suite with class name: " + suiteClass.getName
             val formatter = formatterForSuiteAborted(suite, rawString)
 
             val duration = System.currentTimeMillis - suiteStartTime
-            report(SuiteAborted(tracker.nextOrdinal(), rawString, suite.suiteName, suite.suiteID, Some(suiteClass.getName), suite.decodedSuiteName, Some(e), Some(duration), formatter, Some(SeeStackDepthException)))
+            report(SuiteAborted(tracker.nextOrdinal(), rawString, suite.suiteName, Some(suiteClass.getName), Some(e), Some(duration), formatter, None))
           }
         }
       }
@@ -211,11 +169,36 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
     }
 
     private val emptyClassArray = new Array[java.lang.Class[T] forSome {type T}](0)
-    
-    private class SbtReporter(eventHandler: EventHandler, report: Option[Reporter]) extends Reporter {
-      
+
+    private def isAccessibleSuite(clazz: java.lang.Class[_]): Boolean = {
+      import java.lang.reflect.Modifier
+
+      try {
+        classOf[Suite].isAssignableFrom(clazz) &&
+                Modifier.isPublic(clazz.getModifiers) &&
+                !Modifier.isAbstract(clazz.getModifiers) &&
+                Modifier.isPublic(clazz.getConstructor(emptyClassArray: _*).getModifiers)
+      } catch {
+        case nsme: NoSuchMethodException => false
+        case se: SecurityException => false
+      }
+    }
+
+    private class ScalaTestReporter(eventHandler: EventHandler, presentAllDurations: Boolean,
+        presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) extends StringReporter(
+        presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) {
+
       import org.scalatest.events._
-      
+
+      protected def printPossiblyInColor(text: String, ansiColor: String) {
+        import PrintReporter.ansiReset
+        loggers.foreach { logger =>
+          logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
+        }
+      }
+
+      def dispose() = ()
+
       def fireEvent(tn: String, r: Result, e: Option[Throwable]) = {
         eventHandler.handle(
           new org.scalatools.testing.Event {
@@ -226,12 +209,13 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
           }
         )
       }
-      
+
       override def apply(event: Event) {
-        report match {
-          case Some(report) => report(event)
-          case None =>
-        }
+
+        // Superclass will call printPossiblyInColor
+        super.apply(event)
+
+        // Logging done, all I need to do now is fire events
         event match {
           // the results of running an actual test
           case t: TestPending => fireEvent(t.testName, Result.Skipped, None)
@@ -242,25 +226,49 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
         }
       }
     }
-  }
-}
 
-private[scalatest] class SbtFriendlyParamsTranslator extends FriendlyParamsTranslator {
-  override private[scalatest] def validateSupportedPropsAndTags(s:String) {
-    if(s.startsWith("-g") || s.startsWith("graphic") || 
-       s.startsWith("-f") || s.startsWith("file") || 
-       s.startsWith("-u") || s.startsWith("junitxml") || 
-       s.startsWith("-d") || s.startsWith("-a") || s.startsWith("dashboard") || 
-       s.startsWith("-x") || s.startsWith("xml") || 
-       s.startsWith("-h") || s.startsWith("html") || 
-       s.startsWith("-r") || s.startsWith("reporterclass") || 
-       s == "-c" || s == "concurrent" || 
-       s == "-m" || s.startsWith("memberonly") || 
-       s == "-w" || s.startsWith("wildcard") || 
-       s == "-s" || s.startsWith("suite") || 
-       s == "-j" || s.startsWith("junit") || 
-       s == "-t" || s.startsWith("testng"))
-      throw new IllegalArgumentException("Argument '" + s + "' is not supported using test/test-only, use scalatest task instead.")
-    
+    private[scalatest] def parsePropsAndTags(args: Array[String]) = {
+
+      import collection.mutable.ListBuffer
+
+      val props = new ListBuffer[String]()
+      val includes = new ListBuffer[String]()
+      val excludes = new ListBuffer[String]()
+      var repoArg: Option[String] = None
+
+      val it = args.iterator
+      while (it.hasNext) {
+
+        val s = it.next
+
+        if (s.startsWith("-D")) {
+          props += s
+        }
+        else if (s.startsWith("-n")) {
+          includes += s
+          if (it.hasNext)
+            includes += it.next
+        }
+        else if (s.startsWith("-l")) {
+          excludes += s
+          if (it.hasNext)
+            excludes += it.next
+        }
+        else if (s.startsWith("-o")) {
+          if (repoArg.isEmpty) // Just use first one. Ignore any others.
+            repoArg = Some(s)
+        }
+        //      else if (s.startsWith("-t")) {
+        //
+        //        testNGXMLFiles += s
+        //        if (it.hasNext)
+        //          testNGXMLFiles += it.next
+        //      }
+        else {
+          throw new IllegalArgumentException("Unrecognized argument: " + s)
+        }
+      }
+      (props.toList, includes.toList, excludes.toList, repoArg)
+    }
   }
 }

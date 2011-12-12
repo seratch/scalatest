@@ -370,7 +370,6 @@ import Suite.anErrorThatShouldCauseAnAbort
 trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with CanVerb { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFlatSpecMod", "FixtureFlatSpec")
-  private final val stackDepth = 4
   import engine._
 
   /**
@@ -395,19 +394,16 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToRun(specText: String, methodName: String, testTags: List[Tag], testFun: FixtureParam => Any) {
+  private def registerTestToRun(specText: String, testTags: List[Tag], testFun: FixtureParam => Any) {
 
     // TODO: This is what was being used before but it is wrong
-    // UPDATE: This should be correct now, to be confirmed by Bill.
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FixtureFlatSpec.scala", 
-                 methodName, stackDepth, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FixtureFlatSpec.scala", "it", testTags: _*)
   }
 
   /**
@@ -450,7 +446,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      */
     def of(description: String) {
       // TODO: This is what was here, but it needs fixing.
-      registerFlatBranch(description, "describeCannotAppearInsideAnIt", "FixtureFlatSpec.scala", "describe", stackDepth + 2)
+      registerFlatBranch(description, "describeCannotAppearInsideAnIt", "FixtureFlatSpec.scala", "describe")
     }
   }
 
@@ -531,7 +527,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb + " " + name, "in", tags, new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + name, tags, new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -552,7 +548,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb + " " + name, "in", tags, testFun)
+      registerTestToRun(verb + " " + name, tags, testFun)
     }
 
     /**
@@ -574,7 +570,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(verb + " " + name, "is", tags, unusedFixtureParam => testFun)
+      registerTestToRun(verb + " " + name, tags, unusedFixtureParam => testFun)
     }
 
     /**
@@ -596,7 +592,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb + " " + name, "ignore", tags, new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, tags, new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -619,7 +615,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb + " " + name, "ignore", tags, testFun)
+      registerTestToIgnore(verb + " " + name, tags, testFun)
     }
   }
 
@@ -687,7 +683,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb + " " + name, "in", List(), new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + name, List(), new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -708,7 +704,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb + " " + name, "in", List(), testFun)
+      registerTestToRun(verb + " " + name, List(), testFun)
     }
 
     /**
@@ -729,7 +725,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(verb + " " + name, "is", List(), unusedFixtureParam => testFun)
+      registerTestToRun(verb + " " + name, List(), unusedFixtureParam => testFun)
     }
 
     /**
@@ -750,7 +746,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb + " " + name, "ignore", List(), new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, List(), new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -771,7 +767,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb + " " + name, "ignore", List(), testFun)
+      registerTestToIgnore(verb + " " + name, List(), testFun)
     }
 
     /**
@@ -1024,7 +1020,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToIgnore(verb + " " + name, "in", tags, new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, tags, new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1047,7 +1043,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb + " " + name, "in", tags, testFun)
+      registerTestToIgnore(verb + " " + name, tags, testFun)
     }
 
     /**
@@ -1077,7 +1073,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToIgnore(verb + " " + name, "is", tags, unusedFixtureParam => testFun)
+      registerTestToIgnore(verb + " " + name, tags, unusedFixtureParam => testFun)
     }
   }
 
@@ -1143,7 +1139,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToIgnore(verb + " " + name, "in", List(), new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, List(), new NoArgTestWrapper(testFun))
     }
      
     /**
@@ -1165,7 +1161,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb + " " + name, "in", List(), testFun)
+      registerTestToIgnore(verb + " " + name, List(), testFun)
     }
 
     /**
@@ -1194,7 +1190,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToIgnore(verb + " " + name, "is", List(), unusedFixtureParam => testFun)
+      registerTestToIgnore(verb + " " + name, List(), unusedFixtureParam => testFun)
     }
 
     /**
@@ -1380,7 +1376,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb + " " + rest, "in", List(), new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + rest, List(), new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1401,7 +1397,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb + " " + rest, "ignore", List(), new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + rest, List(), new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1422,7 +1418,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb + " " + rest, "in", List(), testFun)
+      registerTestToRun(verb + " " + rest, List(), testFun)
     }
 
     /**
@@ -1443,7 +1439,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb + " " + rest, "ignore", List(), testFun)
+      registerTestToIgnore(verb + " " + rest, List(), testFun)
     }
   }
 
@@ -1518,7 +1514,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb + " " + rest, "in", tagsList, new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + rest, tagsList, new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1541,7 +1537,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb + " " + rest, "ignore", tagsList, new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + rest, tagsList, new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1562,7 +1558,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb + " " + rest, "in", tagsList, testFun)
+      registerTestToRun(verb + " " + rest, tagsList, testFun)
     }
 
     /**
@@ -1585,7 +1581,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb + " " + rest, "ignore", tagsList, testFun)
+      registerTestToIgnore(verb + " " + rest, tagsList, testFun)
     }
   }
 
@@ -1624,7 +1620,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
       behavior.of(subject)
       new ResultOfStringPassedToVerb(verb, rest) {
         def is(testFun: => PendingNothing) {
-          registerTestToRun(verb + " " + rest, "is", List(), unusedFixtureParam => testFun)
+          registerTestToRun(verb + " " + rest, List(), unusedFixtureParam => testFun)
         }
         def taggedAs(firstTestTag: Tag, otherTestTags: Tag*) = {
           val tagList = firstTestTag :: otherTestTags.toList
@@ -1632,7 +1628,7 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
             // "A Stack" must "test this" taggedAs(mytags.SlowAsMolasses) is (pending)
             //                                                            ^
             def is(testFun: => PendingNothing) {
-              registerTestToRun(verb + " " + rest, "is", tags, new NoArgTestWrapper(testFun _))
+              registerTestToRun(verb + " " + rest, tags, new NoArgTestWrapper(testFun _))
             }
           }
         }
@@ -1681,17 +1677,16 @@ trait FixtureFlatSpec extends FixtureSuite with ShouldVerb with MustVerb with Ca
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToIgnore(specText: String, methodName: String, testTags: List[Tag], testFun: FixtureParam => Any) {
+  private def registerTestToIgnore(specText: String, testTags: List[Tag], testFun: FixtureParam => Any) {
 
     // TODO: This is how these were, but it needs attention. Mentions "it".
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FixtureFlatSpec.scala", methodName, stackDepth, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FixtureFlatSpec.scala", "ignore", testTags: _*)
   }
 
   /**

@@ -4505,14 +4505,12 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def equal(right: Any): Matcher[Any] =
       new Matcher[Any] {
-        def apply(left: Any) = {
-          val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
+        def apply(left: Any) =
           MatchResult(
             areEqualComparingArraysStructurally(left, right),
-            FailureMessages("didNotEqual", leftee, rightee),
+            FailureMessages("didNotEqual", left, right),
             FailureMessages("equaled", left, right)
           )
-        }
       }
 
   /**
@@ -5100,14 +5098,12 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
                 FailureMessages("wasNotNull", right),
                 FailureMessages("midSentenceWasNull")
               )
-            case _ => {
-              val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
+            case _ => 
               MatchResult(
                 areEqualComparingArraysStructurally(left, right),
-                FailureMessages("wasNotEqualTo", leftee, rightee),
+                FailureMessages("wasNotEqualTo", left, right),
                 FailureMessages("wasEqualTo", left, right)
               )
-            }
         }
       }
   }
@@ -7011,26 +7007,5 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def produce[T](implicit manifest: Manifest[T]): ResultOfProduceInvocation[T] =
     new ResultOfProduceInvocation(manifest.erasure.asInstanceOf[Class[T]])
-
-  // For safe keeping
-  private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
-
-  private class Canonicalizer(node: scala.xml.Node) {
-
-    def toCanonical: scala.xml.Node = {
-      node match {
-        case elem: scala.xml.Elem =>
-          val canonicalizedChildren =
-            for (child <- node.child if !child.toString.trim.isEmpty) yield {
-              child match {
-                case elem: scala.xml.Elem => elem.toCanonical
-                case other => other
-              }
-            }
-          new scala.xml.Elem(elem.prefix, elem.label, elem.attributes, elem.scope, canonicalizedChildren: _*)
-        case other => other
-      }
-    }
-  }
 }
 

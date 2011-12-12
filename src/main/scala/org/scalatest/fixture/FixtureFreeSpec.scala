@@ -386,7 +386,6 @@ import Suite.anErrorThatShouldCauseAnAbort
 trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFreeSpecMod", "FixtureFreeSpec")
-  private final val stackDepth = 4
   import engine._
 
   /**
@@ -411,17 +410,15 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToRun(specText: String, methodName: String, testTags: List[Tag], testFun: FixtureParam => Any) {
+  private def registerTestToRun(specText: String, testTags: List[Tag], testFun: FixtureParam => Any) {
     // TODO: This is what was being used before but it is wrong
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FixtureFreeSpec.scala", 
-                 methodName, stackDepth, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FixtureFreeSpec.scala", "it", testTags: _*)
   }
 
   /**
@@ -436,16 +433,15 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToIgnore(specText: String, methodName: String, testTags: List[Tag], testFun: FixtureParam => Any) {
+  private def registerTestToIgnore(specText: String, testTags: List[Tag], testFun: FixtureParam => Any) {
     // TODO: This is how these were, but it needs attention. Mentions "it".
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", methodName, stackDepth, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", "ignore", testTags: _*)
   }
    /*
   private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
@@ -483,7 +479,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(specText, "in", tags, testFun)
+      registerTestToRun(specText, tags, testFun)
     }
 
     /**
@@ -503,7 +499,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(specText, "in", tags, new NoArgTestWrapper(testFun))
+      registerTestToRun(specText, tags, new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -523,7 +519,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(specText, "is", tags, unusedFixtureParam => testFun)
+      registerTestToRun(specText, tags, unusedFixtureParam => testFun)
     }
 
     /**
@@ -543,7 +539,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(specText, "ignore", tags, testFun)
+      registerTestToIgnore(specText, tags, testFun)
     }
 
     /**
@@ -563,7 +559,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(specText, "ignore", tags, new NoArgTestWrapper(testFun))
+      registerTestToIgnore(specText, tags, new NoArgTestWrapper(testFun))
     }
   }
 
@@ -588,7 +584,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
     def - (fun: => Unit) {
       // registerBranch(string, None, testFun)
       // TODO: Fix the resource name and method name
-      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", "FixtureFreeSpec.scala", "describe", stackDepth - 1)
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", "FixtureFreeSpec.scala", "describe")
     }
 
     /**
@@ -608,7 +604,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(string, "in", List(), testFun)
+      registerTestToRun(string, List(), testFun)
     }
 
     /**
@@ -628,7 +624,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(string, "in", List(), new NoArgTestWrapper(testFun))
+      registerTestToRun(string, List(), new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -648,7 +644,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(string, "is", List(), unusedFixtureParam => testFun)
+      registerTestToRun(string, List(), unusedFixtureParam => testFun)
     }
 
     /**
@@ -668,7 +664,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(string, "ignore", List(), testFun)
+      registerTestToIgnore(string, List(), testFun)
     }
 
     /**
@@ -688,7 +684,7 @@ trait FixtureFreeSpec extends FixtureSuite { thisSuite =>
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(string, "ignore", List(), new NoArgTestWrapper(testFun))
+      registerTestToIgnore(string, List(), new NoArgTestWrapper(testFun))
     
     }
 

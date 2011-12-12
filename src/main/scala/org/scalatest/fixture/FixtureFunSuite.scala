@@ -369,7 +369,6 @@ import Suite.checkRunTestParamsForNull
 trait FixtureFunSuite extends FixtureSuite { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFunSuiteMod", "FixtureFunSuite")
-  private final val stackDepth = 4
   import engine._
 
   /**
@@ -397,7 +396,7 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * @throws NullPointerException if <code>testName</code> or any passed test tag is <code>null</code>
    */
   protected def test(testName: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerTest(testName, testFun, "testCannotAppearInsideAnotherTest", "FixtureFunSuite.scala", "test", stackDepth, testTags: _*)
+    registerTest(testName, testFun, "testCannotAppearInsideAnotherTest", "FixtureFunSuite.scala", "test", testTags: _*)
   }
 
   /**
@@ -416,7 +415,7 @@ trait FixtureFunSuite extends FixtureSuite { thisSuite =>
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    */
   protected def ignore(testName: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerIgnoredTest(testName, testFun, "ignoreCannotAppearInsideATest", "FixtureFunSuite.scala", "ignore", stackDepth, testTags: _*)
+    registerIgnoredTest(testName, testFun, "ignoreCannotAppearInsideATest", "FixtureFunSuite.scala", "ignore", testTags: _*)
   }
 
   /**
