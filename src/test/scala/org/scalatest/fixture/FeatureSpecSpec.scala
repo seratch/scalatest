@@ -20,7 +20,7 @@ import events.TestFailed
 
 class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
 
-  describe("A fixture.FeatureSpec") {
+  describe("A FeatureSpec") {
     it("should return the test names in order of registration from testNames") {
       val a = new FeatureSpec {
         type FixtureParam = String

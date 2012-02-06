@@ -138,20 +138,6 @@ private[scalatest] object SuiteDiscoveryHelper {
     }
   }
   
-  private[scalatest] def isDiscoverableSuite(clazz: java.lang.Class[_]): Boolean = {
-    !clazz.isAnnotationPresent(classOf[DoNotDiscover])
-  }
-  
-  private def isDiscoverableSuite(className: String, loader: ClassLoader): Boolean = {
-    try {
-      isDiscoverableSuite(loader.loadClass(className))
-    }
-    catch {
-      case e: ClassNotFoundException => false
-      case e: NoClassDefFoundError => false
-    }
-  }
-  
   private[scalatest] def isRunnable(clazz: java.lang.Class[_]): Boolean = {
     val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
     if (wrapWithAnnotation != null) {
@@ -179,12 +165,12 @@ private[scalatest] object SuiteDiscoveryHelper {
   // Returns Some(<class name>) if processed, else None
   private def processClassName(className: String, loader: ClassLoader): Option[String] = {
 
-    if (isAccessibleSuite(className, loader)
-        && 
-        (isDiscoverableSuite(className, loader) || isRunnable(className, loader))) 
+    if (isAccessibleSuite(className, loader) || isRunnable(className, loader)) {
       Some(className)
-    else 
-      None 
+    }
+    else {
+      None
+    }
   }
 
   // Returns a set of class names that were processed

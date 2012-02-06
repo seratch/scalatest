@@ -18,9 +18,11 @@ package org.scalatest.fixture
 import org.scalatest._
 import org.scalatest.events.{TestStarting, TestFailed}
 
+object SlowTest extends Tag("SlowTest")
+
 class FlatSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.FlatSpec ") {
+  describe("A FlatSpec ") {
     it("A fixture.Spec should return the test names in order of registration from testNames") {
       val a = new FlatSpec {
         type FixtureParam = String

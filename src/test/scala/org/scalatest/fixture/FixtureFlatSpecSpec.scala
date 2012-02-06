@@ -18,8 +18,6 @@ package org.scalatest.fixture
 import org.scalatest._
 import org.scalatest.events.{TestStarting, TestFailed}
 
-object SlowTest extends Tag("SlowTest")
-
 class FixtureFlatSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
   describe("A FixtureFlatSpec ") {
