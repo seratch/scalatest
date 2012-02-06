@@ -33,7 +33,6 @@ import org.scalatest.events._
 import org.scalatest.junit.JUnitWrapperSuite
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
-import scala.collection.mutable.ArrayBuffer
 import SuiteDiscoveryHelper._
 
 /**
@@ -115,12 +114,7 @@ path&gt; [...]]
  * <li> <code><b>-f[configs...] &lt;filename&gt;</b></code> - causes test results to be written to
  *     the named file</li>
  * <li> <code><b>-u &lt;directory&gt;</b></code> - causes test results to be written to
- *      junit-style xml files in the named directory</li>
- * <li> <code><b>-d &lt;directory&gt;</b></code> - causes test results to be written to
- *      dashboard files in the named directory</li>
- * <li> <code><b>-a &lt;number of files to archive&gt;</b></code> - causes specified number of old
- *      summary and durations files to be archived (in summaries/ and durations/ subdirectories)
- *      for dashboard reporter (default is two)</li>
+ *      xml files in the named directory</li>
  * <li> <code><b>-o[configs...]</b></code> - causes test results to be written to
  *     the standard output</li>
  * <li> <code><b>-e[configs...]</b></code> - causes test results to be written to
@@ -191,9 +185,6 @@ path&gt; [...]]
  * <li> <code><b>H</b></code> - drop <code>SuiteStarting</code> events</li>
  * <li> <code><b>L</b></code> - drop <code>SuiteCompleted</code> events</li>
  * <li> <code><b>O</b></code> - drop <code>InfoProvided</code> events</li>
- * <li> <code><b>P</b></code> - drop <code>ScopeOpened</code> events</li>
- * <li> <code><b>Q</b></code> - drop <code>ScopeClosed</code> events</li>
- * <li> <code><b>M</b></code> - drop <code>MarkupProvided</code> events</li>
  * </ul>
  *
  * <p>
@@ -404,8 +395,6 @@ object Runner {
   private val RUNNER_JFRAME_START_X: Int = 150
   private val RUNNER_JFRAME_START_Y: Int = 100
 
-  private final val DefaultNumFilesToArchive = 2
-
   //                     TO
   // We always include a PassFailReporter on runs in order to determine
   // whether or not all tests passed.
@@ -496,26 +485,13 @@ object Runner {
   def run(args: Array[String]): Boolean = {
     runOptionallyWithPassFailReporter(args, true)
   }
-  
-  def parseFriendlyParams(friendlyArgs:String): Array[String] = {
-    parseFriendlyParams(friendlyArgs.split(" "))
-  }
-
-  def parseFriendlyParams(friendlyArgs:Array[String]): Array[String] = {
-    val (propsList, includesList, excludesList, repoArgsList, concurrentList, memberOnlyList, wildcardList, suiteList, junitList, testngList) = 
-      new FriendlyParamsTranslator().parsePropsAndTags(friendlyArgs)
-    val arrayBuffer = new ArrayBuffer[String]()
-    arrayBuffer ++= propsList ::: includesList ::: excludesList ::: repoArgsList ::: concurrentList ::: memberOnlyList ::: wildcardList :::
-                    suiteList ::: junitList ::: testngList
-    arrayBuffer.toArray
-  }
 
   private def runOptionallyWithPassFailReporter(args: Array[String], runWithPassFailReporter: Boolean): Boolean = {
 
     checkArgsForValidity(args) match {
       case Some(s) => {
         println(s)
-        exit(1) // TODO: Shouldn't this be returning false?
+        exit(1)
       }
       case None =>
     }
@@ -537,7 +513,7 @@ object Runner {
     val fullReporterConfigurations: ReporterConfigurations =
       if (reporterArgsList.isEmpty)
         // If no reporters specified, just give them a graphic reporter
-        new ReporterConfigurations(Some(GraphicReporterConfiguration(Set())), Nil, Nil, Nil, Nil, None, None, Nil, Nil)
+        new ReporterConfigurations(Some(GraphicReporterConfiguration(Set())), Nil, Nil, None, None, Nil, Nil)
       else
         parseReporterArgsIntoConfigurations(reporterArgsList)
 
@@ -566,8 +542,6 @@ object Runner {
           new ReporterConfigurations(
             None,
             fullReporterConfigurations.fileReporterConfigurationList,
-            fullReporterConfigurations.junitXmlReporterConfigurationList,
-            fullReporterConfigurations.dashboardReporterConfigurationList,
             fullReporterConfigurations.xmlReporterConfigurationList,
             fullReporterConfigurations.standardOutReporterConfiguration,
             fullReporterConfigurations.standardErrReporterConfiguration,
@@ -631,7 +605,7 @@ object Runner {
       // Style advice
       // If it is multiple else ifs, then make it symetrical. If one needs an open curly brace, put it on all
       // If an if just has another if, a compound statement, go ahead and put the open curly brace's around the outer one
-      if (s.startsWith("-p") || s.startsWith("-f") || s.startsWith("-u") || s.startsWith("-d") || s.startsWith("-a") || s.startsWith("-h") || s.startsWith("-r") || s.startsWith("-n") || /* s.startsWith("-x") || */ s.startsWith("-l") || s.startsWith("-s") || s.startsWith("-j") || s.startsWith("-m") || s.startsWith("-w") || s.startsWith("-b") || s.startsWith("-t")) {
+      if (s.startsWith("-p") || s.startsWith("-f") || s.startsWith("-u") || s.startsWith("-h") || s.startsWith("-r") || s.startsWith("-n") || s.startsWith("-x") || s.startsWith("-l") || s.startsWith("-s") || s.startsWith("-j") || s.startsWith("-m") || s.startsWith("-w") || s.startsWith("-b") || s.startsWith("-t")) {
         if (it.hasNext)
           it.next
       }
@@ -711,21 +685,6 @@ object Runner {
         if (it.hasNext)
           reporters += it.next
       }
-      else if (s.startsWith("-d")) {
-        reporters += s
-        if (it.hasNext)
-          reporters += it.next
-      }
-      else if (s.startsWith("-a")) {
-        reporters += s
-        if (it.hasNext)
-          reporters += it.next
-      }
-      else if (s.startsWith("-x")) {
-        reporters += s
-        if (it.hasNext)
-          reporters += it.next
-      }
       else if (s.startsWith("-h")) {
         reporters += s
         if (it.hasNext)
@@ -735,6 +694,12 @@ object Runner {
         includes += s
         if (it.hasNext)
           includes += it.next
+      }
+      else if (s.startsWith("-x")) {
+        System.err.println(Resources("dashXDeprecated"))
+        excludes += s.replace("-x", "-l")
+        if (it.hasNext)
+          excludes += it.next
       }
       else if (s.startsWith("-l")) {
         excludes += s
@@ -868,17 +833,13 @@ object Runner {
     //
     // Checks to see if any args are smaller than two characters in length.
     // Allows a one-character arg if it's a directory-name parameter, to
-    // permit use of "." for example.  Allows a one-character arg if it's
-    // a number.
+    // permit use of "." for example.
     //
     def argTooShort(args: List[String]): Boolean = {
       args match {
         case Nil => false
 
         case "-u" :: directory :: list => argTooShort(list)
-        case "-d" :: directory :: list => argTooShort(list)
-        case "-a" :: number    :: list => argTooShort(list)
-        case "-x" :: directory :: list => argTooShort(list)
 
         case x :: list =>
           if (x.length < 2) true
@@ -934,42 +895,6 @@ object Runner {
           else {
             throw new IllegalArgumentException("-u needs to be followed by a directory name arg: ")
           }
-        case "-d" =>
-          if (it.hasNext) {
-            val directory = it.next
-            if (!(new File(directory).isDirectory))
-              throw new IllegalArgumentException(
-                "arg for -d option is not a directory [" + directory + "]")
-            else {}
-          }
-          else {
-            throw new IllegalArgumentException("-d needs to be followed by a directory name arg: ")
-          }
-        case "-a" =>
-          if (it.hasNext) {
-            def isValidInt(text: String): Boolean = 
-              try { text.toInt; true } catch { case _ => false }
-
-            val number = it.next
-            if (!(isValidInt(number)))
-              throw new IllegalArgumentException(
-                "arg for -a option is not a number [" + number + "]")
-            else {}
-          }
-          else {
-            throw new IllegalArgumentException("-a needs to be followed by a number arg: ")
-          }
-        case "-x" =>
-          if (it.hasNext) {
-            val directory = it.next
-            if (!(new File(directory).isDirectory))
-              throw new IllegalArgumentException(
-                "arg for -x option is not a directory [" + directory + "]")
-            else {}
-          }
-          else {
-            throw new IllegalArgumentException("-x needs to be followed by a directory name arg: ")
-          }
         case "-h" =>
           if (it.hasNext)
             it.next // scroll past the filename
@@ -1012,53 +937,12 @@ object Runner {
     }
     val fileReporterConfigurationList = buildFileReporterConfigurationList(args)
 
-    def buildJunitXmlReporterConfigurationList(args: List[String]) = {
-      val it = args.iterator
-      val lb = new ListBuffer[JunitXmlReporterConfiguration]
-      while (it.hasNext) {
-        val arg = it.next
-        if (arg.startsWith("-u"))
-          lb += new JunitXmlReporterConfiguration(Set[ReporterConfigParam](),
-                                                  it.next)
-      }
-      lb.toList
-    }
-    val junitXmlReporterConfigurationList =
-      buildJunitXmlReporterConfigurationList(args)
-
-    def buildDashboardReporterConfigurationList(args: List[String]) = {
-      def fetchNumFilesArg: Int = {
-        var numFiles: Option[Int] = None
-        val it = args.iterator
-
-        while (!numFiles.isDefined && it.hasNext) {
-          val arg = it.next
-          if (arg.startsWith("-a"))
-            numFiles = Some(it.next.toInt)
-        }
-        numFiles.getOrElse(DefaultNumFilesToArchive)
-      }
-
-      val numFilesToArchive = fetchNumFilesArg
-      val it = args.iterator
-      val lb = new ListBuffer[DashboardReporterConfiguration]
-      while (it.hasNext) {
-        val arg = it.next
-        if (arg.startsWith("-d"))
-          lb += new DashboardReporterConfiguration(Set[ReporterConfigParam](),
-                                                   it.next, numFilesToArchive)
-      }
-      lb.toList
-    }
-    val dashboardReporterConfigurationList =
-      buildDashboardReporterConfigurationList(args)
-
     def buildXmlReporterConfigurationList(args: List[String]) = {
       val it = args.iterator
       val lb = new ListBuffer[XmlReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
-        if (arg.startsWith("-x"))
+        if (arg.startsWith("-u"))
           lb += new XmlReporterConfiguration(Set[ReporterConfigParam](),
                                              it.next)
       }
@@ -1118,8 +1002,6 @@ object Runner {
     new ReporterConfigurations(
       graphicReporterConfigurationOption,
       fileReporterConfigurationList,
-      junitXmlReporterConfigurationList,
-      dashboardReporterConfigurationList,
       xmlReporterConfigurationList,
       standardOutReporterConfigurationOption,
       standardErrReporterConfigurationOption,
@@ -1418,19 +1300,19 @@ object Runner {
 
           val (membersOnlySuiteInstances, wildcardSuiteInstances) = {
 
-            val membersOnlyAndWildcardListsAreEmpty = membersOnlyList.isEmpty && wildcardList.isEmpty // They didn't specify any -m's or -w's on the command line
+            val membersOnlyAndBeginsWithListsAreEmpty = membersOnlyList.isEmpty && wildcardList.isEmpty // They didn't specify any -m's or -w's on the command line
 
-            if (membersOnlyAndWildcardListsAreEmpty && (!suitesList.isEmpty || !junitsList.isEmpty)) {
+
+            // TODO: rename the 'BeginsWith' variables to 'Wildcard' to match the terminology that
+            // we ended up with on the outside
+            // TODO: Should SuiteDiscoverHelper be a singleton object?
+            if (membersOnlyAndBeginsWithListsAreEmpty && (!suitesList.isEmpty || !junitsList.isEmpty)) {
               (Nil, Nil) // No DiscoverySuites in this case. Just run Suites named with -s or -j
             }
             else {
-              println("DEBUG: Discovery Starting")
-              val discoveryStartTime = System.currentTimeMillis
               val accessibleSuites = discoverSuiteNames(runpath, loader)
-              val discoveryDuration = System.currentTimeMillis - discoveryStartTime
-              println("DEBUG: Discovery Completed: " + discoveryDuration + " milliseconds")
 
-              if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty) {
+              if (membersOnlyAndBeginsWithListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty) {
                 // In this case, they didn't specify any -w, -m, -s, or -j on the command line, so the default
                 // is to run any accessible Suites discovered on the runpath
                 (Nil, List(new DiscoverySuite("", accessibleSuites, true, loader)))
@@ -1615,37 +1497,3 @@ object Runner {
     )
   }
 }
-
-/*
-Runner command line arguments:
-
-a
-b - sbt reporter (only used inside ScalaTestFramework)
-c - parallel execution
-d
-e - standard error reporter
-f - file reporter
-g - graphical reporter
-h - HTML Reporter
-i
-j - run a JUnit tests class
-k
-l - tags to exclude
-m - members only path
-n - tags to include
-o - standard out reporter
-p - space-separated runpath
-q
-r - custom reporter
-s - suite class name
-t - testNG XML config file
-u - junit xml reporter
-v
-w - wildcard path
-x (saving this for a native xml reporter)
-y
-z
-
-D - configMap pair, key=value
-
-*/
