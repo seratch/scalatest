@@ -377,7 +377,6 @@ import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 trait FeatureSpec extends Suite { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFeatureSpecMod", "FixtureFeatureSpec")
-  private final val stackDepth = 4
   import engine._
   
   private[scalatest] val sourceFileName = "FeatureSpec.scala"
@@ -412,7 +411,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
 
-    registerTest(Resources("scenario", specText), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", stackDepth, testTags: _*)
+    registerTest(Resources("scenario", specText), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", testTags: _*)
   }
 
   /**
@@ -434,7 +433,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerIgnoredTest(Resources("scenario", specText), testFun , "ignoreCannotAppearInsideAScenario", sourceFileName, "ignore", stackDepth, testTags: _*)
+    registerIgnoredTest(Resources("scenario", specText), testFun , "ignoreCannotAppearInsideAScenario", sourceFileName, "ignore", testTags: _*)
   }
 
   /**
@@ -448,7 +447,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun(sourceFileName, "feature"))
 
-    registerNestedBranch(description, None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", stackDepth)
+    registerNestedBranch(description, None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature")
   }
 
   /**

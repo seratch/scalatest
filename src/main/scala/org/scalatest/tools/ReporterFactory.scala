@@ -48,23 +48,21 @@ private[scalatest] class ReporterFactory {
   }
   
   protected def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = {
+    
+    val reporter = if (configSet.contains(PresentDots)) 
+                     new ConsoleProgressBarReporter(!configSet.contains(PresentWithoutColor))
+                   else
+                     new StandardOutReporter(
+                       configSet.contains(PresentAllDurations),
+                       !configSet.contains(PresentWithoutColor),
+                       configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
+                       configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+                     )
+    
     if (configSetMinusNonFilterParams(configSet).isEmpty)
-      new StandardOutReporter(
-        configSet.contains(PresentAllDurations),
-        !configSet.contains(PresentWithoutColor),
-        configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-        configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
-      )
+      reporter
     else
-      new FilterReporter(
-        new StandardOutReporter(
-          configSet.contains(PresentAllDurations),
-          !configSet.contains(PresentWithoutColor),
-          configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-          configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
-        ),
-        configSet
-      )
+      new FilterReporter(reporter, configSet)
   }
   
   protected def createStandardErrReporter(configSet: Set[ReporterConfigParam]) = {
@@ -143,14 +141,6 @@ private[scalatest] class ReporterFactory {
       new FilterReporter(customReporter, configSet)
   }
   
-  protected def createJunitXmlReporter(configSet: Set[ReporterConfigParam], directory: String) = {
-    new JunitXmlReporter(directory)
-  }
-  
-  protected def createDashboardReporter(configSet: Set[ReporterConfigParam], directory: String, numFilesToArchive: Int) = {
-    new DashboardReporter(directory, numFilesToArchive)
-  }
-  
   private[scalatest] def getDispatchReporter(reporterSpecs: ReporterConfigurations, graphicReporter: Option[Reporter], passFailReporter: Option[Reporter], loader: ClassLoader) = {
 
     def getReporterFromConfiguration(configuration: ReporterConfiguration): Reporter =
@@ -159,8 +149,6 @@ private[scalatest] class ReporterFactory {
         case StandardOutReporterConfiguration(configSet) => createStandardOutReporter(configSet)
         case StandardErrReporterConfiguration(configSet) => createStandardErrReporter(configSet)
         case FileReporterConfiguration(configSet, fileName) => createFileReporter(configSet, fileName)
-        case JunitXmlReporterConfiguration(configSet, directory) => createJunitXmlReporter(configSet, directory)
-        case DashboardReporterConfiguration(configSet, directory, numFilesToArchive) => createDashboardReporter(configSet, directory, numFilesToArchive)
         case XmlReporterConfiguration(configSet, directory) => createXmlReporter(configSet, directory)
         case HtmlReporterConfiguration(configSet, fileName) => createHtmlReporter(configSet, fileName)
         case CustomReporterConfiguration(configSet, reporterClassName) => createCustomReporter(configSet, reporterClassName, loader) 
