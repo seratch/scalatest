@@ -93,7 +93,6 @@ import org.apache.tools.ant.taskdefs.Java
  *   <li>  <code>graphic</code>          </li>
  *   <li>  <code>file</code>             </li>
  *   <li>  <code>junitxml</code>         </li>
- *   <li>  <code>dashboard</code>        </li>
  *   <li>  <code>stdout</code>           </li>
  *   <li>  <code>stderr</code>           </li>
  *   <li>  <code>reporterclass</code>    </li>
@@ -101,7 +100,7 @@ import org.apache.tools.ant.taskdefs.Java
  *
  * <p>
  * Each may include a <code>config</code> attribute to specify the reporter configuration.
- * Types <code>file</code>, <code>junitxml</code>, <code>dashboard</code>, and <code>reporterclass</code> require additional attributes
+ * Types <code>file</code>, <code>junitxml</code> and <code>reporterclass</code> require additional attributes
  * <code>filename</code>, <code>directory</code>, and <code>classname</code>, respectively:
  * </p>
  *
@@ -110,15 +109,8 @@ import org.apache.tools.ant.taskdefs.Java
  *     &lt;reporter type="stdout"        config="FAB"/&gt;
  *     &lt;reporter type="file"          filename="test.out"/&gt;
  *     &lt;reporter type="junitxml"      directory="target"/&gt;
- *     &lt;reporter type="dashboard"     directory="target"/&gt;
  *     &lt;reporter type="reporterclass" classname="my.ReporterClass"/&gt;
  * </pre>
- *
- * <p>
- * For reporter type 'dashboard', an optional <code>numfiles</code> attribute may be
- * included to specify the number of old summary and duration files to be archived.
- * Default is 2.
- * </p>
  *
  * <p>
  * Specify tags to include and/or exclude using <code>&lt;tagsToInclude&gt;</code> and
@@ -401,8 +393,7 @@ class ScalaTestAntTask extends Task {
         case "graphic"       => addReporterOption(args, reporter, "-g")
         case "file"          => addFileReporter(args, reporter)
         case "xml"           => addXmlReporter(args, reporter)
-        case "junitxml"      => addJunitXmlReporter(args, reporter)
-        case "dashboard"     => addDashboardReporter(args, reporter)
+        case "junitxml"      => addXmlReporter(args, reporter)
         case "html"          => addHtmlReporter(args, reporter)
         case "reporterclass" => addReporterClass(args, reporter)
 
@@ -444,57 +435,23 @@ class ScalaTestAntTask extends Task {
   }
 
   //
-  // Adds '-x' xml reporter option to args.  Adds reporter's
-  // directory as additional argument, e.g. "-x", "directory".
-  // [disabled for now]
+  // Adds '-u' xml reporter option to args.  Adds reporter's
+  // directory as additional argument, e.g. "-u", "directory".
   //
   private def addXmlReporter(args: ListBuffer[String],
                              reporter: ReporterElement)
   {
-    addReporterOption(args, reporter, "-x")
+    addReporterOption(args, reporter, "-u")
 
     if (reporter.getDirectory == null)
       throw new BuildException(
         "reporter type 'xml' requires 'directory' attribute")
 
     args += reporter.getDirectory
-  }
 
-  //
-  // Adds '-u' junit xml reporter option to args.  Adds reporter's
-  // directory as additional argument, e.g. "-u", "directory".
-  //
-  private def addJunitXmlReporter(args: ListBuffer[String],
-                                  reporter: ReporterElement)
-  {
-    addReporterOption(args, reporter, "-u")
-
-    if (reporter.getDirectory == null)
-      throw new BuildException(
-        "reporter type 'junitxml' requires 'directory' attribute")
-
-    args += reporter.getDirectory
-  }
-
-  //
-  // Adds '-d' Dashboard reporter option to args.  Adds reporter's
-  // directory as additional argument, e.g. "-d", "directory".
-  //
-  private def addDashboardReporter(args: ListBuffer[String],
-                                   reporter: ReporterElement)
-  {
-    addReporterOption(args, reporter, "-d")
-
-    if (reporter.getDirectory == null)
-      throw new BuildException(
-        "reporter type 'dashboard' requires 'directory' attribute")
-
-    args += reporter.getDirectory
-
-    if (reporter.getNumfiles >= 0) {
-      args += "-a"
-      args += reporter.getNumfiles.toString
-    }
+    if (reporter.getType == "xml")
+      Console.err.println("WARNING: reporter type 'xml' is deprecated " +
+                        "- please use 'junitxml' instead")
   }
 
   //
@@ -838,20 +795,17 @@ class ScalaTestAntTask extends Task {
     private var filename  : String = null
     private var directory : String = null
     private var classname : String = null
-    private var numfiles  : Int    = -1
 
     def setType(rtype          : String) { this.rtype     = rtype     }
     def setConfig(config       : String) { this.config    = config    }
     def setFilename(filename   : String) { this.filename  = filename  }
     def setDirectory(directory : String) { this.directory = directory }
     def setClassName(classname : String) { this.classname = classname }
-    def setNumfiles(numfiles   : Int)    { this.numfiles  = numfiles  }
 
     def getType      = rtype
     def getConfig    = config
     def getFilename  = filename
     def getDirectory = directory
     def getClassName = classname
-    def getNumfiles  = numfiles
   }
 
