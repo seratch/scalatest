@@ -63,35 +63,31 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues {
 
     it("should eventually blow up with a TFE if the by-name continuously throws an exception") {
 
-      var count = 0
       val caught = evaluating {
-        eventually {
-          count += 1
-          1 + 1 should equal (3)
-        }
+        eventually { 1 + 1 should equal (3) }
       } should produce [TestFailedException]
 
-      caught.message.value should be (Resources("didNotEventuallySucceed", count.toString, "10"))
-      caught.failedCodeLineNumber.value should equal (thisLineNumber - 7)
+      caught.message.value should be (Resources("didNotEventuallySucceed", "100", "10"))
+      caught.failedCodeLineNumber.value should equal (thisLineNumber - 4)
       caught.failedCodeFileName.value should be ("EventuallySpec.scala")
     }
     
     it("should provides correct stack depth when eventually is called from the overload method") {
       
       val caught1 = evaluating {
-        eventually(timeout(100), interval(1)) { 1 + 1 should equal (3) }
+        eventually(maxAttempts(10), interval(1)) { 1 + 1 should equal (3) }
       } should produce [TestFailedException]
       caught1.failedCodeLineNumber.value should equal (thisLineNumber - 2)
       caught1.failedCodeFileName.value should be ("EventuallySpec.scala")
       
       val caught2 = evaluating {
-        eventually(interval(1), timeout(100)) { 1 + 1 should equal (3) }
+        eventually(interval(1), maxAttempts(10)) { 1 + 1 should equal (3) }
       } should produce [TestFailedException]
       caught2.failedCodeLineNumber.value should equal (thisLineNumber - 2)
       caught2.failedCodeFileName.value should be ("EventuallySpec.scala")
       
       val caught3 = evaluating {
-        eventually(timeout(100)) { 1 + 1 should equal (3) }
+        eventually(maxAttempts(10)) { 1 + 1 should equal (3) }
       } should produce [TestFailedException]
       caught3.failedCodeLineNumber.value should equal (thisLineNumber - 2)
       caught3.failedCodeFileName.value should be ("EventuallySpec.scala")
@@ -103,98 +99,53 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues {
       caught4.failedCodeFileName.value should be ("EventuallySpec.scala")
     }
 
-    it("should by default invoke an always-failing by-name for at least 1 second") {
-      var startTime: Option[Long] = None
-      evaluating {
-        eventually {
-          if (startTime.isEmpty)
-            startTime = Some(System.currentTimeMillis)
-          1 + 1 should equal (3)
-        }
-      } should produce [TestFailedException]
-      (System.currentTimeMillis - startTime.get).toInt should be >= (1000)
-    }
-
-    it("should, if an alternate implicit Timeout is provided, invoke an always-failing by-name by at least the specified timeout") {
-
-      implicit val eventuallyConfig = EventuallyConfig(timeout = 1500)
-
-      var startTime: Option[Long] = None
-      evaluating {
-        eventually {
-          if (startTime.isEmpty)
-            startTime = Some(System.currentTimeMillis)
-          1 + 1 should equal (3)
-        }
-      } should produce [TestFailedException]
-      (System.currentTimeMillis - startTime.get).toInt should be >= (1500)
-    }
-
-    it("should, if an alternate explicit timeout is provided, invoke an always-failing by-name by at least the specified timeout") {
-
-      var startTime: Option[Long] = None
-      evaluating {
-        eventually (timeout(1250)) {
-          if (startTime.isEmpty)
-            startTime = Some(System.currentTimeMillis)
-          1 + 1 should equal (3)
-        } 
-      } should produce [TestFailedException]
-      (System.currentTimeMillis - startTime.get).toInt should be >= (1250)
-    }
-
-    it("should, if an alternate explicit timeout is provided along with an explicit interval, invoke an always-failing by-name by at least the specified timeout, even if a different implicit is provided") {
-
-      implicit val eventuallyConfig = EventuallyConfig(timeout = 500, interval = 2)
-      
-      var startTime: Option[Long] = None
-      evaluating {
-        eventually (timeout(1388), interval(1)) {
-          if (startTime.isEmpty)
-            startTime = Some(System.currentTimeMillis)
-          1 + 1 should equal (3)
-        } 
-      } should produce [TestFailedException]
-      (System.currentTimeMillis - startTime.get).toInt should be >= (1388)
-    }
-    
-    it("should, if an alternate explicit timeout is provided along with an explicit interval, invoke an always-failing by-name by at least the specified timeout, even if a different implicit is provided, with timeout specified second") {
-
-      implicit val eventuallyConfig = EventuallyConfig(interval = 2, timeout = 500)
-      
-      var startTime: Option[Long] = None
-      evaluating {
-        eventually (interval(1), timeout(1388)) {
-          if (startTime.isEmpty)
-            startTime = Some(System.currentTimeMillis)
-          1 + 1 should equal (3)
-        } 
-      } should produce [TestFailedException]
-      (System.currentTimeMillis - startTime.get).toInt should be >= (1388)
-    }
-
-    it("should allow errors that do not normaly cause a test to fail through immediately when thrown") {
-
+    it("should by default invoke an always-failing by-name 100 times") {
       var count = 0
-      intercept[VirtualMachineError] {
+      evaluating {
         eventually {
           count += 1
-          throw new VirtualMachineError {}
           1 + 1 should equal (3)
         }
-      }
-      count should equal (1)
+      } should produce [TestFailedException]
+      count should equal (100)
     }
-    it("should allow TestPendingException, which does not normaly cause a test to fail, through immediately when thrown") {
+
+    it("should, if an alternate implicit MaxAttempts is provided, invoke an always-failing by-name by the specified number of times") {
+
+      implicit val eventuallyConfig = EventuallyConfig(maxAttempts = 88)
 
       var count = 0
-      intercept[TestPendingException] {
+      evaluating {
         eventually {
           count += 1
-          pending
+          1 + 1 should equal (3)
         }
-      }
-      count should equal (1)
+      } should produce [TestFailedException]
+      count should equal (88)
+    }
+
+    it("should, if an alternate explicit max attempts is provided, invoke an always-failing by-name by the specified number of times") {
+
+      var count = 0
+      evaluating {
+        eventually (maxAttempts(77)) {
+          count += 1
+          1 + 1 should equal (3)
+        } 
+      } should produce [TestFailedException]
+      count should equal (77)
+    }
+
+    it("should, if an alternate explicit max attempts is provided along with an explicit interval, invoke an always-failing by-name by the specified number of times, even if a different implicit is provided") {
+
+      var count = 0
+      evaluating {
+        eventually (maxAttempts(78), interval(1)) {
+          count += 1
+          1 + 1 should equal (3)
+        } 
+      } should produce [TestFailedException]
+      count should equal (78)
     }
   }
 }

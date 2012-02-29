@@ -19,7 +19,7 @@ import org.scalatest.events._
 
 class FunSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
 
-  describe("A FunSpec") {
+  describe("A Spec") {
 
     it("should return the test names in registration order from testNames") {
 
