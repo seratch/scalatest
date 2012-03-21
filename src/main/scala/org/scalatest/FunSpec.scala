@@ -1262,14 +1262,11 @@ import Suite.reportTestIgnored
  *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.FunSpecFinder")
 trait FunSpec extends Suite { thisSuite =>
 
   private final val engine = new Engine("concurrentSpecMod", "Spec")
-  private final val stackDepth = 3
   import engine._
-
-  // TODO: Probably make this private final val sourceFileName in a singleton object so it gets compiled in rather than carried around in each instance
+  
   private[scalatest] val sourceFileName = "FunSpec.scala"
 
   /**
@@ -1281,16 +1278,6 @@ trait FunSpec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-  
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>Spec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Class that, via an instance referenced from the <code>it</code> field,
@@ -1339,7 +1326,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: => Unit) {
-      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", stackDepth, None, None, testTags: _*)
+      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", None, None, testTags: _*)
     }
 
     /**
@@ -1423,7 +1410,7 @@ trait FunSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(testText: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", stackDepth + 1, testTags: _*)
+    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", testTags: _*)
   }
 
   /**
@@ -1434,7 +1421,7 @@ trait FunSpec extends Suite { thisSuite =>
    */
   protected def describe(description: String)(fun: => Unit) {
 
-    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", stackDepth + 1)
+    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe")
   }
 
   /**

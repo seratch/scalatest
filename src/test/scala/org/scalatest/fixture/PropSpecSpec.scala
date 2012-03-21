@@ -20,7 +20,7 @@ import events.TestFailed
 
 class PropSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.PropSpec") {
+  describe("A PropSpec") {
     it("should return the test names in order of registration from testNames") {
       val a = new PropSpec {
         type FixtureParam = String

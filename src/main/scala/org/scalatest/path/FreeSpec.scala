@@ -13,7 +13,6 @@ import org.scalatest.Tag
 import org.scalatest.verb.BehaveWord
 import scala.collection.immutable.ListSet
 import org.scalatest.PendingNothing
-import org.scalatest.Style
 
 /**
  * A sister trait to <code>org.scalatest.FreeSpec</code> that isolates tests by running each test in its own
@@ -689,11 +688,9 @@ import org.scalatest.Style
  * @author Bill Venners
  * @author Chua Chee Seng
  */
-@Style("org.scalatest.finders.FreeSpecFinder")
 trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
   
   private final val engine = PathEngine.getEngine()
-  private final val stackDepth = 4
   import engine._
 
   override def newInstance = this.getClass.newInstance.asInstanceOf[FreeSpec]
@@ -727,7 +724,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], testFun: () => Unit) {
     // TODO: This is what was being used before but it is wrong
-    handleTest(thisSuite, specText, testFun, "itCannotAppearInsideAnotherIt", "FunSpec.scala", "apply", stackDepth, testTags: _*)
+    handleTest(thisSuite, specText, testFun, "itCannotAppearInsideAnotherIt", "FunSpec.scala", "apply", testTags: _*)
     // registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FreeSpec.scala", "it", None, testTags: _*)
   }
 
@@ -752,7 +749,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
   private def registerTestToIgnore(specText: String, testTags: List[Tag], testFun: () => Unit) {
 
     // TODO: This is how these were, but it needs attention. Mentions "it".
-    handleIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", "ignore", stackDepth, testTags: _*)
+    handleIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", "ignore", testTags: _*)
   }
 
   /**
@@ -864,7 +861,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
     def - (fun: => Unit) {
       // TODO: Fix the resource name and method name
       
-      handleNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", "FreeSpec.scala", "-", stackDepth - 1)
+      handleNestedBranch(string, None, fun, "itCannotAppearInsideAnIt", "FreeSpec.scala", "it")
     }
 
     /**

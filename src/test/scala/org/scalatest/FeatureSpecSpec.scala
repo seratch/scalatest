@@ -506,7 +506,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for info " +
+    it("should send InfoProvided events with aboutAPendingTest set to true for info " +
             "calls made from a test that is pending") {
       val a = new FeatureSpec with GivenWhenThen {
         scenario("should do something else") {
@@ -522,11 +522,10 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       assert(ip.size === 3)
       for (event <- ip) {
         assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest and aboutACanceledTest set to false for info " +
-            "calls made from a test that is not pending or canceled") {
+    it("should send InfoProvided events with aboutAPendingTest set to false for info " +
+            "calls made from a test that is not pending") {
       val a = new FeatureSpec with GivenWhenThen {
         scenario("should do something else") {
           given("two integers")
@@ -541,83 +540,6 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       assert(ip.size === 3)
       for (event <- ip) {
         assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-    }
-    it("should send InfoProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for info " +
-            "calls made from a test that is canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          given("two integers")
-          when("one is subracted from the other")
-          then("the result is the difference between the two numbers")
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && event.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for markup " +
-            "calls made from a test that is pending") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          pending
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.markupProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest and aboutACanceledTest set to false for markup " +
-            "calls made from a test that is not pending or canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          assert(1 + 1 === 2)
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.markupProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for markup " +
-            "calls made from a test that is canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.markupProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && event.aboutACanceledTest.get)
       }
     }
     it("should invoke withFixture from runTest") {
