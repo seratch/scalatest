@@ -15,8 +15,6 @@ import cucumber.runtime.model.CucumberTagStatement
 
 class CucumberRunner(cucumberClass: Class[_]) extends Suite {
   
-  
-
   override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
               configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     if (testName == null)
@@ -47,7 +45,7 @@ class CucumberRunner(cucumberClass: Class[_]) extends Suite {
     val runtime = new Runtime(resourceLoader, classLoader, runtimeOptions)
     
     // TODO: Create formatter(s) based on Annotations. Use same technique as in cli.Main for MultiFormatter
-    val scalatestReporter = new ScalaTestReporter(runtimeOptions.reporter(classLoader), runtimeOptions.formatter(classLoader), reporter)
+    val scalatestReporter = new ScalaTestReporter(runtimeOptions.reporter(classLoader), runtimeOptions.formatter(classLoader), cucumberClass, tracker, reporter)
     
     val features: Array[CucumberFeature] = scala.collection.JavaConversions.asBuffer(runtimeOptions.cucumberFeatures(resourceLoader)).toArray
     features.foreach { feature => 
