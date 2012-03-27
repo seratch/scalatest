@@ -8,5 +8,6 @@
 	<classpathentry kind="var" path="IVY2_REPO/org.scalatest/scalatest_2.9.0/jars/scalatest_2.9.0-1.7.1.jar"/>
 	<classpathentry kind="var" path="IVY2_REPO/info.cukes/cucumber-core/jars/cucumber-core-1.0.0.RC24.jar"/>
 	<classpathentry kind="var" path="IVY2_REPO/info.cukes/gherkin/bundles/gherkin-2.9.1.jar"/>
+	<classpathentry kind="var" path="IVY2_REPO/info.cukes/cucumber-scala/jars/cucumber-scala-1.0.0.RC24.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

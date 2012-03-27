@@ -17,28 +17,40 @@ import gherkin.formatter.model.Examples
 class ScalaTestReporter(reporter: Reporter, formatter: Formatter, dispatch: org.scalatest.Reporter) extends Reporter with Formatter {
 
   private val steps = new ListBuffer[Step]()
+  private var currentStep: Step = null
+  
+  private def getTestName(step: Step) = step.getKeyword + ": " + step.getName
   
   def result(result: Result) {
     val error = result.getError
-    if (Result.SKIPPED == result || Result.UNDEFINED == result) {
-      // Ignore, may be UNDEFINED for cancel?
+    if (Result.SKIPPED == result) {
+      // Skipped, should map to Ignore
+      println("#####SKIPPED - " + getTestName(currentStep))
+    }
+    else if (Result.UNDEFINED == result) {
+      // This happens when step is not defined, should map to canceled?
+      println("####UNDEFINED - " + getTestName(currentStep))
     }
     else if (error != null) {
       if (error.isInstanceOf[PendingException]) {
         // Pending
+        println("#####PENDING - " + getTestName(currentStep))
       }
       else {
         // Failed
+        println("#####FAILED - " + getTestName(currentStep))
       }
     }
     else {
       // Success
+      println("#####SUCCESS - " + getTestName(currentStep))
     }
     reporter.result(result)
   }
   
   def `match`(m: Match) {
-    // What is this doing??
+    currentStep = steps.remove(0)
+    println("#####TEST STARTING - " + getTestName(currentStep))
     reporter.`match`(m)
   }
   
