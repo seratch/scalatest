@@ -11,6 +11,7 @@ import cucumber.runtime.Runtime
 import cucumber.runtime.model.CucumberFeature
 import cucumber.runtime.model.CucumberScenario
 import cucumber.runtime.model.CucumberScenarioOutline
+import cucumber.runtime.model.CucumberTagStatement
 
 class CucumberRunner(cucumberClass: Class[_]) extends Suite {
   
@@ -50,20 +51,23 @@ class CucumberRunner(cucumberClass: Class[_]) extends Suite {
     
     val features: Array[CucumberFeature] = scala.collection.JavaConversions.asBuffer(runtimeOptions.cucumberFeatures(resourceLoader)).toArray
     features.foreach { feature => 
-      val cucumberTagStatement = feature.getFeatureElements
-      cucumberTagStatement match {
-        case scenario: CucumberScenario => 
-          scenario.run(scalatestReporter, scalatestReporter, runtime)
-        case outline: CucumberScenarioOutline => 
-          val examples = scala.collection.JavaConversions.asBuffer(outline.getCucumberExamplesList).toArray
-          examples.foreach { example => 
-            val scenarios = scala.collection.JavaConversions.asBuffer(example.createExampleScenarios).toArray
-            scenarios.foreach { scenario => 
-              scenario.run(scalatestReporter, scalatestReporter, runtime)
+      val cucumberTagStatements = scala.collection.JavaConversions.asBuffer(feature.getFeatureElements).toArray
+      cucumberTagStatements.foreach { cucumberTagStatement =>
+        cucumberTagStatement match {
+          case scenario: CucumberScenario => 
+            scenario.run(scalatestReporter, scalatestReporter, runtime)
+          case outline: CucumberScenarioOutline => 
+            val examples = scala.collection.JavaConversions.asBuffer(outline.getCucumberExamplesList).toArray
+            examples.foreach { example => 
+              val scenarios = scala.collection.JavaConversions.asBuffer(example.createExampleScenarios).toArray
+              scenarios.foreach { scenario => 
+                scenario.run(scalatestReporter, scalatestReporter, runtime)
+              }
             }
-          }
+          case _ => 
+            println("Unxpected cucumberTagStatement: " + cucumberTagStatement.getClass.getName)
+        }
       }
     }
-  }
-  
+  }  
 }

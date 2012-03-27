@@ -8,5 +8,6 @@ parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
 	"org.scalatest" %% "scalatest" % "1.7.1", 
-	"info.cukes" % "cucumber-java" % "1.0.0.RC24"
+	"info.cukes" % "cucumber-java" % "1.0.0.RC24", 
+	"info.cukes" % "cucumber-scala" % "1.0.0.RC24"
 )
