@@ -506,7 +506,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for info " +
+    it("should send InfoProvided events with aboutAPendingTest set to true for info " +
             "calls made from a test that is pending") {
       val a = new FeatureSpec with GivenWhenThen {
         scenario("should do something else") {
@@ -522,11 +522,10 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       assert(ip.size === 3)
       for (event <- ip) {
         assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest and aboutACanceledTest set to false for info " +
-            "calls made from a test that is not pending or canceled") {
+    it("should send InfoProvided events with aboutAPendingTest set to false for info " +
+            "calls made from a test that is not pending") {
       val a = new FeatureSpec with GivenWhenThen {
         scenario("should do something else") {
           given("two integers")
@@ -541,83 +540,6 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       assert(ip.size === 3)
       for (event <- ip) {
         assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-    }
-    it("should send InfoProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for info " +
-            "calls made from a test that is canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          given("two integers")
-          when("one is subracted from the other")
-          then("the result is the difference between the two numbers")
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && event.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for markup " +
-            "calls made from a test that is pending") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          pending
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.markupProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest and aboutACanceledTest set to false for markup " +
-            "calls made from a test that is not pending or canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          assert(1 + 1 === 2)
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.markupProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for markup " +
-            "calls made from a test that is canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.markupProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && event.aboutACanceledTest.get)
       }
     }
     it("should invoke withFixture from runTest") {
@@ -770,6 +692,81 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
             new MySpec
           }
         assert(caught.getMessage === "Feature clauses cannot be nested.")
+      }
+    }
+    
+    describe("when failure happens") {
+      
+      it("should fire TestFailed event with correct stack depth info when test failed") {
+        class TestSpec extends FeatureSpec {
+          scenario("fail scenario") {
+            assert(1 === 2)
+          }
+          feature("a feature") {
+            scenario("nested fail scenario") {
+              assert(1 === 2)
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s1 = new TestSpec
+        s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+        assert(rep.testFailedEventsReceived.size === 2)
+        assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FeatureSpecSpec.scala")
+        assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 13)
+        assert(rep.testFailedEventsReceived(1).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FeatureSpecSpec.scala")
+        assert(rep.testFailedEventsReceived(1).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 11)
+      }
+      
+      it("should generate NotAllowedException with correct stack depth info when has a feature nested inside a feature") {
+        class TestSpec extends FeatureSpec {
+          feature("a feature") {
+            feature("inner feature") {
+              ignore("nested fail scenario") {
+                assert(1 === 1)
+              }
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val caught = intercept[NotAllowedException] {
+          new TestSpec
+        }
+        assert(caught.failedCodeFileName.get === "FeatureSpecSpec.scala")
+        assert(caught.failedCodeLineNumber.get === thisLineNumber - 12)
+      }
+      
+      it("should generate TestRegistrationClosedException with correct stack depth info when has a scenario nested inside a scenario") {
+        class TestSpec extends FeatureSpec {
+          var registrationClosedThrown = false
+          feature("a feature") {
+            scenario("a scenario") {
+              scenario("nested scenario") {
+                assert(1 === 2)
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("FeatureSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
       }
     }
   }
