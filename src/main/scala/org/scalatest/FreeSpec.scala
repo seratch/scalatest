@@ -125,7 +125,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * </p>
  * 
  * <pre class="stREPL">
- * scala&gt; (new StackSpec).execute()
+ * scala> (new StackSpec).execute()
  * <span class="stGreen">StackSpec:
  * A Stack 
  *   whenever it is empty 
@@ -185,8 +185,8 @@ import Suite.anErrorThatShouldCauseAnAbort
  * </p>
  * 
  * <pre class="stREPL">
- * scala&gt; (new ComputerRoomRulesSpec).execute()
- * <span class="stGreen">ComputerRoomRulesSpec:
+ * <span class="stGreen">(new ComputerRoomRulesSpec).execute()
+ * ComputerRoomRulesSpec:
  * Achtung! 
  *   Alle touristen und non-technischen lookenpeepers! 
  * &nbsp; - Das machine is nicht fuer fingerpoken und mittengrabben.
@@ -565,11 +565,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  * <a name="sharedFixtures"></a><h2>Shared fixtures</h2>
  *
  * <p>
- * A <em>fixture</em> is objects or other artifacts (such as files, sockets, database
+ * A test <em>fixture</em> is objects or other artifacts (such as files, sockets, database
  * connections, <em>etc.</em>) used by tests to do their work.
- * If a fixture is used by only one test, then the definitions of the fixture objects can
+ * If a fixture is used by only one test method, then the definitions of the fixture objects can
  * be local to the method, such as the objects assigned to <code>sum</code> and <code>diff</code> in the
- * previous <code>ExampleSpec</code> examples. If multiple tests need to share immutable fixtures, one approach
+ * previous <code>ExampleSpec</code> examples. If multiple methods need to share an immutable fixture, one approach
  * is to assign them to instance variables.
  * </p>
  *
@@ -1482,15 +1482,13 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.FreeSpecFinder")
 trait FreeSpec extends Suite { thisSuite =>
 
   private final val engine = new Engine("concurrentFreeSpecMod", "FreeSpec")
-  private final val stackDepth = 4
   import engine._
 
   /**
-   * Returns an <code>Informer</code> that during test execution will forward strings passed to its
+   * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
    * <code>apply</code> method to the current reporter. If invoked in a constructor, it
    * will register the passed string for forwarding later during test execution. If invoked while this
    * <code>FreeSpec</code> is being executed, such as from inside a test function, it will forward the information to
@@ -1498,16 +1496,6 @@ trait FreeSpec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>FreeSpec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
@@ -1521,17 +1509,16 @@ trait FreeSpec extends Suite { thisSuite =>
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
+   * @param methodName caller's method name
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToRun(specText: String, methodName: String, testTags: List[Tag], testFun: () => Unit) {
+  private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
     // TODO: This is what was being used before but it is wrong
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FreeSpec.scala", 
-                 methodName, stackDepth, None, None, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "FreeSpec.scala", methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -1546,17 +1533,17 @@ trait FreeSpec extends Suite { thisSuite =>
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
+   * @param methodName caller's method name
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToIgnore(specText: String, methodName: String, testTags: List[Tag], testFun: () => Unit) {
+  private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
 
     // TODO: This is how these were, but it needs attention. Mentions "it".
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", methodName, stackDepth, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", methodName, 1, testTags: _*)
   }
 
   /**
@@ -1588,7 +1575,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def in(testFun: => Unit) {
-      registerTestToRun(specText, "in", tags, testFun _)
+      registerTestToRun(specText, tags, "in", testFun _)
     }
 
     /**
@@ -1608,7 +1595,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(specText, "is", tags, testFun _)
+      registerTestToRun(specText, tags, "is", testFun _)
     }
 
     /**
@@ -1628,7 +1615,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def ignore(testFun: => Unit) {
-      registerTestToIgnore(specText, "ignore", tags, testFun _)
+      registerTestToIgnore(specText, tags, "ignore", testFun _)
     }
   }       
 
@@ -1648,8 +1635,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * text (passed to the contructor of <code>FreeSpecStringWrapper</code> and immediately invoke the passed function.
      */
     def - (fun: => Unit) {
-      // TODO: Fix the resource name and method name
-      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", "FreeSpec.scala", "-", stackDepth - 1)
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", "FreeSpec.scala", "-", 1)
     }
 
     /**
@@ -1669,7 +1655,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def in(f: => Unit) {
-      registerTestToRun(string, "in", List(), f _)
+      registerTestToRun(string, List(), "in", f _)
     }
 
     /**
@@ -1689,7 +1675,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def ignore(f: => Unit) {
-      registerTestToIgnore(string, "ignore", List(), f _)
+      registerTestToIgnore(string, List(), "ignore", f _)
     }
 
     /**
@@ -1709,7 +1695,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def is(f: => PendingNothing) {
-      registerTestToRun(string, "is", List(), f _)
+      registerTestToRun(string, List(), "is", f _)
     }
 
     /**
@@ -1911,4 +1897,9 @@ trait FreeSpec extends Suite { thisSuite =>
    * </p>
    */
   protected val behave = new BehaveWord
+  
+  /**
+   * Suite style name.
+   */
+  final override def styleName: String = "FreeSpec"
 }

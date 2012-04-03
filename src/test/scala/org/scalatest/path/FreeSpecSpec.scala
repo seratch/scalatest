@@ -818,11 +818,7 @@ class FreeSpecSpec extends org.scalatest.FunSpec with SharedHelpers with GivenWh
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      val so = rep.scopeOpenedEventsReceived
-      val sc = rep.scopeClosedEventsReceived
-      assert(ip.size === 3)
-      assert(so.size === 1)
-      assert(sc.size === 1)
+      assert(ip.size === 4)
       for (event <- ip) {
         assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
@@ -844,11 +840,7 @@ class FreeSpecSpec extends org.scalatest.FunSpec with SharedHelpers with GivenWh
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      val so = rep.scopeOpenedEventsReceived
-      val sc = rep.scopeClosedEventsReceived
-      assert(ip.size === 3)
-      assert(so.size === 1)
-      assert(sc.size === 1)
+      assert(ip.size === 4)
       for (event <- ip) {
         assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
@@ -905,6 +897,54 @@ class FreeSpecSpec extends org.scalatest.FunSpec with SharedHelpers with GivenWh
       import OptionValues._
       val dura = ts.head.duration.value
       assert(dura > 80, "duration was: " + dura)
+    }
+  }
+  
+  describe("when failure happens") {
+    
+    it("should fire TestFailed event with correct stack depth info when test failed") {
+      class TestSpec extends FreeSpec {
+        "fail scenario" in {
+          assert(1 === 2)
+        }
+        "a feature" - {
+          "nested fail scenario" in {
+            assert(1 === 2)
+          }
+        }
+        override def newInstance = new TestSpec
+      }
+      val rep = new EventRecordingReporter
+      val s1 = new TestSpec
+      s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+      assert(rep.testFailedEventsReceived.size === 2)
+      assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FreeSpecSpec.scala")
+      assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 14)
+      assert(rep.testFailedEventsReceived(1).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FreeSpecSpec.scala")
+      assert(rep.testFailedEventsReceived(1).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 12)
+    }
+    
+    it("should generate TestRegistrationClosedException with correct stack depth info when has an in nested inside an in") {
+      class TestSpec extends FreeSpec {
+        //var registrationClosedThrown = false
+        "a feature" - {
+          "a scenario" in {
+            "nested scenario" in {
+              
+            }
+          }
+        }
+        override def newInstance = new TestSpec
+      }
+      val rep = new EventRecordingReporter
+      val s = new TestSpec
+      s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+      val testFailedEvents = rep.testFailedEventsReceived
+      assert(testFailedEvents.size === 1)
+      assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+      val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+      assert("FreeSpecSpec.scala" === trce.failedCodeFileName.get)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 15)
     }
   }
 }

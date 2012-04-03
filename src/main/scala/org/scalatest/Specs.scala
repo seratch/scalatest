@@ -25,13 +25,13 @@ package org.scalatest
  * </p>
  *
  * <pre class="stHighlight">
- * class StepsSpec extends Specs(
+ * class StepsSpec extends Specs {
  *   new Step1Spec,
  *   new Step2Spec,
  *   new Step3Spec,
  *   new Step4Spec,
  *   new Step5Spec
- * )
+ * }
  * </pre>
  *
  * <p>
@@ -59,6 +59,16 @@ class Specs(specsToNest: Suite*) extends Suite {
    * the order they were passed.
    */
   override val nestedSuites = specsToNest.toList
+  
+  override private[scalatest] def checkChosenStyles(configMap: Map[String, Any]) {
+    if (!testNames.isEmpty) 
+      super.checkChosenStyles(configMap)
+  }
+  
+  /**
+   * Suite style name.
+   */
+  final override def styleName: String = "Specs"
 }
 
 /**

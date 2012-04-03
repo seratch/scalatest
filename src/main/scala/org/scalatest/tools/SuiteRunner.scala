@@ -41,14 +41,20 @@ private[scalatest] class SuiteRunner(suite: Suite, dispatch: DispatchReporter, s
           case nsme: NoSuchMethodException => false
         }
   
+      val rerunnable: Option[Rerunner] =
+        if (hasPublicNoArgConstructor)
+          Some(new SuiteRerunner(suite.getClass.getName))
+        else
+          None
+  
       val rawString = Resources("suiteExecutionStarting")
       val formatter = formatterForSuiteStarting(suite)
   
       val suiteStartTime = System.currentTimeMillis
 
       if (!suite.isInstanceOf[DistributedTestRunnerSuite])
-        dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
-  
+        dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), formatter, rerunnable))
+        
       try {
         suite.run(None, dispatch, stopRequested, filter, propertiesMap, distributor, tracker)
   
@@ -57,16 +63,19 @@ private[scalatest] class SuiteRunner(suite: Suite, dispatch: DispatchReporter, s
 
         val duration = System.currentTimeMillis - suiteStartTime
         if (!suite.isInstanceOf[DistributedTestRunnerSuite])
-          dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, Some(duration), formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
+          dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), Some(duration), formatter, rerunnable))
       }
       catch {
+        case e: NotAllowedException =>
+          val formatter = Suite.formatterForSuiteAborted(suite, e.getMessage)
+          dispatch(SuiteAborted(tracker.nextOrdinal(), e.getMessage, suite.suiteName, Some(suite.getClass.getName), None, None, formatter, rerunnable))
         case e: RuntimeException => { // Do fire SuiteAborted even if a DistributedTestRunnerSuite 
 
           val rawString3 = Resources("executeException")
           val formatter3 = formatterForSuiteAborted(suite, rawString3)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, Some(e), Some(duration), formatter3, Some(SeeStackDepthException), suite.rerunner))
+          dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, Some(suite.getClass.getName), Some(e), Some(duration), formatter3, rerunnable))
         }
       }
     }
