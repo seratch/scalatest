@@ -15,6 +15,8 @@
  */
 package org.scalatest
 
+import org.scalatest.prop.TableDrivenPropertyChecks
+
 trait StringFixture { this: fixture.Suite =>
   type FixtureParam = String
   def withFixture(test: OneArgTest) {
@@ -22,11 +24,5 @@ trait StringFixture { this: fixture.Suite =>
   }
 }
 
-trait StringFixtureSuite extends fixture.Suite with StringFixture
+trait StringFixtureSpec extends fixture.FunSpec with StringFixture
 trait StringFixtureFunSuite extends fixture.FunSuite with StringFixture
-trait StringFixtureFunSpec extends fixture.FunSpec with StringFixture
-trait StringFixtureWordSpec extends fixture.WordSpec with StringFixture
-trait StringFixtureFlatSpec extends fixture.FlatSpec with StringFixture
-trait StringFixtureFreeSpec extends fixture.FreeSpec with StringFixture
-trait StringFixtureFeatureSpec extends fixture.FeatureSpec with StringFixture
-trait StringFixturePropSpec extends fixture.PropSpec with StringFixture

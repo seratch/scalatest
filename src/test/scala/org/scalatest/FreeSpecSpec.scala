@@ -308,6 +308,61 @@ class FreeSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         assert(indentedText === IndentedText("  + " + spec.msg, spec.msg, 1))
       }
     }
+    it("should return registered tags, including ignore tags, from the tags method") {
+
+      val a = new FreeSpec {
+        "should test this" ignore {}
+        "should test that" in {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new FreeSpec {
+        "should test this" in {}
+        "should test that" ignore {}
+      }
+      expect(Map("should test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new FreeSpec {
+        "should test this" ignore {}
+        "should test that" ignore {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.Ignore"), "should test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new FreeSpec {
+        "should test this" in {}
+        "should test that" in {} // was an in
+      }
+      expect(Map()) {
+        d.tags
+      }
+
+      val e = new FreeSpec {
+        "should test this" taggedAs(mytags.SlowAsMolasses) in {}
+        "should test that" taggedAs(mytags.SlowAsMolasses) ignore {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.SlowAsMolasses"), "should test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        e.tags
+      }
+
+      val f = new FreeSpec {}
+      expect(Map()) {
+        f.tags
+      }
+
+      val g = new FreeSpec {
+        "should test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in {}
+        "should test that" taggedAs(mytags.SlowAsMolasses) in {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "should test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        g.tags
+      }
+    }
     it("should throw NullPointerException if a null test tag is provided") {
       // it
       intercept[NullPointerException] {
@@ -342,6 +397,64 @@ class FreeSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         new FreeSpec {
           "hi" taggedAs(mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) ignore {}
         }
+      }
+    }
+    it("should return a correct tags map from the tags method") {
+
+      val a = new FreeSpec {
+        "test this" ignore {}
+        "test that" in {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new FreeSpec {
+        "test this" in {}
+        "test that" ignore {}
+      }
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new FreeSpec {
+        "test this" ignore {}
+        "test that" ignore {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new FreeSpec {
+        "test this" taggedAs(mytags.SlowAsMolasses) in {}
+        "test that" taggedAs(mytags.SlowAsMolasses) ignore {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        d.tags
+      }
+
+      val e = new FreeSpec {
+        "test this" in {}
+        "test that" in {}
+      }
+      expect(Map()) {
+        e.tags
+      }
+
+      val f = new FreeSpec {
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in {}
+        "test that" taggedAs(mytags.SlowAsMolasses) in  {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        f.tags
+      }
+
+      val g = new FreeSpec {
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in {}
+        "test that" taggedAs(mytags.SlowAsMolasses) in  {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        g.tags
       }
     }
     it("should return a correct tags map from the tags method using is (pending)") {
@@ -738,43 +851,6 @@ class FreeSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
-    it("should generate a TestCanceled message when the test body includes a cancel() invocation") {
-      val a = new FreeSpec {
-
-        "should do this" in { cancel("changed my mind") }
-
-        "should do that" in {
-          assert(2 + 2 === 4)
-        }
-        "should do something else" in {
-          assert(2 + 2 === 4)
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val tp = rep.testCanceledEventsReceived
-      assert(tp.size === 2)
-    }
-    it("should generate a TestCanceled message when the test body includes a failed assume() invocation") {
-      val a = new FreeSpec {
-
-        "should do this" in { assume(2 === 3, "changed my mind") }
-
-        "should do that" in {
-          assume(1 + 1 === 2)
-          assert(2 + 2 === 4)
-        }
-        "should do something else" in {
-          assert(2 + 2 === 4)
-          assume(1 + 1 === 3)
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val tp = rep.testCanceledEventsReceived
-      assert(tp.size === 2)
-    }
     it("should generate a test failure if a Throwable, or an Error other than direct Error subtypes " +
             "known in JDK 1.5, excluding AssertionError") {
       val a = new FreeSpec {
@@ -815,19 +891,9 @@ class FreeSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A FreeSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A FreeSpec")
+        assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -845,19 +911,9 @@ class FreeSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A FreeSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A FreeSpec")
+        assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
     it("should not put parentheses around should clauses that follow when") {

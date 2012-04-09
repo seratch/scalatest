@@ -20,7 +20,7 @@ import events.TestFailed
 
 class PropSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.PropSpec") {
+  describe("A PropSpec") {
     it("should return the test names in order of registration from testNames") {
       val a = new PropSpec {
         type FixtureParam = String
@@ -167,6 +167,66 @@ class PropSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
           def withFixture(test: OneArgTest) {}
           ignore("hi", mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) { fixture => }
         }
+      }
+    }
+    it("should return a correct tags map from the tags method") {
+
+      val a = new PropSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        ignore("test this") { fixture => }
+        property("test that") { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new PropSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        property("test this") { fixture => }
+        ignore("test that") { fixture => }
+      }
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new PropSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        ignore("test this") { fixture => }
+        ignore("test that") { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new PropSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        property("test this", mytags.SlowAsMolasses) { fixture => }
+        ignore("test that", mytags.SlowAsMolasses) { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        d.tags
+      }
+
+      val e = new PropSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+      }
+      expect(Map()) {
+        e.tags
+      }
+
+      val f = new PropSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        property("test this", mytags.SlowAsMolasses, mytags.WeakAsAKitten) { fixture => }
+        property("test that", mytags.SlowAsMolasses) { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        f.tags
       }
     }
     

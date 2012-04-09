@@ -20,7 +20,7 @@ import events.TestFailed
 
 class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.WordSpec") {
+  describe("A WordSpec") {
 
     it("should return the test names in order of registration from testNames") {
       val a = new WordSpec {
@@ -165,6 +165,78 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
           def withFixture(test: OneArgTest) {}
           "hi" taggedAs(mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) ignore { fixture => }
         }
+      }
+    }
+    it("should return a correct tags map from the tags method") {
+
+      val a = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" ignore { fixture => }
+        "test that" in { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" in { fixture => }
+        "test that" ignore { fixture => }
+      }
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" ignore { fixture => }
+        "test that" ignore { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" taggedAs(mytags.SlowAsMolasses) in { fixture => }
+        "test that" taggedAs(mytags.SlowAsMolasses) ignore { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        d.tags
+      }
+
+      val e = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" in { fixture => }
+        "test that" in { fixture => }
+      }
+      expect(Map()) {
+        e.tags
+      }
+
+      val f = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in { fixture => }
+        "test that" taggedAs(mytags.SlowAsMolasses) in  { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        f.tags
+      }
+
+      val g = new WordSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in { fixture => }
+        "test that" taggedAs(mytags.SlowAsMolasses) in  { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        g.tags
       }
     }
     it("should return a correct tags map from the tags method using is (pending)") {
@@ -679,19 +751,9 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -714,19 +776,9 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
     it("should allow both tests that take fixtures and tests that don't") {

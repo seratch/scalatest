@@ -308,6 +308,61 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         assert(indentedText === IndentedText("  + " + spec.msg, spec.msg, 1))
       }
     }
+    it("should return registered tags, including ignore tags, from the tags method") {
+
+      val a = new WordSpec {
+        "should test this" ignore {}
+        "should test that" in {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new WordSpec {
+        "should test this" in {}
+        "should test that" ignore {}
+      }
+      expect(Map("should test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new WordSpec {
+        "should test this" ignore {}
+        "should test that" ignore {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.Ignore"), "should test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new WordSpec {
+        "should test this" in {}
+        "should test that" in {} // was an in
+      }
+      expect(Map()) {
+        d.tags
+      }
+
+      val e = new WordSpec {
+        "should test this" taggedAs(mytags.SlowAsMolasses) in {}
+        "should test that" taggedAs(mytags.SlowAsMolasses) ignore {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.SlowAsMolasses"), "should test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        e.tags
+      }
+
+      val f = new WordSpec {}
+      expect(Map()) {
+        f.tags
+      }
+
+      val g = new WordSpec {
+        "should test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in {}
+        "should test that" taggedAs(mytags.SlowAsMolasses) in {}
+      }
+      expect(Map("should test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "should test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        g.tags
+      }
+    }
     it("should throw NullPointerException if a null test tag is provided") {
       // it
       intercept[NullPointerException] {
@@ -342,6 +397,64 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         new WordSpec {
           "hi" taggedAs(mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) ignore {}
         }
+      }
+    }
+    it("should return a correct tags map from the tags method") {
+
+      val a = new WordSpec {
+        "test this" ignore {}
+        "test that" in {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new WordSpec {
+        "test this" in {}
+        "test that" ignore {}
+      }
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new WordSpec {
+        "test this" ignore {}
+        "test that" ignore {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new WordSpec {
+        "test this" taggedAs(mytags.SlowAsMolasses) in {}
+        "test that" taggedAs(mytags.SlowAsMolasses) ignore {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        d.tags
+      }
+
+      val e = new WordSpec {
+        "test this" in {}
+        "test that" in {}
+      }
+      expect(Map()) {
+        e.tags
+      }
+
+      val f = new WordSpec {
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in {}
+        "test that" taggedAs(mytags.SlowAsMolasses) in  {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        f.tags
+      }
+
+      val g = new WordSpec {
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in {}
+        "test that" taggedAs(mytags.SlowAsMolasses) in  {}
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        g.tags
       }
     }
     it("should return a correct tags map from the tags method using is (pending)") {
@@ -778,19 +891,9 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -808,19 +911,9 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
     it("should not put parentheses around should clauses that follow when") {

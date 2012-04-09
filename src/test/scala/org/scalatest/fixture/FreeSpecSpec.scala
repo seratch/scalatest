@@ -20,7 +20,7 @@ import events.TestFailed
 
 class FreeSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.FreeSpec") {
+  describe("A FreeSpec") {
 
     it("should return the test names in order of registration from testNames") {
       val a = new FreeSpec {
@@ -165,6 +165,78 @@ class FreeSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
           def withFixture(test: OneArgTest) {}
           "hi" taggedAs(mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) ignore { fixture => }
         }
+      }
+    }
+    it("should return a correct tags map from the tags method") {
+
+      val a = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" ignore { fixture => }
+        "test that" in { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
+        a.tags
+      }
+
+      val b = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" in { fixture => }
+        "test that" ignore { fixture => }
+      }
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
+        b.tags
+      }
+
+      val c = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" ignore { fixture => }
+        "test that" ignore { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+        c.tags
+      }
+
+      val d = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" taggedAs(mytags.SlowAsMolasses) in { fixture => }
+        "test that" taggedAs(mytags.SlowAsMolasses) ignore { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+        d.tags
+      }
+
+      val e = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" in { fixture => }
+        "test that" in { fixture => }
+      }
+      expect(Map()) {
+        e.tags
+      }
+
+      val f = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in { fixture => }
+        "test that" taggedAs(mytags.SlowAsMolasses) in  { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        f.tags
+      }
+
+      val g = new FreeSpec {
+        type FixtureParam = String
+        def withFixture(test: OneArgTest) {}
+        "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in { fixture => }
+        "test that" taggedAs(mytags.SlowAsMolasses) in  { fixture => }
+      }
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+        g.tags
       }
     }
     it("should return a correct tags map from the tags method using is (pending)") {
@@ -624,52 +696,6 @@ class FreeSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
-    it("should generate a TestCanceled message when the test body includes a cancel invocation") {
-      val a = new FreeSpec {
-        type FixtureParam = String
-        val hello = "Hello, world!"
-        def withFixture(test: OneArgTest) {
-          test(hello)
-        }
-
-        "should do this" in { fixture => cancel() }
-
-        "should do that" in { fixture =>
-          assert(fixture === hello)
-        }
-        "should do something else" in { fixture =>
-          assert(fixture === hello)
-          cancel("i changed my mind")
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val tp = rep.testCanceledEventsReceived
-      assert(tp.size === 2)
-    }
-    it("should generate a TestCanceled message when the test body includes an assume invocation") {
-      val a = new FreeSpec {
-        type FixtureParam = String
-        val hello = "Hello, world!"
-        def withFixture(test: OneArgTest) {
-          test(hello)
-        }
-
-        "should do this" in { fixture => assume(1 + 1 === 3, "ho") }
-
-        "should do that" in { fixture =>
-          assert(fixture === hello)
-        }
-        "should do something else" in { fixture =>
-          assert(fixture === hello)
-          assume(3 === 4)
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val tp = rep.testCanceledEventsReceived
-      assert(tp.size === 2)
-    }
     it("should generate a test failure if a Throwable, or an Error other than direct Error subtypes " +
             "known in JDK 1.5, excluding AssertionError") {
       val a = new FreeSpec {
@@ -705,8 +731,8 @@ class FreeSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for info " +
-            "calls made from a test that is pending and not canceled") {
+    it("should send InfoProvided events with aboutAPendingTest set to true for info " +
+            "calls made from a test that is pending") {
       val a = new FreeSpec with GivenWhenThen {
         type FixtureParam = String
         val hello = "Hello, world!"
@@ -725,24 +751,13 @@ class FreeSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A FreeSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A FreeSpec")
+        assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest and aboutACanceledTest both set to false for info " +
-            "calls made from a test that is neither pending nor canceled") {
+    it("should send InfoProvided events with aboutAPendingTest set to false for info " +
+            "calls made from a test that is not pending") {
       val a = new FreeSpec with GivenWhenThen {
         type FixtureParam = String
         val hello = "Hello, world!"
@@ -761,56 +776,9 @@ class FreeSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && !event.aboutACanceledTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A FreeSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A FreeSpec")
-      }
-    }
-    it("should send InfoProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for info " +
-            "calls made from a test that is pending and not canceled") {
-      val a = new FreeSpec with GivenWhenThen {
-        type FixtureParam = String
-        val hello = "Hello, world!"
-        def withFixture(test: OneArgTest) {
-          test(hello)
-        }
-        "A FreeSpec" - {
-          "should do something" in { s =>
-            given("two integers")
-            when("one is subracted from the other")
-            then("the result is the difference between the two numbers")
-            cancel()
-          }
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
-      val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
-      for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-        assert(event.aboutACanceledTest.isDefined && event.aboutACanceledTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A FreeSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A FreeSpec")
+        assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
     it("should allow both tests that take fixtures and tests that don't") {

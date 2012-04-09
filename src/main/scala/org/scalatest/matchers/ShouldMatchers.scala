@@ -19,7 +19,6 @@ import org.scalatest._
 import scala.reflect.Manifest
 import org.scalatest.verb.ShouldVerb
 import scala.collection.Traversable
-import Assertions.areEqualComparingArraysStructurally
 
 /**
  * Trait that provides a domain specific language (DSL) for expressing assertions in tests
@@ -645,16 +644,6 @@ import Assertions.areEqualComparingArraysStructurally
  * option should be ('defined)
  * </pre>
  * 
- * <p>
- * If you mix in (or import the members of) <a href="../OptionValues.html"><code>OptionValues</code></a>,
- * you can write one statement that indicates you believe an option should be defined and then say something else about its value. Here's an example:
- * </p>
- * 
- * <pre class="stHighlight">
- * import org.scalatest.OptionValues._
- * option.value should be &lt; (7)
- * </pre>
- * 
  * <h2>Checking arbitrary properties with <code>have</code></h2>
  * 
  * <p>
@@ -921,21 +910,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(notWord: NotWord) = new ResultOfNotWord[T](left, false)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result shouldBe 3
-     *        ^
-     * </pre>
-     */
-    def shouldBe(right: Any) {
-      if (!areEqualComparingArraysStructurally(left, right)) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
   }
 
   // I think the type hasn't been converted yet here. It is just a pass-through. It finally gets

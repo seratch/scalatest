@@ -15,11 +15,8 @@
  */
 package org.scalatest
 
+import events.NameInfo
 import java.util.concurrent.atomic.AtomicReference
-import MessageRecorder.RecordedMessageFiringFun
-import MessageRecorder.ConcurrentMessageFiringFun
-import org.scalatest.events.Location
-import org.scalatest.Suite.getLineInFile
 
 /*
  This is used by Suite and test informers created as tests run, which therefore have
@@ -39,13 +36,28 @@ import org.scalatest.Suite.getLineInFile
  This in turn means that a reporter may get hit by multiple threads sending InfoProvided
  messages. If run with the Runner, that will be OK, because DispatchReporter will be in front
  serializing events with its actor. If run() is invoked directly on a suite instance, such as
- from the Scala interpreter, then it may not work. I think I may just say that when running
+ from the Scala interpretter, then it may not work. I think I may just say that when running
  from the interpreter, say with run(), you may get interleaved output. This would only happen
  when doing a multi-threaded test that starts threads that calls informer methods, likely a
  rare case. Also, in that case I think it is reasonable to say you may get interleaved output
  in the interpreter, so if you don't like that, use the Runner.
 */
-private[scalatest] abstract class ThreadAwareness {
+private[scalatest] abstract class ConcurrentInformer(nameInfo: NameInfo) extends Informer {
+
+  private final val atomic = new AtomicReference[(Thread, Option[NameInfo])](Thread.currentThread, Some(nameInfo))
+
+  def nameInfoForCurrentThread: Option[NameInfo] = {
+    val (constructingThread, nameInfo) = atomic.get
+    if (Thread.currentThread == constructingThread) nameInfo else None
+  }
+
+  def isConstructingThread: Boolean = {
+    val (constructingThread, _) = atomic.get
+    Thread.currentThread == constructingThread
+  }
+}
+
+private[scalatest] abstract class ThreadAwareInformer extends Informer {
 
   private final val atomic = new AtomicReference[Thread](Thread.currentThread)
 
@@ -55,23 +67,19 @@ private[scalatest] abstract class ThreadAwareness {
   }
 }
 
-private[scalatest] class ConcurrentMessageSender(fire: ConcurrentMessageFiringFun) extends ThreadAwareness {
+// Getting rid of the NameInfo passed to ConcurrentInformer. After go through entire
+// refactor can rename ConcurrentInformer2 to ConcurrentInformer, deleting the old one
+private[scalatest] class ConcurrentInformer2(fire: (String, Boolean) => Unit) extends ThreadAwareInformer {
 
   def apply(message: String) {
     if (message == null)
-      throw new NullPointerException("message was null")
-    fire(message, isConstructingThread, getLineInFile(Thread.currentThread.getStackTrace, 2)) // Fire the info provided event using the passed function
+      throw new NullPointerException
+    fire(message, isConstructingThread) // Fire the info provided event using the passed function
   }
 }
 
-private[scalatest] class ConcurrentInformer(fire: ConcurrentMessageFiringFun) extends ConcurrentMessageSender(fire) with Informer
-private[scalatest] object ConcurrentInformer {
-  def apply(fire: (String, Boolean, Option[Location]) => Unit) = new ConcurrentInformer(fire)
-}
-
-private[scalatest] class ConcurrentDocumenter(fire: ConcurrentMessageFiringFun) extends ConcurrentMessageSender(fire) with Documenter
-private[scalatest] object ConcurrentDocumenter {
-  def apply(fire: (String, Boolean, Option[Location]) => Unit) = new ConcurrentDocumenter(fire)
+private[scalatest] object ConcurrentInformer2 {
+  def apply(fire: (String, Boolean) => Unit) = new ConcurrentInformer2(fire)
 }
 
 //
@@ -82,87 +90,20 @@ private[scalatest] object ConcurrentDocumenter {
 // This kind of informer is only used during the execution of tests, to delay the printing out of info's fired
 // during tests until after the test succeeded, failed, or pending gets sent out.
 //
-private[scalatest] class MessageRecorder extends ThreadAwareness {
+private[scalatest] class MessageRecordingInformer2(fire: (String, Boolean, Boolean) => Unit) extends ThreadAwareInformer {
 
-  private var messages = List[(String, RecordedMessageFiringFun, Option[Location])]()
-
-  // Should only be called by the thread that constructed this
-  // ConcurrentInformer, because don't want to worry about synchronization here. Just send stuff from
-  // other threads whenever they come in. So only call record after first checking isConstructingThread
-  private def record(message: String, fire: RecordedMessageFiringFun, location: Option[Location]) {
-    require(isConstructingThread)
-    messages ::= (message, fire, location)
-  }
-
-  // Returns them in order recorded
-  private def recordedMessages: List[(String, RecordedMessageFiringFun, Option[Location])] = messages.reverse
-
-  def apply(message: String, fire: RecordedMessageFiringFun, location: Option[Location]) {
-    if (message == null)
-      throw new NullPointerException
-    if (isConstructingThread)
-      record(message, fire, location)
-    else 
-      fire(message, false, false, false, location) // Fire the info provided event using the passed function
-  }
-
-  // send out any recorded messages
-  def fireRecordedMessages(testWasPending: Boolean, testWasCanceled: Boolean) {
-    for ((message, fire, location) <- recordedMessages)
-      fire(message, true, testWasPending, testWasCanceled, location) // Fire the info provided event using the passed function
-  }
-}
-
-private[scalatest] class MessageRecordingInformer(recorder: MessageRecorder, fire: RecordedMessageFiringFun) extends Informer {
-  def apply(message: String) {
-    recorder.apply(message, fire, getLineInFile(Thread.currentThread.getStackTrace, 2))
-  }
-}
-
-private[scalatest] object MessageRecordingInformer {
-  def apply(recorder: MessageRecorder, fire: RecordedMessageFiringFun) = new MessageRecordingInformer(recorder, fire)
-}
-
-private[scalatest] class MessageRecordingDocumenter(recorder: MessageRecorder, fire: RecordedMessageFiringFun) extends Documenter {
-  def apply(message: String) {
-    recorder.apply(message, fire, getLineInFile(Thread.currentThread.getStackTrace, 2))
-  }
-}
-
-private[scalatest] object MessageRecordingDocumenter {
-  def apply(recorder: MessageRecorder, fire: RecordedMessageFiringFun) = new MessageRecordingDocumenter(recorder, fire)
-}
-
-private[scalatest] object MessageRecorder {
-  // Three params of function are the string message, a boolean indicating this was from the current
-  // thread, two booleans that indicate the message is about a pending or canceled
-  // test (in which case it would be printed out in yellow) and an optional location.
-  type RecordedMessageFiringFun = (String, Boolean, Boolean, Boolean, Option[Location]) => Unit 
-
-  // First two params of function are the string message and a boolean indicating this was from the current thread, 
-  // and an optional location.
-  type ConcurrentMessageFiringFun = (String, Boolean, Option[Location]) => Unit 
-}
-
-// For path traits, need a message recording informer that only later gets 
-// (theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, theTest: TestLeaf, includeIcon: Boolean. thread: Thread)
-private[scalatest] class PathMessageRecordingInformer(fire: (String, Boolean, Boolean, Suite, Reporter, Tracker, String, Int, Boolean, Thread) => Unit) extends ThreadAwareness with Informer {
-
-  import scala.collection.mutable.SynchronizedBuffer
-  import scala.collection.mutable.ArrayBuffer
-  type Tup = (String, Thread, Boolean)
-  private val messages = new ArrayBuffer[Tup] with SynchronizedBuffer[Tup]
+  private var messages = List[String]()
 
   // Should only be called by the thread that constructed this
   // ConcurrentInformer, because don't want to worry about synchronization here. Just send stuff from
   // other threads whenever they come in. So only call record after first checking isConstructingThread
-  // So now do have to worry about concurrency
   private def record(message: String) {
-    messages += ((message, Thread.currentThread, isConstructingThread))
+    require(isConstructingThread)
+    messages ::= message
   }
 
   // Returns them in order recorded
- // private def recordedMessages: List[String] = for ((msg, _) <- messages) yield toList
+  private def recordedMessages: List[String] = messages.reverse
 
   def apply(message: String) {
     if (message == null)
@@ -170,18 +111,16 @@ private[scalatest] class PathMessageRecordingInformer(fire: (String, Boolean, Bo
     if (isConstructingThread)
       record(message)
     else 
-      record(message) 
+      fire(message, false, false) // Fire the info provided event using the passed function
   }
 
   // send out any recorded messages
-  def fireRecordedMessages(testWasPending: Boolean, theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, indentation: Int, includeIcon: Boolean) {
-    for ((message, thread, wasConstructingThread) <- messages) {
-     // (theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, theTest: TestLeaf, includeIcon: Boolean)
-      fire(message, wasConstructingThread, testWasPending, theSuite, report, tracker, testName, indentation, includeIcon, thread) // Fire the info provided event using the passed function
-    }
+  def fireRecordedMessages(testWasPending: Boolean) {
+    for (message <- recordedMessages)
+      fire(message, true, testWasPending) // Fire the info provided event using the passed function
   }
 }
 
-private[scalatest] object PathMessageRecordingInformer {
-  def apply(fire: (String, Boolean, Boolean, Suite, Reporter, Tracker, String, Int, Boolean, Thread) => Unit) = new PathMessageRecordingInformer(fire)
+private[scalatest] object MessageRecordingInformer2 {
+  def apply(fire: (String, Boolean, Boolean) => Unit) = new MessageRecordingInformer2(fire)
 }

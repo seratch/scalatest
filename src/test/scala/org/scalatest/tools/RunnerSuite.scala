@@ -16,7 +16,6 @@
 package org.scalatest.tools
 
 import org.scalatest._
-import java.util.regex.Pattern
 
 class RunnerSuite() extends Suite with PrivateMethodTester {
 
@@ -36,8 +35,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       expectedConcurrentList: List[String],
       expectedMemberOfList: List[String],
       expectedBeginsWithList: List[String],
-      expectedTestNGList: List[String],
-      expectedSuffixes: Option[Pattern]
+      expectedTestNGList: List[String]
     ) = {
 
       val (
@@ -51,8 +49,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
         concurrentList,
         memberOfList,
         beginsWithList,
-        testNGList,
-        suffixes
+        testNGList
       ) = Runner.parseArgs(args)
 
       assert(runpathList === expectedRunpathList)
@@ -66,12 +63,6 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       assert(memberOfList === expectedMemberOfList)
       assert(beginsWithList === expectedBeginsWithList)
       assert(testNGList === expectedTestNGList)
-      if (expectedSuffixes.isEmpty) {
-        assert(suffixes.isEmpty)
-      } else {
-        assert(!suffixes.isEmpty)
-        assert(suffixes.get.toString === expectedSuffixes.get.toString)
-      }
     }
 
     verify(
@@ -87,8 +78,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Nil,
       Nil,
       Nil,
-      Nil,
-      None
+      Nil
     )
 
     verify(
@@ -105,8 +95,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Nil,
       Nil,
       Nil,
-      Nil,
-      None
+      Nil
     )
 
     verify(
@@ -121,8 +110,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Nil,
       Nil,
       Nil,
-      Nil,
-      None
+      Nil
     )
 
     verify(
@@ -139,8 +127,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Nil,
       Nil,
       Nil,
-      Nil,
-      None
+      Nil
     )
 
     verify(
@@ -157,8 +144,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Nil,
       Nil,
       Nil,
-      Nil,
-      None
+      Nil
     )
 
     verify(
@@ -175,8 +161,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       List("-c"),
       Nil,
       Nil,
-      Nil,
-      None
+      Nil
     )
 
     verify(
@@ -194,15 +179,14 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       List("-c"),
       List("-m", "com.example.webapp"),
       List("-w", "com.example.root"),
-      Nil,
-      None
+      Nil
     )
     // Try a TestNGSuite
     verify(
       Array("-c", "-g", "-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188", "-p",
           "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\"", "-g", "-f", "file.out",
           "-n", "One Two Three", "-l", "SlowTests", "-s", "SuiteOne", "-s", "SuiteTwo", "-m", "com.example.webapp",
-          "-w", "com.example.root", "-b", "some/path/file.xml"),
+          "-w", "com.example.root", "-t", "some/path/file.xml"),
       List("-p", "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\""),
       List("-g", "-g", "-f", "file.out"),
       List("-s", "SuiteOne", "-s", "SuiteTwo"),
@@ -213,15 +197,14 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       List("-c"),
       List("-m", "com.example.webapp"),
       List("-w", "com.example.root"),
-      List("-b", "some/path/file.xml"),
-      None
+      List("-t", "some/path/file.xml")
     )
     // Try a junit Suite
     verify(
       Array("-c", "-g", "-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188", "-p",
           "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\"", "-g", "-f", "file.out",
           "-n", "One Two Three", "-l", "SlowTests", "-s", "SuiteOne", "-j", "junitTest", "-j", "junitTest2",
-          "-m", "com.example.webapp", "-w", "com.example.root", "-b", "some/path/file.xml"),
+          "-m", "com.example.webapp", "-w", "com.example.root", "-t", "some/path/file.xml"),
       List("-p", "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\""),
       List("-g", "-g", "-f", "file.out"),
       List("-s", "SuiteOne"),
@@ -232,15 +215,14 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       List("-c"),
       List("-m", "com.example.webapp"),
       List("-w", "com.example.root"),
-      List("-b", "some/path/file.xml"),
-      None
+      List("-t", "some/path/file.xml")
     )
     // Test -u option
     verify(
       Array("-c", "-g", "-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188", "-p",
           "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\"", "-g", "-u", "directory/",
           "-n", "One Two Three", "-l", "SlowTests", "-s", "SuiteOne",
-          "-m", "com.example.webapp", "-w", "com.example.root", "-b", "some/path/file.xml"),
+          "-m", "com.example.webapp", "-w", "com.example.root", "-t", "some/path/file.xml"),
       List("-p", "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\""),
       List("-g", "-g", "-u", "directory/"),
       List("-s", "SuiteOne"),
@@ -251,65 +233,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       List("-c"),
       List("-m", "com.example.webapp"),
       List("-w", "com.example.root"),
-      List("-b", "some/path/file.xml"),
-      None
-    )
-    // Test -q option
-    verify(
-      Array("-c", "-g", "-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188", "-p",
-          "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\"", "-g", "-u", "directory/",
-          "-n", "One Two Three", "-l", "SlowTests", "-s", "SuiteOne", "-q", "Spec|Suite",
-          "-m", "com.example.webapp", "-w", "com.example.root", "-b", "some/path/file.xml"),
-      List("-p", "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\""),
-      List("-g", "-g", "-u", "directory/"),
-      List("-s", "SuiteOne"),
-      Nil,
-      List("-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188"),
-      List("-n", "One Two Three"),
-      List("-l", "SlowTests"),
-      List("-c"),
-      List("-m", "com.example.webapp"),
-      List("-w", "com.example.root"),
-      List("-b", "some/path/file.xml"),
-      Some(Pattern.compile(".*(Spec|Suite)$"))
-    )
-    // Test -q option
-    verify(
-      Array("-c", "-g", "-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188", "-p",
-          "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\"", "-g", "-u", "directory/",
-          "-n", "One Two Three", "-l", "SlowTests", "-s", "SuiteOne", "-q", "Spec", "-q", "Suite",
-          "-m", "com.example.webapp", "-w", "com.example.root", "-b", "some/path/file.xml"),
-      List("-p", "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\""),
-      List("-g", "-g", "-u", "directory/"),
-      List("-s", "SuiteOne"),
-      Nil,
-      List("-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188"),
-      List("-n", "One Two Three"),
-      List("-l", "SlowTests"),
-      List("-c"),
-      List("-m", "com.example.webapp"),
-      List("-w", "com.example.root"),
-      List("-b", "some/path/file.xml"),
-      Some(Pattern.compile(".*(Spec|Suite)$"))
-    )
-    // Test -Q option
-    verify(
-      Array("-c", "-g", "-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188", "-p",
-          "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\"", "-g", "-u", "directory/",
-          "-n", "One Two Three", "-l", "SlowTests", "-s", "SuiteOne", "-Q", "-q", "foo",
-          "-m", "com.example.webapp", "-w", "com.example.root", "-b", "some/path/file.xml"),
-      List("-p", "\"serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar\""),
-      List("-g", "-g", "-u", "directory/"),
-      List("-s", "SuiteOne"),
-      Nil,
-      List("-Dincredible=whatshername", "-Ddbname=testdb", "-Dserver=192.168.1.188"),
-      List("-n", "One Two Three"),
-      List("-l", "SlowTests"),
-      List("-c"),
-      List("-m", "com.example.webapp"),
-      List("-w", "com.example.root"),
-      List("-b", "some/path/file.xml"),
-      Some(Pattern.compile(".*(Spec|Suite|Tests|foo)$"))
+      List("-t", "some/path/file.xml")
     )
   }
 
@@ -327,10 +251,10 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Runner invokePrivate parseConfigSet(null)
     }
     intercept[IllegalArgumentException] {
-      Runner invokePrivate parseConfigSet("-fK")
+      Runner invokePrivate parseConfigSet("-fJ")
     }
     intercept[IllegalArgumentException] {
-      Runner invokePrivate parseConfigSet("-uK")
+      Runner invokePrivate parseConfigSet("-uJ")
     }
     intercept[IllegalArgumentException] {
       Runner invokePrivate parseConfigSet("-oYZTFUPBISARG-")
@@ -439,65 +363,65 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[IllegalArgumentException] {
       Runner.parseReporterArgsIntoConfigurations(List("-r")) // Can't have -r last, because need a reporter class
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(Nil)
     }
-    expect(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set())), Nil, Nil, Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set())), Nil, Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-g"))
     }
-    expect(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set(FilterSuiteCompleted))), Nil, Nil, Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set(FilterSuiteCompleted))), Nil, Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-gL"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, Some(new StandardOutReporterConfiguration(Set())), None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, Nil, Some(new StandardOutReporterConfiguration(Set())), None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-o"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, Some(new StandardOutReporterConfiguration(Set(FilterTestSucceeded,FilterTestIgnored))), None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, Nil, Some(new StandardOutReporterConfiguration(Set(FilterTestSucceeded,FilterTestIgnored))), None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-oCX"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set())), Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set())), Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-e"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set(PresentFullStackTraces))), Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set(PresentFullStackTraces))), Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-eF"))
     }
-    expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(), "theFilename")), Nil, Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(), "theFilename")), Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-f", "theFilename"))
     }
-    expect(new ReporterConfigurations(None, Nil, List(new JunitXmlReporterConfiguration(Set(), "target")), Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, List(new XmlReporterConfiguration(Set(), "target")), None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-u", "target"))
     }
-    expect(new ReporterConfigurations(None, Nil, List(new JunitXmlReporterConfiguration(Set(), "target")), Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, Nil, List(new XmlReporterConfiguration(Set(), "target")), None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-uN", "target"))
     }
-    expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(FilterTestStarting), "theFilename")), Nil, Nil, Nil, None, None, Nil, Nil)) {
+    expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(FilterTestStarting), "theFilename")), Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-fN", "theFilename"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(), "the.reporter.Class")))) {
+    expect(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(), "the.reporter.Class")))) {
       Runner.parseReporterArgsIntoConfigurations(List("-r", "the.reporter.Class"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(FilterTestPending), "the.reporter.Class")))) {
+    expect(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(FilterTestPending), "the.reporter.Class")))) {
       Runner.parseReporterArgsIntoConfigurations(List("-rE", "the.reporter.Class"))
     }
   }
 
   def testParseSuiteArgsIntoClassNameStrings() {
     intercept[NullPointerException] {
-      Runner.parseSuiteArgsIntoNameStrings(null, "-j")
+      Runner.parseSuiteArgsIntoNameStrings(null, "-s")
     }
     intercept[NullPointerException] {
-      Runner.parseSuiteArgsIntoNameStrings(List("-j", null, "-j"), "-j")
+      Runner.parseSuiteArgsIntoNameStrings(List("-s", null, "-s"), "-s")
     }
     intercept[IllegalArgumentException] {
-      Runner.parseSuiteArgsIntoNameStrings(List("-j", "SweetSuite", "-j"), "-j")
+      Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s"), "-s")
     }
     intercept[IllegalArgumentException] {
-      Runner.parseSuiteArgsIntoNameStrings(List("-j", "SweetSuite", "-j", "-j"), "-j")
+      Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s", "-s"), "-s")
     }
     expect(List("SweetSuite", "OKSuite")) {
-      Runner.parseSuiteArgsIntoNameStrings(List("-j", "SweetSuite", "-j", "OKSuite"), "-j")
+      Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s", "OKSuite"), "-s")
     }
     expect(List("SweetSuite", "OKSuite", "SomeSuite")) {
-      Runner.parseSuiteArgsIntoNameStrings(List("-j", "SweetSuite", "-j", "OKSuite", "-j", "SomeSuite"), "-j")
+      Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s", "OKSuite", "-s", "SomeSuite"), "-s")
     }
   }
 
@@ -575,75 +499,6 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     expect(None) {
       Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-p", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite", "-c"))
     }
-  }
-  
-  def testParseSuiteArgsIntoSuiteParam() {
-    intercept[NullPointerException] {
-      Runner.parseSuiteArgsIntoSuiteParam(null, "-s")
-    }
-    intercept[NullPointerException] {
-      Runner.parseSuiteArgsIntoSuiteParam(List("-s", null, "-s", "suite2"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      Runner.parseSuiteArgsIntoSuiteParam(List("-s", "-s"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      Runner.parseSuiteArgsIntoSuiteParam(List("-s", "suite1", "-s"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      Runner.parseSuiteArgsIntoSuiteParam(List("-sG", "suite1"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      Runner.parseSuiteArgsIntoSuiteParam(List("-t", "test1"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      // -i without -s should not be supported, as for example current command is having -s -i, there's no way to tell the next -i should be a -i without -s.
-      // -i should only be used together with -s to select nested suite.
-      Runner.parseSuiteArgsIntoSuiteParam(List("-i", "suite1"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      // -sX -t should not be supported, as -s -t should be used to select a specific test.
-      Runner.parseSuiteArgsIntoSuiteParam(List("-sX", "suite1", "-t", "test1"), "-s")
-    }
-    intercept[IllegalArgumentException] {
-      // -iX should not be supported, as a nested suite's nested suites should not be included, if it is included, we have to figure out the way to specify if 
-      // nested suite's nested suite's nested suites (and endless down the tree) should be implemented.
-      Runner.parseSuiteArgsIntoSuiteParam(List("-s", "suite1", "-iX", "nested1"), "-s")
-    }
-    
-    val case1 = Runner.parseSuiteArgsIntoSuiteParam(List("-s", "suite1", "-s", "suite2"), "-s")
-    assert(case1.length === 2)
-    assert(case1(0).className === "suite1")
-    assert(case1(0).testNames.length === 0)
-    assert(case1(1).className === "suite2")
-    assert(case1(1).testNames.length === 0)
-    
-    val case2 = Runner.parseSuiteArgsIntoSuiteParam(List("-s", "suite1", "-t", "test1", "-t", "test2", "-s", "suite2"), "-s")
-    assert(case2.length === 2)
-    assert(case2(0).className === "suite1")
-    assert(case2(0).testNames.length === 2)
-    assert(case2(0).testNames(0) === "test1")
-    assert(case2(0).testNames(1) === "test2")
-    assert(case2(1).className === "suite2")
-    assert(case2(1).testNames.length === 0)
-    
-    val case3 = Runner.parseSuiteArgsIntoSuiteParam(List("-s", "suite1", "-i", "nested1"), "-s")
-    assert(case3.length === 1)
-    assert(case3(0).className === "suite1")
-    assert(case3(0).testNames.length === 0)
-    assert(case3(0).nestedSuites.length === 1)
-    assert(case3(0).nestedSuites(0).suiteId === "nested1")
-    assert(case3(0).nestedSuites(0).testNames.length === 0)
-    
-    val case4 = Runner.parseSuiteArgsIntoSuiteParam(List("-s", "suite1", "-i", "nested1", "-t", "test1", "-t", "test2"), "-s")
-    assert(case4.length === 1)
-    assert(case4(0).className === "suite1")
-    assert(case4(0).testNames.length === 0)
-    assert(case4(0).nestedSuites.length === 1)
-    assert(case4(0).nestedSuites(0).suiteId === "nested1")
-    assert(case4(0).nestedSuites(0).testNames.length === 2)
-    assert(case4(0).nestedSuites(0).testNames(0) === "test1")
-    assert(case4(0).nestedSuites(0).testNames(1) === "test2")
   }
 
 /*
