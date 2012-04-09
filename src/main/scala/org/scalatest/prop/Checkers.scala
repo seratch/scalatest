@@ -23,7 +23,11 @@ import org.scalacheck.Pretty
 import org.scalacheck.Arg
 import org.scalacheck.Prop
 import org.scalacheck.Test
-import org.scalatest.StackDepthExceptionHelper.getStackDepthFun
+import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
+import org.scalatest.exceptions.StackDepth
+/* Uncomment this when remove the deprecated type aliases in the org.scalatest.prop package object.
+import org.scalatest.exceptions.GeneratorDrivenPropertyCheckFailedException
+*/
 
 /**
  * Trait that contains several &#8220;check&#8221; methods that perform ScalaCheck property checks.
@@ -386,6 +390,7 @@ object Checkers extends Checkers {
             getStackDepthFun(stackDepthFileName, stackDepthMethodName),
             // getStackDepth("ScalaCheck.scala", "check"),
             // { val x = getStackDepth("GeneratorDrivenPropertyChecks$class.scala", "forAll"); println("stackDepth:" + x); x},
+            None,
             failureMsg,
             args,
             None,
@@ -410,6 +415,7 @@ object Checkers extends Checkers {
               "  )",
             None,
             getStackDepthFun(stackDepthFileName, stackDepthMethodName),
+            None,
             FailureMessages("propertyFailed", result.succeeded),
             args,
             None,
@@ -433,6 +439,7 @@ object Checkers extends Checkers {
               "  )",
             Some(e),
             getStackDepthFun(stackDepthFileName, stackDepthMethodName),
+            None,
             FailureMessages("propertyException", UnquotedString(e.getClass.getName)),
             args,
             None,
@@ -445,6 +452,7 @@ object Checkers extends Checkers {
             sde => prettyTestStats(result),
             Some(e),
             getStackDepthFun(stackDepthFileName, stackDepthMethodName),
+            None,
             FailureMessages("generatorException", UnquotedString(e.getClass.getName)),
             args,
             None,

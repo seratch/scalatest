@@ -15,6 +15,10 @@
  */
 package org.scalatest
 
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.TestFailedException
+*/
+
 class NonImplicitAssertionsSuite extends FunSuite with NonImplicitAssertions {
   test("make sure all the non-implicit assertions work") {
     assert(1 + 1 == 2)

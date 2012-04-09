@@ -68,16 +68,74 @@ package object scalatest {
   lazy val nostats: Shell = defaultShell.nostats
 
   /**
-   * Run the passed suite, optionally passing in a test name and config map. 
-   *
    * <p>
-   * This method will invoke <code>execute</code> on the passed <code>suite</code>, passing in
-   * the specified (or default) <code>testName</code> and <code>configMap</code> and the configuration values
-   * passed to this <code>Shell</code>'s constructor (<code>colorPassed</code>, <code>durationsPassed</code>, <code>shortStacksPassed</code>,
-   * <code>fullStacksPassed</code>, and <code>statsPassed</code>).
+   * <strong>This class has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.DuplicateTestNameException</code> to <code>org.scalatest.exceptions.DuplicateTestNameException</code>.</strong>
    * </p>
    */
-  def run(suite: Suite, testName: String = null, configMap: Map[String, Any] = Map()) {
-    defaultShell.run(suite, testName, configMap)
-  }
+  @deprecated("Please use org.scalatest.exceptions.DuplicateTestNameException instead.")
+  type DuplicateTestNameException = exceptions.DuplicateTestNameException
+
+  /**
+   * <p>
+   * <strong>This trait has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.ModifiableMessageXXX</code> to <code>org.scalatest.exceptions.ModifiableMessageXXX</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.ModifiableMessageXXX instead.")
+  type ModifiableMessage[T <: Throwable] = exceptions.ModifiableMessage[T]
+
+  /**
+   * <p>
+   * <strong>This class has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.NotAllowedException</code> to <code>org.scalatest.exceptions.NotAllowedException</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.NotAllowedException instead.")
+  type NotAllowedException = exceptions.NotAllowedException
+
+  /**
+   * <p>
+   * <strong>This trait has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.StackDepth</code> to <code>org.scalatest.exceptions.StackDepth</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.StackDepth instead.")
+  type StackDepth = exceptions.StackDepth
+
+  /**
+   * <p>
+   * <strong>This class has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.StackDepthException</code> to <code>org.scalatest.exceptions.StackDepthException</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.StackDepthException instead.")
+  type StackDepthException = exceptions.StackDepthException
+
+  /**
+   * <p>
+   * <strong>This class has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.TestFailedException</code> to <code>org.scalatest.exceptions.TestFailedException</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.TestFailedException instead.")
+  type TestFailedException = exceptions.TestFailedException
+
+  /**
+   * <p>
+   * <strong>This class has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.TestPendingException</code> to <code>org.scalatest.exceptions.TestPendingException</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.TestPendingException instead.")
+  type TestPendingException = exceptions.TestPendingException
+
+  /**
+   * <p>
+   * <strong>This class has been moved to the <code>org.scalatest.exceptions</code> package. The deprecated type alias that has been left in its place will
+   * be removed in a future version of ScalaTest. Please change any uses of <code>org.scalatest.TestRegistrationClosedException</code> to <code>org.scalatest.exceptions.TestRegistrationClosedException</code>.</strong>
+   * </p>
+   */
+  @deprecated("Please use org.scalatest.exceptions.TestRegistrationClosedException instead.")
+  type TestRegistrationClosedException = exceptions.TestRegistrationClosedException
 }

@@ -4,6 +4,9 @@ import org.scalatest.EitherValues._
 import org.scalatest.OptionValues._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.SharedHelpers.thisLineNumber
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.TestFailedException
+*/
 
 class EitherValuesSpec extends FunSpec with ShouldMatchers {
   describe("values on Either") {

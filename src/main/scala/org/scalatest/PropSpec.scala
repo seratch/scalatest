@@ -18,7 +18,7 @@ package org.scalatest
 import scala.collection.immutable.ListSet
 import java.util.ConcurrentModificationException
 import java.util.concurrent.atomic.AtomicReference
-import org.scalatest.StackDepthExceptionHelper.getStackDepth
+import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import org.scalatest.events._
 import Suite.anErrorThatShouldCauseAnAbort
 import Suite.checkRunTestParamsForNull
@@ -367,11 +367,9 @@ import Suite.checkRunTestParamsForNull
  *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.PropSpecFinder")
 trait PropSpec extends Suite { thisSuite =>
 
   private final val engine = new Engine("concurrentPropSpecMod", "PropSpec")
-  private final val stackDepth = 4
   import engine._
 
   /**
@@ -383,16 +381,6 @@ trait PropSpec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>PropSpec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Register a property-based test with the specified name, optional tags, and function value that takes no arguments.
@@ -409,7 +397,7 @@ trait PropSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>testName</code> or any passed test tag is <code>null</code>
    */
   protected def property(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(testName, testFun _, "propertyCannotAppearInsideAnotherProperty", "PropSpec.scala", "property", stackDepth, None, None, testTags: _*)
+    registerTest(testName, testFun _, "propertyCannotAppearInsideAnotherProperty", "PropSpec.scala", "property", 2, None, None, testTags: _*)
   }
 
   /**
@@ -428,7 +416,7 @@ trait PropSpec extends Suite { thisSuite =>
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    */
   protected def ignore(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testName, testFun _, "ignoreCannotAppearInsideAProperty", "PropSpec.scala", "ignore", stackDepth, testTags: _*)
+    registerIgnoredTest(testName, testFun _, "ignoreCannotAppearInsideAProperty", "PropSpec.scala", "ignore", 1, testTags: _*)
   }
 
   /**
@@ -530,4 +518,9 @@ trait PropSpec extends Suite { thisSuite =>
    * </p>
    */
   protected def propertiesFor(unit: Unit) {}
+  
+  /**
+   * Suite style name.
+   */
+  final override val styleName: String = "org.scalatest.PropSpec"
 }

@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.scalatest;
+package org.scalatest
 
-class AssertionsSpec extends FunSpec {
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.TestFailedException
+*/
+
+class AssertionsSpec extends FunSpec with OptionValues {
 
   describe("The === method") {
     it("should be usable when the left expression results in null") {
@@ -71,6 +75,20 @@ class AssertionsSpec extends FunSpec {
       }
       intercept[TestFailedException] {
         assert(a1 === n1)
+      }
+    }
+  }
+  describe("The intercept method") {
+    describe("when the bit of code throws the wrong exception") {
+      it("should include that wrong exception as the TFE's cause") {
+        val wrongException = new RuntimeException("oops!")
+        val caught =
+          intercept[TestFailedException] {
+            intercept[IllegalArgumentException] {
+              throw wrongException
+            }
+          }
+        assert(caught.cause.value eq wrongException)
       }
     }
   }

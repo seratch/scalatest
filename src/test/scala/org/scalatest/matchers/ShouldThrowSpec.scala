@@ -16,8 +16,9 @@
 package org.scalatest.matchers
 
 import org.scalatest._
+import org.scalatest.exceptions.TestFailedException
 
-class ShouldThrowSpec extends WordSpec with ShouldMatchers {
+class ShouldThrowSpec extends WordSpec with OptionValues with ShouldMatchers {
 
   "The evaluating { ... } should produce [ExceptionType] syntax" should {
 
@@ -53,6 +54,15 @@ class ShouldThrowSpec extends WordSpec with ShouldMatchers {
       def kaboom() { throw new Exception("howdy") }
       val thrown = evaluating { kaboom() } should produce [Exception]
       thrown.getMessage should be === "howdy"
+    }  
+    
+    "include that wrong exception as the TFE's cause" in {
+      val wrongException = new RuntimeException("oops!")
+      val caught =
+        intercept[TestFailedException] {
+          evaluating { throw wrongException } should produce [IllegalArgumentException]
+        }
+      assert(caught.cause.value eq wrongException)
     }
   }
 }

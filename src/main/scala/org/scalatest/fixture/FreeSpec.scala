@@ -20,7 +20,7 @@ import FixtureNodeFamily._
 import verb.{CanVerb, ResultOfAfterWordApplication, ShouldVerb, BehaveWord, MustVerb,
   StringVerbBlockRegistration}
 import scala.collection.immutable.ListSet
-import org.scalatest.StackDepthExceptionHelper.getStackDepth
+import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
 import org.scalatest.events._
@@ -386,7 +386,6 @@ import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 trait FreeSpec extends Suite { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFreeSpecMod", "FixtureFreeSpec")
-  private final val stackDepth = 4
   import engine._
   
   private[scalatest] val sourceFileName = "FreeSpec.scala"
@@ -413,16 +412,16 @@ trait FreeSpec extends Suite { thisSuite =>
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
+   * @param methodName caller's method name
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToRun(specText: String, methodName: String, testTags: List[Tag], testFun: FixtureParam => Any) {
+  private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
     // TODO: This is what was being used before but it is wrong
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, stackDepth, None, None, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -437,16 +436,16 @@ trait FreeSpec extends Suite { thisSuite =>
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
-   * @param methodName Method name of the caller
    * @param testTags the optional list of tags for this test
+   * @param methodName caller's method name
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
-  private def registerTestToIgnore(specText: String, methodName: String, testTags: List[Tag], testFun: FixtureParam => Any) {
+  private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
     // TODO: This is how these were, but it needs attention. Mentions "it".
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, stackDepth, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 1, testTags: _*)
   }
    /*
   private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
@@ -484,7 +483,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(specText, "in", tags, testFun)
+      registerTestToRun(specText, tags, "in", testFun)
     }
 
     /**
@@ -504,7 +503,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(specText, "in", tags, new NoArgTestWrapper(testFun))
+      registerTestToRun(specText, tags, "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -524,7 +523,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(specText, "is", tags, unusedFixtureParam => testFun)
+      registerTestToRun(specText, tags, "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -544,7 +543,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(specText, "ignore", tags, testFun)
+      registerTestToIgnore(specText, tags, "ignore", testFun)
     }
 
     /**
@@ -564,7 +563,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(specText, "ignore", tags, new NoArgTestWrapper(testFun))
+      registerTestToIgnore(specText, tags, "ignore", new NoArgTestWrapper(testFun))
     }
   }
 
@@ -589,7 +588,7 @@ trait FreeSpec extends Suite { thisSuite =>
     def - (fun: => Unit) {
       // registerBranch(string, None, testFun)
       // TODO: Fix the resource name and method name
-      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", stackDepth - 1)
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 1)
     }
 
     /**
@@ -609,7 +608,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(string, "in", List(), testFun)
+      registerTestToRun(string, List(), "in", testFun)
     }
 
     /**
@@ -629,7 +628,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(string, "in", List(), new NoArgTestWrapper(testFun))
+      registerTestToRun(string, List(), "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -649,7 +648,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(string, "is", List(), unusedFixtureParam => testFun)
+      registerTestToRun(string, List(), "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -669,7 +668,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(string, "ignore", List(), testFun)
+      registerTestToIgnore(string, List(), "ignore", testFun)
     }
 
     /**
@@ -689,7 +688,7 @@ trait FreeSpec extends Suite { thisSuite =>
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(string, "ignore", List(), new NoArgTestWrapper(testFun))
+      registerTestToIgnore(string, List(), "ignore", new NoArgTestWrapper(testFun))
     
     }
 
@@ -863,4 +862,9 @@ trait FreeSpec extends Suite { thisSuite =>
    * </p>
    */
   protected val behave = new BehaveWord
+  
+  /**
+   * Suite style name.
+   */
+  final override val styleName: String = "org.scalatest.fixture.FreeSpec"
 }

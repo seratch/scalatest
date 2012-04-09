@@ -20,6 +20,7 @@ import org.scalatest.fixture
 import org.scalatest.matchers.ShouldMatchers
 import _root_.java.util.concurrent.{Callable, CountDownLatch}
 import java.lang.Thread.State._
+import org.scalatest.exceptions.NotAllowedException
 
 // On Mac got: "ABCFEDGHI" was not equal to "ABCDEFGHI"
 // Finally Got: "ABDEFGHI" was not equal to "ABCDEFGHI" Didn't get a C, so that means
@@ -47,9 +48,7 @@ class ConductorFixtureSuite extends fixture.FunSuite with ConductorFixture with 
   // On Mac, got "BACDEFGHI" was not equal to "ABCDEFGHI"
   // And got: "ABDCEFGHI" was not equal to "ABCDEFGHI"
   // And "ABCFDEGHI" was not equal to "ABCDEFGHI"
-  // TODO: ignoring this test for now. Need to figure out why it occassionally failes, but
-  // until then, may as well ignore it.
-  ignore("metronome order") { conductor => import conductor._
+  test("metronome order") { conductor => import conductor._
 
     thread("t1") {
       waitForBeat(1)

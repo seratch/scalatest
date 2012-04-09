@@ -16,6 +16,11 @@
 package org.scalatest
 
 import org.scalatest.events._
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.DuplicateTestNameException
+import org.scalatest.exceptions.TestFailedException
+import org.scalatest.exceptions.TestRegistrationClosedException
+*/
 
 class FunSuiteSpec extends FunSpec with SharedHelpers {
 
@@ -694,6 +699,82 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       intercept[IllegalArgumentException] {
         suite.run(Some("three"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       }
+    }
+
+    it("should throw a NotAllowedException if chosenStyles is defined and does not include FunSuite") {
+
+      class SimpleSuite extends FunSuite {
+        test("one") {}
+        test("two") {}
+        test("three") {}
+      }
+
+      val simpleSuite = new SimpleSuite()
+      simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map.empty, None, new Tracker)
+      simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSuite")), None, new Tracker)
+      val caught =
+        intercept[NotAllowedException] {
+          simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec")), None, new Tracker)
+        }
+      import OptionValues._
+      assert(caught.message.value === Resources("notTheChosenStyle", "org.scalatest.FunSuite", "org.scalatest.FunSpec"))
+      val caught2 =
+        intercept[NotAllowedException] {
+          simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec")), None, new Tracker)
+        }
+      assert(caught2.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.FunSuite", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec"))))
+      val caught3 =
+        intercept[NotAllowedException] {
+          simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec")), None, new Tracker)
+        }
+      assert(caught3.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.FunSuite", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec"))))
+    }
+  }
+  
+  describe("when failure happens") {
+    it("should fire TestFailed event with correct stack depth info when test failed") {
+      class TestSpec extends FunSuite {
+        test("fail scenario") {
+          assert(1 === 2)
+        }
+      }
+      val rep = new EventRecordingReporter
+      val s1 = new TestSpec
+      s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+      assert(rep.testFailedEventsReceived.size === 1)
+      assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FunSuiteSpec.scala")
+      assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 8)
+    }
+    
+    it("should generate TestRegistrationClosedException with correct stack depth info when has a test nested inside a test") {
+      class TestSpec extends FunSuite {
+        var registrationClosedThrown = false
+        test("a scenario") {
+          test("nested scenario") {
+            assert(1 === 2)
+          }
+        }
+        override def withFixture(test: NoArgTest) {
+          try {
+            test.apply()
+          }
+          catch {
+            case e: TestRegistrationClosedException => 
+              registrationClosedThrown = true
+              throw e
+          }
+        }
+      }
+      val rep = new EventRecordingReporter
+      val s = new TestSpec
+      s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+      assert(s.registrationClosedThrown == true)
+      val testFailedEvents = rep.testFailedEventsReceived
+      assert(testFailedEvents.size === 1)
+      assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+      val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+      assert("FunSuiteSpec.scala" === trce.failedCodeFileName.get)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
     }
   }
 }

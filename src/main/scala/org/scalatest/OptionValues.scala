@@ -16,7 +16,7 @@
 package org.scalatest
 
 import java.util.NoSuchElementException
-import org.scalatest.StackDepthExceptionHelper.getStackDepthFun
+import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 
 /**
  * Trait that provides an implicit conversion that adds a <code>value</code> method

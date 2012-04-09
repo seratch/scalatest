@@ -18,8 +18,10 @@ package org.scalatest.concurrent
 import org.scalatest.AbstractSuite
 import org.scalatest.Suite
 import Timeouts._
-import org.scalatest.ModifiableMessage
+import org.scalatest.exceptions.ModifiableMessage
 import org.scalatest.Resources
+import org.scalatest.time.Span
+import org.scalatest.exceptions.TimeoutField
 
 /**
  * Trait mixed into exceptions thrown by <code>failAfter</code> due to a timeout.
@@ -30,7 +32,7 @@ import org.scalatest.Resources
  * and an <a href="Interruptor.html"><code>Interruptor</code></a> by invoking <code>defaultTestInterruptor</code>:
  * </p>
  * 
- * <pre>
+ * <pre class="stHighlight">
  * failAfter(timeLimit) {
  *   super.withFixture(test)
  * } (defaultTestInterruptor)
@@ -48,13 +50,14 @@ import org.scalatest.Resources
  * For example, the following code specifies that each test must complete within 200 milliseconds:
  * </p>
  * 
- * <pre>
+ * <pre class="stHighlight">
  * import org.scalatest.FunSpec
  * import org.scalatest.concurrent.TimeLimitedTests
+ * import org.scalatest.time.Span
  * 
  * class ExampleSpec extends FunSpec with TimeLimitedTests {
  *
- *   val timeLimit = 200L
+ *   val timeLimit = Span(200, Millis)
  *
  *   describe("A time-limited test") {
  *     it("should succeed if it completes within the time limit") {
@@ -76,11 +79,11 @@ import org.scalatest.Resources
  * </p>
  * 
  * <p>
- * If you prefer, you can mix in or import the members of <a href="../TimeSugar.html"><code>TimeSugar</code></a> and place units on the time limit, for example:
+ * If you prefer, you can mix in or import the members of <a href="../time/SpanSugar.html"><code>SpanSugar</code></a> and place units on the time limit, for example:
  * </p>
  *
- * <pre>
- * import org.scalatest.TimeSugar._
+ * <pre class="stHighlight">
+ * import org.scalatest.time.SpanSugar._
  *
  * val timeLimit = 200 millis
  * </pre>
@@ -94,10 +97,10 @@ import org.scalatest.Resources
  * interrupt the main test thread:
  * </p>
  * 
- * <pre>
+ * <pre class="stHighlight">
  * import org.scalatest.FunSpec
  * import org.scalatest.concurrent.TimeLimitedTests
- * import org.scalatest.TimeSugar._
+ * import org.scalatest.time.SpanSugar._
  * 
  * class ExampleSpec extends FunSpec with TimeLimitedTests {
  * 
@@ -128,7 +131,7 @@ trait TimeLimitedTests extends AbstractSuite { this: Suite =>
 
   /**
    * A stackable implementation of <code>withFixture</code> that wraps a call to <code>super.withFixture</code> in a 
-   * <code>failAfter</code> invoation.
+   * <code>failAfter</code> invocation.
    * 
    * @param test the test on which to enforce a time limit
    */
@@ -139,8 +142,8 @@ trait TimeLimitedTests extends AbstractSuite { this: Suite =>
       } (defaultTestInterruptor)
     }
     catch {
-      case e: ModifiableMessage[_] with TimeoutException =>
-        throw e.modifyMessage(opts => Some(Resources("testTimeLimitExceeded", e.timeout.toString)))
+      case e: org.scalatest.exceptions.ModifiableMessage[_] with TimeoutField =>
+        throw e.modifyMessage(opts => Some(Resources("testTimeLimitExceeded", e.timeout.prettyString)))
     }
   }
 
@@ -148,7 +151,7 @@ trait TimeLimitedTests extends AbstractSuite { this: Suite =>
    * The time limit, in milliseconds, in which each test in a <code>Suite</code> that mixes in
    * <code>TimeLimitedTests</code> must complete.
    */
-  def timeLimit: Long
+  def timeLimit: Span
   
   /**
    * The default <a href="Interruptor.html"><code>Interruptor</code></a> strategy used to interrupt tests that exceed their time limit.

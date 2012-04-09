@@ -27,15 +27,13 @@ import java.util.Collections
 import java.util.HashSet
 import java.util.regex.Pattern
 import Suite.getIndentedText
-import Suite.getDecodedName
-import org.scalatest.events.TopOfMethod
+import exceptions._
 
   private[junit] class MyRunListener(report: Reporter,
                                      config: Map[String, Any],
                                      theTracker: Tracker)
   extends RunListener {
     val failedTests = Collections.synchronizedSet(new HashSet[String])
-    def getTopOfMethod(className: String, methodName: String) = Some(TopOfMethod(className, "public void " + className + "." + methodName + "()"))
 
     override def testFailure(failure: Failure) {
       failedTests.add(failure.getDescription.getDisplayName)
@@ -55,7 +53,14 @@ import org.scalatest.events.TopOfMethod
           Resources("jUnitTestFailed")
 
       val formatter = getIndentedText(testName, 1, true)
-      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), throwable, None, Some(formatter), Some(SeeStackDepthException)))
+      val payload = 
+        throwable match {
+          case optPayload: PayloadField => 
+            optPayload.payload
+          case _ => 
+            None
+        }
+      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, Some(testClass), testName, throwable, None, Some(formatter), None, payload))
       // TODO: can I add a duration?
     }
 
@@ -64,7 +69,7 @@ import org.scalatest.events.TopOfMethod
         val (testName, testClass, testClassName) =
           parseTestDescription(description)
         val formatter = getIndentedText(testName, 1, true)
-        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), None, Some(formatter), getTopOfMethod(testClass, testName)))
+        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, None, Some(formatter), None))
         // TODO: can I add a duration?
       }
     }
@@ -74,7 +79,7 @@ import org.scalatest.events.TopOfMethod
         parseTestDescription(description)
       val testSucceededIcon = Resources("testSucceededIconChar")
       val formattedText = Resources("iconPlusShortName", testSucceededIcon, testName)
-      report(TestIgnored(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), Some(IndentedText(formattedText, testName, 1)), getTopOfMethod(testClass, testName)))
+      report(TestIgnored(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, Some(IndentedText(formattedText, testName, 1))))
     }
 
     override def testRunFinished(result: Result) {
@@ -88,7 +93,7 @@ import org.scalatest.events.TopOfMethod
     override def testStarted(description: Description) {
       val (testName, testClass, testClassName) =
         parseTestDescription(description)
-      report(TestStarting(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), Some(MotionToSuppress), getTopOfMethod(testClass, testName)))
+      report(TestStarting(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, Some(MotionToSuppress), None))
     }
 
     //

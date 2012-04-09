@@ -15,6 +15,10 @@
  */
 package org.scalatest
 
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.DuplicateTestNameException
+*/
+
 class ExamplesSuite extends FunSuite {
 
   test("that duplicate specTexts result in a thrown exception at construction time") {

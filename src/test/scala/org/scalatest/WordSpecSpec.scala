@@ -17,6 +17,11 @@ package org.scalatest
 
 // elements
 import org.scalatest.events._
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.DuplicateTestNameException
+import org.scalatest.exceptions.TestRegistrationClosedException
+import org.scalatest.exceptions.TestFailedException
+*/
 
 class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
 
@@ -778,19 +783,9 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -808,19 +803,9 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      assert(ip.size === 3)
+      assert(ip.size === 4)
       for (event <- ip) {
-        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
     it("should not put parentheses around should clauses that follow when") {
@@ -852,6 +837,58 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val ts = rep.testSucceededEventsReceived
       assert(ts.size === 1)
       assert(ts.head.testName === "A Stack should chill out")
+    }
+  }
+  
+  describe("when failure happens") {
+    
+    it("should fire TestFailed event with correct stack depth info when test failed") {
+      class TestSpec extends WordSpec {
+        "A Stack" should {
+          "chill out" in {
+            assert(1 === 2)
+          }
+        }
+      }
+      val rep = new EventRecordingReporter
+      val s1 = new TestSpec
+      s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+      assert(rep.testFailedEventsReceived.size === 1)
+      assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "WordSpecSpec.scala")
+      assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 9)
+    }
+    
+    it("should generate TestRegistrationClosedException with correct stack depth info when has an in nested inside an in") {
+      class TestSpec extends WordSpec {
+        var registrationClosedThrown = false
+        "a feature" should {
+          "a scenario" in {
+            "nested scenario" in {
+              
+            }
+          }
+        }
+        override def withFixture(test: NoArgTest) {
+          try {
+            test.apply()
+          }
+          catch {
+            case e: TestRegistrationClosedException => 
+              registrationClosedThrown = true
+              throw e
+          }
+        }
+      }
+      val rep = new EventRecordingReporter
+      val s = new TestSpec
+      s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+      assert(s.registrationClosedThrown == true)
+      val testFailedEvents = rep.testFailedEventsReceived
+      assert(testFailedEvents.size === 1)
+      assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+      val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+      assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
     }
   }
 }

@@ -33,11 +33,7 @@ import org.scalatest.events._
 import org.scalatest.junit.JUnitWrapperSuite
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
-import scala.collection.mutable.ArrayBuffer
 import SuiteDiscoveryHelper._
-
-private[tools] case class SuiteParam(className: String, testNames: Array[String], nestedSuites: Array[NestedSuiteParam])
-private[tools] case class NestedSuiteParam(suiteId: String, testNames: Array[String])
 
 /**
  * <p>
@@ -50,19 +46,19 @@ private[tools] case class NestedSuiteParam(suiteId: String, testNames: Array[Str
  * </p>
  *
  * <pre class="stExamples">
- * scala [-classpath scalatest-&lt;version&gt;.jar:...] org.scalatest.tools.Runner 
-[-D&lt;key&gt;=&lt;value&gt; [...]] [-p &lt;runpath&gt;] [reporter [...]] 
-[-n &lt;includes&gt;] [-l &lt;excludes&gt;] [-c] [-s &lt;suite class name&gt; 
-[...]] [-j &lt;junit class name&gt; [...]] [-m &lt;members-only suite path&gt; 
-[...]] [-w &lt;wildcard suite path&gt; [...]] [-q &lt;suffixes&gt;] [-Q] [-b &lt;TestNG config file 
-path&gt; [...]]
+ * scala [-classpath scalatest-&lt;version&gt;.jar:...] org.scalatest.tools.Runner
+ * [-D&lt;key&gt;=&lt;value&gt; [...]] [-R &lt;runpath&gt;] [reporter [...]]
+ * [-n &lt;includes&gt;] [-l &lt;excludes&gt;] [-P] [-s &lt;suite class name&gt;
+ * [...]] [-j &lt;junit class name&gt; [...]] [-m &lt;members-only suite path&gt;
+ * [...]] [-w &lt;wildcard suite path&gt; [...]] [-q &lt;suffixes&gt;] [-Q] [-y &lt;chosen styles&gt;]
+ * [-b &lt;TestNG config file path&gt; [...]]
  * </pre>
  *
  * <p>
  * The simplest way to start <code>Runner</code> is to specify the directory containing your compiled tests as the sole element of the runpath, for example:
  * </p>
  *
- * <pre class="stExamples">scala -classpath scalatest-&lt;version&gt;.jar org.scalatest.tools.Runner -p compiled_tests</pre>
+ * <pre class="stExamples">scala -classpath scalatest-&lt;version&gt;.jar org.scalatest.tools.Runner -R compiled_tests</pre>
  *
  * <p>
  * Given the previous command, <code>Runner</code> will discover and execute all <code>Suite</code>s in the <code>compiled_tests</code> directory and its subdirectories,
@@ -95,7 +91,7 @@ path&gt; [...]]
  * </p>
  *
  * <p>
- * The runpath is specified with the <b>-p</b> option. The <b>-p</b> must be followed by a space,
+ * The runpath is specified with the <b>-R</b> option. The <b>-R</b> must be followed by a space,
  * a double quote (<code>"</code>), a white-space-separated list of
  * paths and URLs, and a double quote. If specifying only one element in the runpath, you can leave off
  * the double quotes, which only serve to combine a white-space separated list of strings into one
@@ -103,7 +99,7 @@ path&gt; [...]]
  * place a backslash (\) in front of the space. Here's an example:
  * </p>
  *
- * <pre class="stExamples">-p "serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar target/class\ files"</pre>
+ * <pre class="stExamples">-R "serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar target/class\ files"</pre>
  *
  * <h2>Specifying reporters</h2>
  *
@@ -118,17 +114,12 @@ path&gt; [...]]
  * <li> <code><b>-f[configs...] &lt;filename&gt;</b></code> - causes test results to be written to
  *     the named file</li>
  * <li> <code><b>-u &lt;directory&gt;</b></code> - causes test results to be written to
- *      junit-style xml files in the named directory</li>
- * <li> <code><b>-d &lt;directory&gt;</b></code> - causes test results to be written to
- *      dashboard files in the named directory</li>
- * <li> <code><b>-a &lt;number of files to archive&gt;</b></code> - causes specified number of old
- *      summary and durations files to be archived (in summaries/ and durations/ subdirectories)
- *      for dashboard reporter (default is two)</li>
+ *      xml files in the named directory</li>
  * <li> <code><b>-o[configs...]</b></code> - causes test results to be written to
  *     the standard output</li>
  * <li> <code><b>-e[configs...]</b></code> - causes test results to be written to
  *     the standard error</li>
- * <li> <code><b>-r[configs...] &lt;reporterclass&gt;</b></code> - causes test results to be reported to
+ * <li> <code><b>-C[configs...] &lt;reporterclass&gt;</b></code> - causes test results to be reported to
  *     an instance of the specified fully qualified <code>Reporter</code> class name</li>
  * </ul>
  *
@@ -137,15 +128,15 @@ path&gt; [...]]
  * </p>
  *
  * <p>
- * The <code><b>-r</b></code> option causes the reporter specified in
+ * The <code><b>-C</b></code> option causes the reporter specified in
  * <code><b>&lt;reporterclass&gt;</b></code> to be
  * instantiated.
- * Each reporter class specified with a <b>-r</b> option must be public, implement
+ * Each reporter class specified with a <b>-C</b> option must be public, implement
  * <code>org.scalatest.Reporter</code>, and have a public no-arg constructor.
  * Reporter classes must be specified with fully qualified names. 
  * The specified reporter classes may be
  * deployed on the classpath. If a runpath is specified with the
- * <code>-p</code> option, the specified reporter classes may also be loaded from the runpath.
+ * <code>-R</code> option, the specified reporter classes may also be loaded from the runpath.
  * All specified reporter classes will be loaded and instantiated via their no-arg constructor.
  * </p>
  *
@@ -155,12 +146,12 @@ path&gt; [...]]
  * writing to a file named <code>"test.out"</code>, you would type:
  * </p>
  *
- * <pre class="stExamples">java -jar scalatest.jar -p mydir <b>-g -f test.out</b> -s MySuite</pre>
+ * <pre class="stExamples">java -jar scalatest.jar -R mydir <b>-g -f test.out</b> -s MySuite</pre>
  *
  * <p>
  * The <code><b>-g</b></code>, <code><b>-o</b></code>, or <code><b>-e</b></code> options can
  * appear at most once each in any single command line.
- * Multiple appearances of <code><b>-f</b></code> and <code><b>-r</b></code> result in multiple reporters
+ * Multiple appearances of <code><b>-f</b></code> and <code><b>-C</b></code> result in multiple reporters
  * unless the specified <code><b>&lt;filename&gt;</b></code> or <code><b>&lt;reporterclass&gt;</b></code> is
  * repeated. If any of <code><b>-g</b></code>, <code><b>-o</b></code>, <code><b>-e</b></code>,
  * <code><b>&lt;filename&gt;</b></code> or <code><b>&lt;reporterclass&gt;</b></code> are repeated on
@@ -182,7 +173,7 @@ path&gt; [...]]
  * <p>
  * Each reporter option on the command line can include configuration characters. Configuration characters
  * are specified immediately following the <code><b>-g</b></code>, <code><b>-o</b></code>,
- * <code><b>-e</b></code>, <code><b>-f</b></code>, or <code><b>-r</b></code>. The following configuration
+ * <code><b>-e</b></code>, <code><b>-f</b></code>, or <code><b>-C</b></code>. The following configuration
  * characters, which cause reports to be dropped, are valid for any reporter:
  * </p>
  *
@@ -194,9 +185,6 @@ path&gt; [...]]
  * <li> <code><b>H</b></code> - drop <code>SuiteStarting</code> events</li>
  * <li> <code><b>L</b></code> - drop <code>SuiteCompleted</code> events</li>
  * <li> <code><b>O</b></code> - drop <code>InfoProvided</code> events</li>
- * <li> <code><b>P</b></code> - drop <code>ScopeOpened</code> events</li>
- * <li> <code><b>Q</b></code> - drop <code>ScopeClosed</code> events</li>
- * <li> <code><b>M</b></code> - drop <code>MarkupProvided</code> events</li>
  * </ul>
  *
  * <p>
@@ -257,7 +245,7 @@ path&gt; [...]]
  * </p>
  *
  * <p>
- * <code>scala -classpath scalatest-&lt;version&gt;.jar -p mydir <strong>-g -eNDXEHLO</strong> -s MySuite</code>
+ * <code>scala -classpath scalatest-&lt;version&gt;.jar -R mydir <strong>-g -eNDXEHLO</strong> -s MySuite</code>
  * </p>
  *
  * <p>
@@ -290,16 +278,16 @@ path&gt; [...]]
  * </ul>
  * </p>
  *
- * <h2>Specifying suffixes to include</h2>
+ * <h2>Specifying suffixes to discover</h2>
  *
  * <p>
- * You can specify suffixes of Suite names to include in a run. To specify suffixes to include,
- * use <code>-q</code> followed by a vertical-bar-separated list of suffixes to include, surrounded by
+ * You can specify suffixes of <code>Suite</code> names to discover. To specify suffixes to discover,
+ * use <code>-q</code> followed by a vertical-bar-separated list of suffixes to discover, surrounded by
  * double quotes. (The double quotes are not needed if specifying just one suffix.)  Or you can specify
  * them individually using multiple -q's.
- * If suffixes to include is not specified, then all suffixes are allowed.
+ * If suffixes to discover is not specified, then all suffixes are considered.
  * If suffixes is specified, then only those Suites whose class names end in one of the specified suffixes
- * will be executed. Here are some examples:
+ * will be considered during discovery. Here are some examples:
  * </p>
  *
  * <p>
@@ -311,18 +299,21 @@ path&gt; [...]]
  * </p>
  *
  * <p>
- * Option -Q can be used to specify a default set of suffixes "Spec|Suite|Tests".
+ * Option -Q can be used to specify a default set of suffixes "Spec|Suite". If you specify both -Q and -q, you'll get Spec
+ * and Suite in addition to the other suffix or suffixes you specify with -q.
  * </p>
  *
  * <p>
- * Specifying suffixes can speed up the discovery process when running tests.
+ * Specifying suffixes can speed up the discovery process because class files with names not ending the specified suffixes
+ * can be immediately disqualified, without needing to load and inspect them to see if they either extend <code>Suite</code>
+ * and declare a public, no-arg constructor, or are annotated with <code>WrapWith</code>. 
  * </p>
  *
  * <h2>Executing <code>Suite</code>s in parallel</h2>
  *
  * <p>
  * With the proliferation of multi-core architectures, and the often parallelizable nature of tests, it is useful to be able to run
- * tests in parallel. If you include <code>-c</code> on the command line, <code>Runner</code> will pass a <code>Distributor</code> to 
+ * tests in parallel. If you include <code>-P</code> on the command line, <code>Runner</code> will pass a <code>Distributor</code> to
  * the <code>Suite</code>s you specify with <code>-s</code>. <code>Runner</code> will set up a thread pool to execute any <code>Suite</code>s
  * passed to the <code>Distributor</code>'s <code>put</code> method in parallel. Trait <code>Suite</code>'s implementation of
  * <code>runNestedSuites</code> will place any nested <code>Suite</code>s into this <code>Distributor</code>. Thus, if you have a <code>Suite</code>
@@ -330,8 +321,8 @@ path&gt; [...]]
  * </p>
  *
  * <p>
- * The <code>-c</code> option may optionally be appended with a number (e.g.
- * "<code>-c10</code>" -- no intervening space) to specify the number of
+ * The <code>-P</code> option may optionally be appended with a number (e.g.
+ * "<code>-P10</code>" -- no intervening space) to specify the number of
  * threads to be created in the thread pool.  If no number (or 0) is
  * specified, the number of threads will be decided based on the number of
  * processors available.
@@ -352,7 +343,7 @@ path&gt; [...]]
  * <code>Suite</code> classes must be specified with fully qualified names. 
  * The specified <code>Suite</code> classes may be
  * loaded from the classpath. If a runpath is specified with the
- * <code>-p</code> option, specified <code>Suite</code> classes may also be loaded from the runpath.
+ * <code>-R</code> option, specified <code>Suite</code> classes may also be loaded from the runpath.
  * All specified <code>Suite</code> classes will be loaded and instantiated via their no-arg constructor.
  * </p>
  *
@@ -404,6 +395,55 @@ path&gt; [...]]
  * in the runpath.
  * </p>
  *
+ * <h2>Specifying chosen styles</h2>
+ *
+ * <p>
+ * You can optionally specify chosen styles for a ScalaTest run. ScalaTest supports different styles of
+ * testing so that different teams can use the style or styles that best suits their situation and culture. But
+ * in any one project, it is recommended you decide on one main style for unit testing, and
+ * consistently use only that style for unit testing throughout the project. If you also have integration
+ * tests in your project, you may wish to pick a different style for them than you are using for unit testing.
+ * You may want to allow certain styles to be used in special testing situations on a project, but in general,
+ * it is best to minimize the styles used in any given project to a few, or one.
+ * </p>
+ *
+ * <p>
+ * To facilitate the communication and enforcement of a team's style choices for a project, you can
+ * specify the chosen styles in your project build. If chosen styles is defined, ScalaTest style traits that are
+ * not among the chosen list will abort with a message complaining that the style trait is not one of the
+ * chosen styles. The style name for each ScalaTest style trait is its fully qualified name. For example,
+ * to specify that <code>org.scalatest.FunSpec</code> as your chosen style you'd pass this to
+ * <code>Runner</code>:
+ * </p>
+ *
+ * <pre class="stExamples">-y org.scalatest.FunSpec</pre>
+ *
+ * <p>
+ * If you wanted <code>org.scalatest.FunSpec</code> as your main unit testing style, but also wanted to
+ * allow <code>PropSpec</code> for test matrixes and <code>FeatureSpec</code> for
+ * integration tests, you would write:
+ * </p>
+ *
+ * <pre class="stExamples">-y org.scalatest.FunSpec -y org.scalatest.PropSpec -y org.scalatest.FeatureSpec</pre>
+ *
+ * <p>
+ * To select <code>org.scalatest.FlatSpec</code> as your main unit testing style, but allow
+ * <code>org.scalatest.fixture.FlatSpec</code> for multi-threaded unit tests, you'd write:
+ * </p>
+ *
+ * <pre class="stExamples">-y org.scalatest.FlatSpec -y org.scalatest.fixture.FlatSpec</pre>
+ *
+ * <p>
+ * The style name for a suite is obtained by invoking its <code>styleName</code> method. Custom style
+ * traits can override this method so that a custom style can participate in the chosen styles list.
+ * </p>
+ *
+ * <p>
+ * Because ScalaTest is so customizable, a determined programmer could circumvent
+ * the chosen styles check, but in practice <code>-y</code> should be persuasive enough tool
+ * to keep most team members in line.
+ * </p>
+ *
  * <h2>Specifying TestNG XML config file paths</h2>
  *
  * <p>
@@ -434,10 +474,6 @@ object Runner {
 
   private val RUNNER_JFRAME_START_X: Int = 150
   private val RUNNER_JFRAME_START_Y: Int = 100
-  
-  private val SELECTED_TAG = "org.scalatest.Selected"
-
-  private final val DefaultNumFilesToArchive = 2
 
   //                     TO
   // We always include a PassFailReporter on runs in order to determine
@@ -447,7 +483,7 @@ object Runner {
   // reporter was requested, or just run the tests itself. If a GUI is started,
   // an event handler thread will get going, and it will start a RunnerThread,
   // which will actually do the running. The GUI can repeatedly start RunnerThreads
-  // and RerunnerThreads, until the GUI is closed. If -c is specified, that means
+  // and RerunnerThreads, until the GUI is closed. If -P is specified, that means
   // the tests should be run concurrently, which in turn means a Distributor will
   // be passed to the execute method of the Suites, which will in turn populate
   // it with its nested suites instead of executing them directly in the same
@@ -501,14 +537,22 @@ object Runner {
   }
 
   // TODO: I don't think I'm enforcing that properties can't start with "org.scalatest"
-  // TODO: I don't think I'm handling rejecting multiple -f/-r with the same arg. -f fred.txt -f fred.txt should
-  // fail, as should -r MyReporter -r MyReporter. I'm failing on -o -o, -g -g, and -e -e, but the error messages
+  // TODO: I don't think I'm handling rejecting multiple -f/-C with the same arg. -f fred.txt -f fred.txt should
+  // fail, as should -C MyReporter -C MyReporter. I'm failing on -o -o, -g -g, and -e -e, but the error messages
   // could indeed be nicer.
   /**
    * Runs a suite of tests, with optional GUI. See the main documentation for this singleton object for the details.
    */
   def main(args: Array[String]) {
-    val result = runOptionallyWithPassFailReporter(args, true)
+    val result = 
+      if (args.contains("-v") || args.contains("--version")) {
+        val version = Resources("AppVersion")
+        val scalaVersion = Resources("ScalaVersion")
+        println("ScalaTest " + version + " (Built for Scala " + scalaVersion + ")")
+        runOptionallyWithPassFailReporter(args.filter(arg => arg != "-v" && arg != "--version"), true)
+      }
+      else
+        runOptionallyWithPassFailReporter(args, true)
 
     if (result)
       exit(0)
@@ -529,26 +573,13 @@ object Runner {
   def run(args: Array[String]): Boolean = {
     runOptionallyWithPassFailReporter(args, true)
   }
-  
-  def parseFriendlyParams(friendlyArgs:String): Array[String] = {
-    parseFriendlyParams(friendlyArgs.split(" "))
-  }
-
-  def parseFriendlyParams(friendlyArgs:Array[String]): Array[String] = {
-    val (propsList, includesList, excludesList, repoArgsList, concurrentList, memberOnlyList, wildcardList, suiteList, junitList, testngList) = 
-      new FriendlyParamsTranslator().parsePropsAndTags(friendlyArgs)
-    val arrayBuffer = new ArrayBuffer[String]()
-    arrayBuffer ++= propsList ::: includesList ::: excludesList ::: repoArgsList ::: concurrentList ::: memberOnlyList ::: wildcardList :::
-                    suiteList ::: junitList ::: testngList
-    arrayBuffer.toArray
-  }
 
   private def runOptionallyWithPassFailReporter(args: Array[String], runWithPassFailReporter: Boolean): Boolean = {
 
     checkArgsForValidity(args) match {
       case Some(s) => {
         println(s)
-        exit(1) // TODO: Shouldn't this be returning false?
+        exit(1)
       }
       case None =>
     }
@@ -565,20 +596,21 @@ object Runner {
       membersOnlyArgsList,
       wildcardArgsList,
       testNGArgsList,
-      suffixes
+      suffixes, 
+      chosenStyles
     ) = parseArgs(args)
 
     val fullReporterConfigurations: ReporterConfigurations =
       if (reporterArgsList.isEmpty)
         // If no reporters specified, just give them a graphic reporter
-        new ReporterConfigurations(Some(GraphicReporterConfiguration(Set())), Nil, Nil, Nil, Nil, None, None, Nil, Nil)
+        new ReporterConfigurations(Some(GraphicReporterConfiguration(Set())), Nil, Nil, None, None, Nil, Nil)
       else
         parseReporterArgsIntoConfigurations(reporterArgsList)
 
-    val suitesList: List[SuiteParam] = parseSuiteArgsIntoSuiteParam(suiteArgsList, "-s")
+    val suitesList: List[String] = parseSuiteArgsIntoNameStrings(suiteArgsList, "-s")
     val junitsList: List[String] = parseSuiteArgsIntoNameStrings(junitArgsList, "-j")
     val runpathList: List[String] = parseRunpathArgIntoList(runpathArgsList)
-    val propertiesMap: Map[String, String] = parsePropertiesArgsIntoMap(propertiesArgsList)
+    val propertiesMap: Map[String, Object] = parsePropertiesArgsIntoMap(propertiesArgsList)
     val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
     val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
     val concurrent: Boolean = !concurrentList.isEmpty
@@ -586,6 +618,9 @@ object Runner {
     val membersOnlyList: List[String] = parseSuiteArgsIntoNameStrings(membersOnlyArgsList, "-m")
     val wildcardList: List[String] = parseSuiteArgsIntoNameStrings(wildcardArgsList, "-w")
     val testNGList: List[String] = parseSuiteArgsIntoNameStrings(testNGArgsList, "-b")
+    val chosenStyleSet: Set[String] = parseChosenStylesIntoChosenStyleSet(chosenStyles, "-y")
+
+    val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
 
     // If there's a graphic reporter, we need to leave it out of
     // reporterSpecs, because we want to pass all reporterSpecs except
@@ -598,8 +633,6 @@ object Runner {
           new ReporterConfigurations(
             None,
             fullReporterConfigurations.fileReporterConfigurationList,
-            fullReporterConfigurations.junitXmlReporterConfigurationList,
-            fullReporterConfigurations.dashboardReporterConfigurationList,
             fullReporterConfigurations.xmlReporterConfigurationList,
             fullReporterConfigurations.standardOutReporterConfiguration,
             fullReporterConfigurations.standardErrReporterConfiguration,
@@ -610,6 +643,10 @@ object Runner {
       }
 
     val passFailReporter = if (runWithPassFailReporter) Some(new PassFailReporter) else None
+    
+    if (propertiesMap.isDefinedAt("org.scalatest.ChosenStyles"))
+      throw new IllegalArgumentException("Property name 'org.scalatest.ChosenStyles' is used by ScalaTest, please choose other property name.")
+    val configMap = propertiesMap + ("org.scalatest.ChosenStyles" -> chosenStyleSet)
 
     fullReporterConfigurations.graphicReporterConfiguration match {
       case Some(GraphicReporterConfiguration(configSet)) => {
@@ -625,7 +662,7 @@ object Runner {
         val abq = new ArrayBlockingQueue[RunnerJFrame](1)
         usingEventDispatchThread {
           val rjf = new RunnerJFrame(graphicEventsToPresent, reporterConfigs, suitesList, junitsList, runpathList,
-            tagsToInclude, tagsToExclude, propertiesMap, concurrent, membersOnlyList, wildcardList, testNGList, passFailReporter, numThreads,
+            filter, configMap, concurrent, membersOnlyList, wildcardList, testNGList, passFailReporter, numThreads,
             suffixes)
           rjf.setLocation(RUNNER_JFRAME_START_X, RUNNER_JFRAME_START_Y)
           rjf.setVisible(true)
@@ -641,8 +678,8 @@ object Runner {
       case None => { // Run the test without a GUI
         withClassLoaderAndDispatchReporter(runpathList, reporterConfigs, None, passFailReporter) {
           (loader, dispatchReporter) => {
-            doRunRunRunDaDoRunRun(dispatchReporter, suitesList, junitsList, new Stopper {}, tagsToInclude, tagsToExclude, 
-                propertiesMap, concurrent, membersOnlyList, wildcardList, testNGList, runpathList, loader, new RunDoneListener {}, 1, numThreads, suffixes) 
+            doRunRunRunDaDoRunRun(dispatchReporter, suitesList, junitsList, new Stopper {}, filter,
+                configMap, concurrent, membersOnlyList, wildcardList, testNGList, runpathList, loader, new RunDoneListener {}, 1, numThreads, suffixes) 
           }
         }
       }
@@ -664,11 +701,11 @@ object Runner {
       // Style advice
       // If it is multiple else ifs, then make it symetrical. If one needs an open curly brace, put it on all
       // If an if just has another if, a compound statement, go ahead and put the open curly brace's around the outer one
-      if (s.startsWith("-p") || s.startsWith("-f") || s.startsWith("-u") || s.startsWith("-d") || s.startsWith("-a") || s.startsWith("-h") || s.startsWith("-r") || s.startsWith("-n") || /* s.startsWith("-x") || */ s.startsWith("-l") || s.startsWith("-s") || s.startsWith("-i") || s.startsWith("-j") || s.startsWith("-m") || s.startsWith("-w") || s.startsWith("-b") || s.startsWith("-t") || s.startsWith("-q") || s.startsWith("-Q")) {
+      if (s.startsWith("-p") || s.startsWith("-R") || s.startsWith("-f") || s.startsWith("-u") || s.startsWith("-h") || s.startsWith("-r") || s.startsWith("-C") || s.startsWith("-n") || s.startsWith("-x") || s.startsWith("-l") || s.startsWith("-q") || s.startsWith("-Q") || s.startsWith("-s") || s.startsWith("-j") || s.startsWith("-m") || s.startsWith("-w") || s.startsWith("-b") || s.startsWith("-y")) {
         if (it.hasNext)
           it.next
       }
-      else if (!s.startsWith("-D") && !s.startsWith("-g") && !s.startsWith("-o") && !s.startsWith("-e") && !s.startsWith("-c")) {
+      else if (!s.startsWith("-D") && !s.startsWith("-g") && !s.startsWith("-o") && !s.startsWith("-e") && !s.startsWith("-c") && !s.startsWith("-P")) {
         lb += s
       }
     }
@@ -681,9 +718,9 @@ object Runner {
 
   //
   // Examines concurrent option arg to see if it contains an optional numeric
-  // value representing the number of threads to use, e.g. -c10 for 10 threads.
+  // value representing the number of threads to use, e.g. -P10 for 10 threads.
   //
-  // It's possible for user to specify the -c option multiple times on the
+  // It's possible for user to specify the -P option multiple times on the
   // command line, although it isn't particularly useful.  This method scans
   // through multiples until it finds one with a number appended and uses
   // that.  If none have a number it just returns 0.
@@ -723,6 +760,7 @@ object Runner {
     val wildcard = new ListBuffer[String]()
     val testNGXMLFiles = new ListBuffer[String]()
     val suffixes = new ListBuffer[String]()
+    val chosenStyles = new ListBuffer[String]()
 
     val it = args.iterator
     while (it.hasNext) {
@@ -733,7 +771,13 @@ object Runner {
          props += s
       }
       else if (s.startsWith("-p")) {
+        println("WARNING: -p has been deprecated and will be reused for a different (but still very cool) purpose in ScalaTest 2.0. Please change all uses of -p to -R.")
         runpath += s
+        if (it.hasNext)
+          runpath += it.next
+      }
+      else if (s.startsWith("-R")) {
+        runpath += "-p" + s.substring(2)
         if (it.hasNext)
           runpath += it.next
       }
@@ -756,21 +800,6 @@ object Runner {
         if (it.hasNext)
           reporters += it.next
       }
-      else if (s.startsWith("-d")) {
-        reporters += s
-        if (it.hasNext)
-          reporters += it.next
-      }
-      else if (s.startsWith("-a")) {
-        reporters += s
-        if (it.hasNext)
-          reporters += it.next
-      }
-      else if (s.startsWith("-x")) {
-        reporters += s
-        if (it.hasNext)
-          reporters += it.next
-      }
       else if (s.startsWith("-h")) {
         reporters += s
         if (it.hasNext)
@@ -781,30 +810,30 @@ object Runner {
         if (it.hasNext)
           includes += it.next
       }
+      else if (s.startsWith("-x")) {
+        System.err.println(Resources("dashXDeprecated"))
+        excludes += s.replace("-x", "-l")
+        if (it.hasNext)
+          excludes += it.next
+      }
       else if (s.startsWith("-l")) {
         excludes += s
         if (it.hasNext)
           excludes += it.next
       }
       else if (s.startsWith("-r")) {
-
+        println("WARNING: -r has been deprecated and will be reused for a different (but still very cool) purpose in ScalaTest 2.0. Please change all uses of -r to -C.")
         reporters += s
         if (it.hasNext)
           reporters += it.next
       }
-      else if (s.startsWith("-s")) {
+      else if (s.startsWith("-C")) {
 
-        suites += s
+        reporters += "-r" + s.substring(2)
         if (it.hasNext)
-          suites += it.next
+          reporters += it.next
       }
-      else if (s.startsWith("-i")) {
-        
-        suites += s
-        if (it.hasNext)
-          suites += it.next
-      }
-      else if (s.startsWith("-t")) {
+      else if (s.startsWith("-s")) {
 
         suites += s
         if (it.hasNext)
@@ -829,10 +858,15 @@ object Runner {
           wildcard += it.next
       }
       else if (s.startsWith("-c")) {
-
+        println("WARNING: -c has been deprecated and will be reused for a different (but still very cool) purpose in ScalaTest 2.0. Please change all uses of -c to -P.")
         concurrent += s
       }
+      else if (s.startsWith("-P")) {
+
+        concurrent += "-c" + s.substring(2)
+      }
       else if (s.startsWith("-b")) {
+
         testNGXMLFiles += s
         if (it.hasNext)
           testNGXMLFiles += it.next
@@ -842,7 +876,11 @@ object Runner {
           suffixes += it.next()
       }
       else if (s.startsWith("-Q")) {
-        suffixes += "Spec|Suite|Tests"
+        suffixes += "Spec|Suite"
+      }
+      else if (s.startsWith("-y")) {
+        chosenStyles += s
+        chosenStyles += it.next()
       }
       else {
         throw new IllegalArgumentException("Unrecognized argument: " + s)
@@ -861,7 +899,8 @@ object Runner {
       membersOnly.toList,
       wildcard.toList,
       testNGXMLFiles.toList,
-      genSuffixesPattern(suffixes.toList)
+      genSuffixesPattern(suffixes.toList), 
+      chosenStyles.toList
     )
   }
 
@@ -930,17 +969,13 @@ object Runner {
     //
     // Checks to see if any args are smaller than two characters in length.
     // Allows a one-character arg if it's a directory-name parameter, to
-    // permit use of "." for example.  Allows a one-character arg if it's
-    // a number.
+    // permit use of "." for example.
     //
     def argTooShort(args: List[String]): Boolean = {
       args match {
         case Nil => false
 
         case "-u" :: directory :: list => argTooShort(list)
-        case "-d" :: directory :: list => argTooShort(list)
-        case "-a" :: number    :: list => argTooShort(list)
-        case "-x" :: directory :: list => argTooShort(list)
 
         case x :: list =>
           if (x.length < 2) true
@@ -996,42 +1031,6 @@ object Runner {
           else {
             throw new IllegalArgumentException("-u needs to be followed by a directory name arg: ")
           }
-        case "-d" =>
-          if (it.hasNext) {
-            val directory = it.next
-            if (!(new File(directory).isDirectory))
-              throw new IllegalArgumentException(
-                "arg for -d option is not a directory [" + directory + "]")
-            else {}
-          }
-          else {
-            throw new IllegalArgumentException("-d needs to be followed by a directory name arg: ")
-          }
-        case "-a" =>
-          if (it.hasNext) {
-            def isValidInt(text: String): Boolean = 
-              try { text.toInt; true } catch { case _ => false }
-
-            val number = it.next
-            if (!(isValidInt(number)))
-              throw new IllegalArgumentException(
-                "arg for -a option is not a number [" + number + "]")
-            else {}
-          }
-          else {
-            throw new IllegalArgumentException("-a needs to be followed by a number arg: ")
-          }
-        case "-x" =>
-          if (it.hasNext) {
-            val directory = it.next
-            if (!(new File(directory).isDirectory))
-              throw new IllegalArgumentException(
-                "arg for -x option is not a directory [" + directory + "]")
-            else {}
-          }
-          else {
-            throw new IllegalArgumentException("-x needs to be followed by a directory name arg: ")
-          }
         case "-h" =>
           if (it.hasNext)
             it.next // scroll past the filename
@@ -1042,6 +1041,11 @@ object Runner {
             it.next // scroll past the reporter class
           else
             throw new IllegalArgumentException("-r needs to be followed by a reporter class name arg: ")
+        case "-C" =>
+          if (it.hasNext)
+            it.next // scroll past the reporter class
+          else
+            throw new IllegalArgumentException("-C needs to be followed by a reporter class name arg: ")
         case arg: String =>
           throw new IllegalArgumentException("An arg started with an invalid character string: " + arg)
       }
@@ -1074,53 +1078,12 @@ object Runner {
     }
     val fileReporterConfigurationList = buildFileReporterConfigurationList(args)
 
-    def buildJunitXmlReporterConfigurationList(args: List[String]) = {
-      val it = args.iterator
-      val lb = new ListBuffer[JunitXmlReporterConfiguration]
-      while (it.hasNext) {
-        val arg = it.next
-        if (arg.startsWith("-u"))
-          lb += new JunitXmlReporterConfiguration(Set[ReporterConfigParam](),
-                                                  it.next)
-      }
-      lb.toList
-    }
-    val junitXmlReporterConfigurationList =
-      buildJunitXmlReporterConfigurationList(args)
-
-    def buildDashboardReporterConfigurationList(args: List[String]) = {
-      def fetchNumFilesArg: Int = {
-        var numFiles: Option[Int] = None
-        val it = args.iterator
-
-        while (!numFiles.isDefined && it.hasNext) {
-          val arg = it.next
-          if (arg.startsWith("-a"))
-            numFiles = Some(it.next.toInt)
-        }
-        numFiles.getOrElse(DefaultNumFilesToArchive)
-      }
-
-      val numFilesToArchive = fetchNumFilesArg
-      val it = args.iterator
-      val lb = new ListBuffer[DashboardReporterConfiguration]
-      while (it.hasNext) {
-        val arg = it.next
-        if (arg.startsWith("-d"))
-          lb += new DashboardReporterConfiguration(Set[ReporterConfigParam](),
-                                                   it.next, numFilesToArchive)
-      }
-      lb.toList
-    }
-    val dashboardReporterConfigurationList =
-      buildDashboardReporterConfigurationList(args)
-
     def buildXmlReporterConfigurationList(args: List[String]) = {
       val it = args.iterator
       val lb = new ListBuffer[XmlReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
-        if (arg.startsWith("-x"))
+        if (arg.startsWith("-u"))
           lb += new XmlReporterConfiguration(Set[ReporterConfigParam](),
                                              it.next)
       }
@@ -1180,8 +1143,6 @@ object Runner {
     new ReporterConfigurations(
       graphicReporterConfigurationOption,
       fileReporterConfigurationList,
-      junitXmlReporterConfigurationList,
-      dashboardReporterConfigurationList,
       xmlReporterConfigurationList,
       standardOutReporterConfigurationOption,
       standardErrReporterConfigurationOption,
@@ -1199,8 +1160,8 @@ object Runner {
     if (args.exists(_ == null))
       throw new NullPointerException("an arg String was null")
 
-    if (dashArg != "-j" && dashArg != "-w" && dashArg != "-m" && dashArg != "-b")
-      throw new IllegalArgumentException("dashArg invalid: " + dashArg)
+    if (dashArg != "-j" && dashArg != "-s" && dashArg != "-w" && dashArg != "-m" && dashArg != "-b")
+      throw new NullPointerException("dashArg invalid: " + dashArg)
 
     val lb = new ListBuffer[String]
     val it = args.iterator
@@ -1217,69 +1178,6 @@ object Runner {
       }
       else
         throw new IllegalArgumentException("Last element must be a Suite class name or package name, not a " + dashArg + ".")
-    }
-    lb.toList
-  }
-  
-  private[scalatest] def parseSuiteArgsIntoSuiteParam(args: List[String], dashArg: String) = {
-    if (args == null)
-      throw new NullPointerException("args was null")
-
-    if (args.exists(_ == null))
-      throw new NullPointerException("an arg String was null")
-    
-    if (dashArg != "-s")
-      throw new IllegalArgumentException("dashArg invalid: " + dashArg)
-    
-    val lb = new ListBuffer[SuiteParam]
-    val it = args.iterator.buffered
-    while (it.hasNext) {
-      val dashS = it.next
-      if (dashS != dashArg)
-        throw new IllegalArgumentException("Starting element must be " + dashArg)
-      if (it.hasNext) {
-        val className = it.next
-        if (!className.startsWith("-")) {
-          
-          val testNames = 
-            if (it.hasNext && it.head == "-t") {            
-              val testNamesBuffer = new ListBuffer[String]()
-              while (it.hasNext && it.head == "-t") {
-                it.next() // Skip the -t
-                testNamesBuffer += it.next
-              }
-              testNamesBuffer.toArray
-            }
-            else
-              Array.empty[String]
-          
-          val nestedSuites = 
-            if (it.hasNext && it.head == "-i") {
-              val nestedLb = new ListBuffer[NestedSuiteParam]()
-            
-              while (it.hasNext && it.head == "-i") {
-                val dashI = it.next()
-                val suiteId = it.next
-                val suiteIdTestNamesBuffer = new ListBuffer[String]()
-              
-                while (it.hasNext && it.head == "-t") {
-                  it.next() // Skip the -t
-                  suiteIdTestNamesBuffer += it.next
-                }
-                nestedLb += new NestedSuiteParam(suiteId, suiteIdTestNamesBuffer.toArray)
-              }
-              nestedLb.toArray
-            }
-            else
-              Array.empty[NestedSuiteParam]
-          
-          lb += SuiteParam(className, testNames, nestedSuites)
-        }
-        else
-          throw new IllegalArgumentException("Expecting a Suite class name to follow " + dashArg + ", but got: " + className)
-      }
-      else
-        throw new IllegalArgumentException("Last element must be a Suite class name, not a " + dashArg + ".")
     }
     lb.toList
   }
@@ -1315,6 +1213,22 @@ object Runner {
     else {
       throw new IllegalArgumentException("Runpath must be either zero or two args: " + args)
     }
+  }
+  
+  private[scalatest] def parseChosenStylesIntoChosenStyleSet(args: List[String], dashArg: String) = {
+    val it = args.iterator
+    val lb = new ListBuffer[String]()
+    while (it.hasNext) {
+      val dash = it.next
+      if (dash != dashArg) 
+        throw new IllegalArgumentException("Every other element, starting with the first, must be " + dashArg)
+      if (it.hasNext) {
+        lb += it.next
+      }
+      else
+        throw new IllegalArgumentException("Last element must be a style name, not a " + dashArg + ".")
+    }
+    lb.toSet
   }
 
   //
@@ -1435,19 +1349,13 @@ object Runner {
   }
 */
 
-  private[scalatest] def mergeMap[A, B](ms: List[Map[A, B]])(f: (B, B) => B): Map[A, B] =
-    (Map[A, B]() /: (for (m <- ms; kv <- m) yield kv)) { (a, kv) =>
-    a + (if (a.contains(kv._1)) kv._1 -> f(a(kv._1), kv._2) else kv)
-  }
-  
   private[scalatest] def doRunRunRunDaDoRunRun(
     dispatch: DispatchReporter,
-    suitesList: List[SuiteParam],
+    suitesList: List[String],
     junitsList: List[String],
     stopRequested: Stopper,
-    tagsToIncludeSet: Set[String], 
-    tagsToExcludeSet: Set[String], 
-    configMap: Map[String, String],
+    filter: Filter,
+    configMap: Map[String, Object],
     concurrent: Boolean,
     membersOnlyList: List[String],
     wildcardList: List[String],
@@ -1469,17 +1377,13 @@ object Runner {
       throw new NullPointerException
     if (stopRequested == null)
       throw new NullPointerException
-    if (tagsToIncludeSet == null)
-      throw new NullPointerException
-    if (tagsToExcludeSet == null)
+    if (filter == null)
       throw new NullPointerException
     if (configMap == null)
       throw new NullPointerException
     if (membersOnlyList == null)
       throw new NullPointerException
     if (wildcardList == null)
-      throw new NullPointerException
-    if (testNGList == null)
       throw new NullPointerException
     if (runpath == null)
       throw new NullPointerException
@@ -1488,6 +1392,13 @@ object Runner {
     if (doneListener == null)
       throw new NullPointerException
 
+    val tagsToInclude =
+      filter.tagsToInclude match {
+        case None => Set[String]()
+        case Some(tti) => tti
+      }
+    val tagsToExclude = filter.tagsToExclude
+
     var tracker = new Tracker(new Ordinal(runStamp))
 
     val runStartTime = System.currentTimeMillis
@@ -1495,8 +1406,7 @@ object Runner {
     try {
       val loadProblemsExist =
         try {
-          val unrunnableList = suitesList.filter{ suiteParam => 
-            val className = suiteParam.className
+          val unrunnableList = suitesList.filter{ className => 
             loader.loadClass(className) // Check if the class exist, so if not we get the nice cannot load suite error message.
             !isAccessibleSuite(className, loader) && !isRunnable(className, loader)
           }
@@ -1517,18 +1427,13 @@ object Runner {
         }
   
       if (!loadProblemsExist) {
-        
-        case class SuiteConfig(suite: Suite, dynaTags: DynaTags, requireSelectedTag: Boolean, excludeNestedSuites: Boolean)
-        
         try {
-          val namedSuiteInstances: List[SuiteConfig] =
-            for (suiteParam <- suitesList)
+          val namedSuiteInstances: List[Suite] =
+            for (suiteClassName <- suitesList)
               yield {
-                val suiteClassName = suiteParam.className
                 val clazz = loader.loadClass(suiteClassName)
                 val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
-                val suiteInstance = 
-                if (wrapWithAnnotation == null) 
+                if (wrapWithAnnotation == null)
                   clazz.newInstance.asInstanceOf[Suite]
                 else {
                   val suiteClazz = wrapWithAnnotation.value
@@ -1538,92 +1443,57 @@ object Runner {
                     types.length == 1 && types(0) == classOf[java.lang.Class[_]]
                   }
                   constructor.get.newInstance(clazz).asInstanceOf[Suite]
-                }
-                
-                if (suiteParam.testNames.length == 0 && suiteParam.nestedSuites.length == 0)
-                  SuiteConfig(suiteInstance, new DynaTags(Map.empty, Map.empty), false, false) // -s suiteClass, no dynamic tagging required.
-                else {
-                  val nestedSuites = suiteParam.nestedSuites
-                  
-                  val (selectSuiteList, selectTestList) = nestedSuites.partition(ns => ns.testNames.length == 0)
-                  val suiteDynaTags: Map[String, Set[String]] = Map() ++ selectSuiteList.map(ns => (ns.suiteId -> Set(SELECTED_TAG)))
-                  
-                  val suiteTestDynaTags: Map[String, Map[String, Set[String]]] = 
-                    if (suiteParam.testNames.length > 0)
-                      Map(suiteInstance.suiteId -> (Map() ++ suiteParam.testNames.map(tn => (tn -> Set(SELECTED_TAG)))))
-                    else
-                      Map.empty
-                    
-                  val nestedSuitesTestDynaTags: Map[String, Map[String, Set[String]]] 
-                    = Map() ++ selectTestList.map(ns => (ns.suiteId -> (Map() ++ ns.testNames.map(tn => (tn, Set(SELECTED_TAG))))))
-                  
-                  val testDynaTags = mergeMap[String, Map[String, Set[String]]](List(suiteTestDynaTags, nestedSuitesTestDynaTags)) { (suiteTestMap1, suiteTestMap2) => 
-                                       mergeMap[String, Set[String]](List(suiteTestMap1, suiteTestMap2)) { (tagSet1, tagSet2) =>
-                                         tagSet1 ++ tagSet2
-                                       }
-                                     }
-                  // Only exclude nested suites when using -s XXX -t XXXX
-                  val excludeNestedSuites = suiteParam.testNames.length > 0 && nestedSuites.length == 0
-                  SuiteConfig(suiteInstance, new DynaTags(suiteDynaTags, testDynaTags), true, excludeNestedSuites)
-                }
+                } 
               }
-          
-          val requireSelectedTag = suitesList.find(suiteParam => suiteParam.testNames.length > 0)
-          
-          val emptyDynaTags = DynaTags(Map.empty[String, Set[String]], Map.empty[String, Map[String, Set[String]]])
 
-          val junitSuiteInstances: List[SuiteConfig] =
+          val junitSuiteInstances: List[Suite] =
             for (junitClassName <- junitsList)
-              yield SuiteConfig(new JUnitWrapperSuite(junitClassName, loader), emptyDynaTags, false, true) // JUnit suite should exclude nested suites
+              yield new JUnitWrapperSuite(junitClassName, loader)
 
-          val testNGWrapperSuiteList: List[SuiteConfig] =
+          val testNGWrapperSuiteList: List[TestNGWrapperSuite] =
             if (!testNGList.isEmpty)
-              List(SuiteConfig(new TestNGWrapperSuite(testNGList), emptyDynaTags, false, true)) // TestNG suite should exclude nested suites
+              List(new TestNGWrapperSuite(testNGList))
             else
               Nil
 
           val (membersOnlySuiteInstances, wildcardSuiteInstances) = {
 
-            val membersOnlyAndWildcardListsAreEmpty = membersOnlyList.isEmpty && wildcardList.isEmpty // They didn't specify any -m's or -w's on the command line
+            val membersOnlyAndBeginsWithListsAreEmpty = membersOnlyList.isEmpty && wildcardList.isEmpty // They didn't specify any -m's or -w's on the command line
 
-            if (membersOnlyAndWildcardListsAreEmpty && (!suitesList.isEmpty || !junitsList.isEmpty || !testNGList.isEmpty)) {
-              (Nil, Nil) // No DiscoverySuites in this case. Just run Suites named with -s or -j or -b
+
+            // TODO: rename the 'BeginsWith' variables to 'Wildcard' to match the terminology that
+            // we ended up with on the outside
+            // TODO: Should SuiteDiscoverHelper be a singleton object?
+            if (membersOnlyAndBeginsWithListsAreEmpty && (!suitesList.isEmpty || !junitsList.isEmpty)) {
+              (Nil, Nil) // No DiscoverySuites in this case. Just run Suites named with -s or -j
             }
             else {
-              println("DEBUG: Discovery Starting")
-              val discoveryStartTime = System.currentTimeMillis
               val accessibleSuites = discoverSuiteNames(runpath, loader, suffixes)
-              val discoveryDuration = System.currentTimeMillis - discoveryStartTime
-              println("DEBUG: Discovery Completed: " + discoveryDuration + " milliseconds")
 
-              if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
-                // In this case, they didn't specify any -w, -m, -s, -j or -b on the command line, so the default
+              if (membersOnlyAndBeginsWithListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty) {
+                // In this case, they didn't specify any -w, -m, -s, or -j on the command line, so the default
                 // is to run any accessible Suites discovered on the runpath
-                (Nil, List(SuiteConfig(new DiscoverySuite("", accessibleSuites, true, loader), emptyDynaTags, false, false)))
+                (Nil, List(new DiscoverySuite("", accessibleSuites, true, loader)))
               }
               else {
                 val membersOnlyInstances =
                   for (membersOnlyName <- membersOnlyList)
-                    yield SuiteConfig(new DiscoverySuite(membersOnlyName, accessibleSuites, false, loader), emptyDynaTags, false, false)
+                    yield new DiscoverySuite(membersOnlyName, accessibleSuites, false, loader)
 
                 val wildcardInstances =
                   for (wildcardName <- wildcardList)
-                    yield SuiteConfig(new DiscoverySuite(wildcardName, accessibleSuites, true, loader), emptyDynaTags, false, false)
+                    yield new DiscoverySuite(wildcardName, accessibleSuites, true, loader)
 
                 (membersOnlyInstances, wildcardInstances)
               }
             }
           }
 
-          val suiteInstances: List[SuiteConfig] = namedSuiteInstances ::: junitSuiteInstances ::: membersOnlySuiteInstances ::: wildcardSuiteInstances ::: testNGWrapperSuiteList
+          val suiteInstances: List[Suite] = namedSuiteInstances ::: junitSuiteInstances ::: membersOnlySuiteInstances ::: wildcardSuiteInstances ::: testNGWrapperSuiteList
 
           val testCountList =
-            for (suiteConfig <- suiteInstances)
-              yield { 
-              val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
-              val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-              suiteConfig.suite.expectedTestCount(filter)
-            }
+            for (suite <- suiteInstances)
+              yield suite.expectedTestCount(filter)
   
           def sumInts(list: List[Int]): Int =
             list match {
@@ -1634,7 +1504,7 @@ object Runner {
           val expectedTestCount = sumInts(testCountList)
 
           dispatch(RunStarting(tracker.nextOrdinal(), expectedTestCount, configMap))
-
+          
           if (concurrent) {
 
             // Because some tests may do IO, will create a pool of 2 times the number of processors reported
@@ -1647,22 +1517,18 @@ object Runner {
             try {
 
             if (System.getProperty("org.scalatest.tools.Runner.forever", "false") == "true") {
-              val distributor = new ConcurrentDistributor(dispatch, stopRequested, configMap, execSvc)
+              val distributor = new ConcurrentDistributor(dispatch, stopRequested, filter, configMap, execSvc)
               while (true) {
-                for (suiteConfig <- suiteInstances) {
-                  val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
-                  val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                  distributor.apply(suiteConfig.suite, tracker.nextTracker(), filter)
+                for (suite <- suiteInstances) {
+                  distributor.apply(suite, tracker.nextTracker())
                 }
                 distributor.waitUntilDone()
               }
             }
             else {
-              val distributor = new ConcurrentDistributor(dispatch, stopRequested, configMap, execSvc)
-              for (suiteConfig <- suiteInstances) {
-                val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
-                val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                distributor.apply(suiteConfig.suite, tracker.nextTracker(), filter)
+              val distributor = new ConcurrentDistributor(dispatch, stopRequested, filter, configMap, execSvc)
+              for (suite <- suiteInstances) {
+                distributor.apply(suite, tracker.nextTracker())
               }
               distributor.waitUntilDone()
             }
@@ -1672,10 +1538,8 @@ object Runner {
             }
           }
           else {
-            for (suiteConfig <- suiteInstances) {
-              val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
-              val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-              val suiteRunner = new SuiteRunner(suiteConfig.suite, dispatch, stopRequested, filter,
+            for (suite <- suiteInstances) {
+              val suiteRunner = new SuiteRunner(suite, dispatch, stopRequested, filter,
                   configMap, None, tracker)
               suiteRunner.run()
             }
@@ -1791,37 +1655,3 @@ object Runner {
     )
   }
 }
-
-/*
-Runner command line arguments:
-
-a
-b - sbt reporter (only used inside ScalaTestFramework)
-c - parallel execution
-d
-e - standard error reporter
-f - file reporter
-g - graphical reporter
-h - HTML Reporter
-i
-j - run a JUnit tests class
-k
-l - tags to exclude
-m - members only path
-n - tags to include
-o - standard out reporter
-p - space-separated runpath
-q
-r - custom reporter
-s - suite class name
-t - testNG XML config file
-u - junit xml reporter
-v
-w - wildcard path
-x (saving this for a native xml reporter)
-y
-z
-
-D - configMap pair, key=value
-
-*/

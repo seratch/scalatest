@@ -22,7 +22,7 @@ import org.scalatest._
  * <code>configMap</code> passed to <code>runTest</code> is passed along
  * as a fixture into each test.
  */
-trait ConfigMapFixture { this: fixture.Suite =>
+trait ConfigMapFixture { this: org.scalatest.fixture.Suite =>
 
   /**
    * The type of the <code>configMap</code>, which is <code>Map[String, Any]</code>.
@@ -33,7 +33,7 @@ trait ConfigMapFixture { this: fixture.Suite =>
    * Invoke the test function, passing to the the test function the <code>configMap</code>
    * obtained by invoking <code>configMap</code> on the passed <code>OneArgTest</code>.
    *
-   * @param fun the <code>OneArgTest</code> to invoke, passing in the
+   * @param test the <code>OneArgTest</code> to invoke, passing in the
    *   <code>configMap</code> fixture
    */
   def withFixture(test: OneArgTest) {

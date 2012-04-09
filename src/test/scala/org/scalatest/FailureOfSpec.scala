@@ -15,6 +15,10 @@
  */
 package org.scalatest
 
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.TestFailedException
+*/
+
 class FailureOfSpec extends FunSpec with FailureOf {
 
   describe("The failureOf method") {
