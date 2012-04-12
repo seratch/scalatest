@@ -21,8 +21,8 @@ class ScalaTestNotifierRunner(val specification: Specification, val notifier: Sc
   override def reportExample(example: Examples, planOnly: Boolean): this.type = {
     if(example.examples.length == 0) {
       val testName = notifier.getTestName(example.description)
-      //val (filterExample, ignoreTest) = filter(testName, tags, suiteId)
-      //if (!filterExample) {
+      val (filterExample, ignoreTest) = filter(testName, tags, suiteId)
+      if (!filterExample) {
         notifiers.foreach { _.exampleStarting(example.description) }
     
         if (!planOnly && example.isOk && example.skipped.isEmpty)
@@ -44,7 +44,7 @@ class ScalaTestNotifierRunner(val specification: Specification, val notifier: Sc
             notifier.exampleSkipped(example.description) 
           }
         notifiers.foreach { _.exampleCompleted(example.description) }
-      //}
+      }
     }
     else {
       //notifier.scopeOpened(example.description)

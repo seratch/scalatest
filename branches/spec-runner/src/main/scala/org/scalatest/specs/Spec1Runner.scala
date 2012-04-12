@@ -13,6 +13,7 @@ import org.specs.runner.NotifierRunner
 import org.specs.specification.Example
 import org.specs.specification.Sus
 import org.scalatest.Style
+import scala.collection.mutable.Stack
 
 @Style("org.scalatest.specs.Spec1Finder")
 class Spec1Runner(specificationClass: Class[_ <: Specification]) extends Suite { thisSuite =>
@@ -22,28 +23,59 @@ class Spec1Runner(specificationClass: Class[_ <: Specification]) extends Suite {
   override def suiteName = specificationClass.getSimpleName
   override def suiteId = specificationClass.getName
   
-  def getSpecTestCount(theSpec: Specification): Int = {
-    theSpec.systems.foldLeft(0)(_ + getSusTestCount(_)) +
-    theSpec.subSpecifications.foldLeft(0)(_ + getSpecTestCount(_))
+  private def getSpecTestCount(theSpec: Specification, filter: Filter): Int = {
+    theSpec.systems.foldLeft(0)(_ + getSusTestCount(_, filter, Stack[String]())) +
+    theSpec.subSpecifications.foldLeft(0)(_ + getSpecTestCount(_, filter))
   }
   
-  def getSusTestCount(sus: Sus): Int = {
-    val count = sus.examples.foldLeft(0)(_ + getExampleTestCount(_))
+  private def getSusTestCount(sus: Sus, filter: Filter, scopeStack: Stack[String]): Int = {
+    val sysDesc = sus.description + " " + sus.verb
+    if (scopeStack.isEmpty)
+      scopeStack.push(sysDesc) 
+    else 
+      scopeStack.push(scopeStack.head + " " + sysDesc)
+      
+    val count = sus.examples.foldLeft(0)(_ + getExampleTestCount(_, filter, scopeStack))
+    
+    scopeStack.pop()
+    
     count
   }
   
-  def getExampleTestCount(example: Example): Int = {
-    if (example.hasSubExamples)
-      example.examples.map(getExampleTestCount(_)).foldLeft(0)(_ + _) + 1
-    else
-      1  
+  private def getExampleTestCount(example: Example, filter: Filter, scopeStack: Stack[String]): Int = {
+    if (example.hasSubExamples) {
+      if (scopeStack.isEmpty)
+      scopeStack.push(example.description) 
+    else 
+      scopeStack.push(scopeStack.head + " " + example.description)
+      
+      val count = example.examples.map(getExampleTestCount(_, filter, scopeStack)).foldLeft(0)(_ + _) + 1
+      
+      scopeStack.pop()
+      count
+    }
+    else {
+      val testName = getTestName(scopeStack, example.description)
+      val (filterExample, ignoreTest) = filter(testName, tags, suiteId)
+      if (!filterExample)
+        1
+      else
+        0
+    }
     /*if(example.hasSubExamples)
       example.examples.map(getExampleTestCount(_)).foldLeft(0)(_ + _)
     else
       example.ownExpectationsNb*/
   }
   
-  override def expectedTestCount(filter: Filter): Int = getSpecTestCount(spec)//spec.firstLevelExamplesNb
+  private def getTestName(scopeStack: Stack[String], testText: String) = {
+    if (scopeStack.isEmpty)
+      testText
+    else // the scopeStack.length check is to make sure for the first scope "", there's no need for the space to concat.
+      scopeStack.head + " " + testText 
+  }
+  
+  override def expectedTestCount(filter: Filter): Int = getSpecTestCount(spec, filter)//spec.firstLevelExamplesNb
   
   override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
               configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
