@@ -36,27 +36,31 @@ class ScalaTestNotifier(theSpec: Specification, theTracker: Tracker, reporter: R
   def scopeOpened(name: String) { 
     indentLevel += 1
     if (scopeStack.isEmpty)
-      scopeStack.push(name)
-    else
-      scopeStack.push(scopeStack.head + " " + name)
-    val formatter = Suite.getIndentedTextForInfo(name, indentLevel, false, false)
-    report(ScopeOpened(tracker.nextOrdinal, name, NameInfo(name, Some(spec.getClass.getName), Some(name)),
-                       None, None, Some(formatter)))
+      scopeStack.push("") // Ignore the first scope, which is same as the suiteName
+    else // the scopeStack.length check is to make sure for the first scope "", there's no need for the space to concat.
+      scopeStack.push(scopeStack.head + (if (scopeStack.length > 1) " " else "") + name)
+    if (scopeStack.length > 1) {
+      val formatter = Suite.getIndentedTextForInfo(name, indentLevel, false, false)
+      report(ScopeOpened(tracker.nextOrdinal, name, NameInfo(name, Some(spec.getClass.getName), Some(name)),
+                         None, None, Some(formatter)))
+    }
   }
   
   def scopeClosed(name: String) { 
     scopeStack.pop()
-    val formatter = Suite.getIndentedTextForInfo(name, indentLevel, false, false)
-    report(ScopeClosed(tracker.nextOrdinal, name, NameInfo(name, Some(spec.getClass.getName), Some(name)),
-                       None, None, Some(MotionToSuppress)))
+    if (scopeStack.length > 0) { // No need to fire for the last scope, which is the one same as the suiteName 
+      val formatter = Suite.getIndentedTextForInfo(name, indentLevel, false, false)
+      report(ScopeClosed(tracker.nextOrdinal, name, NameInfo(name, Some(spec.getClass.getName), Some(name)),
+                         None, None, Some(MotionToSuppress)))
+    }
     indentLevel -= 1
   }
   
   def getTestName(testText: String) = {
     if (scopeStack.isEmpty)
       testText
-    else
-      scopeStack.head + " " + testText
+    else // the scopeStack.length check is to make sure for the first scope "", there's no need for the space to concat.
+      scopeStack.head + (if (scopeStack.length > 1) " " else "") + testText 
   }
   
   def systemStarting(systemName: String) {
