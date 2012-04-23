@@ -1553,7 +1553,7 @@ object Runner {
             !isAccessibleSuite(className, loader) && !isRunnable(className, loader)
           }
           if (!unrunnableList.isEmpty) {
-            val names = for (className <- unrunnableList) yield " " + className
+            val names = for (suiteParam <- unrunnableList) yield " " + suiteParam.className
             dispatch(RunAborted(tracker.nextOrdinal(), Resources("nonSuite") + names, None))
             true
           }
