@@ -194,6 +194,7 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
       throwable match {
         case Some(e: PropertyCheckFailedException) => possiblyEmptyMessage // PCFEs already include the line number
         case Some(e: StackDepth) => withPossibleLineNumber(possiblyEmptyMessage, throwable) // Show it in the stack depth case
+        case None => possiblyEmptyMessage
         case _ => "" // Don't show it in the non-stack depth case. It will be shown after the exception class name and colon.
       }
 
@@ -270,8 +271,9 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
         case None => List()
       }
 
-    if (possiblyEmptyMessageWithPossibleLineNumber.isEmpty)
+    if (possiblyEmptyMessageWithPossibleLineNumber.isEmpty) {
       stringToPrintWithPossibleDuration :: getStackTrace(throwable)
+    }
     else
       stringToPrintWithPossibleDuration :: (whiteSpace + possiblyEmptyMessageWithPossibleLineNumber) :: getStackTrace(throwable)
   }
