@@ -23,20 +23,16 @@ import Filter.IgnoreTag
  *
  * @param tagsToInclude an optional <code>Set</code> of <code>String</code> tag names to include (<em>i.e.</em>, not filter out) when filtering tests
  * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude (<em>i.e.</em>, filter out) when filtering tests
- * @param excludeNestedSuites a <code>Boolean</code> to indicate whether to run nested suites
- * @param dynaTags dynamic tags for the filter
  *
  * @throws NullPointerException if either <code>tagsToInclude</code> or <code>tagsToExclude</code> are null
  * @throws IllegalArgumentException if <code>tagsToInclude</code> is defined, but contains an empty set
  */
-final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Set[String], val excludeNestedSuites: Boolean = false, val dynaTags: DynaTags = DynaTags(Map.empty, Map.empty)) extends Function2[Set[String], Map[String, Set[String]], List[(String, Boolean)]] {
+final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Set[String]) extends Function2[Set[String], Map[String, Set[String]], List[(String, Boolean)]] {
 
   if (tagsToInclude == null)
     throw new NullPointerException("tagsToInclude was null")
   if (tagsToExclude == null)
     throw new NullPointerException("tagsToExclude was null")
-  if (dynaTags == null)
-    throw new NullPointerException("dynaTags was null")
 
   tagsToInclude match {
     case Some(tagsToInclude) =>
@@ -63,40 +59,6 @@ final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Se
       case Some((testName, _)) => throw new IllegalArgumentException(testName + " was associated with an empty set in the map passsed as tags")
       case None =>
     }
-  }
-  
-  private def mergeTestTags(testTagsList: List[Map[String, Set[String]]]): Map[String, Set[String]] = {
-    val mergedTags = scala.collection.mutable.Map[String, Set[String]]() ++ testTagsList.head
-    for (testTags <- testTagsList.tail) {
-      for ((testName, tagSet) <- testTags) {
-        val existingTagSetOpt = mergedTags.get(testName)
-        existingTagSetOpt match {
-          case Some(existingTagSet) =>
-            mergedTags(testName) = existingTagSet ++ tagSet
-          case None => 
-            mergedTags += ((testName, tagSet))
-        }
-      }
-    }
-    mergedTags.toMap
-  }
-  
-  private[scalatest] def mergeTestDynamicTags(tags: Map[String, Set[String]], suiteId: String, testNames: Set[String]): Map[String, Set[String]] = {
-    val dynaTestTags = 
-      if (dynaTags.testTags.isDefinedAt(suiteId))
-        dynaTags.testTags(suiteId)
-      else
-        Map.empty[String, Set[String]]
-    
-    val dynaSuiteTags = 
-      if (dynaTags.suiteTags.isDefinedAt(suiteId)) {
-        val suiteTags = dynaTags.suiteTags(suiteId)
-        Map() ++ testNames.map(tn => (tn, suiteTags))
-      }
-      else
-        Map.empty[String, Set[String]]
-     
-    mergeTestTags(List(tags, dynaTestTags, dynaSuiteTags))
   }
 
   /**
@@ -128,7 +90,6 @@ final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Se
    *
    * @throws IllegalArgumentException if any set contained in the passed <code>tags</code> map is empty
    */
-  @deprecated("Please use the apply method that takes a suiteId instead, the one with this signature: def apply(testNames: Set[String], testTags: Map[String, Set[String]], suite: Suite): List[(String, Boolean)]")
   def apply(testNames: Set[String], tags: Map[String, Set[String]]): List[(String, Boolean)] = {
 
     verifyPreconditionsForMethods(testNames, tags)
@@ -141,22 +102,6 @@ final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Se
                 (tags(testName).contains(IgnoreTag) && (tags(testName) intersect (tagsToExclude + "org.scalatest.Ignore")).size == 1) ||
                 (tags(testName) intersect tagsToExclude).size == 0
       } yield (testName, tags.contains(testName) && tags(testName).contains(IgnoreTag))
-
-    filtered
-  }
-  
-  def apply(testNames: Set[String], tags: Map[String, Set[String]], suiteId: String): List[(String, Boolean)] = {
-    val testTags: Map[String, Set[String]] = mergeTestDynamicTags(tags, suiteId, testNames)
-    verifyPreconditionsForMethods(testNames, testTags)
-
-    val testNamesAsList = testNames.toList // to preserve the order
-    val filtered =
-      for {
-        testName <- includedTestNames(testNamesAsList, testTags)
-        if !testTags.contains(testName) ||
-                (testTags(testName).contains(IgnoreTag) && (testTags(testName) intersect (tagsToExclude + "org.scalatest.Ignore")).size == 1) ||
-                (testTags(testName) intersect tagsToExclude).size == 0
-      } yield (testName, testTags.contains(testName) && testTags(testName).contains(IgnoreTag))
 
     filtered
   }
@@ -192,18 +137,8 @@ final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Se
    *
    * @throws IllegalArgumentException if any set contained in the passed <code>tags</code> map is empty
    */
-  @deprecated("Please use the apply method that takes a suite instead, the one with this signature: def apply(testName: String, testTags: Map[String, Set[String]], suite: Suite): (Boolean, Boolean)")
   def apply(testName: String, tags: Map[String, Set[String]]): (Boolean, Boolean) = {
     val list = apply(Set(testName), tags)
-    if (list.isEmpty)
-      (true, false)
-    else
-      (false, list.head._2)
-  }
-  
-  def apply(testName: String, tags: Map[String, Set[String]], suiteId: String): (Boolean, Boolean) = {
-    val testTags: Map[String, Set[String]] = mergeTestDynamicTags(tags, suiteId, Set(testName))
-    val list = apply(Set(testName), testTags)
     if (list.isEmpty)
       (true, false)
     else
@@ -226,23 +161,8 @@ final class Filter(val tagsToInclude: Option[Set[String]], val tagsToExclude: Se
    *
    * @throws IllegalArgumentException if any set contained in the passed <code>tags</code> map is empty
    */
-  @deprecated("Please use the runnableTestCount method that takes a suiteId instead, the one with this signature: def runnableTestCount(testNames: Set[String], testTags: Map[String, Set[String]], suiteId: String): Int")
   def runnableTestCount(testNames: Set[String], tags: Map[String, Set[String]]): Int = {
 
-    verifyPreconditionsForMethods(testNames, tags)
-
-    val testNamesAsList = testNames.toList // to preserve the order
-    val runnableTests = 
-      for {
-        testName <- includedTestNames(testNamesAsList, tags)
-        if !tags.contains(testName) || (!tags(testName).contains(IgnoreTag) && (tags(testName) intersect tagsToExclude).size == 0)
-      } yield testName
-
-    runnableTests.size
-  }
-
-  def runnableTestCount(testNames: Set[String], testTags: Map[String, Set[String]], suiteId: String): Int = {
-    val tags: Map[String, Set[String]] = mergeTestDynamicTags(testTags, suiteId, testNames)
     verifyPreconditionsForMethods(testNames, tags)
 
     val testNamesAsList = testNames.toList // to preserve the order
@@ -265,14 +185,12 @@ object Filter {
  *
  * @param tagsToInclude an optional <code>Set</code> of <code>String</code> tag names to include (<em>i.e.</em>, not filter out) when filtering tests
  * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude (<em>i.e.</em>, filter out) when filtering tests
- * @param excludeNestedSuites a <code>Boolean</code> to indicate whether to run nested suites
- * @param dynaTags dynamic tags for the filter
  *
  * @throws NullPointerException if either <code>tagsToInclude</code> or <code>tagsToExclude</code> are null
  * @throws IllegalArgumentException if <code>tagsToInclude</code> is defined, but contains an empty set
  */
-  def apply(tagsToInclude: Option[Set[String]], tagsToExclude: Set[String], excludeNestedSuites: Boolean = false, dynaTags: DynaTags = DynaTags(Map.empty, Map.empty)) =
-    new Filter(tagsToInclude, tagsToExclude, excludeNestedSuites, dynaTags)
+  def apply(tagsToInclude: Option[Set[String]], tagsToExclude: Set[String]) =
+    new Filter(tagsToInclude, tagsToExclude)
 
 /**
  * Factory method for a <code>Filter</code> initialized with <code>None</code> for <code>tagsToInclude</code>

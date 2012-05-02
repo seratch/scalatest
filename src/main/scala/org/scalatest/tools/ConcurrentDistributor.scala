@@ -26,16 +26,12 @@ import java.util.concurrent.Future
  *
  * @author Bill Venners
  */
-private[scalatest] class ConcurrentDistributor(dispatchReporter: DispatchReporter, stopper: Stopper, 
+private[scalatest] class ConcurrentDistributor(dispatchReporter: DispatchReporter, stopper: Stopper, filter: Filter,
     configMap: Map[String, Any], execSvc: ExecutorService) extends Distributor {
 
   private val futureQueue = new LinkedBlockingQueue[Future[T] forSome { type T }]
-  
-  def apply(suite: Suite, tracker: Tracker) {
-    throw new UnsupportedOperationException("ConcurrentDistributor does not support this operation, please use apply(suite: Suite, tracker: Tracker, filter: Filter) instead.")
-  }
 
-  def apply(suite: Suite, tracker: Tracker, filter: Filter) {
+  def apply(suite: Suite, tracker: Tracker) {
     val suiteRunner = new SuiteRunner(suite, dispatchReporter, stopper, filter, configMap, Some(this), tracker)
     val future: Future[_] = execSvc.submit(suiteRunner)
     futureQueue.put(future)
