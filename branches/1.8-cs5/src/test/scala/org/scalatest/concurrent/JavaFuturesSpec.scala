@@ -71,7 +71,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
           val caught = evaluating {
             canceledFuture.isReadyWithin(Span(1, Millisecond))
           } should produce[TestFailedException]
-          caught.message.value should be(Resources("futureWasCanceled", "1", "10 milliseconds"))
+          caught.message.value should be(Resources("futureWasCanceled"))
           withClue(caught.getStackTraceString) {
             caught.failedCodeLineNumber.value should equal(thisLineNumber - 4)
           }
@@ -150,7 +150,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
           val caught = evaluating {
             canceledFuture.awaitResult
           } should produce[TestFailedException]
-          caught.message.value should be(Resources("futureWasCanceled", "1", "10 milliseconds"))
+          caught.message.value should be(Resources("futureWasCanceled"))
           withClue(caught.getStackTraceString) {
             caught.failedCodeLineNumber.value should equal(thisLineNumber - 4)
           }
@@ -214,7 +214,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
         }
       }
 
-      it("should by default query a never-ready future for at least 1 second") {
+      it("should by default query a never-ready future for at least 150 millis") {
         var startTime = System.currentTimeMillis
         val execSvc: ExecutorService = Executors.newFixedThreadPool(1)
         try {
@@ -223,7 +223,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
           evaluating {
             neverReadyFuture.awaitResult
           } should produce[TestFailedException]
-          (System.currentTimeMillis - startTime).toInt should be >= (1000)
+          (System.currentTimeMillis - startTime).toInt should be >= (150)
         }
         finally {
           execSvc.shutdown()
@@ -289,7 +289,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
               s should equal ("hi")
             }
           } should produce[TestFailedException]
-          caught.message.value should be(Resources("futureWasCanceled", "1", "10 milliseconds"))
+          caught.message.value should be(Resources("futureWasCanceled"))
           withClue(caught.getStackTraceString) {
             caught.failedCodeLineNumber.value should equal(thisLineNumber - 6)
           }
@@ -363,7 +363,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
         }
       }
 
-      it("should by default query a never-ready future for at least 1 second") {
+      it("should by default query a never-ready future for at least 150 millis") {
         var startTime = System.currentTimeMillis
         val execSvc: ExecutorService = Executors.newFixedThreadPool(1)
         try {
@@ -374,7 +374,7 @@ class JavaFuturesSpec extends FunSpec with ShouldMatchers with OptionValues with
               s should be ("hi")
             }
           } should produce[TestFailedException]
-          (System.currentTimeMillis - startTime).toInt should be >= (1000)
+          (System.currentTimeMillis - startTime).toInt should be >= (150)
         }
         finally {
           execSvc.shutdown()

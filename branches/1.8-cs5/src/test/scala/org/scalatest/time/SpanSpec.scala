@@ -741,4 +741,12 @@ class SpanSpec extends FunSpec with ShouldMatchers with SpanMatchers with Severe
     }
   }
 
+  describe("The * (multiply) method") {
+    it("should return new Span with multiplied length") {
+      (Span(88L, Millis) * 10) should equal (Span(880L, Millis))
+      (Span(88L, Millis) * 10.0) should equal (Span(880.0, Millis))
+      (Span(88.0, Millis) * 10) should equal (Span(880.0, Millis))
+      (Span(88.0, Millis) * 10.0) should equal (Span(880.00, Millis))
+    }
+  }
 }

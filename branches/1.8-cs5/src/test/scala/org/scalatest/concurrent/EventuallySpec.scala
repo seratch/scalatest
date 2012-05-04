@@ -76,7 +76,7 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues with 
         }
       } should produce [TestFailedException]
 
-      caught.message.value should be (Resources("didNotEventuallySucceed", count.toString, "10 milliseconds"))
+      caught.message.value should be (Resources("didNotEventuallySucceed", count.toString, "15 milliseconds"))
       caught.failedCodeLineNumber.value should equal (thisLineNumber - 8)
       caught.failedCodeFileName.value should be ("EventuallySpec.scala")
     }
@@ -91,7 +91,7 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues with 
         }
       } should produce [TestFailedException]
 
-      caught.message.value should be (Resources("didNotEventuallySucceedBecause", count.toString, "10 milliseconds", "2 did not equal 3"))
+      caught.message.value should be (Resources("didNotEventuallySucceedBecause", count.toString, "15 milliseconds", "2 did not equal 3"))
       caught.failedCodeLineNumber.value should equal (thisLineNumber - 7)
       caught.failedCodeFileName.value should be ("EventuallySpec.scala")
     }
@@ -117,7 +117,7 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues with 
       caught4.failedCodeFileName.value should be ("EventuallySpec.scala")
     }
 
-    it("should by default invoke an always-failing by-name for at least 1 second") {
+    it("should by default invoke an always-failing by-name for at least 150 millis") {
       var startTime: Option[Long] = None
       evaluating {
         eventually {
@@ -126,7 +126,7 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues with 
           1 + 1 should equal (3)
         }
       } should produce [TestFailedException]
-      (System.currentTimeMillis - startTime.get).toInt should be >= (1000)
+      (System.currentTimeMillis - startTime.get).toInt should be >= (150)
     }
 
     it("should, if an alternate implicit Timeout is provided, invoke an always-failing by-name by at least the specified timeout") {

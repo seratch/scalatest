@@ -329,25 +329,26 @@ import org.scalatest.Resources
  *
  * @author Bill Venners
  */
-final class Span private (totNanos: Long, lengthString: String, unitsResource: String, unitsName: String) {
+final class Span private (totNanos: Long, val lengthString: String, val units: Units) {
 
   private[time] def this(length: Long, units: Units) {
     this(
       totalNanosForLongLength(length, units),
       length.toString,
-      if (length == 1) units.singularResourceName else units.pluralResourceName,
-      units.toString
+      units
     )
   }
-
-  private def this(length: Double, units: Units) {
+  
+  private[time] def this(length: Double, units: Units) {
     this(
       totalNanosForDoubleLength(length, units),
       length.toString,
-      if (length == 1.0) units.singularResourceName else units.pluralResourceName,
-      units.toString
+      units
     )
   }
+  
+  lazy private val unitsResource = if (lengthString.toDouble == 1.0) units.singularResourceName else units.pluralResourceName
+  lazy private val unitsName = units.toString
 
   /**
    * The total number of nanoseconds in this time span.
@@ -438,6 +439,31 @@ final class Span private (totNanos: Long, lengthString: String, unitsResource: S
    * @return a hash code based only on the <code>totalNanos</code> field.
    */
   override def hashCode: Int = totalNanos.hashCode
+  
+  private def isLong(value: String) = {
+    try {
+      val longValue = value.toLong
+      true
+    }
+    catch {
+      case e: NumberFormatException => 
+        false
+    }
+  }
+  
+  def *(value: Long) = {
+    if (isLong(lengthString))
+      Span(lengthString.toLong * value, units)
+    else
+      Span(lengthString.toDouble * value, units)
+  }
+  
+  def *(value: Double) = {
+    if (isLong(lengthString))
+      Span(lengthString.toLong * value, units)
+    else
+      Span(lengthString.toDouble * value, units)
+  }
 }
 
 /**

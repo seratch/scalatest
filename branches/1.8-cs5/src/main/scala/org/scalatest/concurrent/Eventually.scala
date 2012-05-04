@@ -196,7 +196,7 @@ trait Eventually extends TimeoutConfiguration {
    * @param fun the by-name parameter to repeatedly invoke
    * @return the result of invoking the <code>fun</code> by-name parameter, the first time it succeeds
    */
-  def eventually[T](timeout: Timeout, interval: Interval)(fun: => T): T =
+  def eventually[T](timeout: TimeoutConfigParam, interval: Interval)(fun: => T): T =
     eventually(fun)(TimeoutConfig(timeout.value, interval.value))
 
   /**
@@ -225,7 +225,7 @@ trait Eventually extends TimeoutConfiguration {
    *          (used) <code>interval</code> parameters
    * @return the result of invoking the <code>fun</code> by-name parameter, the first time it succeeds
    */
-  def eventually[T](timeout: Timeout)(fun: => T)(implicit config: TimeoutConfig): T =
+  def eventually[T](timeout: TimeoutConfigParam)(fun: => T)(implicit config: TimeoutConfig): T =
     eventually(fun)(TimeoutConfig(timeout.value, config.interval))
 
   /**
