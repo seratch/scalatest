@@ -94,6 +94,8 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues with 
       caught.message.value should be (Resources("didNotEventuallySucceedBecause", count.toString, "15 milliseconds", "2 did not equal 3"))
       caught.failedCodeLineNumber.value should equal (thisLineNumber - 7)
       caught.failedCodeFileName.value should be ("EventuallySpec.scala")
+      caught.getCause.getClass.getName should be ("org.scalatest.exceptions.TestFailedException")
+      caught.getCause.getMessage should be ("2 did not equal 3")
     }
     
     it("should provides correct stack depth when eventually is called from the overload method") {
@@ -195,6 +197,26 @@ class EventuallySpec extends FunSpec with ShouldMatchers with OptionValues with 
         }
       }
       count should equal (1)
+    }
+    
+    it("should, when reach before first interval, wake up every 1/10 of the interval.") {
+      var count = 0
+      var startTime: Option[Long] = None
+      evaluating {
+        eventually(timeout(Span(1000, Millis)), interval(Span(100, Millis))) {
+          if (startTime.isEmpty) {
+            startTime = Some(System.nanoTime)
+            count += 1
+          }
+          else {
+            val durationMillis = (System.nanoTime - startTime.get) / 1000000
+            if (durationMillis < 100)
+              count += 1
+          }
+          1 + 1 should equal (3)
+        }
+      } should produce [TestFailedException]
+      count should be > (1)
     }
   }
 }
