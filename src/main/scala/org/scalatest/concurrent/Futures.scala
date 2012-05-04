@@ -307,7 +307,7 @@ private[scalatest] trait Futures extends TimeoutConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    final def awaitResult(timeout: Timeout, interval: Interval): T =
+    final def awaitResult(timeout: TimeoutConfigParam, interval: Interval): T =
       awaitResult(TimeoutConfig(timeout.value, interval.value))
 
     /**
@@ -338,7 +338,7 @@ private[scalatest] trait Futures extends TimeoutConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    final def awaitResult(interval: Interval, timeout: Timeout): T =
+    final def awaitResult(interval: Interval, timeout: TimeoutConfigParam): T =
       awaitResult(TimeoutConfig(timeout.value, interval.value))
 
     /**
@@ -370,7 +370,7 @@ private[scalatest] trait Futures extends TimeoutConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    final def awaitResult(timeout: Timeout)(implicit config: TimeoutConfig): T =
+    final def awaitResult(timeout: TimeoutConfigParam)(implicit config: TimeoutConfig): T =
       awaitResult(TimeoutConfig(timeout.value, config.interval))
 
     /**
@@ -533,7 +533,7 @@ private[scalatest] trait Futures extends TimeoutConfiguration {
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T], timeout: Timeout, interval: Interval)(fun: T => U)(implicit config: TimeoutConfig): U = {
+  final def whenReady[T, U](future: FutureConcept[T], timeout: TimeoutConfigParam, interval: Interval)(fun: T => U)(implicit config: TimeoutConfig): U = {
     val result = future.awaitResult(TimeoutConfig(timeout.value, interval.value))
     fun(result)
   }
@@ -560,7 +560,7 @@ private[scalatest] trait Futures extends TimeoutConfiguration {
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T], interval: Interval, timeout: Timeout)(fun: T => U)(implicit config: TimeoutConfig): U = {
+  final def whenReady[T, U](future: FutureConcept[T], interval: Interval, timeout: TimeoutConfigParam)(fun: T => U)(implicit config: TimeoutConfig): U = {
     val result = future.awaitResult(TimeoutConfig(timeout.value, interval.value))
     fun(result)
   }
@@ -586,7 +586,7 @@ private[scalatest] trait Futures extends TimeoutConfiguration {
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T], timeout: Timeout)(fun: T => U)(implicit config: TimeoutConfig): U = {
+  final def whenReady[T, U](future: FutureConcept[T], timeout: TimeoutConfigParam)(fun: T => U)(implicit config: TimeoutConfig): U = {
     val result = future.awaitResult(TimeoutConfig(timeout.value, config.interval))
     fun(result)
   }

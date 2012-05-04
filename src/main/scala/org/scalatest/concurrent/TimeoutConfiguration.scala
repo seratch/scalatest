@@ -66,7 +66,7 @@ trait TimeoutConfiguration {
    * @author Bill Venners
    * @author Chua Chee Seng
    */
-  final case class TimeoutConfig(timeout: Span = Span(1, Second), interval: Span = Span(10, Millis))
+  final case class TimeoutConfig(timeout: Span = Span(150, Millis), interval: Span = Span(15, Millis))
 
   /**
    * Abstract class defining a family of configuration parameters for traits <code>Eventually</code> and <code>Futures</code>.
@@ -79,7 +79,9 @@ trait TimeoutConfiguration {
    * @author Bill Venners
    * @author Chua Chee Seng
    */
-  sealed abstract class TimeoutConfigParam
+  sealed abstract class TimeoutConfigParam {
+    val value: Span
+  }
 
   /**
    * A <code>TimeoutConfigParam</code> that specifies the maximum amount of time to allow retries: either invocations of the
@@ -93,6 +95,14 @@ trait TimeoutConfiguration {
    * @author Bill Venners
    */
   final case class Timeout(value: Span) extends TimeoutConfigParam
+  
+  final case class Timeout10x private(pValue: Span) extends TimeoutConfigParam {
+    lazy val value = pValue * 10
+  }
+  
+  final case class Timeout100x private(pValue: Span) extends TimeoutConfigParam {
+    lazy val value = pValue * 100
+  }
 
   /**
    * A <code>TimeoutConfigParam</code> that specifies the amount of time to sleep after

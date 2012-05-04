@@ -64,7 +64,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         val caught = evaluating {
           canceledFuture.isReadyWithin(Span(1, Second))
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureWasCanceled", "1", "10 milliseconds"))
+        caught.message.value should be (Resources("futureWasCanceled"))
         withClue(caught.getStackTraceString) {
           caught.failedCodeLineNumber.value should equal (thisLineNumber - 4)
         }
@@ -82,7 +82,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         val caught = evaluating {
           expiredFuture.isReadyWithin(Span(1, Second))
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureExpired", "1", "10 milliseconds"))
+        caught.message.value should be (Resources("futureExpired", "1", "15 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 3)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -161,7 +161,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         val caught = evaluating {
           canceledFuture.awaitResult
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureWasCanceled", "1", "10 milliseconds"))
+        caught.message.value should be (Resources("futureWasCanceled"))
         withClue(caught.getStackTraceString) {
           caught.failedCodeLineNumber.value should equal (thisLineNumber - 4)
         }
@@ -179,7 +179,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         val caught = evaluating {
           expiredFuture.awaitResult
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureExpired", "1", "10 milliseconds"))
+        caught.message.value should be (Resources("futureExpired", "1", "15 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 3)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -198,7 +198,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
           neverReadyCountingFuture.awaitResult
         } should produce [TestFailedException]
 
-        caught.message.value should be (Resources("wasNeverReady", count.toString, "10 milliseconds"))
+        caught.message.value should be (Resources("wasNeverReady", count.toString, "15 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 4)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -234,12 +234,12 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         caught4.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
 
-      it("should by default query a never-ready future for at least 1 second") {
+      it("should by default query a never-ready future for at least 150 millis") {
         var startTime = System.currentTimeMillis
         evaluating {
           neverReadyFuture.awaitResult
         } should produce [TestFailedException]
-        (System.currentTimeMillis - startTime).toInt should be >= (1000)
+        (System.currentTimeMillis - startTime).toInt should be >= (150)
       }
 
       it("should, if an alternate implicit Timeout is provided, query a never-ready by at least the specified timeout") {
@@ -420,7 +420,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
             s should equal ("hi")
           }
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureWasCanceled", "1", "10 milliseconds"))
+        caught.message.value should be (Resources("futureWasCanceled"))
         withClue(caught.getStackTraceString) {
           caught.failedCodeLineNumber.value should equal (thisLineNumber - 6)
         }
@@ -440,7 +440,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
             s should equal (99)
           }
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureExpired", "1", "10 milliseconds"))
+        caught.message.value should be (Resources("futureExpired", "1", "15 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 5)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -461,7 +461,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
           }
         } should produce [TestFailedException]
 
-        caught.message.value should be (Resources("wasNeverReady", count.toString, "10 milliseconds"))
+        caught.message.value should be (Resources("wasNeverReady", count.toString, "15 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 6)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -497,14 +497,14 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         caught4.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
 
-      it("should by default query a never-ready future for at least 1 second") {
+      it("should by default query a never-ready future for at least 150 milis") {
         var startTime = System.currentTimeMillis
         evaluating {
           whenReady(neverReadyFuture) { s =>
             s should equal ("hi")
           }
         } should produce [TestFailedException]
-        (System.currentTimeMillis - startTime).toInt should be >= (1000)
+        (System.currentTimeMillis - startTime).toInt should be >= (150)
       }
 
       it("should, if an alternate implicit Timeout is provided, query a never-ready by at least the specified timeout") {
