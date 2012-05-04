@@ -821,11 +821,7 @@ class FreeSpecSpec extends org.scalatest.FunSpec with SharedHelpers with GivenWh
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      val so = rep.scopeOpenedEventsReceived
-      val sc = rep.scopeClosedEventsReceived
-      assert(ip.size === 3)
-      assert(so.size === 1)
-      assert(sc.size === 1)
+      assert(ip.size === 4)
       for (event <- ip) {
         assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
@@ -847,11 +843,7 @@ class FreeSpecSpec extends org.scalatest.FunSpec with SharedHelpers with GivenWh
       val rep = new EventRecordingReporter
       a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ip = rep.infoProvidedEventsReceived
-      val so = rep.scopeOpenedEventsReceived
-      val sc = rep.scopeClosedEventsReceived
-      assert(ip.size === 3)
-      assert(so.size === 1)
-      assert(sc.size === 1)
+      assert(ip.size === 4)
       for (event <- ip) {
         assert(event.message == "A FreeSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }

@@ -99,7 +99,7 @@ trait ParallelTestExecution extends OneInstancePerTest {
                   newInstance.asInstanceOf[ParallelTestExecution],
                   tn
                 )
-              distribute(wrappedInstance, tracker.nextTracker, filter)
+              distribute(wrappedInstance, tracker.nextTracker)
             }
         }
     }
