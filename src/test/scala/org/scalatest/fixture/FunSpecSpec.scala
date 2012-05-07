@@ -23,7 +23,7 @@ import org.scalatest.exceptions.TestRegistrationClosedException
 
 class FunSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.FunSpec") {
+  describe("A FunSpec") {
 
     it("should return the test names in order of registration from testNames") {
       val a = new FunSpec {

@@ -13,7 +13,6 @@ import org.scalatest.Tag
 import org.scalatest.verb.BehaveWord
 import scala.collection.immutable.ListSet
 import org.scalatest.PathEngine.isInTargetPath
-import org.scalatest.Style
 
 /**
  * A sister trait to <code>org.scalatest.FunSpec</code> that isolates tests by running each test in its own
@@ -689,7 +688,6 @@ import org.scalatest.Style
  * @author Bill Venners
  * @author Chua Chee Seng
  */
-@Style("org.scalatest.finders.FunSpecFinder")
 trait FunSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
   
   private final val engine = PathEngine.getEngine()
@@ -753,7 +751,7 @@ trait FunSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(testText: String, testTags: Tag*)(testFun: => Unit) {
-      handleTest(thisSuite, testText, testFun _, "itCannotAppearInsideAnotherIt", "FunSpec.scala", "apply", 1, 0, testTags: _*)
+      handleTest(thisSuite, testText, testFun _, "itCannotAppearInsideAnotherIt", "FunSpec.scala", "apply", 1, testTags: _*)
     }
     
     /**
@@ -865,9 +863,9 @@ trait FunSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(testText: String, testTags: Tag*)(testFun: => Unit) {
-      handleTest(thisSuite, testText, testFun _, "theyCannotAppearInsideAnotherThey", "FunSpec.scala", "apply", 1, 0, testTags: _*)
+      handleTest(thisSuite, testText, testFun _, "theyCannotAppearInsideAnotherThey", "FunSpec.scala", "apply", 1, testTags: _*)
     }
- 
+    
     /**
      * Supports the registration of shared tests.
      *
@@ -951,7 +949,7 @@ trait FunSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
    */
   protected def ignore(testText: String, testTags: Tag*)(testFun: => Unit) {
     // Might not actually register it. Only will register it if it is its turn.
-    handleIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", "FunSpec.scala", "ignore", 1, 0, testTags: _*)
+    handleIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", "FunSpec.scala", "ignore", 1, testTags: _*)
   }
   
   /**
@@ -968,7 +966,7 @@ trait FunSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
    * </p>
    */
   protected def describe(description: String)(fun: => Unit) {
-    handleNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", "FunSpec.scala", "describe", 7, -2)
+    handleNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", "FunSpec.scala", "describe")
   }
   
   /**
