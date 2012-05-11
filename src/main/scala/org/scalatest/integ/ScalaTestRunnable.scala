@@ -16,7 +16,6 @@ class ScalaTestRunnable(classPath: Array[String], stArgs: Array[String]) extends
     val listenerThread = new Thread(listener)
     listenerThread.start()
     val args = "java" :: "-cp" :: classPath.mkString(File.pathSeparator) :: "org.scalatest.tools.Runner" :: stArgs.toList ::: "-k" :: "localhost" :: listener.getPort.toString() :: Nil
-    println(args)
     val builder = new ProcessBuilder(args: _*)
     val process = builder.start()
     
