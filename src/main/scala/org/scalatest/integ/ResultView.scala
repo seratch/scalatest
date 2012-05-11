@@ -1,4 +1,5 @@
 package org.scalatest.integ
+
 import javax.swing.JPanel
 import java.awt.GridLayout
 import javax.swing.JLabel
@@ -13,15 +14,24 @@ import java.awt.Color
 import java.awt.Image
 import java.awt.Graphics
 import java.awt.BorderLayout
+import javax.swing.JTree
+import javax.swing.JScrollPane
+import javax.swing.tree.TreeNode
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreeSelectionModel
+import javax.swing.SwingUtilities
+import javax.swing.tree.DefaultTreeCellRenderer
 
 class ResultView extends JPanel with Observer {
   
   private val counterPanel = new CounterPanel()
   private val colorBar = new ColorBar()
+  private val resultTree = new ResultTree()
   
   private val resultModel = new ResultModel()
   resultModel.addObserver(counterPanel)
   resultModel.addObserver(colorBar)
+  resultModel.addObserver(resultTree)
   
   private val controlPanel = new JPanel() {
     setLayout(new BorderLayout())
@@ -31,6 +41,7 @@ class ResultView extends JPanel with Observer {
   
   setLayout(new BorderLayout())
   add(controlPanel, BorderLayout.NORTH)
+  add(resultTree, BorderLayout.CENTER)
   //add(counterPanel, BorderLayout.NORTH)
   //add(colorBar, BorderLayout.CENTER)
   
@@ -53,6 +64,7 @@ private object Icons {
   val CANCELED = new ImageIcon(loader.getResource("images/test_canceled.gif"))
   val SUITE = new ImageIcon(loader.getResource("images/suite.gif"))
   val SUITE_ABORTED = new ImageIcon(loader.getResource("images/suite_aborted.gif"))
+  val INFO = new ImageIcon(loader.getResource("images/info.gif"))
 }
 
 private class ResultModel extends Observable {
@@ -191,6 +203,7 @@ private class ResultModel extends Observable {
                         suiteStarting.timeStamp, 
                         SuiteStatus.STARTED
                       )
+          run.addChild(suite)
           //suiteList += suite
           suiteMap += (suite.suiteId -> suite)
           //fTestRunSession.rootNode.addChild(suite)
@@ -352,7 +365,6 @@ private class CounterPanel extends JPanel with Observer {
     label.setIcon(icon)
     val constraints = new GridBagConstraints()
     constraints.insets = new Insets(2, 5, 2, 5)
-    constraints.fill = GridBagConstraints.HORIZONTAL
     constraints.gridx = gridx
     constraints.gridy = gridy
     constraints.gridwidth = 1;
@@ -366,7 +378,7 @@ private class CounterPanel extends JPanel with Observer {
   private val labelSize = new Dimension(120, 20)
   private val countSize = new Dimension(40, 20)
   
-  private val runLabel = createLabel("Test", 0, 0, labelSize, Icons.TESTS)
+  private val runLabel = createLabel("Tests", 0, 0, labelSize, Icons.TESTS)
   private val runCountLabel = createLabel("0/0", 1, 0, countSize, null)
   private val succeededLabel = createLabel("Succeeded", 2, 0, labelSize, Icons.SUCCEEDED)
   private val succeededCountLabel = createLabel("0", 3, 0, countSize, null)
@@ -584,6 +596,149 @@ private class ColorBar extends JPanel with Observer {
               case RunStatus.ABORTED => 
                 setGray()
             }
+          case _ =>
+            // Ignore others
+        }
+      case _ => 
+        // Do nothing if the observable is not ResultModel
+    }
+  }
+}
+
+private object SwingHelper {
+  def invokeLater(f: => Unit) {
+    SwingUtilities.invokeLater(new Runnable() {
+      def run() {
+        f
+      }
+    })
+  }
+} 
+
+private class ResultTree extends JPanel with Observer {
+  
+  import SwingHelper._
+  
+  private val tree = new JTree()
+  private var root: RunModel = null
+  private var model: DefaultTreeModel = null
+  
+  setLayout(new GridLayout(1, 1))
+  initTree()
+  
+  private def initTree() {
+    tree.getSelectionModel.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
+    tree.setCellRenderer(new NodeRenderer())
+    add(new JScrollPane(tree))
+    resetRoot(null)
+  }
+  
+  private class NodeRenderer extends DefaultTreeCellRenderer {
+    override def getTreeCellRendererComponent(tree: JTree, value: AnyRef, sel: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean) = {
+      super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus)
+      value match {
+        case test: TestModel =>
+          setText(test.testText)
+          test.status match {
+            case TestStatus.STARTED => 
+              setIcon(Icons.TESTS)
+            case TestStatus.SUCCEEDED =>
+              setIcon(Icons.SUCCEEDED)
+            case TestStatus.FAILED =>
+              setIcon(Icons.FAILED)
+            case TestStatus.IGNORED =>
+              setIcon(Icons.IGNORED)
+            case TestStatus.PENDING =>
+              setIcon(Icons.PENDING)
+            case TestStatus.CANCELED =>
+              setIcon(Icons.CANCELED)
+          }
+        case scope: ScopeModel => 
+          setText(scope.message)
+          setIcon(Icons.SUITE)
+        case suite: SuiteModel => 
+          setText(suite.suiteName)
+          suite.status match {
+            case SuiteStatus.STARTED => 
+              setIcon(Icons.SUITE)
+            case SuiteStatus.SUCCEED => 
+              setIcon(Icons.SUITE)
+            case SuiteStatus.FAILED => 
+              setIcon(Icons.SUITE_ABORTED)
+            case SuiteStatus.ABORTED => 
+              setIcon(Icons.SUITE_ABORTED)
+          }
+        case info: InfoModel => 
+          setText(info.message)
+          setIcon(Icons.INFO)
+        case run: RunModel => 
+          setText("Run")
+          setIcon(Icons.TESTS)
+        case str: String => 
+          setText(str)
+        case _ =>
+      }
+      this
+    }
+  }
+  
+  private def resetRoot(run: RunModel) {
+    root = run
+    if (root != null) {
+      model = new DefaultTreeModel(root)
+      tree.setModel(model)
+      invokeLater { model.nodeStructureChanged(root) }
+    }
+  }
+  
+  def update(o: Observable, changedModel: AnyRef) {
+    o match {
+      case resultModel: ResultModel => 
+        changedModel match {
+          case test: TestModel => 
+            test.status match {
+              case TestStatus.STARTED => 
+                invokeLater { model.nodeStructureChanged(test.parent) }
+              case TestStatus.SUCCEEDED =>
+                invokeLater { model.nodeChanged(test) }
+              case TestStatus.FAILED =>
+                invokeLater { model.nodeChanged(test) }
+              case TestStatus.IGNORED => 
+                invokeLater { model.nodeChanged(test) }
+              case TestStatus.PENDING =>
+                invokeLater { model.nodeChanged(test) }
+              case TestStatus.CANCELED => 
+                invokeLater { model.nodeChanged(test) }
+            }
+          case scope: ScopeModel => 
+            scope.status match {
+              case ScopeStatus.OPENED => 
+                invokeLater { model.nodeStructureChanged(scope.parent) }
+            }
+          case suite: SuiteModel =>
+            suite.status match {
+              case SuiteStatus.STARTED => 
+                invokeLater { model.nodeStructureChanged(suite.parent) }
+              case SuiteStatus.ABORTED => 
+                invokeLater { model.nodeChanged(suite) }
+              case SuiteStatus.SUCCEED =>
+                invokeLater { model.nodeChanged(suite) }
+              case SuiteStatus.FAILED =>
+                invokeLater { model.nodeChanged(suite) }
+            }
+          case run: RunModel => 
+            run.status match {
+              case RunStatus.STARTED => 
+                resetRoot(run)
+              case RunStatus.COMPLETED =>
+                model.reload()
+              case RunStatus.STOPPED =>
+                model.reload()
+              case RunStatus.ABORTED => 
+                model.reload()
+            }
+          case info: InfoModel =>
+            invokeLater { model.nodeStructureChanged(info.parent) }
           case _ =>
             // Ignore others
         }

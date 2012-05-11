@@ -2,6 +2,11 @@ package org.scalatest.integ
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
+import TestStatus._
+import ScopeStatus._
+import SuiteStatus._
+import RunStatus._
+import javax.swing.tree.TreeNode
 
 final case class Summary(testsSucceededCount: Int, testsFailedCount: Int, testsIgnoredCount: Int, testsPendingCount: Int, testsCanceledCount: Int,
   suitesCompletedCount: Int, suitesAbortedCount: Int) {
@@ -16,32 +21,7 @@ case class StackTraceElement(className: String, methodName: String, fileName: St
   override def toString = toStringValue
 }
 
-object TestStatus extends Enumeration {
-  type TestStatus = Value
-  val STARTED, SUCCEEDED, FAILED, IGNORED, PENDING, CANCELED = Value
-}
-
-object ScopeStatus extends Enumeration {
-  type ScopeStatus = Value
-  val OPENED, CLOSED = Value
-}
-
-object SuiteStatus extends Enumeration {
-  type SuiteStatus = Value
-  val STARTED, SUCCEED, FAILED, ABORTED = Value
-}
-
-object RunStatus extends Enumeration {
-  type RunStatus = Value
-  val STARTED, COMPLETED, STOPPED, ABORTED = Value
-}
-
-import TestStatus._
-import ScopeStatus._
-import SuiteStatus._
-import RunStatus._
-
-sealed abstract class Node {
+sealed abstract class Node extends TreeNode {
   private var childrenBuffer = new ListBuffer[Node]()
   var parent: Node = null
   def addChild(child: Node) {
@@ -50,10 +30,18 @@ sealed abstract class Node {
       child.parent = this
     }
   } 
-  def children = childrenBuffer.toArray
-  def hasChildren = children.length > 0
+  def children = collection.JavaConversions.asEnumeration(childrenBuffer.iterator)
+  def childrenList = childrenBuffer.toList
+  def hasChildren = childrenBuffer.size > 0
   def getStackTraces: Option[Array[StackTraceElement]]
   def getStackDepth: Option[Int]
+  
+  def getAllowsChildren = true
+  def getChildAt(childIndex: Int) = childrenBuffer.toList(childIndex)
+  def getChildCount = childrenBuffer.size
+  def getIndex(node: TreeNode) = childrenBuffer.indexOf(node)
+  def getParent = parent
+  def isLeaf = childrenBuffer.size == 0
 }
 
 final case class TestModel(
@@ -85,7 +73,7 @@ final case class ScopeModel(
 ) extends Node {
   
   def scopeSucceed: Boolean = {
-    children.forall { child => 
+    childrenList.forall { child => 
       child match {
         case test: TestModel => 
           test.status != TestStatus.FAILED
