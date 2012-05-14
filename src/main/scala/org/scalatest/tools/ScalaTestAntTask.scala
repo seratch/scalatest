@@ -93,7 +93,6 @@ import org.apache.tools.ant.taskdefs.Java
  *   <li>  <code>graphic</code>          </li>
  *   <li>  <code>file</code>             </li>
  *   <li>  <code>junitxml</code>         </li>
- *   <li>  <code>dashboard</code>        </li>
  *   <li>  <code>stdout</code>           </li>
  *   <li>  <code>stderr</code>           </li>
  *   <li>  <code>reporterclass</code>    </li>
@@ -101,7 +100,7 @@ import org.apache.tools.ant.taskdefs.Java
  *
  * <p>
  * Each may include a <code>config</code> attribute to specify the reporter configuration.
- * Types <code>file</code>, <code>junitxml</code>, <code>dashboard</code>, and <code>reporterclass</code> require additional attributes
+ * Types <code>file</code>, <code>junitxml</code> and <code>reporterclass</code> require additional attributes
  * <code>filename</code>, <code>directory</code>, and <code>classname</code>, respectively:
  * </p>
  *
@@ -110,15 +109,8 @@ import org.apache.tools.ant.taskdefs.Java
  *     &lt;reporter type="stdout"        config="FAB"/&gt;
  *     &lt;reporter type="file"          filename="test.out"/&gt;
  *     &lt;reporter type="junitxml"      directory="target"/&gt;
- *     &lt;reporter type="dashboard"     directory="target"/&gt;
  *     &lt;reporter type="reporterclass" classname="my.ReporterClass"/&gt;
  * </pre>
- *
- * <p>
- * For reporter type 'dashboard', an optional <code>numfiles</code> attribute may be
- * included to specify the number of old summary and duration files to be archived.
- * Default is 2.
- * </p>
  *
  * <p>
  * Specify tags to include and/or exclude using <code>&lt;tagsToInclude&gt;</code> and
@@ -245,16 +237,17 @@ class ScalaTestAntTask extends Task {
   private var parallel      = false
   private var haltonfailure = false
   private var fork          = false
+  private var spanScaleFactor = 1.0
 
   private var numthreads = 0
 
-  private val runpath      = new ListBuffer[String]
-  private val jvmArgs      = new ListBuffer[String]
-  private val suites       = new ListBuffer[SuiteElement]
-  private val membersonlys = new ListBuffer[String]
-  private val wildcards    = new ListBuffer[String]
-  private val testNGSuites = new ListBuffer[String]
-  private val chosenStyles = new ListBuffer[String]
+  private val runpath          = new ListBuffer[String]
+  private val jvmArgs          = new ListBuffer[String]
+  private val suites           = new ListBuffer[String]
+  private val membersonlys     = new ListBuffer[String]
+  private val wildcards        = new ListBuffer[String]
+  private val testNGSuites     = new ListBuffer[String]
+  private val chosenStyles     = new ListBuffer[String]
 
   private val reporters  = new ListBuffer[ReporterElement]
   private val properties = new ListBuffer[NameValuePair]
@@ -275,6 +268,7 @@ class ScalaTestAntTask extends Task {
     addParallelArg(args)
     addSuffixesArg(args)
     addChosenStyles(args)
+    addSpanScaleFactorArg(args)
 
     val argsArray = args.toArray
 
@@ -310,7 +304,7 @@ class ScalaTestAntTask extends Task {
   }
 
   //
-  // Adds '-P runpath' arg pair to args list if a runpath
+  // Adds '-R runpath' arg pair to args list if a runpath
   // element or attribute was specified for task.
   //
   private def addRunpathArgs(args: ListBuffer[String]) {
@@ -335,13 +329,22 @@ class ScalaTestAntTask extends Task {
   }
   
   //
-  // Adds '-C' arg to args list if 'parallel' attribute was
+  // Adds '-P' arg to args list if 'parallel' attribute was
   // specified true for task.
   //
   private def addParallelArg(args: ListBuffer[String]) {
     if (parallel) {
       args += "-P" + (if (numthreads > 0) ("" + numthreads) else "")
     }
+  }
+  
+  //
+  // Add -F arg to args list if spanScaleFactor attribute was 
+  // specified for task
+  //
+  private def addSpanScaleFactorArg(args: ListBuffer[String]) {
+    args += "-F"
+    args += spanScaleFactor.toString
   }
 
   //
@@ -398,25 +401,7 @@ class ScalaTestAntTask extends Task {
         throw new BuildException(
           "missing classname attribute for <suite> element")
       args += "-s"
-      args += suite.getClassName
-      suite.getTestNames.foreach { tn => 
-        if (tn == null)
-          throw new BuildException("missing name attribute for <test> element")
-        args += "-t"
-        args += tn
-      }
-      suite.getNestedSuites.foreach { ns => 
-        if (ns.getSuiteId == null)
-          throw new BuildException("missing suiteId attribute for <nested> element")
-        args += "-i"
-        args += ns.getSuiteId
-        ns.getTestNames.foreach { tn => 
-          if (tn == null)
-            throw new BuildException("missing name attribute for <test> element")
-          args += "-t"
-          args += tn
-        }
-      }
+      args += suite
     }
 
     for (packageName <- membersonlys) {
@@ -452,8 +437,7 @@ class ScalaTestAntTask extends Task {
         case "graphic"       => addReporterOption(args, reporter, "-g")
         case "file"          => addFileReporter(args, reporter)
         case "xml"           => addXmlReporter(args, reporter)
-        case "junitxml"      => addJunitXmlReporter(args, reporter)
-        case "dashboard"     => addDashboardReporter(args, reporter)
+        case "junitxml"      => addXmlReporter(args, reporter)
         case "html"          => addHtmlReporter(args, reporter)
         case "reporterclass" => addReporterClass(args, reporter)
 
@@ -495,57 +479,23 @@ class ScalaTestAntTask extends Task {
   }
 
   //
-  // Adds '-x' xml reporter option to args.  Adds reporter's
-  // directory as additional argument, e.g. "-x", "directory".
-  // [disabled for now]
+  // Adds '-u' xml reporter option to args.  Adds reporter's
+  // directory as additional argument, e.g. "-u", "directory".
   //
   private def addXmlReporter(args: ListBuffer[String],
                              reporter: ReporterElement)
   {
-    addReporterOption(args, reporter, "-x")
+    addReporterOption(args, reporter, "-u")
 
     if (reporter.getDirectory == null)
       throw new BuildException(
         "reporter type 'xml' requires 'directory' attribute")
 
     args += reporter.getDirectory
-  }
 
-  //
-  // Adds '-u' junit xml reporter option to args.  Adds reporter's
-  // directory as additional argument, e.g. "-u", "directory".
-  //
-  private def addJunitXmlReporter(args: ListBuffer[String],
-                                  reporter: ReporterElement)
-  {
-    addReporterOption(args, reporter, "-u")
-
-    if (reporter.getDirectory == null)
-      throw new BuildException(
-        "reporter type 'junitxml' requires 'directory' attribute")
-
-    args += reporter.getDirectory
-  }
-
-  //
-  // Adds '-d' Dashboard reporter option to args.  Adds reporter's
-  // directory as additional argument, e.g. "-d", "directory".
-  //
-  private def addDashboardReporter(args: ListBuffer[String],
-                                   reporter: ReporterElement)
-  {
-    addReporterOption(args, reporter, "-d")
-
-    if (reporter.getDirectory == null)
-      throw new BuildException(
-        "reporter type 'dashboard' requires 'directory' attribute")
-
-    args += reporter.getDirectory
-
-    if (reporter.getNumfiles >= 0) {
-      args += "-a"
-      args += reporter.getNumfiles.toString
-    }
+    if (reporter.getType == "xml")
+      Console.err.println("WARNING: reporter type 'xml' is deprecated " +
+                        "- please use 'junitxml' instead")
   }
 
   //
@@ -566,7 +516,7 @@ class ScalaTestAntTask extends Task {
   }
 
   //
-  // Adds '-R' reporter class option to args.  Appends
+  // Adds '-C' reporter class option to args.  Appends
   // reporter config string to option if specified.  Adds
   // reporter's classname as additional argument, e.g. "-RFAB",
   // "my.ReporterClass".
@@ -653,6 +603,13 @@ class ScalaTestAntTask extends Task {
   def setParallel(parallel: Boolean) {
       this.parallel = parallel
   }
+  
+  /**
+   * Sets value of the <code>spanScaleFactor</code> attribute.
+   */
+  def setSpanScaleFactor(spanScaleFactor: Double) {
+    this.spanScaleFactor = spanScaleFactor
+  }
 
   /**
    * Sets value from nested element <code>runpath</code>.
@@ -707,7 +664,7 @@ class ScalaTestAntTask extends Task {
   /**
    * Sets value of <code>suite</code> attribute.
    */
-  def setSuite(suite: SuiteElement) {
+  def setSuite(suite: String) {
     suites += suite
   }
 
@@ -736,7 +693,7 @@ class ScalaTestAntTask extends Task {
    * Sets value from nested element <code>suite</code>.
    */
   def addConfiguredSuite(suite: SuiteElement) {
-    suites += suite
+    suites += suite.getClassName
   }
 
   /**
@@ -856,50 +813,12 @@ class ScalaTestAntTask extends Task {
   //
   private class SuiteElement {
     private var className: String = null
-    private val testNamesBuffer = new ListBuffer[String]()
-    private val nestedSuitesBuffer = new ListBuffer[NestedSuiteElement]()
-    
+
     def setClassName(className: String) {
       this.className = className
     }
 
-    def addConfiguredTest(test: TestElement) {
-      testNamesBuffer += test.getName
-    }
-    
-    def addConfiguredNested(nestedSuite: NestedSuiteElement) {
-      nestedSuitesBuffer += nestedSuite
-    }
-    
     def getClassName = className
-    def getTestNames = testNamesBuffer.toArray
-    def getNestedSuites = nestedSuitesBuffer.toArray
-  }
-  
-  private class TestElement {
-    private var name: String = null
-    
-    def setName(name: String) {
-      this.name = name
-    }
-    
-    def getName = name
-  }
-  
-  private class NestedSuiteElement {
-    private var suiteId: String = null
-    private val testNamesBuffer = new ListBuffer[String]()
-    
-    def setSuiteId(suiteId: String) {
-      this.suiteId = suiteId
-    }
-    
-    def addConfiguredTest(test: TestElement) {
-      testNamesBuffer += test.getName
-    }
-    
-    def getSuiteId = suiteId
-    def getTestNames = testNamesBuffer.toArray
   }
 
   //
@@ -958,19 +877,17 @@ class ScalaTestAntTask extends Task {
     private var filename  : String = null
     private var directory : String = null
     private var classname : String = null
-    private var numfiles  : Int    = -1
 
     def setType(rtype          : String) { this.rtype     = rtype     }
     def setConfig(config       : String) { this.config    = config    }
     def setFilename(filename   : String) { this.filename  = filename  }
     def setDirectory(directory : String) { this.directory = directory }
     def setClassName(classname : String) { this.classname = classname }
-    def setNumfiles(numfiles   : Int)    { this.numfiles  = numfiles  }
 
     def getType      = rtype
     def getConfig    = config
     def getFilename  = filename
     def getDirectory = directory
     def getClassName = classname
-    def getNumfiles  = numfiles
   }
+

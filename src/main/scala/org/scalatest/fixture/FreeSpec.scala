@@ -420,7 +420,8 @@ trait FreeSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 4, -3, None, None, testTags: _*)
+    // TODO: This is what was being used before but it is wrong
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -443,7 +444,8 @@ trait FreeSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 4, -3, testTags: _*)
+    // TODO: This is how these were, but it needs attention. Mentions "it".
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 1, testTags: _*)
   }
    /*
   private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
@@ -584,7 +586,9 @@ trait FreeSpec extends Suite { thisSuite =>
 
     // TODO: Fill in Scaladoc
     def - (fun: => Unit) {
-      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 3, -2)
+      // registerBranch(string, None, testFun)
+      // TODO: Fix the resource name and method name
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 1)
     }
 
     /**
@@ -685,6 +689,7 @@ trait FreeSpec extends Suite { thisSuite =>
      */
     def ignore(testFun: () => Any) {
       registerTestToIgnore(string, List(), "ignore", new NoArgTestWrapper(testFun))
+    
     }
 
     /**

@@ -698,11 +698,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  * <a name="sharedFixtures"></a><h2>Shared fixtures</h2>
  *
  * <p>
- * A <em>fixture</em> is objects or other artifacts (such as files, sockets, database
+ * A test <em>fixture</em> is objects or other artifacts (such as files, sockets, database
  * connections, <em>etc.</em>) used by tests to do their work.
- * If a fixture is used by only one test, then the definitions of the fixture objects can
+ * If a fixture is used by only one test method, then the definitions of the fixture objects can
  * be local to the method, such as the objects assigned to <code>sum</code> and <code>diff</code> in the
- * previous <code>ExampleSpec</code> examples. If multiple tests need to share immutable fixtures, one approach
+ * previous <code>ExampleSpec</code> examples. If multiple methods need to share an immutable fixture, one approach
  * is to assign them to instance variables.
  * </p>
  *
@@ -972,8 +972,8 @@ import Suite.anErrorThatShouldCauseAnAbort
  * <h4>Overriding <code>withFixture(OneArgTest)</code></h4>
  *
  * <p>
- * To use the loan pattern, you can extend <code>fixture.WordSpec</code> (from the <code>org.scalatest.fixture</code> package) instead of
- * <code>WordSpec</code>. Each test in a <code>fixture.WordSpec</code> takes a fixture as a parameter, allowing you to pass the fixture into
+ * To use the loan pattern, you can extend <code>WordSpec</code> (from the <code>org.scalatest.fixture</code> package) instead of
+ * <code>WordSpec</code>. Each test in a <code>WordSpec</code> takes a fixture as a parameter, allowing you to pass the fixture into
  * the test. You must indicate the type of the fixture parameter by specifying <code>FixtureParam</code>, and implement a
  * <code>withFixture</code> method that takes a <code>OneArgTest</code>. This <code>withFixture</code> method is responsible for
  * invoking the one-arg test function, so you can perform fixture set up before, and clean up after, invoking and passing
@@ -1125,7 +1125,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <p>
  * Note that in this case, the loan pattern is being implemented via the <code>withWriter</code> method that takes a function, not
- * by overriding <code>fixture.WordSpec</code>'s <code>withFixture(OneArgTest)</code> method. <code>fixture.WordSpec</code> makes the most sense
+ * by overriding <code>WordSpec</code>'s <code>withFixture(OneArgTest)</code> method. <code>WordSpec</code> makes the most sense
  * if all (or at least most) tests need the same fixture, whereas in this <code>Suite</code> only two tests need the
  * <code>FileWriter</code>.
  * </p>
@@ -1608,14 +1608,13 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.WordSpecFinder")
 trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSuite =>
 
   private final val engine = new Engine("concurrentWordSpecMod", "WordSpec")
   import engine._
 
   /**
-   * Returns an <code>Informer</code> that during test execution will forward strings passed to its
+   * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
    * <code>apply</code> method to the current reporter. If invoked in a constructor, it
    * will register the passed string for forwarding later during test execution. If invoked while this
    * <code>WordSpec</code> is being executed, such as from inside a test function, it will forward the information to
@@ -1623,16 +1622,6 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>WordSpec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
@@ -1654,7 +1643,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "WordSpec.scala", methodName, 4, -3, None, None, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "WordSpec.scala", methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -1677,11 +1666,11 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpec.scala", methodName, 4, -3, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpec.scala", methodName, 1, testTags: _*)
   }
 
   private def registerBranch(description: String, childPrefix: Option[String], methodName:String, fun: () => Unit) {
-    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpec.scala", methodName, 5, -2)
+    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpec.scala", methodName, 1)
   }
 
   /**
