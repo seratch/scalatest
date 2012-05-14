@@ -2,31 +2,28 @@ package org.scalatest.tools
 import org.scalatest.FunSuite
 import org.scalasbt.testing.EventHandler
 import org.scalasbt.testing.Event
-import org.scalasbt.testing.ErrorEvent
-import org.scalasbt.testing.FailureEvent
-import org.scalasbt.testing.SkippedEvent
-import org.scalasbt.testing.SuccessEvent
 import org.scalasbt.testing.Logger
 import org.scalasbt.testing.TestSelector
 import org.scalasbt.testing.NestedTestSelector
 import org.scalasbt.testing.SuiteSelector
 import org.scalasbt.testing.NestedSuiteSelector
+import org.scalasbt.testing.Status
 
 class ScalaTestFramework2Suite extends FunSuite {
   
   class TestEventHandler extends EventHandler {
     
-    private var errorEvents = List[ErrorEvent]()
-    private var failureEvents = List[FailureEvent]()
-    private var skippedEvents = List[SkippedEvent]()
-    private var successEvents = List[SuccessEvent]()
+    private var errorEvents = List[Event]()
+    private var failureEvents = List[Event]()
+    private var skippedEvents = List[Event]()
+    private var successEvents = List[Event]()
     
     override def handle(event: Event): Unit = {
-      event match {
-        case e: SuccessEvent => successEvents ::= e
-        case e: ErrorEvent => errorEvents ::= e
-        case e: FailureEvent => failureEvents ::= e
-        case e: SkippedEvent => skippedEvents ::= e
+      event.status match {
+        case Status.Success => successEvents ::= event
+        case Status.Error => errorEvents ::= event
+        case Status.Failure => failureEvents ::= event
+        case Status.Skipped => skippedEvents ::= event
       }
     }
     
@@ -101,9 +98,10 @@ class ScalaTestFramework2Suite extends FunSuite {
   
   val framework = new ScalaTestFramework2
   
-  def assertSuiteSuccessEvent(event: SuccessEvent, suiteClassName: String, testName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertSuiteSuccessEvent(event: Event, suiteClassName: String, testName: String) {
+    assert(Status.Success === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case testSelector: TestSelector => 
         assert(testName === testSelector.getTestName)
@@ -112,9 +110,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertNestedSuiteSuccessEvent(event: SuccessEvent, suiteClassName: String, suiteId:String, testName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertNestedSuiteSuccessEvent(event: Event, suiteClassName: String, suiteId:String, testName: String) {
+    assert(Status.Success === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case nestedTestSelector: NestedTestSelector => 
         assert(suiteId === nestedTestSelector.getSuiteId)
@@ -124,9 +123,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertSuiteFailureEvent(event: FailureEvent, suiteClassName: String, testName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertSuiteFailureEvent(event: Event, suiteClassName: String, testName: String) {
+    assert(Status.Failure === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case testSelector: TestSelector => 
         assert(testName === testSelector.getTestName)
@@ -135,9 +135,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertNestedSuiteFailureEvent(event: FailureEvent, suiteClassName: String, suiteId:String, testName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertNestedSuiteFailureEvent(event: Event, suiteClassName: String, suiteId:String, testName: String) {
+    assert(Status.Failure === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case nestedTestSelector: NestedTestSelector => 
         assert(suiteId === nestedTestSelector.getSuiteId)
@@ -147,9 +148,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertSuiteErrorEvent(event: ErrorEvent, suiteClassName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertSuiteErrorEvent(event: Event, suiteClassName: String) {
+    assert(Status.Error === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case suiteSelector: SuiteSelector => 
         // Nothing more to check, just make sure it is SuiteSelector.
@@ -158,9 +160,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertNestedSuiteErrorEvent(event: ErrorEvent, suiteClassName: String, suiteId:String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertNestedSuiteErrorEvent(event: Event, suiteClassName: String, suiteId:String) {
+    assert(Status.Error === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case nestedSuiteSelector: NestedSuiteSelector => 
         assert(suiteId === nestedSuiteSelector.getSuiteId)
@@ -169,9 +172,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertSuiteSkippedEvent(event: SkippedEvent, suiteClassName: String, testName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertSuiteSkippedEvent(event: Event, suiteClassName: String, testName: String) {
+    assert(Status.Skipped === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case testSelector: TestSelector => 
         assert(testName === testSelector.getTestName)
@@ -180,9 +184,10 @@ class ScalaTestFramework2Suite extends FunSuite {
     }
   }
   
-  def assertNestedSuiteSkippedEvent(event: SkippedEvent, suiteClassName: String, suiteId:String, testName: String) {
-    assert(suiteClassName === event.getFullyQualifiedName)
-    val selector = event.getSelector
+  def assertNestedSuiteSkippedEvent(event: Event, suiteClassName: String, suiteId:String, testName: String) {
+    assert(Status.Skipped === event.status)
+    assert(suiteClassName === event.fullyQualifiedName)
+    val selector = event.selector
     selector match {
       case nestedTestSelector: NestedTestSelector => 
         assert(suiteId === nestedTestSelector.getSuiteId)
