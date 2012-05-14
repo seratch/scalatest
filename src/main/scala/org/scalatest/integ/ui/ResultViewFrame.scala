@@ -1,8 +1,10 @@
-package org.scalatest.integ
+package org.scalatest.integ.ui
+
+import java.util.Observable
+import java.util.Observer
 import javax.swing.JFrame
 import javax.swing.WindowConstants
-import java.util.Observer
-import java.util.Observable
+import org.scalatest.integ.Event
 
 class ResultViewFrame extends JFrame with Observer {
   private val content = getContentPane()

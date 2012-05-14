@@ -1,0 +1,17 @@
+package org.scalatest.integ.ui
+
+import javax.swing.ImageIcon
+
+private object Icons {
+  private val loader = getClass.getClassLoader
+  
+  val TESTS = new ImageIcon(loader.getResource("images/tests.gif"))
+  val SUCCEEDED = new ImageIcon(loader.getResource("images/test_succeeded.gif"))
+  val FAILED = new ImageIcon(loader.getResource("images/test_failed.gif"))
+  val IGNORED = new ImageIcon(loader.getResource("images/test_ignored.gif"))
+  val PENDING = new ImageIcon(loader.getResource("images/test_pending.gif"))
+  val CANCELED = new ImageIcon(loader.getResource("images/test_canceled.gif"))
+  val SUITE = new ImageIcon(loader.getResource("images/suite.gif"))
+  val SUITE_ABORTED = new ImageIcon(loader.getResource("images/suite_aborted.gif"))
+  val INFO = new ImageIcon(loader.getResource("images/info.gif"))
+}
