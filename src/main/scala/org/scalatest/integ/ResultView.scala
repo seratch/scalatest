@@ -42,8 +42,6 @@ class ResultView extends JPanel with Observer {
   setLayout(new BorderLayout())
   add(controlPanel, BorderLayout.NORTH)
   add(resultTree, BorderLayout.CENTER)
-  //add(counterPanel, BorderLayout.NORTH)
-  //add(colorBar, BorderLayout.CENTER)
   
   def update(o: Observable, event: AnyRef) {
     event match {
@@ -684,11 +682,11 @@ private class ResultTree extends JPanel with Observer {
   
   private def resetRoot(run: RunModel) {
     root = run
-    if (root != null) {
-      model = new DefaultTreeModel(root)
-      tree.setModel(model)
-      invokeLater { model.nodeStructureChanged(root) }
-    }
+    if (root == null) 
+      root = RunModel(0, None, None, None, None, None, null, 0, RunStatus.COMPLETED)
+    model = new DefaultTreeModel(root)
+    tree.setModel(model)
+    invokeLater { model.nodeStructureChanged(root) }
   }
   
   def update(o: Observable, changedModel: AnyRef) {
