@@ -63,6 +63,7 @@ class ScalaTestFramework2 extends Framework {
                       summaryCounter: SummaryCounter) extends Task {
     
     def tags = {
+      // TODO: map scalatest tags to sbt tags.
       Array.empty[String]
     }
     
