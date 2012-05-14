@@ -3,6 +3,7 @@ import java.io.File
 import java.util.Observer
 import java.util.Observable
 import javax.swing.UIManager
+import org.scalatest.integ.ui.ResultViewFrame
 
 object ScalaTestViewer {
 
