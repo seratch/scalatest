@@ -24,11 +24,8 @@ import org.scalatest.events.SeeStackDepthException
 import org.scalatest.Filter
 import org.scalatest.tools.Runner.parsePropertiesArgsIntoMap
 import org.scalatest.tools.Runner.parseCompoundArgIntoSet
-import org.scalasbt.testing.SkippedEvent
+import org.scalasbt.testing.{Event => SbtEvent}
 import org.scalasbt.testing.TestSelector
-import org.scalasbt.testing.FailureEvent
-import org.scalasbt.testing.SuccessEvent
-import org.scalasbt.testing.ErrorEvent
 import org.scalasbt.testing.SuiteSelector
 import org.scalasbt.testing.NestedTestSelector
 import org.scalasbt.testing.NestedSuiteSelector
@@ -39,6 +36,7 @@ import org.scalatest.DispatchReporter
 import org.scalatest.events.RunCompleted
 import org.scalatest.events.RunStarting
 import org.scalatest.events.Summary
+import org.scalasbt.testing.Status
 
 class ScalaTestFramework2 extends Framework {
 
@@ -270,6 +268,13 @@ class ScalaTestFramework2 extends Framework {
     new ScalaTestRunner(testClassLoader, tagsToInclude, tagsToExclude, configMap, dispatchReporter, eventHandler, useSbtLogInfoReporter)
   }
   
+  private case class ScalaTestSbtEvent(
+      fullyQualifiedName: String, 
+      isModule: Boolean, 
+      selector: Selector, 
+      status: Status, 
+      throwable: Throwable) extends SbtEvent
+  
   private class SbtReporter(suiteId: String, fullyQualifiedName: String, eventHandler: EventHandler, report: Option[Reporter], summaryCounter: SummaryCounter) extends Reporter {
       
       import org.scalatest.events._
@@ -298,24 +303,30 @@ class ScalaTestFramework2 extends Framework {
           // the results of running an actual test
           case t: TestPending => 
             summaryCounter.testsPendingCount += 1
-            eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            //eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
           case t: TestFailed => 
             summaryCounter.testsFailedCount += 1
-            eventHandler.handle(new FailureEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), t.throwable.getOrElse(null)))
+            //eventHandler.handle(new FailureEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), t.throwable.getOrElse(null)))
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Failure, t.throwable.getOrElse(null)))
           case t: TestSucceeded => 
             summaryCounter.testsSucceededCount += 1
-            eventHandler.handle(new SuccessEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            //eventHandler.handle(new SuccessEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Success, null))
           case t: TestIgnored => 
             summaryCounter.testsIgnoredCount += 1
-            eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            //eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
           case t: TestCanceled =>
             summaryCounter.testsCanceledCount += 1
-            eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            //eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
           case t: SuiteCompleted => 
             summaryCounter.suitesCompletedCount += 1
           case t: SuiteAborted => 
             summaryCounter.suitesAbortedCount += 1
-            eventHandler.handle(new ErrorEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), t.throwable.getOrElse(null)))
+            //eventHandler.handle(new ErrorEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), t.throwable.getOrElse(null)))
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), Status.Error, t.throwable.getOrElse(null)))
           case _ => 
         }
       }
