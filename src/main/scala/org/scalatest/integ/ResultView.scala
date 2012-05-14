@@ -21,12 +21,18 @@ import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeSelectionModel
 import javax.swing.SwingUtilities
 import javax.swing.tree.DefaultTreeCellRenderer
+import org.scalatest.integ.spi.TreeActionProvider
+import java.awt.event.MouseEvent
+import org.scalatest.integ.spi.impl.DefaultTreeActionProvider
+import java.awt.event.MouseAdapter
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 
 class ResultView extends JPanel with Observer {
   
   private val counterPanel = new CounterPanel()
   private val colorBar = new ColorBar()
-  private val resultTree = new ResultTree()
+  private val resultTree = new ResultTree(treeActionProvider)
   
   private val resultModel = new ResultModel()
   resultModel.addObserver(counterPanel)
@@ -49,6 +55,8 @@ class ResultView extends JPanel with Observer {
       case _ => // Ignore others
     }
   }
+  
+  def treeActionProvider = new DefaultTreeActionProvider()
 }
 
 private object Icons {
@@ -613,7 +621,7 @@ private object SwingHelper {
   }
 } 
 
-private class ResultTree extends JPanel with Observer {
+private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel with Observer {
   
   import SwingHelper._
   
@@ -627,8 +635,27 @@ private class ResultTree extends JPanel with Observer {
   private def initTree() {
     tree.getSelectionModel.setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION)
     tree.setCellRenderer(new NodeRenderer())
+    tree.addMouseListener(new MouseAdapter() {
+      override def mousePressed(e: MouseEvent) {
+        treeActionProvider.mousePressed(e, getSelectedNode)
+      }
+    })
+    tree.addKeyListener(new KeyAdapter() {
+      override def keyPressed(e: KeyEvent) {
+        treeActionProvider.keyPressed(e, getSelectedNode)
+      }
+    })
     add(new JScrollPane(tree))
     resetRoot(null)
+  }
+  
+  private def getSelectedNode = {
+    tree.getSelectionPath.getLastPathComponent match {
+      case node: Node => 
+        node
+      case _ =>
+        null
+    }
   }
   
   private class NodeRenderer extends DefaultTreeCellRenderer {

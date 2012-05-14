@@ -35,6 +35,7 @@ sealed abstract class Node extends TreeNode {
   def hasChildren = childrenBuffer.size > 0
   def getStackTraces: Option[Array[StackTraceElement]]
   def getStackDepth: Option[Int]
+  def getLocation: Option[Location]
   
   def getAllowsChildren = true
   def getChildAt(childIndex: Int) = childrenBuffer.toList(childIndex)
@@ -61,6 +62,7 @@ final case class TestModel(
 ) extends Node {
   def getStackTraces = errorStackTrace
   def getStackDepth = errorDepth
+  def getLocation = location
 }
 
 final case class ScopeModel(
@@ -87,6 +89,7 @@ final case class ScopeModel(
   
   def getStackTraces = None
   def getStackDepth = None
+  def getLocation = location
 }
 
 final case class SuiteModel(
@@ -153,6 +156,7 @@ final case class SuiteModel(
   
   def getStackTraces = errorStackTrace
   def getStackDepth = errorDepth
+  def getLocation = location
 }
 
 final case class RunModel(
@@ -168,6 +172,7 @@ final case class RunModel(
 ) extends Node {
   def getStackTraces = errorStackTrace
   def getStackDepth = errorDepth
+  def getLocation = None
 }
 
 final case class InfoModel(
@@ -184,4 +189,5 @@ final case class InfoModel(
 ) extends Node {
   def getStackTraces = errorStackTrace
   def getStackDepth = errorDepth
+  def getLocation = location
 }
