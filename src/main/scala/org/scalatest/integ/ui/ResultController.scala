@@ -31,7 +31,7 @@ import org.scalatest.integ.ScopeClosed
 import scala.annotation.tailrec
 import org.scalatest.integ.Node
 
-private class ResultController extends Observable {
+class ResultController extends Observable {
   
   @volatile var startedCount = 0
   @volatile var succeedCount = 0
@@ -48,9 +48,9 @@ private class ResultController extends Observable {
   
   private var flattenNodeList: List[Node] = null
   
-  private def notifyChanges(changedData: AnyRef) {
+  def notifyChanges(value: AnyRef) {
     setChanged()
-    notifyObservers(changedData)
+    notifyObservers(value)
   }
   
   def update(event: Event) {

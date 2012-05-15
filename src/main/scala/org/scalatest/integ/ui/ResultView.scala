@@ -6,20 +6,25 @@ import java.awt.BorderLayout
 import java.util.Observable
 import org.scalatest.integ.Event
 import org.scalatest.integ.spi.impl.DefaultTreeActionProvider
+import org.scalatest.integ.spi.impl.DefaultToolbarActionProvider
 
 class ResultView extends JPanel with Observer {
   
+  private val resultController = new ResultController()
+  
+  private val toolbar = new Toolbar(toolbarActionProvider(resultController))
   private val counterPanel = new CounterPanel()
   private val colorBar = new ColorBar()
-  private val resultTree = new ResultTree(treeActionProvider)
+  private val resultTree = new ResultTree(treeActionProvider(resultController))
   
-  private val resultController = new ResultController()
+  resultController.addObserver(toolbar)
   resultController.addObserver(counterPanel)
   resultController.addObserver(colorBar)
   resultController.addObserver(resultTree)
   
   private val controlPanel = new JPanel() {
     setLayout(new BorderLayout())
+    add(toolbar, BorderLayout.NORTH)
     add(counterPanel, BorderLayout.CENTER)
     add(colorBar, BorderLayout.SOUTH)
   }
@@ -35,7 +40,12 @@ class ResultView extends JPanel with Observer {
     }
   }
   
-  def treeActionProvider = new DefaultTreeActionProvider()
+  def notifyChanges(value: AnyRef) {
+    resultController.notifyChanges(value)
+  }
+  
+  def toolbarActionProvider(controller: ResultController) = new DefaultToolbarActionProvider(controller)
+  def treeActionProvider(controller: ResultController) = new DefaultTreeActionProvider(controller)
 }
 
 /**/
