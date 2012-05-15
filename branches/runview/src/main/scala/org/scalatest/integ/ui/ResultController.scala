@@ -28,6 +28,8 @@ import org.scalatest.integ.ScopeOpened
 import org.scalatest.integ.ScopeModel
 import org.scalatest.integ.ScopeStatus
 import org.scalatest.integ.ScopeClosed
+import scala.annotation.tailrec
+import org.scalatest.integ.Node
 
 private class ResultController extends Observable {
   
@@ -43,6 +45,8 @@ private class ResultController extends Observable {
   
   private var suiteMap: Map[String, SuiteModel] = null
   private var run: RunModel = null
+  
+  private var flattenNodeList: List[Node] = null
   
   private def notifyChanges(changedData: AnyRef) {
     setChanged()
@@ -166,7 +170,6 @@ private class ResultController extends Observable {
                         SuiteStatus.STARTED
                       )
           run.addChild(suite)
-          //suiteList += suite
           suiteMap += (suite.suiteId -> suite)
           //fTestRunSession.rootNode.addChild(suite)
           notifyChanges(suite)
@@ -207,7 +210,6 @@ private class ResultController extends Observable {
         }
       case runStarting: RunStarting => 
         //enableToolbarControls(false)
-        //suiteList.clear()
         startedCount = 0
         succeedCount = 0
         failureCount = 0
@@ -236,14 +238,14 @@ private class ResultController extends Observable {
         run.duration = runCompleted.duration
         run.summary = runCompleted.summary
         run.status = RunStatus.COMPLETED
-        //nodeList = getFlattenNode(suiteList.toList)
+        flattenNodeList = getFlattenNode(run.childrenList)
         notifyChanges(run)
         //enableToolbarControls(true)
       case runStopped: RunStopped => 
         run.duration = runStopped.duration
         run.summary = runStopped.summary
         run.status = RunStatus.STOPPED
-        //nodeList = getFlattenNode(suiteList.toList)
+        flattenNodeList = getFlattenNode(run.childrenList)
         notifyChanges(run)
         //enableToolbarControls(true)
       case runAborted: RunAborted => 
@@ -256,7 +258,7 @@ private class ResultController extends Observable {
           run.status = RunStatus.ABORTED
           notifyChanges(run)
         }
-        //nodeList = getFlattenNode(suiteList.toList)
+        flattenNodeList = getFlattenNode(run.childrenList)
         //enableToolbarControls(true)
       case infoProvided: InfoProvided => 
         val info = 
@@ -314,5 +316,51 @@ private class ResultController extends Observable {
         }
       case _ => // Ignore others
     }
+  }
+  
+  private def getFlattenNode(nodeList: List[Node]) = {
+    @tailrec
+    def getFlattenNodeAcc(acc: List[Node], nodeList: List[Node]): List[Node] = {
+      nodeList match {
+        case Nil => 
+          acc
+        case head :: rest =>
+          getFlattenNodeAcc(head :: acc, head.childrenList.toList ::: rest)
+      }
+    }
+    getFlattenNodeAcc(List.empty, nodeList).reverse
+  }
+  
+  def findNextFailure(selectedNode: Node) = {
+    val currentList = 
+      if (selectedNode != null) {
+        val dropList = flattenNodeList.dropWhile(node => node != selectedNode)
+        if (dropList.isEmpty)
+          Nil
+        else
+          dropList.tail
+      }
+      else
+        flattenNodeList
+    currentList.find { node => 
+      node match {
+        case test: TestModel if test.status == TestStatus.FAILED => true
+        case _ => false
+      }
+    }.getOrElse(null)
+  }
+  
+  def findPreviousFailure(selectedNode: Node) = {
+    val currentList = 
+      if (selectedNode != null) 
+        flattenNodeList.takeWhile(node => node != selectedNode).reverse
+      else
+        flattenNodeList.reverse
+    currentList.find { node => 
+      node match {
+        case test: TestModel if test.status == TestStatus.FAILED => true
+        case _ => false
+      }
+    }.getOrElse(null)
   }
 }
