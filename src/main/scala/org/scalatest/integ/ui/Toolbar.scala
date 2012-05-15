@@ -24,11 +24,13 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   
   private def init() {
     enableButtons(false)
+    nextFailure.setToolTipText("Next Failed Test")
     nextFailure.addActionListener(new ActionListener() {
       def actionPerformed(e: ActionEvent) {
         actionProvider.nextFailure(e)
       }
     })
+    previousFailure.setToolTipText("Previous Failed Test")
     previousFailure.addActionListener(new ActionListener() {
       def actionPerformed(e: ActionEvent) {
         actionProvider.previousFailure(e)
@@ -63,7 +65,7 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
             // Ignore others
         }
       case _ => 
-        // Do nothing if the observable is not ResultModel
+        // Do nothing if the observable is not ResultController
     }
   }
   
