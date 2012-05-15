@@ -19,4 +19,7 @@ private[ui] object Icons {
   val SUITE = new ImageIcon(loader.getResource("images/suite.gif"))
   val SUITE_ABORTED = new ImageIcon(loader.getResource("images/suite_aborted.gif"))
   val INFO = new ImageIcon(loader.getResource("images/info.gif"))
+  
+  val STACKTRACE = new ImageIcon(loader.getResource("images/stacktrace.gif"))
+  val STACKFOLD = new ImageIcon(loader.getResource("images/stackfold.gif"))
 }
