@@ -29,6 +29,8 @@ import javax.swing.tree.TreeNode
 import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
+import javax.swing.event.TreeSelectionListener
+import javax.swing.event.TreeSelectionEvent
 
 private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel with Observer {
   
@@ -52,6 +54,11 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
     tree.addKeyListener(new KeyAdapter() {
       override def keyPressed(e: KeyEvent) {
         treeActionProvider.keyPressed(e, getSelectedNode)
+      }
+    })
+    tree.addTreeSelectionListener(new TreeSelectionListener() {
+      def valueChanged(e: TreeSelectionEvent) {
+        treeActionProvider.selectionChanged(e, getSelectedNode)
       }
     })
     add(new JScrollPane(tree))
@@ -131,10 +138,10 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
     invokeLater { model.nodeStructureChanged(root) }
   }
   
-  def update(o: Observable, changedModel: AnyRef) {
+  def update(o: Observable, value: AnyRef) {
     o match {
       case resultController: ResultController => 
-        changedModel match {
+        value match {
           case test: TestModel => 
             test.status match {
               case TestStatus.STARTED => 
@@ -188,11 +195,20 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
             }
           case info: InfoModel =>
             invokeLater { model.nodeStructureChanged(info.parent) }
+            
+          case nextFailure: NextFailureEvent =>
+            invokeLater { 
+              selectNode(resultController.findNextFailure(getSelectedNode)) 
+            }
+          case previousFailure: PreviousFailureEvent =>
+            invokeLater { 
+              selectNode(resultController.findPreviousFailure(getSelectedNode)) 
+            }
           case _ =>
             // Ignore others
         }
       case _ => 
-        // Do nothing if the observable is not ResultModel
+        // Do nothing if the observable is not ResultController
     }
   }
   

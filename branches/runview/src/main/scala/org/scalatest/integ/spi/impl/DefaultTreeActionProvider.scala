@@ -9,8 +9,11 @@ import javax.swing.JOptionPane
 import org.scalatest.integ.Node
 import java.awt.event.MouseEvent
 import java.awt.event.KeyEvent
+import javax.swing.event.TreeSelectionEvent
+import org.scalatest.integ.ui.ResultController
+import org.scalatest.integ.ui.TreeSelectedEvent
 
-class DefaultTreeActionProvider extends TreeActionProvider {
+class DefaultTreeActionProvider(controller: ResultController) extends TreeActionProvider {
 
   protected def open(node: Node) {
     node.getLocation match {
@@ -52,5 +55,11 @@ class DefaultTreeActionProvider extends TreeActionProvider {
   override def keyPressed(event: KeyEvent, node: Node) {
     if (event.getKeyCode == KeyEvent.VK_F4) 
       open(node)
+  }
+  
+  override def selectionChanged(event: TreeSelectionEvent, node: Node) {
+    val hasNextFailure: Boolean = controller.findNextFailure(node) != null
+    val hasPreviousFailure: Boolean = controller.findPreviousFailure(node) != null
+    controller.notifyChanges(new TreeSelectedEvent(node, hasNextFailure, hasPreviousFailure))
   }
 }

@@ -2,8 +2,13 @@ package org.scalatest.integ.ui
 
 import javax.swing.ImageIcon
 
-private object Icons {
+private[ui] object Icons {
   private val loader = getClass.getClassLoader
+  
+  val ENABLED_NEXT_FAILURE = new ImageIcon(loader.getResource("images/e_next_failed.gif"))
+  val DISABLED_NEXT_FAILURE = new ImageIcon(loader.getResource("images/d_next_failed.gif"))
+  val ENABLED_PREVIOUS_FAILURE = new ImageIcon(loader.getResource("images/e_prev_failed.gif"))
+  val DISABLED_PREVIOUS_FAILURE = new ImageIcon(loader.getResource("images/d_prev_failed.gif"))
   
   val TESTS = new ImageIcon(loader.getResource("images/tests.gif"))
   val SUCCEEDED = new ImageIcon(loader.getResource("images/test_succeeded.gif"))
