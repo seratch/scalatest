@@ -24,6 +24,11 @@ import org.scalatest.integ.InfoModel
 import org.scalatest.integ.RunStatus
 import java.util.Observable
 import org.scalatest.integ.ScopeStatus
+import javax.swing.tree.TreePath
+import javax.swing.tree.TreeNode
+import scala.collection.mutable.ListBuffer
+import scala.annotation.tailrec
+import scala.collection.JavaConversions._
 
 private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel with Observer {
   
@@ -166,11 +171,20 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
               case RunStatus.STARTED => 
                 resetRoot(run)
               case RunStatus.COMPLETED =>
-                model.reload()
+                invokeLater {
+                  model.reload()
+                  selectNode(resultController.findNextFailure(null))
+                }
               case RunStatus.STOPPED =>
-                model.reload()
+                invokeLater {
+                  model.reload()
+                  selectNode(resultController.findNextFailure(null))
+                }
               case RunStatus.ABORTED => 
-                model.reload()
+                invokeLater {
+                  model.reload()
+                  selectNode(resultController.findNextFailure(null))
+                }
             }
           case info: InfoModel =>
             invokeLater { model.nodeStructureChanged(info.parent) }
@@ -179,6 +193,26 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
         }
       case _ => 
         // Do nothing if the observable is not ResultModel
+    }
+  }
+  
+  // Returns a TreePath containing the specified node.
+  private def getPath(node: TreeNode) = {
+     @tailrec
+    def getPathAcc(acc: List[TreeNode], node: TreeNode): List[TreeNode] = 
+      if (node.getParent == null)
+        (node :: acc).reverse
+      else
+        getPathAcc(node :: acc, node.getParent)
+    val nodeArray: Array[AnyRef] = getPathAcc(List.empty, node).reverse.toArray
+    new TreePath(nodeArray)
+  }
+  
+  private def selectNode(node: Node)  {
+    if (node != null) {
+      val treePath = getPath(node)
+      tree.setSelectionPath(treePath)
+      tree.scrollPathToVisible(treePath)
     }
   }
 }

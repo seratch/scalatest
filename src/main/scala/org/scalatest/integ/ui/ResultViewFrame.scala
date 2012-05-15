@@ -11,7 +11,7 @@ class ResultViewFrame extends JFrame with Observer {
   private val resultView = new ResultView()
   
   setTitle("ScalaTest Run Result")
-  setSize(380, 500)
+  setSize(380, 400)
   content.add(resultView)
   
   setVisible(true)
