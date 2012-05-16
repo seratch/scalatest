@@ -5,6 +5,9 @@ import org.scalatest.integ.ui.ResultController
 import java.awt.event.ActionEvent
 import org.scalatest.integ.ui.NextFailureEvent
 import org.scalatest.integ.ui.PreviousFailureEvent
+import javax.swing.event.ChangeEvent
+import org.scalatest.integ.ui.ShowFailureOnlyEvent
+import java.awt.event.ItemEvent
 
 class DefaultToolbarActionProvider(controller: ResultController) extends ToolbarActionProvider {
 
@@ -16,4 +19,7 @@ class DefaultToolbarActionProvider(controller: ResultController) extends Toolbar
     controller.notifyChanges(new PreviousFailureEvent())
   }
   
+  def showFailureOnly(e: ItemEvent, failureOnly: Boolean) {
+    controller.notifyChanges(new ShowFailureOnlyEvent(failureOnly))
+  }
 }

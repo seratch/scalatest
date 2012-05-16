@@ -12,8 +12,8 @@ import org.scalatest.integ.Node
 import javax.swing.DefaultListModel
 import javax.swing.JScrollPane
 import org.scalatest.integ.spi.StackTraceActionProvider
-import javax.swing.event.ChangeListener
-import javax.swing.event.ChangeEvent
+import java.awt.event.ItemListener
+import java.awt.event.ItemEvent
 
 class StackTraceView(actionProvider: StackTraceActionProvider) extends JPanel with Observer {
 
@@ -31,8 +31,8 @@ class StackTraceView(actionProvider: StackTraceActionProvider) extends JPanel wi
   
   private def init() {
     stackFoldButton.setToolTipText("Fold Stack Trace")
-    stackFoldButton.addChangeListener(new ChangeListener() {
-      def stateChanged(e: ChangeEvent) {
+    stackFoldButton.addItemListener(new ItemListener() {
+      def itemStateChanged(e: ItemEvent) {
         refresh()
       }
     })

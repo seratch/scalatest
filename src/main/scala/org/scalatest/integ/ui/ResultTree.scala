@@ -38,7 +38,9 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
   
   private val tree = new JTree()
   private var root: RunModel = null
-  private var model: DefaultTreeModel = null
+  private var model: FilteredTreeModel = null
+  
+  private var showFailureOnly: Boolean = false
   
   setLayout(new GridLayout(1, 1))
   initTree()
@@ -133,7 +135,7 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
     root = run
     if (root == null) 
       root = RunModel(0, None, None, None, None, None, null, 0, RunStatus.COMPLETED)
-    model = new DefaultTreeModel(root)
+    model = new FilteredTreeModel(root)
     tree.setModel(model)
     invokeLater { model.nodeStructureChanged(root) }
   }
@@ -196,13 +198,19 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
           case info: InfoModel =>
             invokeLater { model.nodeStructureChanged(info.parent) }
             
-          case nextFailure: NextFailureEvent =>
+          case nextFailureEvent: NextFailureEvent =>
             invokeLater { 
               selectNode(resultController.findNextFailure(getSelectedNode)) 
             }
-          case previousFailure: PreviousFailureEvent =>
+          case previousFailureEvent: PreviousFailureEvent =>
             invokeLater { 
               selectNode(resultController.findPreviousFailure(getSelectedNode)) 
+            }
+          case showFailureOnlyEvent: ShowFailureOnlyEvent =>
+            invokeLater {
+              showFailureOnly = showFailureOnlyEvent.failureOnly
+              model.nodeStructureChanged(root)
+              selectNode(resultController.findNextFailure(null))
             }
           case _ =>
             // Ignore others
@@ -229,6 +237,51 @@ private class ResultTree(treeActionProvider: TreeActionProvider) extends JPanel 
       val treePath = getPath(node)
       tree.setSelectionPath(treePath)
       tree.scrollPathToVisible(treePath)
+    }
+  }
+  
+  private class FilteredTreeModel(root: TreeNode) extends DefaultTreeModel(root) {
+    private def getFilteredChildren(node: Node) = node.childrenList.filter(filter(_)) 
+    
+    private def filter(node: TreeNode) = {
+      node match {
+        case test: TestModel =>
+          test.status == TestStatus.FAILED
+        case suite: SuiteModel => 
+          suite.status == SuiteStatus.FAILED
+        case _ =>
+          true
+      }
+    }
+    
+    override def getChild(parent: AnyRef, index: Int) = {
+      val node = parent.asInstanceOf[Node]
+      if (showFailureOnly) {
+        val filteredChildren = getFilteredChildren(node)
+        filteredChildren(index)
+      }
+      else
+        node.getChildAt(index)
+    }
+    
+    override def getChildCount(parent: AnyRef) = {  
+      val node = parent.asInstanceOf[Node]
+      if (showFailureOnly) {
+        val filteredChildren = getFilteredChildren(node)
+        filteredChildren.size
+      }
+      else
+        node.getChildCount
+    }  
+    
+    override def nodeChanged(node: TreeNode) {
+      try {
+        if (filter(node))
+          super.nodeChanged(node)
+      }
+      catch {
+        case e: IndexOutOfBoundsException if showFailureOnly => // IOB is ok if showFailureOnly is enabled.
+      }
     }
   }
 }

@@ -9,6 +9,7 @@ private[ui] object Icons {
   val DISABLED_NEXT_FAILURE = new ImageIcon(loader.getResource("images/d_next_failed.gif"))
   val ENABLED_PREVIOUS_FAILURE = new ImageIcon(loader.getResource("images/e_prev_failed.gif"))
   val DISABLED_PREVIOUS_FAILURE = new ImageIcon(loader.getResource("images/d_prev_failed.gif"))
+  val SHOW_FAILURE_ONLY = new ImageIcon(loader.getResource("images/show_failed_only.gif"))
   
   val TESTS = new ImageIcon(loader.getResource("images/tests.gif"))
   val SUCCEEDED = new ImageIcon(loader.getResource("images/test_succeeded.gif"))
