@@ -19,6 +19,7 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   private val previousFailure = createIconButton(Icons.ENABLED_PREVIOUS_FAILURE, Icons.DISABLED_PREVIOUS_FAILURE)
   private val showFailureOnly = createIconToggleButton(Icons.SHOW_FAILURE_ONLY, Icons.SHOW_FAILURE_ONLY)
   private val rerunAll = createIconButton(Icons.ENABLED_RERUN_ALL, Icons.DISABLED_RERUN_ALL)
+  private val rerunFailed = createIconButton(Icons.ENABLED_RERUN_FAILED, Icons.DISABLED_RERUN_FAILED)
   
   init()
   
@@ -27,6 +28,7 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   add(previousFailure)
   add(showFailureOnly)
   add(rerunAll)
+  add(rerunFailed)
   
   private def init() {
     disableButtons()
@@ -55,16 +57,24 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
         actionProvider.rerunAll(e)
       }
     })
+    rerunFailed.setToolTipText("Rerun Failed Tests")
+    rerunFailed.addActionListener(new ActionListener() {
+      def actionPerformed(e: ActionEvent) {
+        actionProvider.rerunFailed(e)
+      }
+    })
   }
   
   private def disableButtons() {
     nextFailure.setEnabled(false)
     previousFailure.setEnabled(false)
     rerunAll.setEnabled(false)
+    rerunFailed.setEnabled(false)
   }
   
   private def enableButtons() {
     rerunAll.setEnabled(true)
+    rerunFailed.setEnabled(true)
   }
   
   def update(o: Observable, value: AnyRef) {

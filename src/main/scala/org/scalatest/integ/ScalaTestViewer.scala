@@ -5,6 +5,7 @@ import java.util.Observable
 import javax.swing.UIManager
 import org.scalatest.integ.ui.ResultViewFrame
 import org.scalatest.integ.ui.RerunAllEvent
+import org.scalatest.integ.ui.RerunFailedEvent
 
 object ScalaTestViewer extends Observer {
 
@@ -29,18 +30,10 @@ object ScalaTestViewer extends Observer {
     event match {
       case rerunAll: RerunAllEvent => 
         runner.run()
+      case rerunFailed: RerunFailedEvent => 
+        runner.runFailed(rerunFailed.failedTestList)
       case _ =>
         // Ignore others
-    }
-  }
-  
-  private class ScalaTestRunner(classPath: Array[String], stArgs: Array[String], viewFrame: ResultViewFrame) {
-    def run() {
-      // Run ScalaTest
-      val runnable = new ScalaTestRunnable(classPath, stArgs)
-      runnable.addObserver(viewFrame)
-      val thread = new Thread(runnable)
-      thread.start()
     }
   }
 }

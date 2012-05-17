@@ -12,4 +12,6 @@ trait ToolbarActionProvider {
   def showFailureOnly(e: ItemEvent, failureOnly: Boolean)
   
   def rerunAll(e: ActionEvent)
+  
+  def rerunFailed(e: ActionEvent)
 }

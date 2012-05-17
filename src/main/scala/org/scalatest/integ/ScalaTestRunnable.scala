@@ -5,7 +5,33 @@ import java.io.File
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-class ScalaTestRunnable(classPath: Array[String], stArgs: Array[String]) extends Observable with Observer with Runnable {
+class ScalaTestRunner(classPath: Array[String], stArgs: Array[String], observer: Observer) {
+  
+  def run() {
+    // Run ScalaTest
+    val runnable = new ScalaTestRunnable(classPath, stArgs)
+    runnable.addObserver(observer)
+    val thread = new Thread(runnable)
+    thread.start()
+  }
+  
+  def runFailed(failedTestList: List[TestModel]) {
+    val failedTestArgs = failedTestList.map { test => getScalaTestArgsForTest(test.suiteClassName.getOrElse(null), test.suiteId, test.testName) }.flatten
+    val runnable = new ScalaTestRunnable(classPath, failedTestArgs.toArray)
+    runnable.addObserver(observer)
+    val thread = new Thread(runnable)
+    thread.start()
+  }
+  
+  private def getScalaTestArgsForTest(suiteClassName: String, suiteId: String, testName: String) = {
+    if (suiteClassName == suiteId)
+      List("-s", suiteClassName, "-t", testName)
+    else
+      List("-s", suiteClassName, "-i", suiteId, "-t", testName)
+  }
+}
+
+private class ScalaTestRunnable(classPath: Array[String], stArgs: Array[String]) extends Observable with Observer with Runnable {
 
   private val listener: EventListener = new EventListener(0)
   listener.addObserver(this)
