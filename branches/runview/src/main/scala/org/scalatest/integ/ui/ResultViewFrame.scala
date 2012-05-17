@@ -23,4 +23,8 @@ class ResultViewFrame extends JFrame with Observer {
       case _ => // Ignore others
     }
   }
+  
+  def addObserver(observer: Observer) {
+    resultView.addObserver(observer)
+  }
 }
