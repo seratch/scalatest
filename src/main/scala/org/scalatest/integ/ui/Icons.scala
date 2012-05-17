@@ -23,4 +23,7 @@ private[ui] object Icons {
   
   val STACKTRACE = new ImageIcon(loader.getResource("images/stacktrace.gif"))
   val STACKFOLD = new ImageIcon(loader.getResource("images/stackfold.gif"))
+  
+  val ENABLED_RERUN_ALL = new ImageIcon(loader.getResource("images/e_rerun_all.gif"))
+  val DISABLED_RERUN_ALL = new ImageIcon(loader.getResource("images/d_rerun_all.gif"))
 }

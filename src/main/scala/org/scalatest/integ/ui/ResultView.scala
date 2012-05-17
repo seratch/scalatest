@@ -52,6 +52,10 @@ class ResultView extends JPanel with Observer {
     resultController.notifyChanges(value)
   }
   
+  def addObserver(observer: Observer) {
+    resultController.addObserver(observer)
+  }
+  
   def toolbarActionProvider(controller: ResultController) = new DefaultToolbarActionProvider(controller)
   def treeActionProvider(controller: ResultController) = new DefaultTreeActionProvider(controller)
   def stackTraceActionProvider(controller: ResultController) = new DefaultStackTraceActionProvider(controller)

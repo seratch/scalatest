@@ -8,6 +8,7 @@ import org.scalatest.integ.ui.PreviousFailureEvent
 import javax.swing.event.ChangeEvent
 import org.scalatest.integ.ui.ShowFailureOnlyEvent
 import java.awt.event.ItemEvent
+import org.scalatest.integ.ui.RerunAllEvent
 
 class DefaultToolbarActionProvider(controller: ResultController) extends ToolbarActionProvider {
 
@@ -21,5 +22,9 @@ class DefaultToolbarActionProvider(controller: ResultController) extends Toolbar
   
   def showFailureOnly(e: ItemEvent, failureOnly: Boolean) {
     controller.notifyChanges(new ShowFailureOnlyEvent(failureOnly))
+  }
+  
+  def rerunAll(e: ActionEvent) {
+    controller.notifyChanges(new RerunAllEvent())
   }
 }

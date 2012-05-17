@@ -18,6 +18,7 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   private val nextFailure = createIconButton(Icons.ENABLED_NEXT_FAILURE, Icons.DISABLED_NEXT_FAILURE)
   private val previousFailure = createIconButton(Icons.ENABLED_PREVIOUS_FAILURE, Icons.DISABLED_PREVIOUS_FAILURE)
   private val showFailureOnly = createIconToggleButton(Icons.SHOW_FAILURE_ONLY, Icons.SHOW_FAILURE_ONLY)
+  private val rerunAll = createIconButton(Icons.ENABLED_RERUN_ALL, Icons.DISABLED_RERUN_ALL)
   
   init()
   
@@ -25,9 +26,10 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   add(nextFailure)
   add(previousFailure)
   add(showFailureOnly)
+  add(rerunAll)
   
   private def init() {
-    enableButtons(false)
+    disableButtons()
     nextFailure.setToolTipText("Next Failed Test")
     nextFailure.addActionListener(new ActionListener() {
       def actionPerformed(e: ActionEvent) {
@@ -47,11 +49,22 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
         actionProvider.showFailureOnly(e, state == ItemEvent.SELECTED)
       }
     })
+    rerunAll.setToolTipText("Rerun All Tests")
+    rerunAll.addActionListener(new ActionListener() {
+      def actionPerformed(e: ActionEvent) {
+        actionProvider.rerunAll(e)
+      }
+    })
   }
   
-  private def enableButtons(enable: Boolean) {
-    nextFailure.setEnabled(enable)
-    previousFailure.setEnabled(enable)
+  private def disableButtons() {
+    nextFailure.setEnabled(false)
+    previousFailure.setEnabled(false)
+    rerunAll.setEnabled(false)
+  }
+  
+  private def enableButtons() {
+    rerunAll.setEnabled(true)
   }
   
   def update(o: Observable, value: AnyRef) {
@@ -61,13 +74,13 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
           case run: RunModel => 
             run.status match {
               case RunStatus.STARTED => 
-                invokeLater { enableButtons(false) }
+                invokeLater { disableButtons() }
               case RunStatus.COMPLETED =>
-                
+                invokeLater { enableButtons() }
               case RunStatus.STOPPED =>
-                
+                invokeLater { enableButtons() }
               case RunStatus.ABORTED => 
-                
+                invokeLater { enableButtons() }
             }
           case treeSelectedEvent: TreeSelectedEvent =>
             nextFailure.setEnabled(treeSelectedEvent.hasNextFailure)
