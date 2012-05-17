@@ -30,6 +30,7 @@ import org.scalatest.integ.ScopeStatus
 import org.scalatest.integ.ScopeClosed
 import scala.annotation.tailrec
 import org.scalatest.integ.Node
+import scala.collection.mutable.ListBuffer
 
 class ResultController extends Observable {
   
@@ -47,6 +48,7 @@ class ResultController extends Observable {
   private var run: RunModel = null
   
   private var flattenNodeList: List[Node] = null
+  private val failedTestList: ListBuffer[TestModel] = new ListBuffer[TestModel]()
   
   def notifyChanges(value: AnyRef) {
     setChanged()
@@ -60,6 +62,7 @@ class ResultController extends Observable {
         val test = 
           TestModel(
             testStarting.suiteId, 
+            testStarting.suiteClassName, 
             testStarting.testName,
             testStarting.testText,
             testStarting.decodedTestName,
@@ -98,6 +101,7 @@ class ResultController extends Observable {
           case Some(suite) => 
             val test = suite.updateTest(testFailed.testName, TestStatus.FAILED, testFailed.duration, testFailed.location, testFailed.errorMessage, testFailed.errorDepth, testFailed.errorStackTraces)
             suite.closeScope()
+            failedTestList += test
             notifyChanges(test)
           case None => 
             // Should not happen
@@ -108,6 +112,7 @@ class ResultController extends Observable {
         val test = 
           TestModel(
             testIgnored.suiteId, 
+            testIgnored.suiteClassName, 
             testIgnored.testName,
             testIgnored.testText,
             testIgnored.decodedTestName,
@@ -220,6 +225,7 @@ class ResultController extends Observable {
         suiteCount = 0
         suiteAbortedCount = 0
         suiteMap = Map.empty[String, SuiteModel]
+        failedTestList.clear()
         totalCount = runStarting.testCount
         run = 
           RunModel(
@@ -363,4 +369,6 @@ class ResultController extends Observable {
       }
     }.getOrElse(null)
   }
+  
+  def findAllFailedTests = failedTestList.toList
 }

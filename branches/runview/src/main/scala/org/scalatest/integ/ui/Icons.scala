@@ -26,4 +26,7 @@ private[ui] object Icons {
   
   val ENABLED_RERUN_ALL = new ImageIcon(loader.getResource("images/e_rerun_all.gif"))
   val DISABLED_RERUN_ALL = new ImageIcon(loader.getResource("images/d_rerun_all.gif"))
+  
+  val ENABLED_RERUN_FAILED = new ImageIcon(loader.getResource("images/e_rerun_failed.gif"))
+  val DISABLED_RERUN_FAILED = new ImageIcon(loader.getResource("images/d_rerun_failed.gif"))
 }

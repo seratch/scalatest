@@ -47,6 +47,7 @@ sealed abstract class Node extends TreeNode {
 
 final case class TestModel(
   suiteId: String, 
+  suiteClassName: Option[String],
   testName: String,
   testText: String,
   decodedTestName: Option[String],
