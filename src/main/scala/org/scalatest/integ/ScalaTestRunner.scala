@@ -7,20 +7,27 @@ import java.io.InputStreamReader
 
 class ScalaTestRunner(classPath: Array[String], stArgs: Array[String], observer: Observer) {
   
+  private var runnable: ScalaTestRunnable = null
+  private var thread: Thread = null
+  
   def run() {
-    // Run ScalaTest
-    val runnable = new ScalaTestRunnable(classPath, stArgs)
-    runnable.addObserver(observer)
-    val thread = new Thread(runnable)
-    thread.start()
+    if (thread == null || !thread.isAlive) {
+      // Run ScalaTest
+      runnable = new ScalaTestRunnable(classPath, stArgs)
+      runnable.addObserver(observer)
+      thread = new Thread(runnable)
+      thread.start()
+    }
   }
   
   def runFailed(failedTestList: List[TestModel]) {
-    val failedTestArgs = failedTestList.map { test => getScalaTestArgsForTest(test.suiteClassName.getOrElse(null), test.suiteId, test.testName) }.flatten
-    val runnable = new ScalaTestRunnable(classPath, failedTestArgs.toArray)
-    runnable.addObserver(observer)
-    val thread = new Thread(runnable)
-    thread.start()
+    if (thread == null || !thread.isAlive) {
+      val failedTestArgs = failedTestList.map { test => getScalaTestArgsForTest(test.suiteClassName.getOrElse(null), test.suiteId, test.testName) }.flatten
+      runnable = new ScalaTestRunnable(classPath, failedTestArgs.toArray)
+      runnable.addObserver(observer)
+      thread = new Thread(runnable)
+      thread.start()
+    }
   }
   
   private def getScalaTestArgsForTest(suiteClassName: String, suiteId: String, testName: String) = {
@@ -28,6 +35,13 @@ class ScalaTestRunner(classPath: Array[String], stArgs: Array[String], observer:
       List("-s", suiteClassName, "-t", testName)
     else
       List("-s", suiteClassName, "-i", suiteId, "-t", testName)
+  }
+  
+  def stopRun() {
+    if (thread != null && thread.isAlive) {
+      runnable.stop()
+      runnable.send(RunStopped(None, None, Thread.currentThread.getName, 0L))
+    }
   }
 }
 
@@ -37,6 +51,8 @@ private class ScalaTestRunnable(classPath: Array[String], stArgs: Array[String])
   listener.addObserver(this)
   
   def getListenerPort = listener.getPort
+
+  @volatile private var stopped = false
   
   def run() {
     val listenerThread = new Thread(listener)
@@ -51,6 +67,10 @@ private class ScalaTestRunnable(classPath: Array[String], stArgs: Array[String])
     while (line != null) {
       println ("Stdout: " + line)
       line = reader.readLine
+      if (stopped) {
+        process.destroy()
+        line = null
+      }
     }
   }
   
@@ -67,5 +87,9 @@ private class ScalaTestRunnable(classPath: Array[String], stArgs: Array[String])
       case e: RunAborted => listener.stop()
       case _ =>
     }
+  }
+  
+  def stop() {
+    stopped = true
   }
 }

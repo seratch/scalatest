@@ -20,6 +20,7 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   private val showFailureOnly = createIconToggleButton(Icons.SHOW_FAILURE_ONLY, Icons.SHOW_FAILURE_ONLY)
   private val rerunAll = createIconButton(Icons.ENABLED_RERUN_ALL, Icons.DISABLED_RERUN_ALL)
   private val rerunFailed = createIconButton(Icons.ENABLED_RERUN_FAILED, Icons.DISABLED_RERUN_FAILED)
+  private val stopRun = createIconButton(Icons.ENABLED_STOP_RUN, Icons.DISABLED_STOP_RUN)
   
   init()
   
@@ -29,6 +30,7 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
   add(showFailureOnly)
   add(rerunAll)
   add(rerunFailed)
+  add(stopRun)
   
   private def init() {
     disableButtons()
@@ -63,6 +65,12 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
         actionProvider.rerunFailed(e)
       }
     })
+    stopRun.setToolTipText("Stop ScalaTest Run")
+    stopRun.addActionListener(new ActionListener() {
+      def actionPerformed(e: ActionEvent) {
+        actionProvider.stopRun(e)
+      }
+    })
   }
   
   private def disableButtons() {
@@ -70,11 +78,13 @@ class Toolbar(actionProvider: ToolbarActionProvider) extends JPanel with Observe
     previousFailure.setEnabled(false)
     rerunAll.setEnabled(false)
     rerunFailed.setEnabled(false)
+    stopRun.setEnabled(true)
   }
   
   private def enableButtons() {
     rerunAll.setEnabled(true)
     rerunFailed.setEnabled(true)
+    stopRun.setEnabled(false)
   }
   
   def update(o: Observable, value: AnyRef) {

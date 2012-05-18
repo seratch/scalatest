@@ -10,6 +10,7 @@ import org.scalatest.integ.ui.ShowFailureOnlyEvent
 import java.awt.event.ItemEvent
 import org.scalatest.integ.ui.RerunAllEvent
 import org.scalatest.integ.ui.RerunFailedEvent
+import org.scalatest.integ.ui.StopRunEvent
 
 class DefaultToolbarActionProvider(controller: ResultController) extends ToolbarActionProvider {
 
@@ -31,5 +32,9 @@ class DefaultToolbarActionProvider(controller: ResultController) extends Toolbar
   
   def rerunFailed(e: ActionEvent) {
     controller.notifyChanges(new RerunFailedEvent(controller.findAllFailedTests))
+  }
+  
+  def stopRun(e: ActionEvent) {
+    controller.notifyChanges(new StopRunEvent())
   }
 }

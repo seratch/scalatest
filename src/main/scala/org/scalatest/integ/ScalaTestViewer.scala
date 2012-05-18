@@ -6,6 +6,7 @@ import javax.swing.UIManager
 import org.scalatest.integ.ui.ResultViewFrame
 import org.scalatest.integ.ui.RerunAllEvent
 import org.scalatest.integ.ui.RerunFailedEvent
+import org.scalatest.integ.ui.StopRunEvent
 
 object ScalaTestViewer extends Observer {
 
@@ -32,6 +33,8 @@ object ScalaTestViewer extends Observer {
         runner.run()
       case rerunFailed: RerunFailedEvent => 
         runner.runFailed(rerunFailed.failedTestList)
+      case stopRun: StopRunEvent => 
+        runner.stopRun()
       case _ =>
         // Ignore others
     }

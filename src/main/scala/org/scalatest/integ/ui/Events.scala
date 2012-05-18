@@ -14,3 +14,5 @@ case class ShowFailureOnlyEvent(failureOnly: Boolean)
 case class RerunAllEvent
 
 case class RerunFailedEvent(failedTestList: List[TestModel])
+
+case class StopRunEvent
