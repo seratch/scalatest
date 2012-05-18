@@ -14,4 +14,6 @@ trait ToolbarActionProvider {
   def rerunAll(e: ActionEvent)
   
   def rerunFailed(e: ActionEvent)
+  
+  def stopRun(e: ActionEvent)
 }
