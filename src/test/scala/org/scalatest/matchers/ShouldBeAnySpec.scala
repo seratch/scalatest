@@ -33,12 +33,11 @@ class ShouldBeAnySpec extends FunSpec with ShouldMatchers with Checkers with Ret
 
     it("should do nothing when equal") {
       1 should be (1)
-      1 shouldBe 1
 
       // objects should equal themselves
       check((s: String) => returnsNormally(s should be (s)))
       check((i: Int) => returnsNormally(i should be (i)))
-      
+
       // a string should equal another string with the same value
       check((s: String) => returnsNormally(s should be (new String(s))))
     }
