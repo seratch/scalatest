@@ -770,10 +770,9 @@ trait FunSpec extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
    *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  protected override def runTests(testName: Option[String], args: RunArgs) {
 
-    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
+    runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
   /**
