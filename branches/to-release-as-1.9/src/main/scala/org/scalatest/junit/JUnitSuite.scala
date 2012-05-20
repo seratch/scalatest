@@ -114,18 +114,11 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    * in behavior would very likely not work.
    * </p>
    *
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param filter a <code>Filter</code> with which to filter tests based on their tags
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
-   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   * @param args the <code>RunArgs</code> for this run
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
-                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  override final protected def runNestedSuites(args: RunArgs) {
 
     throw new UnsupportedOperationException
   }
@@ -247,14 +240,13 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
     Map() ++ elements
   }
 
-  override def run(testName: Option[String], report: Reporter, stopper: Stopper,
-      filter: Filter, configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  override def run(testName: Option[String], args: RunArgs) {
 
-    theTracker = tracker
+    theTracker = args.tracker
 
-    if (!filter.tagsToInclude.isDefined) {
+    if (!args.filter.tagsToInclude.isDefined) {
       val jUnitCore = new JUnitCore
-      jUnitCore.addListener(new MyRunListener(report, configMap, tracker))
+      jUnitCore.addListener(new MyRunListener(args.reporter, args.configMap, args.tracker))
       val myClass = getClass
       testName match {
         case None => jUnitCore.run(myClass)

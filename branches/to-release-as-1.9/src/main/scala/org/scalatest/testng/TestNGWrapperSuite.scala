@@ -68,8 +68,9 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
    *              Because TestNG handles its own concurrency, this class ignores this parameter.
    * <br><br>
    */
-  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper,
-      filter: Filter, properties: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  override def run(testName: Option[String], args: RunArgs) {
+
+    import args._
 
     val tagsToInclude =
       filter.tagsToInclude match {
