@@ -62,7 +62,18 @@ trait AbstractSuite { this: Suite =>
   protected def withFixture(test: NoArgTest)
 
   /**
-   * Runs this suite of tests.
+   * <strong>This overloaded form of <code>run</code> has been deprecated and will be removed in a future
+   * version of ScalaTest. Please use the <code>run</code> method that takes two parameters instead.</strong>
+   *
+   * <p>
+   * This final implementation of this method constructs a <code>RunArgs</code> instance from the passed
+   * <code>reporter</code>, <code>stopper</code>, <code>filter</code>, <code>configMap</code>, <code>distributor</code>,
+   * and <code>tracker</code>, and invokes the overloaded <code>run</code> method that takes two parameters,
+   * passing in the specified <code>testName</code> and the newly constructed <code>RunArgs</code>. This method
+   * implementation enables existing code that called into the old <code>run</code> method to continue to work
+   * during the deprecation cycle. Subclasses and subtraits that overrode this method, however, will need to
+   * be changed to use the new two-parameter form instead.
+   * </p>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>Suite</code>.
@@ -76,7 +87,7 @@ trait AbstractSuite { this: Suite =>
    *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  def run(
+  final def run(
     testName: Option[String],
     reporter: Reporter,
     stopper: Stopper,
@@ -84,24 +95,30 @@ trait AbstractSuite { this: Suite =>
     configMap: Map[String, Any],
     distributor: Option[Distributor],
     tracker: Tracker
-  )
+  ) {  // TODO: test that this grabs chosenStyles out of config map
+    run(testName, RunArgs(reporter, stopper, filter, configMap, distributor, tracker, Set.empty))
+  }
+
+  /**
+   * Runs this suite of tests.
+   *
+   * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
+   *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>Suite</code>.
+   * @param args the <code>RunArgs</code> for this run
+   *
+   * @throws NullPointerException if any passed parameter is <code>null</code>.
+   */
+  def run(testName: Option[String], args: RunArgs)
 
   /**
    *
    * Runs zero to many of this suite's nested suites.
    *
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param filter a <code>Filter</code> with which to filter tests based on their tags
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
-   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
-   *         
+   * @param args the <code>RunArgs</code> to pass to nested suites
+   *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
-                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker)
+  protected def runNestedSuites(args: RunArgs)
 
   /**
    * Runs zero to many of this suite's tests.

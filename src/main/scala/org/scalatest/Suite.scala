@@ -2226,8 +2226,8 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * calls these two methods on this object in this order:</p>
    *
    * <ol>
-   * <li><code>runNestedSuites(report, stopper, tagsToInclude, tagsToExclude, configMap, distributor)</code></li>
-   * <li><code>runTests(testName, report, stopper, tagsToInclude, tagsToExclude, configMap)</code></li>
+   * <li><code>runNestedSuites(args)</code></li>
+   * <li><code>runTests(testName, args)</code></li>
    * </ol>
    *
    * <p>
@@ -2263,41 +2263,26 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param filter a <code>Filter</code> with which to filter tests based on their tags
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
-   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
-   *         
+   * @param args the <code>RunArgs</code> for this run
+   *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  def run(testName: Option[String], args: RunArgs) {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (filter == null)
-      throw new NullPointerException("filter was null")
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (distributor == null)
-      throw new NullPointerException("distributor was null")
-    if (tracker == null)
-      throw new NullPointerException("tracker was null")
+    if (args == null)
+      throw new NullPointerException("args was null")
+
+    import args._
 
     val stopRequested = stopper
     val report = wrapReporterIfNecessary(reporter)
 
     testName match {
-      case None => runNestedSuites(report, stopRequested, filter, configMap, distributor, tracker)
+      case None => runNestedSuites(args)
       case Some(_) =>
     }
     runTests(testName, report, stopRequested, filter, configMap, distributor, tracker)
@@ -2328,7 +2313,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * Run zero to many of this <code>Suite</code>'s nested <code>Suite</code>s.
    *
    * <p>
-   * If the passed <code>distributor</code> is <code>None</code>, this trait's
+   * If the passed <code>args.distributor</code> is <code>None</code>, this trait's
    * implementation of this method invokes <code>run</code> on each
    * nested <code>Suite</code> in the <code>List</code> obtained by invoking <code>nestedSuites</code>.
    * If a nested <code>Suite</code>'s <code>run</code>
@@ -2349,31 +2334,16 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * or <code>SuiteAborted</code> after executing any nested <code>Suite</code>.
    * </p>
    *
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param filter a <code>Filter</code> with which to filter tests based on their tags
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
-   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
-   *         
+   * @param args the <code>RunArgs</code> to pass to nested suites
+   *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
-                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  protected def runNestedSuites(args: RunArgs) {
 
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (filter == null)
-      throw new NullPointerException("filter was null")
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (distributor == null)
-      throw new NullPointerException("distributor was null")
-    if (tracker == null)
-      throw new NullPointerException("tracker was null")
+    if (args == null)
+      throw new NullPointerException("args was null")
+
+    import args._
 
     val stopRequested = stopper
     val report = wrapReporterIfNecessary(reporter)
