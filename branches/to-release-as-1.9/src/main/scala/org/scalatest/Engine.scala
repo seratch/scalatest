@@ -162,15 +162,17 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
   def runTestImpl(
     theSuite: Suite,
     testName: String,
-    reporter: Reporter,
-    stopper: Stopper,
-    configMap: Map[String, Any],
-    tracker: Tracker,
+    args: RunArgs,
     includeIcon: Boolean,
     invokeWithFixture: TestLeaf => Unit
   ) {
 
-    checkRunTestParamsForNull(testName, reporter, stopper, configMap, tracker)
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (args == null)
+      throw new NullPointerException("args was null")
+
+    import args._
 
     val (stopRequested, report, hasPublicNoArgConstructor, rerunnable, testStartTime) =
       theSuite.getRunTestGoodies(stopper, reporter, testName)
@@ -225,14 +227,12 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
   private def runTestsInBranch(
     theSuite: Suite,
     branch: Branch,
-    report: Reporter,
-    stopRequested: Stopper,
-    filter: Filter,
-    configMap: Map[String, Any],
-    tracker: Tracker,
+    args: RunArgs,
     includeIcon: Boolean,
-    runTest: (String, Reporter, Stopper, Map[String, Any], Tracker) => Unit
+    runTest: (String, RunArgs) => Unit
   ) {
+
+    val stopRequested = args.stopper
 
     branch match {
 
@@ -240,7 +240,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
 
         val descriptionTextWithOptionalPrefix = prependChildPrefix(parent, descriptionText)
         val indentationLevel = desc.indentationLevel
-        reportInfoProvided(theSuite, report, tracker, None, descriptionTextWithOptionalPrefix, None, indentationLevel, true, false)
+        reportInfoProvided(theSuite, args.reporter, args.tracker, None, descriptionTextWithOptionalPrefix, None, indentationLevel, true, false)
 
       case Trunk =>
     }
@@ -250,19 +250,19 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
       if (!stopRequested()) {
         node match {
           case testLeaf @ TestLeaf(_, testName, testText, _, _, _) =>
-            val (filterTest, ignoreTest) = filter(testName, theSuite.tags)
+            val (filterTest, ignoreTest) = args.filter(testName, theSuite.tags)
             if (!filterTest)
               if (ignoreTest) {
                 val testTextWithOptionalPrefix = prependChildPrefix(branch, testText)
-                reportTestIgnored(theSuite, report, tracker, testName, testTextWithOptionalPrefix, testLeaf.indentationLevel)
+                reportTestIgnored(theSuite, args.reporter, args.tracker, testName, testTextWithOptionalPrefix, testLeaf.indentationLevel)
               }
               else
-                runTest(testName, report, stopRequested, configMap, tracker)
+                runTest(testName, args)
 
           case infoLeaf @ InfoLeaf(_, message, payload) =>
-            reportInfoProvided(theSuite, report, tracker, None, message, payload, infoLeaf.indentationLevel, true, includeIcon)
+            reportInfoProvided(theSuite, args.reporter, args.tracker, None, message, payload, infoLeaf.indentationLevel, true, includeIcon)
 
-          case branch: Branch => runTestsInBranch(theSuite, branch, report, stopRequested, filter, configMap, tracker, includeIcon, runTest)
+          case branch: Branch => runTestsInBranch(theSuite, branch, args, includeIcon, runTest)
         }
       }
     }
@@ -280,7 +280,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     args: RunArgs,
     info: Informer,
     includeIcon: Boolean,
-    runTest: (String, Reporter, Stopper, Map[String, Any], Tracker) => Unit
+    runTest: (String, RunArgs) => Unit
   ) {
     if (testName == null)
       throw new NullPointerException("testName was null")
@@ -299,6 +299,9 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     // into error messages on the standard error stream.
     val report = theSuite.wrapReporterIfNecessary(reporter)
 
+    // Only make a new RunArgs if the reporter has been wrapped
+    val newArgs = if (args.reporter eq report) args else args.copy(reporter = report)
+
     // If a testName is passed to run, just run that, else run the tests returned
     // by testNames.
     testName match {
@@ -308,9 +311,9 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
           if (ignoreTest)
             reportTestIgnored(theSuite, report, tracker, tn, tn, 1)
           else
-            runTest(tn, report, stopRequested, configMap, tracker)
+            runTest(tn, newArgs)
         }
-      case None => runTestsInBranch(theSuite, Trunk, report, stopRequested, filter, configMap, tracker, includeIcon, runTest)
+      case None => runTestsInBranch(theSuite, Trunk, newArgs, includeIcon, runTest)
     }
   }
 
@@ -745,7 +748,7 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
     args: RunArgs,
     info: Informer,
     includeIcon: Boolean,
-    runTest: (String, Reporter, Stopper, Map[String, Any], Tracker) => Unit
+    runTest: (String, RunArgs) => Unit
   ) {
      import args._
 
