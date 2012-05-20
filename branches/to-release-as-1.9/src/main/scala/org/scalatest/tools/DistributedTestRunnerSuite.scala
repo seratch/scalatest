@@ -16,9 +16,11 @@
 package org.scalatest.tools
 
 import org.scalatest._
+import OneInstancePerTest.RunTheTestInThisInstance
 
 private[scalatest] class DistributedTestRunnerSuite(suite: ParallelTestExecution, testName: String) extends Suite {
   override def run(ignoreThisTestName: Option[String], args: RunArgs) {
-    suite.runOneTest(testName, args)
+    val newConfigMap = args.configMap + (RunTheTestInThisInstance -> true)
+    suite.run(Some(testName), args.copy(configMap = newConfigMap))
   }
 }
