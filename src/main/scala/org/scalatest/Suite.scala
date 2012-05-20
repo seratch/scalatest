@@ -41,7 +41,6 @@ import scala.collection.immutable.TreeSet
 import Suite.getIndentedText
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
-import Suite.checkRunTestParamsForNull
 import Suite.getIndentedTextForInfo
 import Suite.getMessageForException
 import Suite.reportTestStarting
@@ -2018,18 +2017,21 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * @param testName the name of one test to run.
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   * @param args the <code>RunArgs</code> for this run
+   * 
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>configMap</code>
    *     or <code>tracker</code> is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+  protected def runTest(testName: String, args: RunArgs) {
 
-    checkRunTestParamsForNull(testName, reporter, stopper, configMap, tracker)
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (args == null)
+      throw new NullPointerException("args was null")
+
+    import args._
 
     val (stopRequested, report, method, hasPublicNoArgConstructor, rerunnable, testStartTime) =
       getSuiteRunTestGoodies(stopper, reporter, testName)
@@ -2043,7 +2045,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
         (message, payload, isConstructingThread, testWasPending) => reportInfoProvided(thisSuite, report, tracker, Some(testName), message, payload, 2, isConstructingThread, true, Some(testWasPending))
       )
 
-    val args: Array[Object] =
+    val methodArgs: Array[Object] =
       if (testMethodTakesAnInformer(testName)) {
 /*
         val informer =
@@ -2065,7 +2067,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
       withFixture(
         new NoArgTest {
           def name = testName
-          def apply() { method.invoke(thisSuite, args: _*) }
+          def apply() { method.invoke(thisSuite, methodArgs: _*) }
           def configMap = theConfigMap
         }
       )
@@ -2180,6 +2182,9 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     // into error messages on the standard error stream.
     val report = wrapReporterIfNecessary(reporter)
 
+    // Only make a new RunArgs if the reporter has been wrapped
+    val newArgs = if (args.reporter eq report) args else args.copy(reporter = report)
+
     // If a testName is passed to run, just run that, else run the tests returned
     // by testNames.
     testName match {
@@ -2190,7 +2195,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
           if (ignoreTest)
             reportTestIgnored(thisSuite, report, tracker, tn, tn, 1)
           else
-            runTest(tn, report, stopRequested, configMap, tracker)
+            runTest(tn, newArgs)
         }
 
       case None =>
@@ -2199,7 +2204,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
             if (ignoreTest)
               reportTestIgnored(thisSuite, report, tracker, tn, tn, 1)
             else
-              runTest(tn, report, stopRequested, configMap, tracker)
+              runTest(tn, newArgs)
           }
       }
     }
@@ -2704,19 +2709,6 @@ private[scalatest] object Suite {
 
   def testMethodTakesAnInformer(testName: String) = testName.endsWith(InformerInParens)
 
-  def checkRunTestParamsForNull(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
-    if (testName == null)
-      throw new NullPointerException("testName was null")
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (tracker == null)
-      throw new NullPointerException("tracker was null")
-  }
- 
   /*
    For info and test names, the formatted text should have one level shaved off so that the text will
    line up correctly, and the icon is over to the left of that even with the enclosing level.

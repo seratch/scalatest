@@ -125,13 +125,13 @@ private [junit] class JUnit3ComfortSuite extends Suite with OneInstancePerTest {
    * exception, this method will complete abruptly with the same exception.
    * </p>
   */
-  override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+  override def runTest(testName: String, args: RunArgs) {
 
     var thrownException: Option[Throwable] = None
 
     setUp()
     try {
-      super.runTest(testName, reporter, stopper, configMap, tracker)
+      super.runTest(testName, args)
     }
     catch {
       case e: Exception => thrownException = Some(e)

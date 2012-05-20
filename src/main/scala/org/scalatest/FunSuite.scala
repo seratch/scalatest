@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import org.scalatest.events._
 import Suite.anErrorThatShouldCauseAnAbort
-import Suite.checkRunTestParamsForNull
 
 /**
  * A suite of tests in which each test is represented as a function value. The &#8220;<code>Fun</code>&#8221; in <code>FunSuite</code> stands
@@ -1248,14 +1247,15 @@ trait FunSuite extends Suite { thisSuite =>
    * Run a test. This trait's implementation runs the test registered with the name specified by <code>testName</code>.
    *
    * @param testName the name of one test to run.
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param configMap a <code>Map</code> of properties that can be used by the executing <code>Suite</code> of tests.
+   * @param args the <code>RunArgs</code> for this run
+   *
    * @throws IllegalArgumentException if <code>testName</code> is defined but a test with that name does not exist on this <code>FunSuite</code>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+  protected override def runTest(testName: String, args: RunArgs) {
+
+    import args._
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = configMap
@@ -1268,7 +1268,7 @@ trait FunSuite extends Suite { thisSuite =>
       )
     }
 
-    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
   }
 
   /**
