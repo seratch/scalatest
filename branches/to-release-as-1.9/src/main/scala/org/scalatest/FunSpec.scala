@@ -1633,10 +1633,9 @@ trait FunSpec extends Suite { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  protected override def runTests(testName: Option[String], args: RunArgs) {
 
-    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
+    runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
   override def run(testName: Option[String], args: RunArgs) {
