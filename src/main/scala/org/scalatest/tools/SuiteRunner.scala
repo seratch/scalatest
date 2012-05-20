@@ -24,6 +24,9 @@ import Suite.formatterForSuiteCompleted
 import Suite.formatterForSuiteAborted
 import org.scalatest.exceptions.NotAllowedException
 
+// TODO: If suite is an instance of DistributedTestRunnerSuite, go ahead and fire the SuiteStarting/Completed, etc.,
+// events, but put MotionToSuppress as the formatter. That way you won't get a whole bunch of
+// SuiteName:'s output to the standard out when running tests in parallel.
 private[scalatest] class SuiteRunner(suite: Suite, dispatch: Reporter, stopper: Stopper, filter: Filter,
     propertiesMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) extends Runnable {
 

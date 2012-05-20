@@ -16,6 +16,7 @@
 package org.scalatest    
 
 import tools.DistributedTestRunnerSuite
+import OneInstancePerTest.RunTheTestInThisInstance
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -48,12 +49,6 @@ trait ParallelTestExecution extends OneInstancePerTest {
 
   this: Suite =>
 
-  // Skipping runTests here, but that's OK, because by mixing in ParallelTestExecution, the programmer decided
-  // that the super.runTests should be replaced by the one defined in ParallelTestExecution.
-  private[scalatest] def runOneTest(testName: String, args: RunArgs) {
-    runTest(testName, args)
-  }
-
   /**
    * Run the tests of this suite in parallel.
    *
@@ -65,35 +60,34 @@ trait ParallelTestExecution extends OneInstancePerTest {
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected abstract override def runTests(testName: Option[String], args: RunArgs) {
+  protected abstract override def runTest(testName: String, args: RunArgs) {
 
+    // TODO: Should we make this runTest final, so it has to be the last one mixed in? If there
+    // are things that wouldn't work if this wasn't last, then I think we should go ahead and make
+    // it final in 2.0
 
-    // testName distributor
-    //    None    None      call super, because no distributor
-    //    Some    None      call super, because no distributor
-    //    None    Some      wrap a newInstance and put it in the distributor
-    //    Some    Some      this would be the one where we need to actually run the test, ignore the distributor
+    // distributor
+    //   None      call super, because no distributor
+    //   Some      this would be the one where we need to actually run the test, ignore the distributor
     args.distributor match {
       // If there's no distributor, then just run sequentially, via the regular OneInstancePerTest
       // algorithm
-      case None => super.runTests(testName, args)
+      case None => super.runTest(testName, args)
       case Some(distribute) =>
-        testName match {
-          // The only way both testName and distributor should be defined is if someone called from the
-          // outside and did this. First run is called with testName None and a defined Distributor, it
-          // will not get here. So in this case, just do the usual OneInstancePerTest thing.
-          // TODO: Make sure it doesn't get back here. Walk through the scenarios.
-          case Some(tn) => super.runTests(testName, args)
-          case None =>
-            for (tn <- testNames) {
-              val wrappedInstance =
-                new DistributedTestRunnerSuite(
-                  newInstance.asInstanceOf[ParallelTestExecution],
-                  tn
-                )
-              distribute(wrappedInstance, args.tracker.nextTracker)
-            }
+        val cm = args.configMap
+        if (cm.contains(RunTheTestInThisInstance))
+          super.runTest(testName, args)
+        else {
+          val wrappedInstance =
+            new DistributedTestRunnerSuite(
+              newInstance,
+              testName
+            )
+          distribute(wrappedInstance, args.tracker.nextTracker)
         }
     }
   }
+
+  override def newInstance: Suite with ParallelTestExecution =
+    this.getClass.newInstance.asInstanceOf[Suite with ParallelTestExecution]
 }

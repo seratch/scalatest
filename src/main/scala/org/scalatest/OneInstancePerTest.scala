@@ -15,6 +15,7 @@
  */
 package org.scalatest
 
+import OneInstancePerTest.RunTheTestInThisInstance
 /**
  * Trait that facilitates a style of testing in which each test is run in its own instance
  * of the suite class to isolate each test from the side effects of the other tests in the
@@ -86,18 +87,20 @@ trait OneInstancePerTest extends AbstractSuite {
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected abstract override def runTests(testName: Option[String], args: RunArgs) {
-    val seqArgs = args.copy(distributor = None)
-    testName match {
-      case Some(tn) => super.runTests(testName, seqArgs)
-      case None =>
-        for (tn <- testNames) {
-          val oneInstance = newInstance
-          oneInstance.run(Some(tn), seqArgs)
-        }
+  protected abstract override def runTest(testName: String, args: RunArgs) {
+    
+    val cm = args.configMap
+    if (cm.contains(RunTheTestInThisInstance))
+      super.runTest(testName, args)
+    else {
+      val oneInstance = newInstance
+      val newConfigMap = args.configMap + (RunTheTestInThisInstance -> true)
+      // TODO: I'm not 100% sure I need to turn off the distributor. Think about it.
+      val newArgs = args.copy(configMap = newConfigMap, distributor = None)
+      oneInstance.run(Some(testName), newArgs)
     }
   }
-  
+
   /**
    * Construct a new instance of this <code>Suite</code>.
    *
@@ -133,5 +136,10 @@ trait OneInstancePerTest extends AbstractSuite {
    * }
    * </pre>
    */
-  def newInstance = this.getClass.newInstance.asInstanceOf[Suite]
+  def newInstance: Suite with OneInstancePerTest =
+    this.getClass.newInstance.asInstanceOf[Suite with OneInstancePerTest]
+}
+
+private[scalatest] object OneInstancePerTest {
+  val RunTheTestInThisInstance = "org.scalatest.RunTheTestInThisInstance" 
 }
