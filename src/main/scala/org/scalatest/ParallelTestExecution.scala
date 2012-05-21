@@ -16,6 +16,7 @@
 package org.scalatest    
 
 import tools.DistributedTestRunnerSuite
+import tools.SortingReporter
 import OneInstancePerTest.RunTheTestInThisInstance
 
 /**
@@ -87,7 +88,21 @@ trait ParallelTestExecution extends OneInstancePerTest {
         }
     }
   }
+  
+  private var sortingReporter: Option[SortingReporter] = None
 
-  override def newInstance: Suite with ParallelTestExecution =
-    this.getClass.newInstance.asInstanceOf[Suite with ParallelTestExecution]
+  override abstract protected def runTests(testName: Option[String], args: RunArgs) {
+    sortingReporter match {
+      case Some(rep) => 
+      case None =>
+        sortingReporter = Some(new SortingReporter(args.reporter, testNames.size))
+    }
+    super.runTests(testName, args.copy(reporter = sortingReporter.getOrElse(args.reporter)))
+  }
+
+  override def newInstance: Suite with ParallelTestExecution = {
+    val instance = getClass.newInstance.asInstanceOf[Suite with ParallelTestExecution]
+    instance.sortingReporter = sortingReporter
+    instance
+  }
 }
