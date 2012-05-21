@@ -8,29 +8,78 @@ import scala.util.Sorting
 
 private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) extends ResourcefulReporter {
 
-  private val eventBuffer = new ListBuffer[Event]()
-  private var testCompleted = 0
+  private var eventBuffer = new ListBuffer[Event]()
+  private var startedCount = 0
+  private var completedCount = 0
+  private var allStarted: Boolean = false
+  private val doneMap = new collection.mutable.HashMap[String, Event]()
   
   override def apply(event: Event) {
-    eventBuffer += event
+    
     event match {
-      case event: TestFailed => increaseCountAndCheckToSend()
-      case event: TestSucceeded => increaseCountAndCheckToSend()
-      case event: TestIgnored => increaseCountAndCheckToSend()
-      case event: TestPending => increaseCountAndCheckToSend()
+      case event: TestStarting => increaseStartedCount(event)
+      case event: TestIgnored => increaseStartedCount(event)
+      case event: TestSucceeded => handleDoneEvent(event, event.testName)
+      case event: TestFailed => handleDoneEvent(event, event.testName)
+      case event: TestPending => handleDoneEvent(event, event.testName)
       case _ => 
+        eventBuffer += event
     }
   }
   
-  private def increaseCountAndCheckToSend() {
+  private def increaseStartedCount(event: Event) {
     synchronized {
-      testCompleted += 1
-      if (testCompleted == testCount) {
-        // sort and dispatch all events
+      eventBuffer += event
+      startedCount += 1
+      if (startedCount == testCount) {
         val eventArray = eventBuffer.toArray
         Sorting.quickSort(eventArray)
-        eventArray.foreach(reporter(_))
+        eventBuffer = new ListBuffer[Event]() ++ eventArray
+        allStarted = true
       }
+    }
+  }
+  
+  private def handleDoneEvent(doneEvent: Event, testName: String) {
+    synchronized {
+      if (allStarted) {
+        doneMap.put(testName, doneEvent)
+        completedCount += 1
+      
+        if (completedCount == testCount) {
+          eventBuffer.foreach { e =>
+            e match {
+              case testStarting: TestStarting => 
+                reporter(e)
+                reporter(doneMap(testStarting.testName))
+              case _ =>
+                reporter(e)
+            }
+          }
+          eventBuffer = new ListBuffer[Event]()
+        }
+        else {
+          val readyBuffer = eventBuffer.takeWhile { e => 
+            e match {
+              case TestStarting(ordinal,  suiteName, suiteClassName, theTestName, formatter,
+                                rerunner, payload, threadName, timeStamp) if !doneMap.contains(theTestName) =>
+                false
+              case _ =>
+                true
+            }
+          }
+          eventBuffer = eventBuffer.drop(readyBuffer.size)
+          readyBuffer.foreach { e => 
+            e match {
+              case testStarting: TestStarting => 
+                reporter(e)
+                reporter(doneMap(testStarting.testName))
+              case _ =>
+                reporter(e)
+            }
+          }
+        }
+      }      
     }
   }
   
