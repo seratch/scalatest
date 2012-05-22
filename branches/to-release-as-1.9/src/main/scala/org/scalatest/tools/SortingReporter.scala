@@ -23,7 +23,9 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) ext
       case event: TestFailed => handleDoneEvent(event, event.testName)
       case event: TestPending => handleDoneEvent(event, event.testName)
       case _ => 
-        eventBuffer += event
+        synchronized {
+          eventBuffer += event
+        }
     }
   }
   
