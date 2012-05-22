@@ -262,7 +262,7 @@ trait TestNGSuite extends Suite { thisSuite =>
     override def onTestSuccess(result: ITestResult) = {
       val testName = result.getName + params(result)
       val formatter = getIndentedText(testName, 1, true)
-      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName,
+      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, 0, 
           None, Some(formatter), Some(new TestRerunner(className, result.getName)))) // Can I add a duration?
     }
 
@@ -292,7 +292,7 @@ trait TestNGSuite extends Suite { thisSuite =>
         case _ => 
           None
       }
-      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, throwable, None, Some(formatter), Some(new TestRerunner(className, result.getName)), payload)) // Can I add a duration?
+      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, 0, throwable, None, Some(formatter), Some(new TestRerunner(className, result.getName)), payload)) // Can I add a duration?
     }
 
     /**

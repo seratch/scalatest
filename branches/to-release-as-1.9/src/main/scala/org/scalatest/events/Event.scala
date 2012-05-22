@@ -318,6 +318,7 @@ final case class TestSucceeded (
   suiteName: String,
   suiteClassName: Option[String],
   testName: String,
+  infoCount: Int,
   duration: Option[Long],
   formatter: Option[Formatter],
   rerunner: Option[Rerunner],
@@ -383,12 +384,13 @@ object TestSucceeded {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     duration: Option[Long],
     formatter: Option[Formatter],
     rerunner: Option[Rerunner],
     payload: Option[Any]
   ): TestSucceeded = {
-    apply(ordinal, suiteName, suiteClassName, testName, duration, formatter, rerunner, payload, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, duration, formatter, rerunner, payload, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -415,11 +417,12 @@ object TestSucceeded {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     duration: Option[Long],
     formatter: Option[Formatter],
     rerunner: Option[Rerunner]
   ): TestSucceeded = {
-    apply(ordinal, suiteName, suiteClassName, testName, duration, formatter, rerunner, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, duration, formatter, rerunner, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -445,10 +448,11 @@ object TestSucceeded {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     duration: Option[Long],
     formatter: Option[Formatter]
   ): TestSucceeded = {
-    apply(ordinal, suiteName, suiteClassName, testName, duration, formatter, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, duration, formatter, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -472,9 +476,10 @@ object TestSucceeded {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     duration: Option[Long]
   ): TestSucceeded = {
-    apply(ordinal, suiteName, suiteClassName, testName, duration, None, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, duration, None, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -496,9 +501,10 @@ object TestSucceeded {
     ordinal: Ordinal,
     suiteName: String,
     suiteClassName: Option[String],
-    testName: String
+    testName: String, 
+    infoCount: Int
   ): TestSucceeded = {
-    apply(ordinal, suiteName, suiteClassName, testName, None, None, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, None, None, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 }
 
@@ -555,6 +561,7 @@ final case class TestFailed (
   suiteName: String,
   suiteClassName: Option[String],
   testName: String,
+  infoCount: Int, 
   throwable: Option[Throwable],
   duration: Option[Long],
   formatter: Option[Formatter],
@@ -629,13 +636,14 @@ object TestFailed {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     throwable: Option[Throwable],
     duration: Option[Long],
     formatter: Option[Formatter],
     rerunner: Option[Rerunner],
     payload: Option[Any]
   ): TestFailed = {
-    apply(ordinal, message, suiteName, suiteClassName, testName, throwable, duration, formatter, rerunner, payload, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, message, suiteName, suiteClassName, testName, infoCount, throwable, duration, formatter, rerunner, payload, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -666,12 +674,13 @@ object TestFailed {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     throwable: Option[Throwable],
     duration: Option[Long],
     formatter: Option[Formatter],
     rerunner: Option[Rerunner]
   ): TestFailed = {
-    apply(ordinal, message, suiteName, suiteClassName, testName, throwable, duration, formatter, rerunner, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, message, suiteName, suiteClassName, testName, infoCount, throwable, duration, formatter, rerunner, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -701,11 +710,12 @@ object TestFailed {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     throwable: Option[Throwable],
     duration: Option[Long],
     formatter: Option[Formatter]
   ): TestFailed = {
-    apply(ordinal, message, suiteName, suiteClassName, testName, throwable, duration, formatter, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, message, suiteName, suiteClassName, testName, infoCount, throwable, duration, formatter, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -733,10 +743,11 @@ object TestFailed {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     throwable: Option[Throwable],
     duration: Option[Long]
   ): TestFailed = {
-    apply(ordinal, message, suiteName, suiteClassName, testName, throwable, duration, None, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, message, suiteName, suiteClassName, testName, infoCount, throwable, duration, None, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -763,9 +774,10 @@ object TestFailed {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     throwable: Option[Throwable]
   ): TestFailed = {
-    apply(ordinal, message, suiteName, suiteClassName, testName, throwable, None, None, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, message, suiteName, suiteClassName, testName, infoCount, throwable, None, None, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 }
 
@@ -970,6 +982,7 @@ final case class TestPending (
   suiteName: String,
   suiteClassName: Option[String],
   testName: String,
+  infoCount: Int, 
   formatter: Option[Formatter],
   payload: Option[Any],
   threadName: String,
@@ -1026,10 +1039,11 @@ object TestPending {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     formatter: Option[Formatter],
     payload: Option[Any]
   ): TestPending = {
-    apply(ordinal, suiteName, suiteClassName, testName, formatter, payload, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, formatter, payload, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -1053,9 +1067,10 @@ object TestPending {
     suiteName: String,
     suiteClassName: Option[String],
     testName: String,
+    infoCount: Int, 
     formatter: Option[Formatter]
   ): TestPending = {
-    apply(ordinal, suiteName, suiteClassName, testName, formatter, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, formatter, None, Thread.currentThread.getName, (new Date).getTime)
   }
 
   /**
@@ -1077,9 +1092,10 @@ object TestPending {
     ordinal: Ordinal,
     suiteName: String,
     suiteClassName: Option[String],
-    testName: String
+    testName: String, 
+    infoCount: Int
   ): TestPending = {
-    apply(ordinal, suiteName, suiteClassName, testName, None, None, Thread.currentThread.getName, (new Date).getTime)
+    apply(ordinal, suiteName, suiteClassName, testName, infoCount, None, None, Thread.currentThread.getName, (new Date).getTime)
   }
 }
 

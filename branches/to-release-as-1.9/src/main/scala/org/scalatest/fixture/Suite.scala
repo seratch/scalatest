@@ -589,23 +589,23 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
       }
 
       val duration = System.currentTimeMillis - testStartTime
-      reportTestSucceeded(thisSuite, report, tracker, testName, duration, formatter, rerunnable)
+      reportTestSucceeded(thisSuite, report, tracker, testName, informerForThisTest.recordedCount, duration, formatter, rerunnable)
     }
     catch { 
       case ite: InvocationTargetException =>
         val t = ite.getTargetException
         t match {
           case _: TestPendingException =>
-            reportTestPending(thisSuite, report, tracker, testName, formatter)
+            reportTestPending(thisSuite, report, tracker, testName, informerForThisTest.recordedCount, formatter)
             testWasPending = true // Set so info's printed out in the finally clause show up yellow
           case e if !anErrorThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
-            handleFailedTest(t, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
+            handleFailedTest(t, hasPublicNoArgConstructor, testName, informerForThisTest.recordedCount, rerunnable, report, tracker, duration)
           case e => throw e
         }
       case e if !anErrorThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
-        handleFailedTest(e, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
+        handleFailedTest(e, hasPublicNoArgConstructor, testName, informerForThisTest.recordedCount, rerunnable, report, tracker, duration)
       case e => throw e
     }
     finally {

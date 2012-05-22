@@ -60,7 +60,7 @@ import exceptions._
           case _ => 
             None
         }
-      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, Some(testClass), testName, throwable, None, Some(formatter), None, payload))
+      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, Some(testClass), testName, 0, throwable, None, Some(formatter), None, payload))
       // TODO: can I add a duration?
     }
 
@@ -69,7 +69,7 @@ import exceptions._
         val (testName, testClass, testClassName) =
           parseTestDescription(description)
         val formatter = getIndentedText(testName, 1, true)
-        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, None, Some(formatter), None))
+        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, 0, None, Some(formatter), None))
         // TODO: can I add a duration?
       }
     }
