@@ -31,6 +31,8 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) ext
     synchronized {
       eventBuffer += event
       startedCount += 1
+      if (event.isInstanceOf[TestIgnored])
+        completedCount += 1
       if (startedCount == testCount) {
         val eventArray = eventBuffer.toArray
         Sorting.quickSort(eventArray)
