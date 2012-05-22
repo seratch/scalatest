@@ -42,10 +42,9 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) ext
   
   private def handleDoneEvent(doneEvent: Event, testName: String) {
     synchronized {
+      doneMap.put(testName, doneEvent)
+      completedCount += 1
       if (allStarted) {
-        doneMap.put(testName, doneEvent)
-        completedCount += 1
-      
         if (completedCount == testCount) {
           eventBuffer.foreach { e =>
             e match {
