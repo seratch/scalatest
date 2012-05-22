@@ -245,7 +245,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
       case Trunk =>
     }
 
-
+    val nextTracker = args.tracker.nextTracker
     branch.subNodes.reverse.foreach { node =>
       if (!stopRequested()) {
         node match {
@@ -254,13 +254,13 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
             if (!filterTest)
               if (ignoreTest) {
                 val testTextWithOptionalPrefix = prependChildPrefix(branch, testText)
-                reportTestIgnored(theSuite, args.reporter, args.tracker, testName, testTextWithOptionalPrefix, testLeaf.indentationLevel)
+                reportTestIgnored(theSuite, args.reporter, nextTracker, testName, testTextWithOptionalPrefix, testLeaf.indentationLevel)
               }
               else
-                runTest(testName, args)
+                runTest(testName, args.copy(tracker = nextTracker))
 
           case infoLeaf @ InfoLeaf(_, message, payload) =>
-            reportInfoProvided(theSuite, args.reporter, args.tracker, None, message, payload, infoLeaf.indentationLevel, true, includeIcon)
+            reportInfoProvided(theSuite, args.reporter, nextTracker, None, message, payload, infoLeaf.indentationLevel, true, includeIcon)
 
           case branch: Branch => runTestsInBranch(theSuite, branch, args, includeIcon, runTest)
         }
