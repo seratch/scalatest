@@ -90,27 +90,17 @@ trait ParallelTestExecution extends OneInstancePerTest {
     }
   }
   
-  private var sortingReporter: Option[SortingReporter] = None
-
   override abstract protected def runTests(testName: Option[String], args: RunArgs) {
-    sortingReporter match {
-      case Some(rep) => 
-      case None =>
-        sortingReporter = Some(new SortingReporter(args.reporter, testNames.size))
-    }
-    super.runTests(testName, args.copy(reporter = sortingReporter.getOrElse(args.reporter)))
-    
-    /*val runArgs = 
+    val runArgs = 
       if (args.configMap.contains(RunTheTestInThisInstance))
         args
       else
         args.copy(reporter = new SortingReporter(args.reporter, testNames.size))
-    super.runTests(testName, runArgs)*/
+    super.runTests(testName, runArgs)
   }
 
   override def newInstance: Suite with ParallelTestExecution = {
     val instance = getClass.newInstance.asInstanceOf[Suite with ParallelTestExecution]
-    instance.sortingReporter = sortingReporter
     instance
   }
 }
