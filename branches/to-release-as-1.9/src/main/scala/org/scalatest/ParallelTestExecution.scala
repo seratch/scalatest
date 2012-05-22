@@ -82,7 +82,8 @@ trait ParallelTestExecution extends OneInstancePerTest {
           val wrappedInstance =
             new DistributedTestRunnerSuite(
               newInstance,
-              testName
+              testName, 
+              args
             )
           distribute(wrappedInstance, args.tracker.nextTracker)
         }
@@ -98,6 +99,13 @@ trait ParallelTestExecution extends OneInstancePerTest {
         sortingReporter = Some(new SortingReporter(args.reporter, testNames.size))
     }
     super.runTests(testName, args.copy(reporter = sortingReporter.getOrElse(args.reporter)))
+    
+    /*val runArgs = 
+      if (args.configMap.contains(RunTheTestInThisInstance))
+        args
+      else
+        args.copy(reporter = new SortingReporter(args.reporter, testNames.size))
+    super.runTests(testName, runArgs)*/
   }
 
   override def newInstance: Suite with ParallelTestExecution = {

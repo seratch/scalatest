@@ -18,8 +18,8 @@ package org.scalatest.tools
 import org.scalatest._
 import OneInstancePerTest.RunTheTestInThisInstance
 
-private[scalatest] class DistributedTestRunnerSuite(suite: ParallelTestExecution, testName: String) extends Suite {
-  override def run(ignoreThisTestName: Option[String], args: RunArgs) {
+private[scalatest] class DistributedTestRunnerSuite(suite: ParallelTestExecution, testName: String, args: RunArgs) extends Suite {
+  override def run(ignoreThisTestName: Option[String], ignoreThisArgs: RunArgs) {
     val newConfigMap = args.configMap + (RunTheTestInThisInstance -> true)
     suite.run(Some(testName), args.copy(configMap = newConfigMap))
   }

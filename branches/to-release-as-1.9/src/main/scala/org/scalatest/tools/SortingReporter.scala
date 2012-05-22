@@ -39,6 +39,7 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) ext
         val eventArray = eventBuffer.toArray
         Sorting.quickSort(eventArray)
         eventBuffer = new ListBuffer[Event]() ++ eventArray
+        println("###all started: " + eventBuffer.map(e => e.getClass.getSimpleName + "(" + e.ordinal.toList.mkString(".") + ")"))
         allStarted = true
       }
     }
