@@ -72,9 +72,9 @@ class RunNotifierSuite extends FunSuite {
     val reporter = new RunNotifierReporter(runNotifier)
     val exception = new IllegalArgumentException
 
-    reporter(TestFailed(ordinal, "No msg", "SuiteClassName", Some("fully.qualified.SuiteClassName"), "theTestName", Some(exception)))
+    reporter(TestFailed(ordinal, "No msg", "SuiteClassName", Some("fully.qualified.SuiteClassName"), "theTestName", 0, Some(exception)))
     assert(runNotifier.passed.get.getDescription.getDisplayName === "theTestName(fully.qualified.SuiteClassName)")
-    reporter(TestFailed(ordinal, "No msg", "SuiteClassName", None, "theTestName", Some(exception)))
+    reporter(TestFailed(ordinal, "No msg", "SuiteClassName", None, "theTestName", 0, Some(exception)))
     assert(runNotifier.passed.get.getDescription.getDisplayName === "theTestName(SuiteClassName)")
   }
 
@@ -91,9 +91,9 @@ class RunNotifierSuite extends FunSuite {
       }
 
     val reporter = new RunNotifierReporter(runNotifier)
-    reporter(TestSucceeded(ordinal, "SuiteClassName", Some("fully.qualified.SuiteClassName"), "theTestName"))
+    reporter(TestSucceeded(ordinal, "SuiteClassName", Some("fully.qualified.SuiteClassName"), "theTestName", 0))
     assert(runNotifier.passed.get.getDisplayName === "theTestName(fully.qualified.SuiteClassName)")
-    reporter(TestSucceeded(ordinal, "SuiteClassName", None, "theTestName"))
+    reporter(TestSucceeded(ordinal, "SuiteClassName", None, "theTestName", 0))
     assert(runNotifier.passed.get.getDisplayName === "theTestName(SuiteClassName)")
   }
 

@@ -201,16 +201,16 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
 
       val duration = System.currentTimeMillis - testStartTime
       val durationToReport = theTest.recordedDuration.getOrElse(duration)
-      reportTestSucceeded(theSuite, report, tracker, testName, durationToReport, formatter, rerunnable)
+      reportTestSucceeded(theSuite, report, tracker, testName, informerForThisTest.recordedCount, durationToReport, formatter, rerunnable)
     }
     catch { // XXX
       case _: TestPendingException =>
-        reportTestPending(theSuite, report, tracker, testName, formatter)
+        reportTestPending(theSuite, report, tracker, testName, informerForThisTest.recordedCount, formatter)
         testWasPending = true // Set so info's printed out in the finally clause show up yellow
       case e if !anErrorThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
         val durationToReport = theTest.recordedDuration.getOrElse(duration)
-        reportTestFailed(theSuite, report, e, testName, theTest.testText, rerunnable, tracker, durationToReport, theTest.indentationLevel, includeIcon)
+        reportTestFailed(theSuite, report, e, testName, theTest.testText, informerForThisTest.recordedCount, rerunnable, tracker, durationToReport, theTest.indentationLevel, includeIcon)
       case e => throw e
     }
     finally {

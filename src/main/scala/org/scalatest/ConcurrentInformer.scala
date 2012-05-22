@@ -142,6 +142,8 @@ private[scalatest] class MessageRecordingInformer2(fire: (String, Option[Any], B
     for ((message, payload) <- recordedMessages)
       fire(message, payload, true, testWasPending) // Fire the info provided event using the passed function
   }
+  
+  def recordedCount = recordedMessages.size
 }
 
 private[scalatest] object MessageRecordingInformer2 {
