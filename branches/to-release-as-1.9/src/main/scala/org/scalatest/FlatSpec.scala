@@ -3111,4 +3111,6 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.FlatSpec"
+    
+  override def suiteStructure = Some(engine.getStructure)
 }

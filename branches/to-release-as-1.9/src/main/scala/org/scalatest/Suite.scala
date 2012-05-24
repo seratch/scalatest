@@ -2544,6 +2544,8 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * Suite style name.
    */
   val styleName: String = "org.scalatest.Suite"
+    
+  def suiteStructure: Option[SuiteStructure.Branch] = None
 }
 
 private[scalatest] object Suite {

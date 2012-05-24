@@ -621,5 +621,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.fixture.FeatureSpec"
+    
+  override def suiteStructure = Some(engine.getStructure)
 }
 
