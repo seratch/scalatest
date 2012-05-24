@@ -15,6 +15,8 @@
  */
 package org.scalatest
 
+import OneInstancePerTest._
+
 /**
  * Trait that facilitates a style of testing in which each test is run in its own instance
  * of the suite class to isolate each test from the side effects of the other tests in the
@@ -93,14 +95,27 @@ trait OneInstancePerTest extends AbstractSuite {
    */
   protected abstract override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
                              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
-    testName match {
-      case Some(tn) => super.runTests(testName, reporter, stopper, filter, configMap, None, tracker)
-      case None =>
-        for (tn <- testNames) {
-          val oneInstance = newInstance
-          oneInstance.run(Some(tn), reporter, stopper, filter, configMap, None, tracker)
-        }
+    if (configMap.contains(RunTheTestInThisInstance)) {
+      val newConfigMap = configMap.filter(entry => entry._1 != RunTheTestInThisInstance &&
+                                          entry._1 != PassedInFilter && 
+                                          entry._1 != PassedInDistributor)
+      runTest(testName.get, reporter, stopper, newConfigMap, tracker)
     }
+    else {
+      val newConfigMap = configMap + (RunTheTestInThisInstance -> true) + (PassedInFilter -> filter) + (PassedInDistributor -> distributor)
+      super.runTests(testName, reporter, stopper, filter, newConfigMap, distributor, tracker)
+    }
+  }
+  
+  protected abstract override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+    if (configMap.contains(RunTheTestInThisInstance)) {
+      val oneInstance = newInstance
+      val filter = configMap(PassedInFilter).asInstanceOf[Filter]
+      val distributor = configMap(PassedInDistributor).asInstanceOf[Option[Distributor]]
+      oneInstance.run(Some(testName), reporter, stopper, filter, configMap, distributor, tracker)
+    }
+    else
+      super.runTest(testName, reporter, stopper, configMap, tracker)
   }
   
   /**
@@ -139,4 +154,10 @@ trait OneInstancePerTest extends AbstractSuite {
    * </pre>
    */
   def newInstance = this.getClass.newInstance.asInstanceOf[Suite]
+}
+
+private[scalatest] object OneInstancePerTest {
+  val RunTheTestInThisInstance = "org.scalatest.RunTheTestInThisInstance" 
+  val PassedInFilter = "org.scalatest.PassedInFilter"
+  val PassedInDistributor = "org.scalatest.PassedInDistributor"
 }
