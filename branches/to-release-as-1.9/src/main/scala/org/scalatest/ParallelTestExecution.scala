@@ -83,9 +83,9 @@ trait ParallelTestExecution extends OneInstancePerTest {
             new DistributedTestRunnerSuite(
               newInstance,
               testName, 
-              args
+              args.copy(tracker = args.tracker.nextTracker)
             )
-          distribute(wrappedInstance, args.tracker.nextTracker)
+          distribute(wrappedInstance, args.tracker)
         }
     }
   }
