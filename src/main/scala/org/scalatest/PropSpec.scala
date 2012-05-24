@@ -516,4 +516,6 @@ trait PropSpec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.PropSpec"
+    
+  override def suiteStructure = Some(engine.getStructure)
 }

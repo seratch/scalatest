@@ -1328,6 +1328,8 @@ trait FunSuite extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.FunSuite"
+    
+  override def suiteStructure = Some(engine.getStructure)
 }
 
 private[scalatest] object FunSuite {

@@ -182,4 +182,6 @@ trait AbstractSuite { this: Suite =>
    * Suite style name.
    */
   val styleName: String
+  
+  def suiteStructure: Option[SuiteStructure.Branch]
 }

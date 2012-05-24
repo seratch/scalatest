@@ -5,154 +5,207 @@ import org.scalatest.events._
 import DispatchReporter.propagateDispose
 import scala.collection.mutable.ListBuffer
 import scala.util.Sorting
+import scala.annotation.tailrec
 
-private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) extends ResourcefulReporter {
-
-  private var eventBuffer = new ListBuffer[Event]()
+private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, structure: Option[SuiteStructure.Branch]) extends ResourcefulReporter {
+  case class Slot(node: Option[SuiteStructure.Node], var event: Option[Event], var doneEvent: Option[Event], var infoCount: Int, var infoList: List[Event], var ready: Boolean) extends Ordered[Slot] {
+    def compare(that: Slot) = event.compare(that.event)
+  }
+  
+  private val slotMap = new collection.mutable.HashMap[String, Slot]()
+  @volatile
+  private var serializedStructure = 
+    structure match {
+      case Some(structure) => 
+        serializeStructure(structure)
+      case None =>
+        null
+    }
+  
+  private val startingBuffer = new ListBuffer[Event]()
   private var startedCount = 0
-  private var completedCount = 0
-  private var allStarted: Boolean = false
-  private val doneMap = new collection.mutable.HashMap[String, Event]()
-  private val waitingMap = new collection.mutable.HashMap[String, Event]()
-  private val expectedInfoMap = new collection.mutable.HashMap[String, Int]()
-  private val waitingInfoMap = new collection.mutable.HashMap[String, List[InfoProvided]]()
+  
+  private def serializeStructure(root: SuiteStructure.Branch): List[Slot] = {
+    @tailrec
+    def serializeAcc(nodeList: List[SuiteStructure.Node], accList: List[Slot]): List[Slot] = {
+      nodeList match {
+        case head :: tail => 
+          val headSlot = Slot(Some(head), None, None, 0, List.empty[Event], false)
+          head match {
+            case branch: SuiteStructure.Branch =>
+              serializeAcc(branch.subNodes ::: tail, headSlot :: accList)
+            case testLeaf: SuiteStructure.TestLeaf =>
+              slotMap.put(testLeaf.testName, headSlot)
+              serializeAcc(tail, headSlot :: accList)
+            case _ =>
+              serializeAcc(tail, headSlot :: accList)
+          }
+          
+        case Nil => accList
+      }
+    }
+    serializeAcc(root.subNodes, List.empty[Slot]).reverse
+  }
   
   override def apply(event: Event) {
-    
-    event match {
-      case event: TestStarting => increaseStartedCount(event)
-      case event: TestIgnored => increaseStartedCount(event)
-      case event: TestSucceeded => handleDoneEvent(event, event.testName)
-      case event: TestFailed => handleDoneEvent(event, event.testName)
-      case event: TestPending => handleDoneEvent(event, event.testName)
-      case event: InfoProvided => handleInfoProvided(event)
-        
-    }
-  }
-  
-  private def store(event: Event) {
     synchronized {
-      eventBuffer += event
-    }
-  }
-  
-  private def handleInfoProvided(infoProvided: InfoProvided) {
-    synchronized {
-      if (allStarted) {
-        infoProvided.nameInfo match {
-          case Some(nameInfo) =>
-            nameInfo.testName match {
-              case Some(testName) => 
-                expectedInfoMap.get(testName) match {
-                  case Some(expectedInfoCount) =>
-                    val currentInfoList = waitingInfoMap(testName)
-                    val newInfoList = infoProvided :: currentInfoList
-                    waitingInfoMap.put(testName, newInfoList)
-                    if (newInfoList.size == expectedInfoCount) {
-                      doneMap.put(testName, waitingMap(testName))
-                      fireReadyEvents()
+      if (serializedStructure == null) {
+        startingBuffer += event
+        if (event.isInstanceOf[TestStarting])
+          startedCount += 1
+        if (startedCount == testCount) {
+          val startingArray = startingBuffer.toArray
+          Sorting.quickSort(startingArray)
+          startingBuffer.clear()
+          startingBuffer ++= startingArray
+          serializedStructure = startingBuffer.map { e =>
+            e match {
+              case event: TestStarting => 
+                // create a slot here
+                val slot = Slot(None, Some(event), None, 0, List.empty[Event], false)
+                slotMap.put(event.testName, slot)
+                slot
+              case event: TestIgnored => 
+                // create a slot here, with ready status
+                Slot(None, Some(event), None, 0, List.empty[Event], true)
+              case event: TestSucceeded => 
+                // find a previously created slot, set it done event and wait for test info events, if any.
+                val slot = slotMap(event.testName)
+                slot.doneEvent = Some(event)
+                if (event.infoCount == 0)
+                  slot.ready = true
+                else
+                  slot.infoCount = event.infoCount
+                slot
+              case event: TestFailed => 
+                // find a previously created slot, set it done event and wait for test info events, if any.
+                val slot = slotMap(event.testName)
+                slot.doneEvent = Some(event)
+                if (event.infoCount == 0)
+                  slot.ready = true
+                else
+                  slot.infoCount = event.infoCount
+                slot
+              case event: TestPending => 
+                // find a previously created slot, set it done event and wait for test info events, if any.
+                val slot = slotMap(event.testName)
+                slot.doneEvent = Some(event)
+                if (event.infoCount == 0)
+                  slot.ready = true
+                else
+                  slot.infoCount = event.infoCount
+                slot
+              case event: InfoProvided => // Check if it is a test info event (from the name info probably)
+                event.nameInfo match {
+                  case Some(nameInfo) => 
+                    nameInfo.testName match {
+                      case Some(testName) => 
+                        // Test's info event
+                        val slot = slotMap(testName)
+                        slot.infoList = slot.infoList ::: List(event)
+                        if (slot.infoList.size == slot.infoCount)
+                          slot.ready = true
+                        slot
+                      case None => 
+                        Slot(None, Some(event), None, 0, List.empty[Event], true)
                     }
-                  case None =>
-                    store(infoProvided)
+                  case None => 
+                    Slot(None, Some(event), None, 0, List.empty[Event], true)
                 }
-              case None => 
-                store(infoProvided)
             }
-          case None => 
-            store(infoProvided)
+          }.toList
         }
       }
-      else
-        store(infoProvided)
-    }
-  }
-  
-  private def increaseStartedCount(event: Event) {
-    synchronized {
-      eventBuffer += event
-      startedCount += 1
-      if (event.isInstanceOf[TestIgnored])
-        completedCount += 1
-      if (startedCount == testCount) {
-        val eventArray = eventBuffer.toArray
-        Sorting.quickSort(eventArray)
-        println("###" + eventArray.toList.map(e => e.getClass.getSimpleName + "(" + e.ordinal.toList + ")"))
-        eventBuffer = new ListBuffer[Event]() ++ eventArray
-        allStarted = true
-      }
-    }
-  }
-  
-  private def getInfoCount(doneEvent: Event) = {
-    doneEvent match {
-      case event: TestSucceeded => event.infoCount
-      case event: TestFailed => event.infoCount
-      case event: TestPending => event.infoCount
-    }
-  }
-  
-  private def handleDoneEvent(doneEvent: Event, testName: String) {
-    synchronized {
-      val infoCount = getInfoCount(doneEvent)
-      if (infoCount == 0) {
-        doneMap.put(testName, doneEvent)
-        completedCount += 1
-      }
       else {
-        waitingMap.put(testName, doneEvent)
-        expectedInfoMap.put(testName, infoCount)
-        waitingInfoMap.put(testName, List.empty[InfoProvided])
+        // Fill in the slot created from structure
+        event match {
+          case event: TestStarting => 
+            val slot = slotMap(event.testName)
+            slot.event = Some(event)
+          case event: TestIgnored =>
+            val slot = slotMap(event.testName)
+            slot.event = Some(event)
+            slot.ready = true
+          case event: TestSucceeded => 
+            val slot = slotMap(event.testName)
+            slot.doneEvent = Some(event)
+            if (event.infoCount == 0)
+              slot.ready = true
+            else
+              slot.infoCount = event.infoCount
+          case event: TestFailed =>
+            val slot = slotMap(event.testName)
+            slot.doneEvent = Some(event)
+            if (event.infoCount == 0)
+              slot.ready = true
+            else
+              slot.infoCount = event.infoCount
+          case event: TestPending => 
+            val slot = slotMap(event.testName)
+            slot.doneEvent = Some(event)
+            if (event.infoCount == 0)
+              slot.ready = true
+            else
+              slot.infoCount = event.infoCount
+          case event: InfoProvided => 
+            event.nameInfo match {
+              case Some(nameInfo) => 
+                nameInfo.testName match {
+                  case Some(testName) => 
+                    // Test's info event
+                    val slot = slotMap(testName)
+                    slot.infoList = slot.infoList ::: List(event)
+                    if (slot.infoList.size == slot.infoCount)
+                      slot.ready = true
+                  case None => 
+                    handleNoneTestInfo(event)
+                }
+              case None => 
+                handleNoneTestInfo(event)
+            }
+        }
       }
-      fireReadyEvents()            
+      fireReadyEvents()
     }
+  }
+  
+  private def handleNoneTestInfo(event: InfoProvided) {
+    // TODO, to check if it'll work correctly if there's info with same message running in parallel.
+    serializedStructure.find { slot => 
+      if (slot.ready)
+        false
+      else {
+        slot.node match {
+          case Some(node) => 
+            node match {
+              case descBranch: SuiteStructure.DescriptionBranch if descBranch.descriptionText == event.message => true
+              case _ => false
+            }
+          case None => false
+        }
+      }
+    } match {
+        case Some(slot) => 
+          // matching info leaf found
+          slot.event = Some(event)
+          slot.ready = true
+        case None => 
+          // Should not happen, if it does happen, just fire the event.
+          reporter(event)
+      }
   }
   
   private def fireReadyEvents() {
-    if (allStarted) {
-      if (completedCount == testCount) {
-        eventBuffer.foreach { e =>
-          e match {
-            case testStarting: TestStarting => 
-              reporter(e)
-              val testName = testStarting.testName
-              reporter(doneMap(testName))
-              waitingInfoMap.get(testName) match {
-                case Some(infoList) => 
-                  infoList.reverse.foreach(reporter(_))
-                case None => 
-              }
-            case _ =>
-              reporter(e)
-          }
+    if (serializedStructure != null) {
+      val readySlots = serializedStructure.takeWhile(_.ready)
+      serializedStructure = serializedStructure.drop(readySlots.size)
+      readySlots.foreach { slot => 
+        reporter(slot.event.get)  // Should always has event
+        slot.doneEvent match { // TestIgnored and InfoProvided doesn't have doneEvent
+          case Some(doneEvent) => reporter(doneEvent)
+          case None =>
         }
-        eventBuffer.clear()
-      }
-      else {
-        val readyBuffer = eventBuffer.takeWhile { e => 
-          e match {
-            case TestStarting(ordinal,  suiteName, suiteClassName, theTestName, formatter,
-                              rerunner, payload, threadName, timeStamp) if !doneMap.contains(theTestName) =>
-              false
-            case _ =>
-              true
-          }
-        }
-        eventBuffer = eventBuffer.drop(readyBuffer.size)
-        readyBuffer.foreach { e => 
-          e match {
-            case testStarting: TestStarting => 
-              reporter(e)
-              val testName = testStarting.testName
-              reporter(doneMap(testName))
-              waitingInfoMap.get(testName) match {
-                case Some(infoList) => 
-                  infoList.reverse.foreach(reporter(_))
-                case None => 
-              }
-            case _ =>
-              reporter(e)
-          }
-        }
+        slot.infoList.foreach(reporter(_))
       }
     }
   }

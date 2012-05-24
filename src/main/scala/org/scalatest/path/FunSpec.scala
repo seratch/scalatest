@@ -1242,5 +1242,7 @@ trait FunSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.path.FunSpec"
+    
+  override def suiteStructure = Some(engine.getStructure)
 }
 

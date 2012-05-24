@@ -245,7 +245,6 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
       case Trunk =>
     }
 
-    //val nextTracker = args.tracker.nextTracker
     branch.subNodes.reverse.foreach { node =>
       if (!stopRequested()) {
         node match {
@@ -521,6 +520,27 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
       case None => 
         idx :: currentPath
     }
+  }
+  
+  def getStructure: SuiteStructure.Branch = {
+    
+    def transform(parent: Option[SuiteStructure.Node], nodes: List[Node]): List[SuiteStructure.Node] = {
+      nodes.map { node =>
+        node match {
+          case testLeaf @ TestLeaf(_, testName, testText, _, _, _) =>
+            SuiteStructure.TestLeaf(parent, testName, testText) 
+          case infoLeaf @ InfoLeaf(_, message, payload) =>
+            SuiteStructure.InfoLeaf(parent, message)
+          case desc @ DescriptionBranch(_, descriptionText, childPrefix) => 
+            val branch = SuiteStructure.DescriptionBranch(parent, descriptionText, childPrefix)
+            branch.subNodes = transform(Some(branch), desc.subNodes.reverse)
+            branch
+        } 
+      }
+    }
+    val root = SuiteStructure.Root() 
+    root.subNodes = transform(Some(root), Trunk.subNodes.reverse)
+    root
   }
 }
 

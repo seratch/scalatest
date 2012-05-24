@@ -95,7 +95,7 @@ trait ParallelTestExecution extends OneInstancePerTest {
       if (args.configMap.contains(RunTheTestInThisInstance))
         args
       else
-        args.copy(reporter = new SortingReporter(args.reporter, testNames.size))
+        args.copy(reporter = new SortingReporter(args.reporter, testNames.size, suiteStructure))
     super.runTests(testName, runArgs)
   }
 
