@@ -64,40 +64,23 @@ trait OneInstancePerTest extends AbstractSuite {
   
   this: Suite =>
 
-  /**
-   * Run this <code>Suite's</code> tests each in their own instance of this <code>Suite</code>'s class.
-   *
-   * <p>
-   * If the passed <code>testName</code> is <code>None</code>, this trait's implementation of this
-   * method will for each test name returned by <code>testNames</code>, invoke <code>newInstance</code>
-   * to get a new instance of this <code>Suite</code>, and call <code>run</code> on it, passing
-   * in the test name wrapped in a <code>Some</code>. If the passed <code>testName</code> is defined,
-   * this trait's implementation of this method will simply forward all passed parameters
-   * to <code>super.run</code>. If the invocation of either <code>newInstance</code> on this
-   * <code>Suite</code> or <code>run</code> on a newly created instance of this <code>Suite</code>
-   * completes abruptly with an exception, then this <code>runTests</code> method will complete
-   * abruptly with the same exception.
-   * </p>
-   *
-   * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
-   *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>RunArgs</code> for this run
-   *
-   * @throws NullPointerException if any of the passed parameters is <code>null</code>.
-   * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
-   *     exists in this <code>Suite</code>
-   */
   protected abstract override def runTest(testName: String, args: RunArgs) {
-    
-    val cm = args.configMap
-    if (cm.contains(RunTheTestInThisInstance))
-      super.runTest(testName, args)
-    else {
+    if (args.configMap.contains(RunTheTestInThisInstance)) {
       val oneInstance = newInstance
+      oneInstance.run(Some(testName), args)
+    }
+    else
+      super.runTest(testName, args)
+  }
+  
+  protected abstract override def runTests(testName: Option[String], args: RunArgs) {
+    if (args.configMap.contains(RunTheTestInThisInstance)) {
+      val newConfigMap = args.configMap.filter(entry => entry._1 != RunTheTestInThisInstance)
+      runTest(testName.get, args.copy(configMap = newConfigMap))
+    }
+    else {
       val newConfigMap = args.configMap + (RunTheTestInThisInstance -> true)
-      // TODO: I'm not 100% sure I need to turn off the distributor. Think about it.
-      val newArgs = args.copy(configMap = newConfigMap, distributor = None)
-      oneInstance.run(Some(testName), newArgs)
+      super.runTests(testName, args.copy(configMap = newConfigMap))
     }
   }
 

@@ -49,54 +49,29 @@ import OneInstancePerTest.RunTheTestInThisInstance
 trait ParallelTestExecution extends OneInstancePerTest {
 
   this: Suite =>
-
-  /**
-   * Run the tests of this suite in parallel.
-   *
-   * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
-   *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>RunArgs</code> for this run
-   *
-   * @throws NullPointerException if any of the passed parameters is <code>null</code>.
-   * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
-   *     exists in this <code>Suite</code>
-   */
-  protected abstract override def runTest(testName: String, args: RunArgs) {
-
-    // TODO: Should we make this runTest final, so it has to be the last one mixed in? If there
-    // are things that wouldn't work if this wasn't last, then I think we should go ahead and make
-    // it final in 2.0
-
-    // distributor
-    //   None      call super, because no distributor
-    //   Some      this would be the one where we need to actually run the test, ignore the distributor
-    args.distributor match {
-      // If there's no distributor, then just run sequentially, via the regular OneInstancePerTest
-      // algorithm
-      case None => super.runTest(testName, args)
-      case Some(distribute) =>
-        val cm = args.configMap
-        if (cm.contains(RunTheTestInThisInstance))
-          super.runTest(testName, args)
-        else {
-          val wrappedInstance =
-            new DistributedTestRunnerSuite(
-              newInstance,
-              testName, 
-              args.copy(tracker = args.tracker.nextTracker)
-            )
-          distribute(wrappedInstance, args.tracker)
-        }
+    
+  protected abstract override def runTests(testName: Option[String], args: RunArgs) {
+    if (args.configMap.contains(RunTheTestInThisInstance)) {
+      val newConfigMap = args.configMap.filter(entry => entry._1 != RunTheTestInThisInstance)
+      runTest(testName.get, args.copy(configMap = newConfigMap))
+    }
+    else {
+      super.runTests(testName, args.copy(reporter = new SortingReporter(args.reporter, testNames.size, suiteStructure)))
     }
   }
-  
-  override abstract protected def runTests(testName: Option[String], args: RunArgs) {
-    val runArgs = 
-      if (args.configMap.contains(RunTheTestInThisInstance))
-        args
-      else
-        args.copy(reporter = new SortingReporter(args.reporter, testNames.size, suiteStructure))
-    super.runTests(testName, runArgs)
+    
+  protected abstract override def runTest(testName: String, args: RunArgs) {
+    if (args.configMap.contains(RunTheTestInThisInstance)) {
+      val oneInstance = newInstance.asInstanceOf[ParallelTestExecution]
+      args.distributor match {
+        case None =>
+          oneInstance.run(Some(testName), args)
+        case Some(distribute) => 
+          distribute(new DistributedTestRunnerSuite(oneInstance, testName, args.copy(tracker = args.tracker.nextTracker)), args.tracker)
+      }
+    }
+    else
+      super.runTest(testName, args)
   }
 
   override def newInstance: Suite with ParallelTestExecution = {
