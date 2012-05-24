@@ -76,6 +76,7 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int) ext
       if (startedCount == testCount) {
         val eventArray = eventBuffer.toArray
         Sorting.quickSort(eventArray)
+        println("###" + eventArray.toList.map(e => e.getClass.getSimpleName + "(" + e.ordinal.toList + ")"))
         eventBuffer = new ListBuffer[Event]() ++ eventArray
         allStarted = true
       }
