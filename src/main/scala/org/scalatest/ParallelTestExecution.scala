@@ -16,7 +16,7 @@
 package org.scalatest    
 
 import tools.DistributedTestRunnerSuite
-import tools.SortingReporter
+import tools.TestSortingReporter
 import OneInstancePerTest.RunTheTestInThisInstance
 
 /**
@@ -56,7 +56,7 @@ trait ParallelTestExecution extends OneInstancePerTest {
       runTest(testName.get, args.copy(configMap = newConfigMap))
     }
     else {
-      super.runTests(testName, args.copy(reporter = new SortingReporter(args.reporter, testNames.size, suiteStructure)))
+      super.runTests(testName, args.copy(reporter = new TestSortingReporter(args.reporter, testNames.size, suiteStructure)))
     }
   }
     
