@@ -14,10 +14,10 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, str
   
   private val slotMap = new collection.mutable.HashMap[String, Slot]()
   @volatile
-  private var serializedStructure = 
+  private var linearizedStructure = 
     structure match {
       case Some(structure) => 
-        serializeStructure(structure)
+        linearizeStructure(structure)
       case None =>
         null
     }
@@ -25,7 +25,7 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, str
   private val startingBuffer = new ListBuffer[Event]()
   private var startedCount = 0
   
-  private def serializeStructure(root: SuiteStructure.Branch): List[Slot] = {
+  private def linearizeStructure(root: SuiteStructure.Branch): List[Slot] = {
     @tailrec
     def serializeAcc(nodeList: List[SuiteStructure.Node], accList: List[Slot]): List[Slot] = {
       nodeList match {
@@ -49,7 +49,7 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, str
   
   override def apply(event: Event) {
     synchronized {
-      if (serializedStructure == null) {
+      if (linearizedStructure == null) {
         startingBuffer += event
         if (event.isInstanceOf[TestStarting])
           startedCount += 1
@@ -58,7 +58,7 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, str
           Sorting.quickSort(startingArray)
           startingBuffer.clear()
           startingBuffer ++= startingArray
-          serializedStructure = startingBuffer.map { e =>
+          linearizedStructure = startingBuffer.map { e =>
             e match {
               case event: TestStarting => 
                 // create a slot here
@@ -171,7 +171,7 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, str
   
   private def handleNoneTestInfo(event: InfoProvided) {
     // TODO, to check if it'll work correctly if there's info with same message running in parallel.
-    serializedStructure.find { slot => 
+    linearizedStructure.find { slot => 
       if (slot.ready)
         false
       else {
@@ -196,9 +196,9 @@ private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, str
   }
   
   private def fireReadyEvents() {
-    if (serializedStructure != null) {
-      val readySlots = serializedStructure.takeWhile(_.ready)
-      serializedStructure = serializedStructure.drop(readySlots.size)
+    if (linearizedStructure != null) {
+      val readySlots = linearizedStructure.takeWhile(_.ready)
+      linearizedStructure = linearizedStructure.drop(readySlots.size)
       readySlots.foreach { slot => 
         reporter(slot.event.get)  // Should always has event
         slot.doneEvent match { // TestIgnored and InfoProvided doesn't have doneEvent
