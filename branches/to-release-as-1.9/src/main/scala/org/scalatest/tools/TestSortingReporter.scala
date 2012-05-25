@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Sorting
 import scala.annotation.tailrec
 
-private[scalatest] class SortingReporter(reporter: Reporter, testCount: Int, structure: Option[SuiteStructure.Branch]) extends ResourcefulReporter {
+private[scalatest] class TestSortingReporter(reporter: Reporter, testCount: Int, structure: Option[SuiteStructure.Branch]) extends ResourcefulReporter {
   case class Slot(node: Option[SuiteStructure.Node], var event: Option[Event], var doneEvent: Option[Event], var infoCount: Int, var infoList: List[Event], var ready: Boolean) extends Ordered[Slot] {
     def compare(that: Slot) = event.compare(that.event)
   }
