@@ -18,6 +18,7 @@ package org.scalatest
 import tools.DistributedTestRunnerSuite
 import tools.TestSortingReporter
 import OneInstancePerTest.RunTheTestInThisInstance
+import org.scalatest.tools.SuiteSortingReporter
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -56,7 +57,14 @@ trait ParallelTestExecution extends OneInstancePerTest {
       runTest(testName.get, args.copy(configMap = newConfigMap))
     }
     else {
-      super.runTests(testName, args.copy(reporter = new TestSortingReporter(args.reporter, testNames.size, suiteStructure)))
+      val testSortingReporter = new TestSortingReporter(args.reporter, testNames.size, suiteStructure)
+      
+      args.reporter match {
+        case suiteSortingReporter: SuiteSortingReporter =>
+          suiteSortingReporter.setTestSortingReporter(this, testSortingReporter)
+        case _ =>
+      }
+      super.runTests(testName, args.copy(reporter = testSortingReporter))
     }
   }
     
