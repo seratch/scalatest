@@ -1573,11 +1573,13 @@ object Runner {
               if (numThreads > 0) numThreads
               else Runtime.getRuntime.availableProcessors * 2
 
+            val sortingDispatch = new SuiteSortingReporter(dispatch)  
+              
             val execSvc: ExecutorService = Executors.newFixedThreadPool(poolSize)
             try {
 
             if (System.getProperty("org.scalatest.tools.Runner.forever", "false") == "true") {
-              val distributor = new ConcurrentDistributor(dispatch, stopRequested, filter, configMap, execSvc)
+              val distributor = new ConcurrentDistributor(sortingDispatch, stopRequested, filter, configMap, execSvc)
               while (true) {
                 for (suite <- suiteInstances) {
                   distributor.apply(suite, tracker.nextTracker())
@@ -1586,7 +1588,7 @@ object Runner {
               }
             }
             else {
-              val distributor = new ConcurrentDistributor(dispatch, stopRequested, filter, configMap, execSvc)
+              val distributor = new ConcurrentDistributor(sortingDispatch, stopRequested, filter, configMap, execSvc)
               for (suite <- suiteInstances) {
                 distributor.apply(suite, tracker.nextTracker())
               }
@@ -1595,6 +1597,7 @@ object Runner {
             }
             finally {
               execSvc.shutdown()
+              sortingDispatch.dispose()
             }
           }
           else {

@@ -7,12 +7,18 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Sorting
 import scala.annotation.tailrec
 
-private[scalatest] class TestSortingReporter(reporter: Reporter, testCount: Int, structure: Option[SuiteStructure.Branch]) extends ResourcefulReporter {
+private[scalatest] class TestSortingReporter(dispatch: Reporter, testCount: Int, structure: Option[SuiteStructure.Branch]) extends ResourcefulReporter {
+  
   case class Slot(node: Option[SuiteStructure.Node], var event: Option[Event], var doneEvent: Option[Event], var infoCount: Int, var infoList: List[Event], var ready: Boolean) extends Ordered[Slot] {
     def compare(that: Slot) = event.compare(that.event)
   }
   
   private val slotMap = new collection.mutable.HashMap[String, Slot]()
+  private val startingBuffer = new ListBuffer[Event]()
+  private var startedCount = 0
+  private var totalSlotCount = 0
+  private var firedSlotCount = 0
+  
   @volatile
   private var linearizedStructure = 
     structure match {
@@ -21,10 +27,7 @@ private[scalatest] class TestSortingReporter(reporter: Reporter, testCount: Int,
       case None =>
         null
     }
-  
-  private val startingBuffer = new ListBuffer[Event]()
-  private var startedCount = 0
-  
+ 
   private def linearizeStructure(root: SuiteStructure.Branch): List[Slot] = {
     @tailrec
     def serializeAcc(nodeList: List[SuiteStructure.Node], accList: List[Slot]): List[Slot] = {
@@ -44,7 +47,13 @@ private[scalatest] class TestSortingReporter(reporter: Reporter, testCount: Int,
         case Nil => accList
       }
     }
-    serializeAcc(root.subNodes, List.empty[Slot]).reverse
+    val slotList = serializeAcc(root.subNodes, List.empty[Slot]).reverse
+    totalSlotCount = slotList.size
+    slotList
+  }
+  
+  def finished = {
+    totalSlotCount == firedSlotCount
   }
   
   override def apply(event: Event) {
@@ -114,6 +123,7 @@ private[scalatest] class TestSortingReporter(reporter: Reporter, testCount: Int,
                 }
             }
           }.toList
+          totalSlotCount = linearizedStructure.size
         }
       }
       else {
@@ -191,24 +201,25 @@ private[scalatest] class TestSortingReporter(reporter: Reporter, testCount: Int,
           slot.ready = true
         case None => 
           // Should not happen, if it does happen, just fire the event.
-          reporter(event)
+          dispatch(event)
       }
   }
   
-  private def fireReadyEvents() {
+  private[tools] def fireReadyEvents() {
     if (linearizedStructure != null) {
       val readySlots = linearizedStructure.takeWhile(_.ready)
       linearizedStructure = linearizedStructure.drop(readySlots.size)
       readySlots.foreach { slot => 
-        reporter(slot.event.get)  // Should always has event
+        dispatch(slot.event.get)  // Should always has event
         slot.doneEvent match { // TestIgnored and InfoProvided doesn't have doneEvent
-          case Some(doneEvent) => reporter(doneEvent)
+          case Some(doneEvent) => dispatch(doneEvent)
           case None =>
         }
-        slot.infoList.foreach(reporter(_))
+        slot.infoList.foreach(dispatch(_))
+        firedSlotCount += 1
       }
     }
   }
   
-  override def dispose() = propagateDispose(reporter)
+  override def dispose() = propagateDispose(dispatch)
 }

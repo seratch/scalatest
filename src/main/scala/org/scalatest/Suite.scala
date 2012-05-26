@@ -41,6 +41,7 @@ import scala.collection.immutable.TreeSet
 import Suite.getIndentedText
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
+import org.scalatest.tools.SuiteSortingReporter
 import Suite.getIndentedTextForInfo
 import Suite.getMessageForException
 import Suite.reportTestStarting
@@ -1796,7 +1797,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     try {
 
       val formatter = formatterForSuiteStarting(thisSuite)
-      dispatch(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), formatter))
+      dispatch(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.suiteClassName), formatter))
 
       run(
         //if (testName != null) Some(testName) else None,
@@ -1811,7 +1812,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
 
       val suiteCompletedFormatter = formatterForSuiteCompleted(thisSuite)
       val duration = System.currentTimeMillis - suiteStartTime
-      dispatch(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(duration), suiteCompletedFormatter))
+      dispatch(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.suiteClassName), Some(duration), suiteCompletedFormatter))
       if (stats) {
         val duration = System.currentTimeMillis - runStartTime
         dispatch(RunCompleted(tracker.nextOrdinal(), Some(duration)))
@@ -2357,7 +2358,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
 
         val suiteStartTime = System.currentTimeMillis
 
-        report(SuiteStarting(tracker.nextOrdinal(), nestedSuite.suiteName, Some(nestedSuite.getClass.getName), formatter, rerunnable))
+        report(SuiteStarting(tracker.nextOrdinal(), nestedSuite.suiteName, Some(nestedSuite.suiteClassName), formatter, rerunnable))
 
         try {
           // Same thread, so OK to send same tracker
@@ -2537,6 +2538,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   private[scalatest] def wrapReporterIfNecessary(reporter: Reporter) = reporter match {
     case dr: DispatchReporter => dr
     case cr: CatchReporter => cr
+    case ssr: SuiteSortingReporter => ssr
     case _ => new CatchReporter(reporter)
   }
   
@@ -2546,6 +2548,8 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   val styleName: String = "org.scalatest.Suite"
     
   def suiteStructure: Option[SuiteStructure.Branch] = None
+  
+  def suiteClassName: String = getClass.getName
 }
 
 private[scalatest] object Suite {

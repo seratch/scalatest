@@ -116,4 +116,6 @@ final class ConfigMapWrapperSuite(clazz: Class[_ <: Suite]) extends Suite {
     val suite = constructor.newInstance(args.configMap)
     suite.run(testName, args: RunArgs)
   }
+  
+  override def suiteClassName: String = clazz.getName
 }

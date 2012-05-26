@@ -57,7 +57,7 @@ private[scalatest] class SuiteRunner(suite: Suite, dispatch: Reporter, stopper: 
       val suiteStartTime = System.currentTimeMillis
 
       if (!suite.isInstanceOf[DistributedTestRunnerSuite])
-        dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), formatter, rerunnable))
+        dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, Some(suite.suiteClassName), formatter, rerunnable))
         
       try {
         suite.run(None, dispatch, stopRequested, filter, propertiesMap, distributor, tracker)
@@ -67,7 +67,7 @@ private[scalatest] class SuiteRunner(suite: Suite, dispatch: Reporter, stopper: 
 
         val duration = System.currentTimeMillis - suiteStartTime
         if (!suite.isInstanceOf[DistributedTestRunnerSuite])
-          dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), Some(duration), formatter, rerunnable))
+          dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, Some(suite.suiteClassName), Some(duration), formatter, rerunnable))
       }
       catch {
         case e: NotAllowedException =>
@@ -83,7 +83,7 @@ private[scalatest] class SuiteRunner(suite: Suite, dispatch: Reporter, stopper: 
           val formatter3 = formatterForSuiteAborted(suite, rawString3)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, Some(suite.getClass.getName), Some(e), Some(duration), formatter3, rerunnable))
+          dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, Some(suite.suiteClassName), Some(e), Some(duration), formatter3, rerunnable))
         }
       }
     }
