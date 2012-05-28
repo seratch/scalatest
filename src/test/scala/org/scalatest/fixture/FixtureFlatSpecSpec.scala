@@ -19,8 +19,6 @@ import org.scalatest._
 import org.scalatest.events.{TestStarting, TestFailed}
 import org.scalatest.exceptions.DuplicateTestNameException
 
-object SlowTest extends Tag("SlowTest")
-
 class FixtureFlatSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
   describe("A FixtureFlatSpec ") {
