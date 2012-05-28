@@ -13,7 +13,6 @@ import org.scalatest.Tag
 import org.scalatest.verb.BehaveWord
 import scala.collection.immutable.ListSet
 import org.scalatest.PendingNothing
-import org.scalatest.Style
 
 /**
  * A sister trait to <code>org.scalatest.FreeSpec</code> that isolates tests by running each test in its own
@@ -689,7 +688,6 @@ import org.scalatest.Style
  * @author Bill Venners
  * @author Chua Chee Seng
  */
-@Style("org.scalatest.finders.FreeSpecFinder")
 trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
   
   private final val engine = PathEngine.getEngine()
@@ -726,7 +724,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    handleTest(thisSuite, specText, testFun, "itCannotAppearInsideAnotherIt", "FreeSpec.scala", methodName, 4, -2, testTags: _*)
+    handleTest(thisSuite, specText, testFun, "itCannotAppearInsideAnotherIt", "FreeSpec.scala", methodName, 1, testTags: _*)
   }
 
   /**
@@ -749,7 +747,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    handleIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", methodName, 4, -2, testTags: _*)
+    handleIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "FreeSpec.scala", methodName, 1, testTags: _*)
   }
 
   /**
@@ -859,8 +857,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
      * <code>org.scalatest.path.FreeSpec</code>.
      */
     def - (fun: => Unit) {
-      // TODO: Fix the resource name
-      handleNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", "FreeSpec.scala", "-", 6, -2)
+      handleNestedBranch(string, None, fun, "itCannotAppearInsideAnIt", "FreeSpec.scala", "-")
     }
 
     /**

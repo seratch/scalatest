@@ -44,15 +44,10 @@ package org.scalatest
  * }
  * </pre>
  *
- * <p>
  * If you run this <code>Suite</code> from the interpreter, you will see the message
  * included in the printed report:
- * </p>
  *
  * <pre class="stREPL">
- * scala&gt; (new MySuite).execute()
- * <span class="stGreen">- testAddition(Informer)
- *   + Addition seems to work</span>
  * scala> (new ExampleSuite).execute()
  * <span class="stGreen">ExampleSuite:
  * - testAddition(Reporter)
@@ -110,7 +105,7 @@ package org.scalatest
  * </p>
  *
  * <pre class="stREPL">
- * scala&gt; (new ArithmeticFeatureSpec).run()
+ * scala> (new ArithmeticFeatureSpec).run()
  * <span class="stGreen">Feature: Integer arithmetic 
  *   Scenario: addition
  *     Given two integers 
