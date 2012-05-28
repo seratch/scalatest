@@ -58,7 +58,22 @@ trait ParallelTestExecution extends OneInstancePerTest {
   }
   
   protected abstract override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
-    if (configMap.contains(RunTheTestInThisInstance)) {
+    configMap.get(PassedInDistributor) match {
+      case Some(distributor) => 
+        val filter = configMap(PassedInFilter).asInstanceOf[Filter]
+        val oneInstance = newInstance.asInstanceOf[ParallelTestExecution]
+        distributor match {
+          case Some(distribute) => 
+            distribute.asInstanceOf[Distributor](new DistributedTestRunnerSuite(oneInstance, testName), tracker.nextTracker)
+          case None =>
+            oneInstance.run(Some(testName), reporter, stopper, filter, configMap, distributor.asInstanceOf[Option[Distributor]], tracker)
+        }
+      case None => 
+        super.runTest(testName, reporter, stopper, configMap, tracker)
+    }
+    
+    // Old code
+    /*if (configMap.contains(RunTheTestInThisInstance)) {
       val filter = configMap(PassedInFilter).asInstanceOf[Filter]
       val distributor = configMap(PassedInDistributor).asInstanceOf[Option[Distributor]]
       val oneInstance = newInstance.asInstanceOf[ParallelTestExecution]
@@ -70,6 +85,6 @@ trait ParallelTestExecution extends OneInstancePerTest {
       }
     }
     else
-      super.runTest(testName, reporter, stopper, configMap, tracker)
+      super.runTest(testName, reporter, stopper, configMap, tracker)*/
   }
 }
