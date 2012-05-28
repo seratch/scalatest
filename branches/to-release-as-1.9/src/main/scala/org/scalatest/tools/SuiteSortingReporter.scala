@@ -83,33 +83,43 @@ class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
     fireReadyEvents()
   }
   
-  @tailrec
   private def fireReadyEvents() {
     if (slotList.size > 0) {
       val head = slotList.head
-      suiteEventMap.get(head.suiteId) match {
-        case Some(eventList) => 
-          eventList.foreach(dispatch(_))
-          suiteEventMap.put(head.suiteId, List.empty[Event])
-        case None =>
-          println("###Unable to event list from event map: " + head.suiteId)
-      }
-      head.testSortingReporter match {
-        case Some(testSortingReporter) => 
-          if (head.doneEvent.isDefined && testSortingReporter.finished) {
-            dispatch(head.doneEvent.get)
-            slotList = slotList.tail
-            fireReadyEvents()
-          }
-        case None =>
-          // In case for non-parallel suite
-          if (head.doneEvent.isDefined) {
-            dispatch(head.doneEvent.get)
-            slotList = slotList.tail
-            fireReadyEvents()
-          }
+      fireSuiteEvents(head.suiteId)
+      if (isDone(head)) {
+        dispatch(head.doneEvent.get)
+        slotList = fireReadySuiteEvents(slotList.tail)
       }
     }
+  }
+  
+  private def fireSuiteEvents(suiteId: String) {
+    suiteEventMap.get(suiteId) match {
+      case Some(eventList) => 
+        eventList.foreach(dispatch(_))
+        suiteEventMap.put(suiteId, List.empty[Event])
+      case None =>
+        // Unable to get event list from map, shouldn't happen
+    }
+  }
+  
+  private def isDone(slot: Slot) = {
+    slot.testSortingReporter match {
+      case Some(testSortingReporter) => 
+        slot.doneEvent.isDefined && testSortingReporter.finished
+      case None => 
+        slot.doneEvent.isDefined
+    }
+  }
+  
+  private def fireReadySuiteEvents(remainingSlotList: ListBuffer[Slot]): ListBuffer[Slot] = { 
+    val (done, pending) = remainingSlotList.span(isDone(_))
+    done.foreach { slot => 
+      fireSuiteEvents(slot.suiteId)
+      dispatch(slot.doneEvent.get)
+    }
+    pending
   }
   
   private[scalatest] def setTestSortingReporter(suite: Suite, testSortingReporter: TestSortingReporter) {
