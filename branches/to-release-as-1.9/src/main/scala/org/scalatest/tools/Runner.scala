@@ -1665,8 +1665,7 @@ object Runner {
     }
   }
 
-  private[scalatest] def getRunpathClassLoader(runpathList: List[String]): ClassLoader = {
-
+  private[scalatest] def getRunpathClassLoader(runpathList: List[String]): ClassLoader = {    
     if (runpathList == null)
       throw new NullPointerException
     if (runpathList.isEmpty) {
@@ -1704,7 +1703,7 @@ object Runner {
         }
       }
 
-      new URLClassLoader(urlsList.toArray, classOf[Suite].getClassLoader)
+      new ScalaTestLoader(runpathList, urlsList.toList, classOf[Suite].getClassLoader)
     }
   }
 

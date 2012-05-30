@@ -16,7 +16,6 @@
 package org.scalatest.tools
 
 import org.scalatest._
-import java.lang.reflect.Modifier
 import java.util.Enumeration
 import java.util.jar.JarFile
 import java.util.jar.JarEntry
@@ -26,6 +25,9 @@ import java.net.URL
 import java.net.MalformedURLException
 import java.io.IOException
 import java.util.regex.Pattern
+import javassist.CtClass
+import javassist.Modifier
+import javassist.NotFoundException
 
 // TODO: Make this an object. To do so need to figure out how
 // to invoke private method with reflection on an object, because
@@ -131,8 +133,21 @@ private[scalatest] object SuiteDiscoveryHelper {
 
   private val emptyClassArray = new Array[java.lang.Class[T] forSome { type T }](0)
 
+  private[scalatest] def isAccessibleSuite(clazz: CtClass): Boolean = {
+    try {
+      clazz.subtypeOf(clazz.getClassPool.get(classOf[Suite].getName)) && 
+      Modifier.isPublic(clazz.getModifiers) && 
+      !Modifier.isAbstract(clazz.getModifiers) && 
+      Modifier.isPublic(clazz.getDeclaredConstructor(Array.empty[CtClass]).getModifiers)
+    }
+    catch {
+      case e: NotFoundException => 
+        false
+    }
+  }
+  
   private[scalatest] def isAccessibleSuite(clazz: java.lang.Class[_]): Boolean = {
-      try {
+    try {
         classOf[Suite].isAssignableFrom(clazz) && 
           Modifier.isPublic(clazz.getModifiers) &&
           !Modifier.isAbstract(clazz.getModifiers) &&
@@ -146,18 +161,43 @@ private[scalatest] object SuiteDiscoveryHelper {
 
   private[scalatest] def isAccessibleSuite(className: String, loader: ClassLoader): Boolean = {
     try {
-      isAccessibleSuite(loader.loadClass(className)) 
+      loader match {
+        case stLoader: ScalaTestLoader => isAccessibleSuite(stLoader.getCtClass(className))
+        case _ => isAccessibleSuite(loader.loadClass(className))
+      }
     }
     catch {
       case e: ClassNotFoundException => false
       case e: NoClassDefFoundError => false
+      case e: NotFoundException => false
+    }
+  }
+  
+  private[scalatest] def isRunnable(clazz: CtClass): Boolean = {
+    try {
+      val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
+      if (wrapWithAnnotation != null) {
+        val wrapperSuiteClazz = wrapWithAnnotation.asInstanceOf[WrapWith].value
+        val constructorList = wrapperSuiteClazz.getDeclaredConstructors()
+        constructorList.exists { c => 
+          val types = c.getParameterTypes
+          types.length == 1 && types(0) == classOf[java.lang.Class[_]]
+        }
+      }
+      else
+        false
+    }
+    catch {
+      case e: ClassNotFoundException => false
+      case e: NoClassDefFoundError => false
+      case e: NotFoundException => false
     }
   }
   
   private[scalatest] def isRunnable(clazz: java.lang.Class[_]): Boolean = {
     val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
     if (wrapWithAnnotation != null) {
-      val wrapperSuiteClazz = wrapWithAnnotation.value
+      val wrapperSuiteClazz = wrapWithAnnotation.asInstanceOf[WrapWith].value
       val constructorList = wrapperSuiteClazz.getDeclaredConstructors()
       constructorList.exists { c => 
         val types = c.getParameterTypes
@@ -170,11 +210,17 @@ private[scalatest] object SuiteDiscoveryHelper {
   
   private[scalatest] def isRunnable(className: String, loader: ClassLoader): Boolean = {
     try {
-      isRunnable(loader.loadClass(className)) 
+      loader match {
+        case stLoader: ScalaTestLoader => 
+          isRunnable(stLoader.getCtClass(className))
+        case _ => 
+          isRunnable(loader.loadClass(className))
+      }
     }
     catch {
       case e: ClassNotFoundException => false
       case e: NoClassDefFoundError => false
+      case e: NotFoundException => false
     }
   }
 
