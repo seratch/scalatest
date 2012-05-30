@@ -53,11 +53,10 @@ trait Distributor /*extends ((Suite, Tracker, Filter) => Unit)*/  {
    * Puts a <code>Suite</code> into the <code>Distributor</code>.
    *
    * @param suite the <code>Suite</code> to put into the <code>Distributor</code>.
-   * @param tracker a <code>Tracker</code> to pass to the <code>Suite</code>'s <code>run</code> method.
-   * @param filter a <code>Filter</code> to pass to the <code>Suite</code>'s <code>run</code> method.
+   * @param args the <code>RunArgs</code> for this distributor
    * 
-   * @throws NullPointerException if either <code>suite</code> or <code>tracker</code> is <code>null</code>.
+   * @throws NullPointerException if either <code>suite</code> or <code>args</code> is <code>null</code>.
    */
-  def apply(suite: Suite, tracker: Tracker, filter: Filter)
+  def apply(suite: Suite, args: RunArgs)
 }
 
