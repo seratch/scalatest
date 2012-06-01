@@ -932,19 +932,19 @@ private[scalatest] class RunnerJFrame(
             selectFirstFailureIfExistsAndNothingElseAlreadySelected()
           }
 
-        case TestStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        case TestStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, formatter, location, rerunner, payload, threadName, timeStamp) =>
   
           usingEventDispatchThread {
             registerEvent(event)
           }
 
-        case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, payload, threadName, timeStamp) => 
+        case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, formatter, location, payload, threadName, timeStamp) => 
 
           usingEventDispatchThread {
             registerEvent(event)
           }
   
-        case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, payload, threadName, timeStamp) =>
+        case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, duration, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             testsCompletedCount += 1
@@ -953,7 +953,7 @@ private[scalatest] class RunnerJFrame(
             registerEvent(event)
           }
 
-        case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
+        case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             testsCompletedCount += 1
@@ -962,7 +962,7 @@ private[scalatest] class RunnerJFrame(
             registerEvent(event)
           }
 
-        case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
   
           usingEventDispatchThread {
             testsCompletedCount += 1
@@ -971,7 +971,7 @@ private[scalatest] class RunnerJFrame(
             registerEvent(event)
           }
   
-        case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) => 
+        case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) => 
 
           usingEventDispatchThread {
             testsCompletedCount += 1
@@ -990,25 +990,25 @@ private[scalatest] class RunnerJFrame(
             selectFirstFailureIfExistsAndNothingElseAlreadySelected()
           }
 
-        case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
+        case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, throwable, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerEvent(event)
           }
 
-        case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+        case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerEvent(event)
           }
 
-        case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+        case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerEvent(event)
           }
 
-        case MarkupProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+        case MarkupProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, formatter, location, payload, threadName, timeStamp) =>
       }
     }
   }
@@ -1352,34 +1352,34 @@ private[scalatest] class RunnerJFrame(
             }
           }
  
-        case TestStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        case TestStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, formatter, location, rerunner, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerRerunEvent(event)
           }
   
-        case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, payload, threadName, timeStamp) => 
+        case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, formatter, location, payload, threadName, timeStamp) => 
 
           usingEventDispatchThread {
             rerunColorBox.setValue(rerunTestsCompletedCount)
             registerRerunEvent(event)
           }
 
-        case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, payload, threadName, timeStamp) =>
+        case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, duration, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             rerunColorBox.setValue(rerunTestsCompletedCount)
             registerRerunEvent(event)
           }
 
-        case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
+        case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             rerunColorBox.setValue(rerunTestsCompletedCount)
             registerRerunEvent(event)
           }
 
-        case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             rerunTestsCompletedCount += 1
@@ -1387,7 +1387,7 @@ private[scalatest] class RunnerJFrame(
             registerRerunEvent(event)
           }
 
-        case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) => 
+        case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, structureIndex, postEventCount, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) => 
 
           usingEventDispatchThread {
             rerunTestsCompletedCount += 1
@@ -1400,25 +1400,25 @@ private[scalatest] class RunnerJFrame(
             }
           }
   
-        case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
+        case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, throwable, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerRerunEvent(event)
           }
   
-        case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+        case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerRerunEvent(event)
           }
   
-        case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+        case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, formatter, location, payload, threadName, timeStamp) =>
 
           usingEventDispatchThread {
             registerRerunEvent(event)
           }
   
-        case MarkupProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+        case MarkupProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, structureIndex, formatter, location, payload, threadName, timeStamp) =>
       }
     }
   }

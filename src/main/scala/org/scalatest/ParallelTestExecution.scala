@@ -17,6 +17,7 @@ package org.scalatest
 
 import tools.DistributedTestRunnerSuite
 import OneInstancePerTest.RunTestInNewInstance
+import org.scalatest.tools.TestSortingReporter
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -47,6 +48,16 @@ import OneInstancePerTest.RunTestInNewInstance
  */
 trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
 
+  protected abstract override def runTests(testName: Option[String], args: RunArgs) {
+    if (args.configMap.contains(RunTestInNewInstance)) {
+      super.runTests(testName, args)
+    }
+    else {
+      val newArgs = args.copy(reporter = new TestSortingReporter(args.reporter, testNames.size))
+      super.runTests(testName, newArgs)
+    }
+  }
+  
   protected abstract override def runTest(testName: String, args: RunArgs) {
 
     if (args.configMap.contains(RunTestInNewInstance)) {

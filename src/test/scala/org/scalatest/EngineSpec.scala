@@ -60,13 +60,13 @@ class EngineSpec extends FlatSpec with SharedHelpers with ShouldMatchers {
     import engine._
     val child = DescriptionBranch(Trunk, "child", Some("child prefix"), None)
     Trunk.subNodes ::= child
-    val childTest = TestLeaf(Trunk, "child test", "child test", () => (), None)
+    val childTest = TestLeaf(Trunk, "child test", "child test", () => (), None, None, None)
     Trunk.subNodes ::= childTest
     val grandchild = DescriptionBranch(child, "grandchild", None, None)
     child.subNodes ::= grandchild
-    val grandchildTest = TestLeaf(child, "grandchild test", "grandchild test", () => (), None)
+    val grandchildTest = TestLeaf(child, "grandchild test", "grandchild test", () => (), None, None, None)
     child.subNodes ::= grandchildTest
-    val greatGrandchildTest = TestLeaf(grandchild, "great-grandchild test", "great-grandchild test", () => (), None)
+    val greatGrandchildTest = TestLeaf(grandchild, "great-grandchild test", "great-grandchild test", () => (), None, None, None)
     grandchild.subNodes ::= greatGrandchildTest
     Trunk.indentationLevel should be (0)
     child.indentationLevel should be (0)

@@ -63,7 +63,7 @@ import exceptions._
           case _ => 
             None
         }
-      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), throwable, None, Some(formatter), Some(SeeStackDepthException), None, payload))
+      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), None, 0, throwable, None, Some(formatter), Some(SeeStackDepthException), None, payload))
       // TODO: can I add a duration?
     }
 
@@ -72,7 +72,7 @@ import exceptions._
         val (testName, testClass, testClassName) =
           parseTestDescription(description)
         val formatter = getIndentedText(testName, 1, true)
-        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), None, Some(formatter), getTopOfMethod(testClass, testName)))
+        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), None, 0, None, Some(formatter), getTopOfMethod(testClass, testName)))
         // TODO: can I add a duration?
       }
     }
@@ -82,7 +82,7 @@ import exceptions._
         parseTestDescription(description)
       val testSucceededIcon = Resources("testSucceededIconChar")
       val formattedText = Resources("iconPlusShortName", testSucceededIcon, testName)
-      report(TestIgnored(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), Some(IndentedText(formattedText, testName, 1)), getTopOfMethod(testClass, testName)))
+      report(TestIgnored(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), None, Some(IndentedText(formattedText, testName, 1)), getTopOfMethod(testClass, testName)))
     }
 
     override def testRunFinished(result: Result) {
@@ -96,7 +96,7 @@ import exceptions._
     override def testStarted(description: Description) {
       val (testName, testClass, testClassName) =
         parseTestDescription(description)
-      report(TestStarting(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), Some(MotionToSuppress), getTopOfMethod(testClass, testName)))
+      report(TestStarting(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), getDecodedName(testClassName), testName, testName, getDecodedName(testName), None, Some(MotionToSuppress), getTopOfMethod(testClass, testName)))
     }
 
     //
