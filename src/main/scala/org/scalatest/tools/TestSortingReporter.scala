@@ -11,6 +11,7 @@ class TestSortingReporter(dispatch: Reporter, testCount: Int) extends Resourcefu
   case class Slot(var startEvent: Option[Event], var endEvent: Option[Event], var postEventCount: Int, var postEventList: List[Event], var ready: Boolean, var fired: Boolean)
   
   private val slotBuffer = new ListBuffer[Slot]()
+  private var headIndex = 0
   private val slotMap = new collection.mutable.HashMap[String, Slot]()  // suiteId -> slot
   
   private def getSlot(idx: Int): Slot = {
@@ -125,9 +126,8 @@ class TestSortingReporter(dispatch: Reporter, testCount: Int) extends Resourcefu
   
   @tailrec
   private def fireReadyEvents() {
-    val pending = slotBuffer.dropWhile(slot => slot.ready && slot.fired)
-    if (pending.size > 0) {
-      val head = pending.head
+    if (headIndex < slotBuffer.size) {
+      val head = slotBuffer(headIndex)
       if (head.ready) {
         dispatch(head.startEvent.get)
         head.endEvent match {
@@ -137,6 +137,7 @@ class TestSortingReporter(dispatch: Reporter, testCount: Int) extends Resourcefu
         }
         head.postEventList.foreach(event => dispatch(event))
         head.fired = true
+        headIndex += 1
         fireReadyEvents()
       }
     }
