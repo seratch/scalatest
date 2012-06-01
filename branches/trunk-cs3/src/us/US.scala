@@ -91,7 +91,7 @@ trait StateSuite extends Suite {
   }
 
   private def reportTestStarting(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, decodedTestName: Option[String], suiteRerunner: Option[String], location: Option[Location]) {
-    report(TestStarting(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, Some(MotionToSuppress),
+    report(TestStarting(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, None, Some(MotionToSuppress),
       location, suiteRerunner))
   }
 
@@ -100,7 +100,7 @@ trait StateSuite extends Suite {
 
     val message = getMessageForException(throwable)
     val formatter = getIndentedText(testText, level, includeIcon)
-    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, Some(throwable), Some(duration), Some(formatter), location, suiteRerunner))
+    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, None, 0, Some(throwable), Some(duration), Some(formatter), location, suiteRerunner))
   }
 
   private def reportTestCanceled(theSuite: Suite, report: Reporter, throwable: Throwable, testName: String, testText: String,
@@ -108,16 +108,16 @@ trait StateSuite extends Suite {
 
     val message = getMessageForException(throwable)
     val formatter = getIndentedText(testText, level, includeIcon)
-    report(TestCanceled(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, getDecodedName(testName), Some(throwable), Some(duration), Some(formatter), location, rerunnable))
+    report(TestCanceled(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, getDecodedName(testName), None, 0, Some(throwable), Some(duration), Some(formatter), location, rerunnable))
   }
 
   private def reportTestSucceeded(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, decodedTestName: Option[String], duration: Long, formatter: Formatter, suiteRerunner: Option[String], location: Option[Location]) {
-    report(TestSucceeded(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, Some(duration), Some(formatter),
+    report(TestSucceeded(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, None, 0, Some(duration), Some(formatter),
       location, suiteRerunner))
   }
 
   private def reportTestPending(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, decodedTestName: Option[String], duration: Long, formatter: Formatter, location: Option[Location]) {
-    report(TestPending(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, Some(duration), Some(formatter),
+    report(TestPending(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), getDecodedName(theSuite.suiteName), testName, testText, decodedTestName, None, 0, Some(duration), Some(formatter),
       location))
   }
 
@@ -144,7 +144,7 @@ trait StateSuite extends Suite {
   private def reportTestIgnored(report: Reporter, tracker: Tracker, testName: String, testText: String, decodeTestName: Option[String], level: Int) {
     val testSucceededIcon = "-"
     val formattedText = indentation(level - 1) + (testSucceededIcon + " " + testText)
-    report(TestIgnored(tracker.nextOrdinal(), suiteName, suiteId, Some(getClass.getName), getDecodedName(suiteName), testName, testText, decodeTestName, Some(IndentedText(formattedText, testText, level)),
+    report(TestIgnored(tracker.nextOrdinal(), suiteName, suiteId, Some(getClass.getName), getDecodedName(suiteName), testName, testText, decodeTestName, None, Some(IndentedText(formattedText, testText, level)),
       Some(ToDoLocation)))
 
   }
@@ -154,7 +154,7 @@ trait StateSuite extends Suite {
 
     val message = getMessageForException(throwable)
     val formatter = getIndentedText(testName, 1, true)
-    report(TestFailed(tracker.nextOrdinal(), message, suiteName, suiteId, getDecodedName(suiteName), Some(getClass.getName), testName, testName, decodedTestName, Some(throwable), Some(duration), Some(formatter), location, None))
+    report(TestFailed(tracker.nextOrdinal(), message, suiteName, suiteId, getDecodedName(suiteName), Some(getClass.getName), testName, testName, decodedTestName, None, 0, Some(throwable), Some(duration), Some(formatter), location, None))
   }
   override def runTest(testName: String, args: RunArgs) {
 
@@ -184,7 +184,7 @@ trait StateSuite extends Suite {
           val e = intercept[TestCanceledException] { cancel("Because of rain") }
           val message = getMessageForException(e)
           val formatter = getIndentedText(testName, 1, true)
-          args.reporter(TestCanceled(args.tracker.nextOrdinal(), message, suiteName, suiteId, getDecodedName(suiteName), Some(getClass.getName), testName, testName, getDecodedName(testName), Some(e), Some(duration), Some(formatter), Some(ToDoLocation), None))
+          args.reporter(TestCanceled(args.tracker.nextOrdinal(), message, suiteName, suiteId, getDecodedName(suiteName), Some(getClass.getName), testName, testName, getDecodedName(testName), None, 0, Some(e), Some(duration), Some(formatter), Some(ToDoLocation), None))
 
       case Failed(duration, remaining) =>
         if (remaining > 1)

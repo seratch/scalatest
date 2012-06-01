@@ -29,7 +29,7 @@ import org.scalatest.Suite.checkChosenStyles
 
 // T will be () => Unit for FunSuite and FixtureParam => Any for fixture.FunSuite
 private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResourceName: String, simpleClassName: String)  {
-
+  
   sealed abstract class Node(val parentOption: Option[Branch]) {
     def indentationLevel: Int = {
       def calcLevel(currentParentOpt: Option[Branch], currentLevel: Int): Int = 
@@ -178,6 +178,44 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     if (testTags.exists(_ == null))
       throw new NullPointerException("a test tag was null")
   }
+  
+  var leafIndexMap: Map[Node, Int] = null
+  var branchIndexMap: Map[Node, BranchIndices] = null
+  
+  case class BranchIndices(start: Int, end: Int)
+  
+  def buildStructureIndex: Tuple2[Map[Node, Int], Map[Node, BranchIndices]] = {
+    
+    val leafIndexMap = new collection.mutable.HashMap[Node, Int]()
+    val branchIndexMap = new collection.mutable.HashMap[Node, BranchIndices]()
+    
+    def index(nodes: List[Node], structureIndex: Int): Int = {
+      var runningStructureIndex = structureIndex
+      nodes.map { node =>
+        node match {
+          case testLeaf: TestLeaf =>
+            leafIndexMap.put(testLeaf, runningStructureIndex)
+            runningStructureIndex += 1
+          case infoLeaf: InfoLeaf =>
+            leafIndexMap.put(infoLeaf, runningStructureIndex)
+            runningStructureIndex += 1
+          case markupLeaf: MarkupLeaf => 
+            leafIndexMap.put(markupLeaf, runningStructureIndex)
+            runningStructureIndex += 1
+          case desc: DescriptionBranch => 
+            val start = runningStructureIndex
+            runningStructureIndex = index(desc.subNodes.reverse, runningStructureIndex + 1)
+            val end = runningStructureIndex
+            runningStructureIndex += 1
+            branchIndexMap.put(desc, BranchIndices(start, end))
+        } 
+      }
+      runningStructureIndex
+    }
+    
+    val structureIndexCount = index(Trunk.subNodes.reverse, 0)
+    (leafIndexMap.toMap, branchIndexMap.toMap)
+  }
 
   def runTestImpl(
     theSuite: Suite,
@@ -201,8 +239,9 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
       throw new IllegalArgumentException("No test in this suite has name: \"" + testName + "\"")
 
     val theTest = atomic.get.testsMap(testName)
+    val structureIndex = leafIndexMap(theTest)
 
-    reportTestStarting(theSuite, report, tracker, testName, theTest.testText, None, theSuite.rerunner, theTest.lineInFile)
+    reportTestStarting(theSuite, report, tracker, testName, theTest.testText, None, Some(structureIndex), theSuite.rerunner, theTest.lineInFile)
 
     val testTextWithOptionalPrefix = prependChildPrefix(theTest.parent, theTest.testText)
     val formatter = getIndentedText(testTextWithOptionalPrefix, theTest.indentationLevel, includeIcon)
@@ -211,13 +250,13 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     val informerForThisTest =
       MessageRecordingInformer(
         messageRecorderForThisTest,
-        (message, payload, isConstructingThread, testWasPending, testWasCanceled, location) => reportInfoProvided(theSuite, report, tracker, Some(testName), message, payload, theTest.indentationLevel + 1, location, isConstructingThread, includeIcon, Some(testWasPending), Some(testWasCanceled))
+        (message, payload, isConstructingThread, testWasPending, testWasCanceled, location) => reportInfoProvided(theSuite, report, tracker, Some(testName), message, payload, Some(structureIndex), theTest.indentationLevel + 1, location, isConstructingThread, includeIcon, Some(testWasPending), Some(testWasCanceled))
       )
 
     val documenterForThisTest =
       MessageRecordingDocumenter(
         messageRecorderForThisTest,
-        (message, None, isConstructingThread, testWasPending, testWasCanceled, location) => reportMarkupProvided(theSuite, report, tracker, Some(testName), message, theTest.indentationLevel + 1, location, isConstructingThread, Some(testWasPending), Some(testWasCanceled))
+        (message, None, isConstructingThread, testWasPending, testWasCanceled, location) => reportMarkupProvided(theSuite, report, tracker, Some(testName), message, Some(structureIndex), theTest.indentationLevel + 1, location, isConstructingThread, Some(testWasPending), Some(testWasCanceled))
       )
 
     val oldInformer = atomicInformer.getAndSet(informerForThisTest)
@@ -231,21 +270,21 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
 
       val duration = System.currentTimeMillis - testStartTime
       val durationToReport = theTest.recordedDuration.getOrElse(duration)
-      reportTestSucceeded(theSuite, report, tracker, testName, theTest.testText, None, durationToReport, formatter, theSuite.rerunner, theTest.lineInFile)
+      reportTestSucceeded(theSuite, report, tracker, testName, theTest.testText, None, Some(structureIndex), messageRecorderForThisTest.recordedCount, durationToReport, formatter, theSuite.rerunner, theTest.lineInFile)
     }
     catch { // XXX
       case _: TestPendingException =>
         val duration = System.currentTimeMillis - testStartTime
-        reportTestPending(theSuite, report, tracker, testName, theTest.testText, None, duration, formatter, theTest.lineInFile)
+        reportTestPending(theSuite, report, tracker, testName, theTest.testText, None, Some(structureIndex), messageRecorderForThisTest.recordedCount, duration, formatter, theTest.lineInFile)
         testWasPending = true // Set so info's printed out in the finally clause show up yellow
       case e: TestCanceledException =>
         val duration = System.currentTimeMillis - testStartTime
-        reportTestCanceled(theSuite, report, e, testName, theTest.testText, None, theSuite.rerunner, tracker, duration, theTest.indentationLevel, includeIcon, theTest.lineInFile)
+        reportTestCanceled(theSuite, report, e, testName, theTest.testText, None, Some(structureIndex), messageRecorderForThisTest.recordedCount, theSuite.rerunner, tracker, duration, theTest.indentationLevel, includeIcon, theTest.lineInFile)
         testWasCanceled = true // Set so info's printed out in the finally clause show up yellow
       case e if !anErrorThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
         val durationToReport = theTest.recordedDuration.getOrElse(duration)
-        reportTestFailed(theSuite, report, e, testName, theTest.testText, None, theSuite.rerunner, tracker, durationToReport, theTest.indentationLevel, includeIcon, Some(SeeStackDepthException))
+        reportTestFailed(theSuite, report, e, testName, theTest.testText, None, Some(structureIndex), messageRecorderForThisTest.recordedCount, theSuite.rerunner, tracker, durationToReport, theTest.indentationLevel, includeIcon, Some(SeeStackDepthException))
       case e => throw e
     }
     finally {
@@ -275,9 +314,10 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
 
         val descriptionTextWithOptionalPrefix = prependChildPrefix(parent, descriptionText)
         val indentationLevel = desc.indentationLevel
-        reportScopeOpened(theSuite, args.reporter, args.tracker, None, descriptionTextWithOptionalPrefix, indentationLevel, false, None, None, lineInFile)
+        val branchIndices = branchIndexMap(desc)
+        reportScopeOpened(theSuite, args.reporter, args.tracker, None, descriptionTextWithOptionalPrefix, Some(branchIndices.start), indentationLevel, false, None, None, lineInFile)
         traverseSubNodes()
-        reportScopeClosed(theSuite, args.reporter, args.tracker, None, descriptionTextWithOptionalPrefix, indentationLevel, false, None, None, lineInFile)
+        reportScopeClosed(theSuite, args.reporter, args.tracker, None, descriptionTextWithOptionalPrefix, Some(branchIndices.end), indentationLevel, false, None, None, lineInFile)
 
       case Trunk =>
         traverseSubNodes()
@@ -294,16 +334,19 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
                 if (ignoreTest) {
                   val testTextWithOptionalPrefix = prependChildPrefix(branch, testText)
                   val theTest = atomic.get.testsMap(testName)
-                  reportTestIgnored(theSuite, args.reporter, args.tracker, testName, testTextWithOptionalPrefix, None, testLeaf.indentationLevel, theTest.lineInFile)
+                  val structureIndex = leafIndexMap(testLeaf)
+                  reportTestIgnored(theSuite, args.reporter, args.tracker, testName, testTextWithOptionalPrefix, None, Some(structureIndex), testLeaf.indentationLevel, theTest.lineInFile)
                 }
                 else
                   runTest(testName, args)
 
             case infoLeaf @ InfoLeaf(_, message, payload, location) =>
-              reportInfoProvided(theSuite, args.reporter, args.tracker, None, message, payload, infoLeaf.indentationLevel, location, true, includeIcon)
+              val structureIndex = leafIndexMap(infoLeaf)
+              reportInfoProvided(theSuite, args.reporter, args.tracker, None, message, payload, Some(structureIndex), infoLeaf.indentationLevel, location, true, includeIcon)
 
             case markupLeaf @ MarkupLeaf(_, message, location) =>
-              reportMarkupProvided(theSuite, args.reporter, args.tracker, None, message, markupLeaf.indentationLevel, location, true)
+              val structureIndex = leafIndexMap(markupLeaf)
+              reportMarkupProvided(theSuite, args.reporter, args.tracker, None, message, Some(structureIndex), markupLeaf.indentationLevel, location, true)
 
             case branch: Branch => runTestsInBranch(theSuite, branch, args, includeIcon, runTest)
           }
@@ -343,7 +386,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     // into error messages on the standard error stream.
     val report = theSuite.wrapReporterIfNecessary(reporter)
     val newArgs = if (report eq reporter) args else args.copy(reporter = report)
-
+    
     // If a testName is passed to run, just run that, else run the tests returned
     // by testNames.
     testName match {
@@ -352,7 +395,8 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
         if (!filterTest) {
           if (ignoreTest) {
             val theTest = atomic.get.testsMap(tn)
-            reportTestIgnored(theSuite, report, tracker, tn, tn, getDecodedName(tn), 1, theTest.lineInFile)
+            val structureIndex = leafIndexMap(theTest)
+            reportTestIgnored(theSuite, report, tracker, tn, tn, getDecodedName(tn), Some(structureIndex), 1, theTest.lineInFile)
           }
           else {
             runTest(tn, newArgs)
@@ -384,13 +428,16 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
 
     val informerForThisSuite =
       ConcurrentInformer(
-        (message, payload, isConstructingThread, location) => {
-          reportInfoProvided(theSuite, report, tracker, None, message, payload, 1, location, isConstructingThread)
-        }
+        (message, payload, isConstructingThread, location) => // TODO : can only set structureIndex to None here, how informerForThisSuite is used?
+          reportInfoProvided(theSuite, report, tracker, None, message, payload, None, 1, location, isConstructingThread)
       )
 
     atomicInformer.set(informerForThisSuite)
-
+    
+    val (liMap, biMap) = buildStructureIndex
+    leafIndexMap = liMap
+    branchIndexMap = biMap
+    
     var swapAndCompareSucceeded = false
     try {
       superRun(testName, args.copy(reporter = report))
@@ -673,7 +720,7 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
         val informerForThisTest =
           PathMessageRecordingInformer( // TODO: Put locations into path traits!
             (message, payload, wasConstructingThread, testWasPending, theSuite, report, tracker, testName, indentation, includeIcon, thread) =>
-              reportInfoProvided(theSuite, report, tracker, Some(testName), message, payload, indentation, None, wasConstructingThread, includeIcon, Some(testWasPending))
+              reportInfoProvided(theSuite, report, tracker, Some(testName), message, payload, None, indentation, None, wasConstructingThread, includeIcon, Some(testWasPending))
           )
 
         val oldInformer = atomicInformer.getAndSet(informerForThisTest)
@@ -817,11 +864,15 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
 
     val informerForThisSuite =
       ConcurrentInformer(
-        (message, payload, isConstructingThread, location) =>
-          reportInfoProvided(theSuite, report, tracker, None, message, payload, 1, location, isConstructingThread)
+        (message, payload, isConstructingThread, location) =>  // TODO : can only set structureIndex to None here, how informerForThisSuite is used?
+          reportInfoProvided(theSuite, report, tracker, None, message, payload, None, 1, location, isConstructingThread)
       )
 
     atomicInformer.set(informerForThisSuite)
+    
+    val (liMap, biMap) = buildStructureIndex
+    leafIndexMap = liMap
+    branchIndexMap = biMap
 
     var swapAndCompareSucceeded = false
     try {

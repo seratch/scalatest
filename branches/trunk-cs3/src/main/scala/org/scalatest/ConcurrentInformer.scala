@@ -141,6 +141,8 @@ private[scalatest] class MessageRecorder extends ThreadAwareness {
     for ((message, payload, fire, location) <- recordedMessages)
       fire(message, payload, true, testWasPending, testWasCanceled, location) // Fire the info provided event using the passed function
   }
+  
+  def recordedCount = recordedMessages.size
 }
 
 private[scalatest] class MessageRecordingInformer(recorder: MessageRecorder, fire: RecordedMessageFiringFun) extends Informer {

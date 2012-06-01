@@ -242,7 +242,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      */
     override def onTestStart(result: ITestResult) = {
       report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, result.getName + params(result), result.getName + params(result),
-             getDecodedName(result.getName + params(result)), Some(MotionToSuppress), getTopOfMethod(thisSuite.getClass.getName, result.getName), Some(className)))
+             getDecodedName(result.getName + params(result)), None, Some(MotionToSuppress), getTopOfMethod(thisSuite.getClass.getName, result.getName), Some(className)))
     }
 
     /**
@@ -253,7 +253,7 @@ trait TestNGSuite extends Suite { thisSuite =>
       val testName = result.getName + params(result)
       val formatter = getIndentedText(testName, 1, true)
       report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, thisSuite.decodedSuiteName, Some(thisSuite.getClass.getName), testName, testName, 
-          getDecodedName(testName), None, Some(formatter), getTopOfMethod(thisSuite.getClass.getName, result.getName), Some(className))) // Can I add a duration?
+          getDecodedName(testName), None, 0, None, Some(formatter), getTopOfMethod(thisSuite.getClass.getName, result.getName), Some(className))) // Can I add a duration?
     }
 
     /**
@@ -263,7 +263,7 @@ trait TestNGSuite extends Suite { thisSuite =>
     override def onTestSkipped(result: ITestResult) = {
       val testName = result.getName + params(result)
       val formatter = getIndentedText(testName, 1, true)
-      report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), Some(formatter), getTopOfMethod(thisSuite.getClass.getName, result.getName)))
+      report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), None, Some(formatter), getTopOfMethod(thisSuite.getClass.getName, result.getName)))
     }
 
     /**
@@ -282,7 +282,7 @@ trait TestNGSuite extends Suite { thisSuite =>
         case _ => 
           None
       }
-      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), throwable, None, Some(formatter), Some(SeeStackDepthException), Some(className), payload)) // Can I add a duration?
+      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), None, 0, throwable, None, Some(formatter), Some(SeeStackDepthException), Some(className), payload)) // Can I add a duration?
     }
 
     /**
