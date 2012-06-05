@@ -10,7 +10,7 @@ class UnitedStates extends Suite {
   import UnitedStates.allStates
   import UnitedStates.nestedSuiteCount
 
-  override def nestedSuites: List[Suite] = allStates.take(nestedSuiteCount).toList
+  override def nestedSuites: IndexedSeq[Suite] = allStates.take(nestedSuiteCount).toIndexedSeq
 
   override def run(testName: Option[String], args: RunArgs) {
 
