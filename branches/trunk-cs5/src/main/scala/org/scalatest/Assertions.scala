@@ -313,6 +313,11 @@ trait Assertions {
       throw newAssertionFailedException(None, None, 4)
   }
 
+  val listener = new AssertionRecorderListener[Boolean]()
+
+  import language.experimental.macros
+  def newAssert(recording: Boolean): Boolean = macro AssertionsMacro.apply
+
   private[scalatest] def newAssertionFailedException(optionalMessage: Option[Any], optionalCause: Option[Throwable], stackDepth: Int): Throwable =
     (optionalMessage, optionalCause) match {
       case (None, None) => new TestFailedException(stackDepth)
