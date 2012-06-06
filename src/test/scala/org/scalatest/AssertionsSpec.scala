@@ -92,4 +92,16 @@ class AssertionsSpec extends FunSpec with OptionValues {
       }
     }
   }
+  describe("The newAssert method") {
+    it("should provides error message similar to using ===") {
+      val e = intercept[TestFailedException] {
+        newAssert {
+          1 == 1
+          2 == 2
+          3 == 5
+        }
+      }
+      assert(e.getMessage.trim === ("3 == 5"))
+    }
+  }
 }
