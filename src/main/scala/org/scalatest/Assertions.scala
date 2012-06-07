@@ -313,8 +313,6 @@ trait Assertions {
       throw newAssertionFailedException(None, None, 4)
   }
 
-  val listener = new AssertionRecorderListener[Boolean]()
-
   import language.experimental.macros
   def newAssert(recording: Boolean): Boolean = macro AssertionsMacro.apply
 

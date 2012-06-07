@@ -23,9 +23,18 @@ class AssertionsMacro[C <: Context](val context: C) {
           New(Ident(runtimeClass)),
           newTermName("<init>")),
         List(
-          Select(
-            context.prefix.tree,
-            newTermName("listener")))))
+          declareListener)))
+  }
+
+  private[this] def declareListener: Tree = {
+    val listenerClass = staticClass(classOf[AssertionRecorderListener[Boolean]].getName)
+    Apply(
+      Select(
+        New(Ident(listenerClass)),
+        newTermName("<init>")
+      ),
+      Nil
+    )
   }
 
   private[this] def recordExpressions(recording: Tree): List[Tree] = {
