@@ -94,14 +94,54 @@ class AssertionsSpec extends FunSpec with OptionValues {
   }
   describe("The newAssert method") {
     it("should provides error message similar to using ===") {
-      val e = intercept[TestFailedException] {
-        newAssert {
-          1 == 1
-          2 == 2
-          3 == 5
-        }
+      val a = 3
+      val b = 5
+
+      newAssert(a != b)
+
+      val e1 = intercept[TestFailedException] { newAssert(a == 5) }
+      assert(e1.getMessage === ("a did not equal to 5"))
+
+      val e2 = intercept[TestFailedException] { newAssert(3 == b) }
+      assert(e2.getMessage === ("3 did not equal to b"))
+
+      val e3 = intercept[TestFailedException] {
+        newAssert(3 == 5)
       }
-      assert(e.getMessage.trim === ("3 == 5"))
+      // This is because the compiler simply pass the false boolean literal
+      // to the macro, can't find a way to get the 3 == 5 literal.
+      assert(e3.getMessage === ("newAssert(3 == 5) fails."))
+
+      val e4 = intercept[TestFailedException] { newAssert(a == b) }
+      assert(e4.getMessage === ("a did not equal to b"))
+
+      val e5 = intercept[TestFailedException] { newAssert(a == null) }
+      assert(e5.getMessage === ("a did not equal to null"))
+
+      val e6 = intercept[TestFailedException] { newAssert(null == a) }
+      assert(e6.getMessage === ("null did not equal to a"))
+
+      val e7 = intercept[TestFailedException] { newAssert(a != 3) }
+      assert(e7.getMessage === ("a was equal to 3"))
+
+      val e8 = intercept[TestFailedException] { newAssert(3 != a) }
+      assert(e8.getMessage === ("3 was equal to a"))
+
+      val e9 = intercept[TestFailedException] { newAssert(a > 3) }
+      assert(e9.getMessage === ("a did not more than 3"))
+
+      newAssert(a >= 3)
+
+      val e10 = intercept[TestFailedException] { newAssert(a >= 4) }
+      assert(e10.getMessage === ("a did not more than or equal 4"))
+
+      val e11 = intercept[TestFailedException] { newAssert(b < 5) }
+      assert(e11.getMessage === ("b did not less than 5"))
+
+      newAssert(b <= 5)
+
+      val e12 = intercept[TestFailedException] { newAssert(b <= 4) }
+      assert(e12.getMessage === ("b did not less than or equal 4"))
     }
   }
 }
