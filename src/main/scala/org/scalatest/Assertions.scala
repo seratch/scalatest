@@ -314,7 +314,7 @@ trait Assertions {
   }
 
   import language.experimental.macros
-  def newAssert(recording: Boolean): Boolean = macro AssertionsMacro.apply
+  def newAssert(condition: Boolean): Unit = macro AssertionsMacro.apply
 
   private[scalatest] def newAssertionFailedException(optionalMessage: Option[Any], optionalCause: Option[Throwable], stackDepth: Int): Throwable =
     (optionalMessage, optionalCause) match {
