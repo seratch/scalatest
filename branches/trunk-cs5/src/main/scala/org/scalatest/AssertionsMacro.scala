@@ -25,17 +25,17 @@ class AssertionsMacro[C <: Context](val context: C) {
             case select: Select =>
               select.name.decoded match {
                 case "==" =>
-                  select.qualifier + " did not equal to " + apply.args(0)
+                  select.qualifier + " was not equal to " + apply.args(0)
                 case "!=" =>
                   select.qualifier + " was equal to " + apply.args(0)
                 case ">" =>
-                  select.qualifier + " did not more than " + apply.args(0)
+                  select.qualifier + " was not more than " + apply.args(0)
                 case ">=" =>
-                  select.qualifier + " did not more than or equal " + apply.args(0)
+                  select.qualifier + " was not more than or equal " + apply.args(0)
                 case "<" =>
-                  select.qualifier + " did not less than " + apply.args(0)
+                  select.qualifier + " was not less than " + apply.args(0)
                 case "<=" =>
-                  select.qualifier + " did not less than or equal " + apply.args(0)
+                  select.qualifier + " was not less than or equal " + apply.args(0)
                 case _ =>
                   getText(tree) + " fails."
               }

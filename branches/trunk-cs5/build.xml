@@ -279,7 +279,7 @@
     </target>
 
      <!-- Put everything in ${jar.contents} into the scalatest.jar file -->
-    <target name="dist" depends="compile">
+    <target name="dist" depends="compile-main">
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}/lib" />
         <delete file="${dist}/lib/scalatest.jar" />
@@ -292,7 +292,7 @@
              eclipse="false" failok="false" exceptions="true" files="osgi.bnd"
              output="${dist}/lib/scalatest.jar" /> 
 
-        <jar jarfile="${dist}/lib/scalatest-wbt.jar" basedir="${build.tests}" includes="org/scalatest/*.class" />
+        <!--<jar jarfile="${dist}/lib/scalatest-wbt.jar" basedir="${build.tests}" includes="org/scalatest/*.class" />-->
 
         <echo message="All finished building ${project.name}!" />
     </target>
