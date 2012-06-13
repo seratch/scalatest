@@ -41,7 +41,6 @@ import scala.collection.immutable.TreeSet
 import Suite.getIndentedText
 import Suite.getDecodedName
 import org.scalatest.events._
-import org.scalatest.tools.StandardOutReporter
 import Suite.getMessageForException
 import Suite.reportTestStarting
 import Suite.reportTestIgnored
@@ -51,10 +50,9 @@ import Suite.reportInfoProvided
 import Suite.createInfoProvided
 import Suite.createMarkupProvided
 import scala.reflect.NameTransformer
-import tools.SuiteDiscoveryHelper
-import tools.Runner
 import exceptions.StackDepthExceptionHelper.getStackDepthFun
 import exceptions._
+import tools.{SuiteSortingReporter, StandardOutReporter, SuiteDiscoveryHelper, Runner}
 
 /**
  * A suite of tests. A <code>Suite</code> instance encapsulates a conceptual
@@ -2579,6 +2577,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   private[scalatest] def wrapReporterIfNecessary(reporter: Reporter) = reporter match {
     case dr: DispatchReporter => dr
     case cr: CatchReporter => cr
+    case ssr: SuiteSortingReporter => ssr
     case _ => new CatchReporter(reporter)
   }
   

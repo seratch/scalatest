@@ -1982,6 +1982,8 @@ object Runner {
               if (numThreads > 0) numThreads
               else Runtime.getRuntime.availableProcessors * 2
 
+            val sortingDispatch = new SuiteSortingReporter(dispatch)
+
             val execSvc: ExecutorService = Executors.newFixedThreadPool(poolSize)
             try {
 
@@ -1993,7 +1995,7 @@ object Runner {
                     val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                     val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
                     // TODO: Can't put Some(distributor) here, will cause some weird error in JUnitXmlReporter, to check with Bill
-                    val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, None, tracker.nextTracker, chosenStyleSet)
+                    val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, None, tracker.nextTracker, chosenStyleSet)
                     distributor.apply(suiteConfig.suite, runArgs)
                   }
                   distributor.waitUntilDone()
@@ -2004,7 +2006,7 @@ object Runner {
                   val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                   val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
                   // TODO: Can't put Some(distributor) here, will cause some weird error in JUnitXmlReporter, to check with Bill
-                  val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, None, tracker.nextTracker, chosenStyleSet)
+                  val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, None, tracker.nextTracker, chosenStyleSet)
                   distributor.apply(suiteConfig.suite, runArgs)
                 }
                 distributor.waitUntilDone()
@@ -2012,6 +2014,7 @@ object Runner {
             }
             finally {
               execSvc.shutdown()
+              sortingDispatch.dispose()
             }
           }
           else {

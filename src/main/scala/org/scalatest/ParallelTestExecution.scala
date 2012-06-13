@@ -15,12 +15,10 @@
  */
 package org.scalatest    
 
-import tools.DistributedTestRunnerSuite
 import OneInstancePerTest.RunTestInNewInstance
-import org.scalatest.tools.TestSortingReporter
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
-import org.scalatest.tools.Runner
+import tools.{SuiteSortingReporter, DistributedTestRunnerSuite, TestSortingReporter, Runner}
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -51,15 +49,20 @@ import org.scalatest.tools.Runner
  */
 trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
   
-  @volatile private var sortingReporter: Option[TestSortingReporter] = None
+  @volatile private var testSortingReporter: Option[TestSortingReporter] = None
   
   protected abstract override def runTests(testName: Option[String], args: RunArgs) {
     if (args.configMap.contains(RunTestInNewInstance)) {
       super.runTests(testName, args)
     }
     else {
-      sortingReporter = Some(new TestSortingReporter(args.reporter, timeout))
-      val newArgs = args.copy(reporter = sortingReporter.get)
+      testSortingReporter = Some(new TestSortingReporter(args.reporter, timeout, testNames.size))
+      args.reporter match {
+        case suiteSortingReporter: SuiteSortingReporter =>
+          suiteSortingReporter.setTestSortingReporter(suiteId, testSortingReporter.get)
+        case _ =>
+      }
+      val newArgs = args.copy(reporter = testSortingReporter.get)
       super.runTests(testName, newArgs)
     }
   }
@@ -72,9 +75,9 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
         case None =>
           oneInstance.run(Some(testName), args)
         case Some(distribute) =>
-          sortingReporter match {
-            case Some(sortingReporter) => 
-              sortingReporter.waitForTestCompleted(testName)
+          testSortingReporter match {
+            case Some(testSortingReporter) =>
+              testSortingReporter.waitForTestCompleted(testName)
             case None => 
           }
           distribute(new DistributedTestRunnerSuite(oneInstance, testName, args), args.tracker.nextTracker)
