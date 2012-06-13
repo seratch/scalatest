@@ -30,7 +30,7 @@ private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[Stri
   if (path == null || accessibleSuites == null || runpathClassLoader == null)
     throw new NullPointerException
 
-  override val nestedSuites: IndexedSeq[Suite] =
+  override val nestedSuites: List[Suite] =
     for (suiteClassName <- DiscoverySuite.nestedSuiteNames(path, accessibleSuites, wildcard))
       yield {
         try {
@@ -56,11 +56,24 @@ private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[Stri
         }
       }
      // TODO: probably override run to just call runNestedSuites
-  override protected def runTests(testName: Option[String], args: RunArgs) {
+  override protected def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                             configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     if (testName == null)
       throw new NullPointerException("testName was null")
-    if (args == null)
-      throw new NullPointerException("args was null")
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+    
+    
   }
 }
 
@@ -72,11 +85,11 @@ private[scalatest] object DiscoverySuite {
     for (name <- wildcardList(path, accessibleSuites); if name.length > path.length && !name.substring(path.length + 1).contains('.'))
       yield name
 
-  private[scalatest] def nestedSuiteNames(path: String, accessibleSuites: Set[String], wildcard: Boolean): IndexedSeq[String] =
+  private[scalatest] def nestedSuiteNames(path: String, accessibleSuites: Set[String], wildcard: Boolean): List[String] =
     if (wildcard)
-      Vector.empty ++ wildcardList(path, accessibleSuites)
+      wildcardList(path, accessibleSuites).toList
     else
-      Vector.empty ++ narrowList(path, accessibleSuites)
+      narrowList(path, accessibleSuites).toList
 }
 
 

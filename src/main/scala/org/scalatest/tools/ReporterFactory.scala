@@ -143,18 +143,6 @@ private[scalatest] class ReporterFactory {
       new FilterReporter(customReporter, configSet)
   }
   
-  protected def createJunitXmlReporter(configSet: Set[ReporterConfigParam], directory: String) = {
-    new JunitXmlReporter(directory)
-  }
-  
-  protected def createDashboardReporter(configSet: Set[ReporterConfigParam], directory: String, numFilesToArchive: Int) = {
-    new DashboardReporter(directory, numFilesToArchive)
-  }
-  
-  protected def createSocketReporter(host: String, port: Int) = {
-    new SocketReporter(host, port)
-  }
-  
   private[scalatest] def getDispatchReporter(reporterSpecs: ReporterConfigurations, graphicReporter: Option[Reporter], passFailReporter: Option[Reporter], loader: ClassLoader) = {
 
     def getReporterFromConfiguration(configuration: ReporterConfiguration): Reporter =
@@ -163,13 +151,10 @@ private[scalatest] class ReporterFactory {
         case StandardOutReporterConfiguration(configSet) => createStandardOutReporter(configSet)
         case StandardErrReporterConfiguration(configSet) => createStandardErrReporter(configSet)
         case FileReporterConfiguration(configSet, fileName) => createFileReporter(configSet, fileName)
-        case JunitXmlReporterConfiguration(configSet, directory) => createJunitXmlReporter(configSet, directory)
-        case DashboardReporterConfiguration(configSet, directory, numFilesToArchive) => createDashboardReporter(configSet, directory, numFilesToArchive)
         case XmlReporterConfiguration(configSet, directory) => createXmlReporter(configSet, directory)
         case HtmlReporterConfiguration(configSet, fileName) => createHtmlReporter(configSet, fileName)
         case CustomReporterConfiguration(configSet, reporterClassName) => createCustomReporter(configSet, reporterClassName, loader) 
         case GraphicReporterConfiguration(configSet) => throw new RuntimeException("Should never happen.")
-        case SocketReporterConfiguration(host, port) => createSocketReporter(host, port)
     }
 
     val reporterSeq =

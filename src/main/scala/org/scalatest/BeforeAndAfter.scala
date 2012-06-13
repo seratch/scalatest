@@ -158,7 +158,7 @@ trait BeforeAndAfter extends AbstractSuite {
    * exception, this method will complete abruptly with the exception thrown by the function registered with <code>after</code>.
    * </p>
   */
-  abstract protected override def runTest(testName: String, args: RunArgs) {
+  abstract protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     var thrownException: Option[Throwable] = None
 
@@ -168,7 +168,7 @@ trait BeforeAndAfter extends AbstractSuite {
     }
 
     try {
-      super.runTest(testName, args)
+      super.runTest(testName, reporter, stopper, configMap, tracker)
     }
     catch {
       case e: Exception => thrownException = Some(e)
@@ -201,8 +201,10 @@ trait BeforeAndAfter extends AbstractSuite {
    * any invocation to <code>before</code> or <code>after</code> will complete abruptly
    * with a <code>NotAllowedException</code>.
    */
-  abstract override def run(testName: Option[String], args: RunArgs) {
+  abstract override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+    configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
     runHasBeenInvoked = true
-    super.run(testName, args)
+    super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
   }
 }
