@@ -39,7 +39,7 @@ class TestSortingReporterSpec extends FunSpec with ShouldMatchers {
     
     it("should fire event passed to it in the order they arrive if waitForTestCompleted is not called.") {
       val recordingReporter = new EventRecordingReporter()
-      val dispatch = new TestSortingReporter(recordingReporter, Span(15, Seconds))
+      val dispatch = new TestSortingReporter(recordingReporter, Span(15, Seconds), 6)
       
       dispatch(scope1Opened)
       dispatch(scope2Opened)
@@ -83,7 +83,7 @@ class TestSortingReporterSpec extends FunSpec with ShouldMatchers {
     
     it("should wait and fire event based on the order of waitForTestCompleted is called.") {
       val recordingReporter = new EventRecordingReporter()
-      val dispatch = new TestSortingReporter(recordingReporter, Span(15, Seconds))
+      val dispatch = new TestSortingReporter(recordingReporter, Span(15, Seconds), 6)
       
       dispatch(scope1Opened)
       dispatch(scope2Opened)
@@ -134,7 +134,7 @@ class TestSortingReporterSpec extends FunSpec with ShouldMatchers {
     it("should wait and fire blocking event when timeout, and just fire the missing event directly without waiting when received later.") {
     
       val recordingReporter = new EventRecordingReporter()
-      val dispatch = new TestSortingReporter(recordingReporter, Span(3, Seconds))
+      val dispatch = new TestSortingReporter(recordingReporter, Span(3, Seconds), 3)
       
       dispatch(scope1Opened)
       dispatch(scope2Opened)

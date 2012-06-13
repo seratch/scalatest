@@ -51,16 +51,18 @@ private[scalatest] class JunitXmlReporter(directory: String) extends Reporter {
   // of SuiteCompleted or SuiteAborted events.
   //
   def apply(event: Event) {
-    events += event
+    synchronized {
+      events += event
 
-    event match {
-      case e: SuiteCompleted =>
-        writeSuiteFile(e)
+      event match {
+        case e: SuiteCompleted =>
+          writeSuiteFile(e)
 
-      case e: SuiteAborted =>
-        writeSuiteFile(e)
+        case e: SuiteAborted =>
+          writeSuiteFile(e)
 
-      case _ =>
+        case _ =>
+      }
     }
   }
 

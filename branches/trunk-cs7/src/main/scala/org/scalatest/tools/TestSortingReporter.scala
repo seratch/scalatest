@@ -8,12 +8,13 @@ import org.scalatest.time.Span
 import java.util.Timer
 import java.util.TimerTask
 
-private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) extends ResourcefulReporter {
+private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, testCount: Int) extends ResourcefulReporter {
 
   case class Slot(testName: String, startEvent: Option[Event], completedEvent: Option[Event], ready: Boolean)
   
   private val waitingBuffer = new ListBuffer[Slot]()
   private val slotMap = new collection.mutable.HashMap[String, Slot]()  // testName -> Slot
+  @volatile private var completedTestCount = 0
   
   class TimeoutTask(val event: Event) extends TimerTask {
     override def run() {
@@ -51,6 +52,7 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) 
             case None => 
               dispatch(testIgnored)
           }
+          completedTestCount += 1
         case testSucceeded: TestSucceeded => 
           handleTestCompleted(testSucceeded, testSucceeded.testName)
         case testFailed: TestFailed => 
@@ -75,6 +77,7 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) 
       case None => 
         dispatch(event)
     }
+    completedTestCount += 1
   }
   
   private def fireReadyEvents() {
@@ -141,4 +144,6 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) 
   }
   
   override def dispose() = propagateDispose(dispatch)
+
+  def finished = completedTestCount == testCount && waitingBuffer.size == 0
 }
