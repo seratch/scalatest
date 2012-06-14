@@ -62,7 +62,7 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
           suiteSortingReporter.setTestSortingReporter(suiteId, testSortingReporter.get)
         case _ =>
       }
-      val newArgs = args.copy(reporter = testSortingReporter.get)
+      val newArgs = args.copy(reporter = testSortingReporter.get, distributor = None)
       super.runTests(testName, newArgs)
     }
   }
