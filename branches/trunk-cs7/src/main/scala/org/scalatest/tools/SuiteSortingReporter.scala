@@ -6,7 +6,7 @@ import DispatchReporter.propagateDispose
 import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
 
-class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
+private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
 
   case class Slot(suiteId: String, var doneEvent: Option[Event], var testSortingReporter: Option[TestSortingReporter])
 
@@ -19,36 +19,20 @@ class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
       synchronized {
         event match {
           case suiteStarting: SuiteStarting =>
-            // TODO: use better way to handle 'container' suite, add testCount in SuiteStarting may be?
-            if (suiteStarting.suiteId == "org.scalatest.tools.DiscoverySuite")
-              dispatch(suiteStarting)
-            else {
-              val slot = Slot(suiteStarting.suiteId, None, None)
-              slotList += slot
-              slotMap.get(suiteStarting.suiteId) match {
-                case Some(slot) =>
-                  throw new RuntimeException("2 SuiteStarting (" + slot.suiteId + ", " + suiteStarting.suiteId + ") having same suiteId '" + suiteStarting.suiteId + "'.")
-                case None =>
-                  slotMap.put(suiteStarting.suiteId, slot)
-              }
-              handleTestEvents(suiteStarting.suiteId, suiteStarting)
+            val slot = Slot(suiteStarting.suiteId, None, None)
+            slotList += slot
+            slotMap.get(suiteStarting.suiteId) match {
+              case Some(slot) =>
+                throw new RuntimeException("2 SuiteStarting (" + slot.suiteId + ", " + suiteStarting.suiteId + ") having same suiteId '" + suiteStarting.suiteId + "'.")
+              case None =>
+                slotMap.put(suiteStarting.suiteId, slot)
             }
+            handleTestEvents(suiteStarting.suiteId, suiteStarting)
+
           case suiteCompleted: SuiteCompleted =>
-            // TODO: use better way to handle 'container' suite, add testCount in SuiteStarting may be?
-            if (suiteCompleted.suiteId == "org.scalatest.tools.DiscoverySuite")
-              dispatch(suiteCompleted)
-            else {
-              val slot = slotMap(suiteCompleted.suiteId)
-              slot.doneEvent = Some(suiteCompleted)
-            }
+            handleSuiteEvents(suiteCompleted.suiteId, suiteCompleted)
           case suiteAborted: SuiteAborted =>
-            // TODO: use better way to handle 'container' suite, add testCount in SuiteStarting may be?
-            if (suiteAborted.suiteId == "org.scalatest.tools.DiscoverySuite")
-              dispatch(suiteAborted)
-            else {
-              val slot = slotMap(suiteAborted.suiteId)
-              slot.doneEvent = Some(suiteAborted)
-            }
+            handleSuiteEvents(suiteAborted.suiteId, suiteAborted)
           case testStarting: TestStarting =>
             handleTestEvents(testStarting.suiteId, testStarting)
           case testIgnored: TestIgnored =>
@@ -89,6 +73,11 @@ class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
         System.err.println(stringToPrint)
         e.printStackTrace(System.err)
     }
+  }
+
+  private def handleSuiteEvents(suiteId: String, event: Event) {
+    val slot = slotMap(suiteId)
+    slot.doneEvent = Some(event)
   }
 
   private def handleTestEvents(suiteId: String, event: Event) {
@@ -133,9 +122,10 @@ class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
 
   private def fireReadySuiteEvents(remainingSlotList: ListBuffer[Slot]): ListBuffer[Slot] = {
     val (done, pending) = remainingSlotList.span(isDone(_))
-    done.foreach { slot =>
-      fireSuiteEvents(slot.suiteId)
-      dispatch(slot.doneEvent.get)
+    done.foreach {
+      slot =>
+        fireSuiteEvents(slot.suiteId)
+        dispatch(slot.doneEvent.get)
     }
     pending
   }
@@ -148,7 +138,6 @@ class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
   override def dispose() = {
     try {
       fireReadyEvents()
-      //propagateDispose(dispatch)
     }
     catch {
       case e: Exception =>

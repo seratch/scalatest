@@ -25,37 +25,40 @@ import org.scalatest._
  *
  * @author Bill Venners
  */
-private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[String], wildcard: Boolean, runpathClassLoader: ClassLoader)  extends Suite {
+private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[String], wildcard: Boolean, runpathClassLoader: ClassLoader) extends Suite {
+
+  override def suiteId = getClass.getName + "-" + path
 
   if (path == null || accessibleSuites == null || runpathClassLoader == null)
     throw new NullPointerException
 
   override val nestedSuites: IndexedSeq[Suite] =
     for (suiteClassName <- DiscoverySuite.nestedSuiteNames(path, accessibleSuites, wildcard))
-      yield {
-        try {
-          val clazz = runpathClassLoader.loadClass(suiteClassName)
-          val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
-          if (wrapWithAnnotation == null)
-            clazz.newInstance.asInstanceOf[Suite]
-          else {
-            val suiteClazz = wrapWithAnnotation.value
-            val constructorList = suiteClazz.getDeclaredConstructors()
-            val constructor = constructorList.find { c => 
+    yield {
+      try {
+        val clazz = runpathClassLoader.loadClass(suiteClassName)
+        val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
+        if (wrapWithAnnotation == null)
+          clazz.newInstance.asInstanceOf[Suite]
+        else {
+          val suiteClazz = wrapWithAnnotation.value
+          val constructorList = suiteClazz.getDeclaredConstructors()
+          val constructor = constructorList.find { c =>
               val types = c.getParameterTypes
               types.length == 1 && types(0) == classOf[java.lang.Class[_]]
-            }
-            constructor.get.newInstance(clazz).asInstanceOf[Suite]
           }
-        }
-        catch {
-          case e: Exception => {
-            val msg = Resources("cannotLoadDiscoveredSuite", suiteClassName)
-            throw new RuntimeException(msg, e)
-          }
+          constructor.get.newInstance(clazz).asInstanceOf[Suite]
         }
       }
-     // TODO: probably override run to just call runNestedSuites
+      catch {
+        case e: Exception => {
+          val msg = Resources("cannotLoadDiscoveredSuite", suiteClassName)
+          throw new RuntimeException(msg, e)
+        }
+      }
+    }
+
+  // TODO: probably override run to just call runNestedSuites
   override protected def runTests(testName: Option[String], args: RunArgs) {
     if (testName == null)
       throw new NullPointerException("testName was null")
@@ -70,7 +73,7 @@ private[scalatest] object DiscoverySuite {
 
   private def narrowList(path: String, accessibleSuites: Set[String]): Set[String] = // filter out all but ones that are direct members of the path
     for (name <- wildcardList(path, accessibleSuites); if name.length > path.length && !name.substring(path.length + 1).contains('.'))
-      yield name
+    yield name
 
   private[scalatest] def nestedSuiteNames(path: String, accessibleSuites: Set[String], wildcard: Boolean): IndexedSeq[String] =
     if (wildcard)
