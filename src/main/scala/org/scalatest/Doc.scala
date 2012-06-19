@@ -54,7 +54,7 @@ import java.util.ConcurrentModificationException
  *
  * @author Bill Venners
  */
-private[scalatest] trait Doc extends Suite { thisDoc =>
+trait Doc extends Suite { thisDoc =>
 
   // If registrationThreadName is None, then registration isn't open
   // and include calls will return what they are supposed to return, but
@@ -179,7 +179,7 @@ println("&&&&&&&&&&&")
   private[scalatest] case class IncludedSuite(suite: Suite) extends Snippet
 }
 
-private[scalatest] object Doc {
+object Doc {
 
   private[scalatest] def trimMarkup(text: String): String = {
     val lines = text.lines.toList

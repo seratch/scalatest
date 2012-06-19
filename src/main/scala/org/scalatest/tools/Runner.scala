@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// TODO: Scaladoc for -F. Forgot this in 1.8. If have a 1.8.1, or a 1.9, then put it in there too.
 package org.scalatest.tools
 
 import org.scalatest._
@@ -36,6 +35,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import scala.collection.mutable.ArrayBuffer
 import SuiteDiscoveryHelper._
+import org.scalatest.time.Span
+import org.scalatest.time.Seconds
 
 private[tools] case class SuiteParam(className: String, testNames: Array[String], wildcardTestNames: Array[String], nestedSuites: Array[NestedSuiteParam])
 private[tools] case class NestedSuiteParam(suiteId: String, testNames: Array[String], wildcardTestNames: Array[String])
@@ -510,6 +511,8 @@ object Runner {
 
   private final val DefaultNumFilesToArchive = 2
 
+  @volatile private[scalatest] var testSortingReporterTimeout = Span(15, Seconds)
+  
   //                     TO
   // We always include a PassFailReporter on runs in order to determine
   // whether or not all tests passed.
@@ -646,7 +649,8 @@ object Runner {
       testNGArgsList,
       suffixes, 
       chosenStyles, 
-      spanScaleFactors
+      spanScaleFactors, 
+      testSortingReporterTimeouts
     ) = parseArgs(args)
 
     val fullReporterConfigurations: ReporterConfigurations =
@@ -668,7 +672,8 @@ object Runner {
     val wildcardList: List[String] = parseSuiteArgsIntoNameStrings(wildcardArgsList, "-w")
     val testNGList: List[String] = parseSuiteArgsIntoNameStrings(testNGArgsList, "-b")
     val chosenStyleSet: Set[String] = parseChosenStylesIntoChosenStyleSet(chosenStyles, "-y")
-    spanScaleFactor = parseSpanScaleFactor(spanScaleFactors, "-F")
+    spanScaleFactor = parseDoubleArgument(spanScaleFactors, "-F", 1.0)
+    testSortingReporterTimeout = Span(parseDoubleArgument(testSortingReporterTimeouts, "-T", 15.0), Seconds)
 
     // If there's a graphic reporter, we need to leave it out of
     // reporterSpecs, because we want to pass all reporterSpecs except
@@ -810,7 +815,8 @@ object Runner {
         s.startsWith("-z") ||
         s.startsWith("-q") ||
         s.startsWith("-Q") ||
-        s.startsWith("-F")
+        s.startsWith("-F") ||
+        s.startsWith("-T")
       ) {
         if (it.hasNext)
           it.next
@@ -878,6 +884,7 @@ object Runner {
     val suffixes = new ListBuffer[String]()
     val chosenStyles = new ListBuffer[String]()
     val spanScaleFactor = new ListBuffer[String]()
+    val testSortingReporterTimeout = new ListBuffer[String]()
 
     val it = args.iterator.buffered
     while (it.hasNext) {
@@ -1040,6 +1047,12 @@ object Runner {
         if (it.hasNext)
           spanScaleFactor += it.next()
       }
+      else if (s.startsWith("-T")) {
+
+        testSortingReporterTimeout += s
+        if (it.hasNext)
+          testSortingReporterTimeout += it.next
+      }
       else {
         throw new IllegalArgumentException("Unrecognized argument: " + s)
       }
@@ -1059,7 +1072,8 @@ object Runner {
       testNGXMLFiles.toList,
       genSuffixesPattern(suffixes.toList), 
       chosenStyles.toList, 
-      spanScaleFactor.toList
+      spanScaleFactor.toList, 
+      testSortingReporterTimeout.toList
     )
   }
 
@@ -1590,7 +1604,7 @@ object Runner {
     lb.toSet
   }
   
-  private[scalatest] def parseSpanScaleFactor(args: List[String], dashArg: String) = {
+  private[scalatest] def parseDoubleArgument(args: List[String], dashArg: String, defaultValue: Double): Double = {
     val it = args.iterator
     val lb = new ListBuffer[Double]()
     while (it.hasNext) {
@@ -1611,11 +1625,11 @@ object Runner {
         throw new IllegalArgumentException("Last element must be a number, not a " + dashArg + ".")
     }
     if (lb.size == 0)
-      1.0
+      defaultValue
     else if (lb.size == 1)
       lb(0)
     else
-      throw new IllegalArgumentException("Only one -F can be specified.")
+      throw new IllegalArgumentException("Only one " + dashArg + " can be specified.")
   }
 
   //
@@ -1978,8 +1992,7 @@ object Runner {
                   for (suiteConfig <- suiteInstances) {
                     val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                     val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                    // TODO: Can't put Some(distributor) here, will cause some weird error in JUnitXmlReporter, to check with Bill
-                    val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, None, tracker.nextTracker, chosenStyleSet)
+                    val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet)
                     distributor.apply(suiteConfig.suite, runArgs)
                   }
                   distributor.waitUntilDone()
@@ -1989,8 +2002,7 @@ object Runner {
                 for (suiteConfig <- suiteInstances) {
                   val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                   val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                  // TODO: Can't put Some(distributor) here, will cause some weird error in JUnitXmlReporter, to check with Bill
-                  val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, None, tracker.nextTracker, chosenStyleSet)
+                  val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet)
                   distributor.apply(suiteConfig.suite, runArgs)
                 }
                 distributor.waitUntilDone()
