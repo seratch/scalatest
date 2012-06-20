@@ -27,8 +27,10 @@ import java.util.Iterator
 import java.util.Set
 import java.io.StringWriter
 import org.scalatest.events._
-import PrintReporter._
 import org.scalatest.exceptions.TestFailedException
+import PrintReporter.{BufferSize, makeDurationString}
+import HtmlReporter._
+import org.pegdown.PegDownProcessor
 
 /**
  * A <code>Reporter</code> that prints test status information in HTML format to a file.
@@ -36,6 +38,8 @@ import org.scalatest.exceptions.TestFailedException
 private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Boolean,
         presentInColor: Boolean, presentStackTraces: Boolean, presentFullStackTraces: Boolean) extends ResourcefulReporter {
 
+  private val pegDown = new PegDownProcessor
+  
   /**
   * Construct a <code>PrintReporter</code> with passed
   * <code>String</code> file name. Information about events reported to instances of this
@@ -73,8 +77,24 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     }
   }
 
-  private def printPossiblyInColor(text: String, ansiColor: String) {
-    pw.println(if (presentInColor) ansiColor + text + ansiReset else text)
+  private def printPossiblyInColor(text: String, htmlColor: String) {
+    pw.println {
+      if (presentInColor)
+        "<font color=\"" + htmlColor + "\">" + HtmlEscape.escape(text) + "</font><br />"
+      else
+        HtmlEscape.escape(text) + "<br />"
+        
+      // pegDown.markdownToHtml(text)
+    }
+  }
+  
+  private def printMarkupPossiblyInColor(text: String, htmlColor: String) {
+    pw.println {
+      if (presentInColor)
+        "<font color=\"" + htmlColor + "\">" + pegDown.markdownToHtml(text) + "</font><br />"
+      else
+        pegDown.markdownToHtml(text) + "<br />"
+    }
   }
 
   // Called for TestFailed, InfoProvided (because it can have a throwable in it), and SuiteAborted
@@ -211,6 +231,12 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
 
     }
   }
+  
+  private def makeHtmlHeader() {
+    pw.println("<html>")
+    pw.println("<head><title>ScalaTest Run Result</title></head>")
+    pw.println("<body bgcolor=\"black\">")
+  }
 
   def apply(event: Event) {
     
@@ -220,9 +246,11 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
 
         if (testCount < 0)
           throw new IllegalArgumentException
+          
+        makeHtmlHeader()
   
         val string = Resources("runStarting", testCount.toString)
-        printPossiblyInColor(string, ansiCyan)
+        printPossiblyInColor(string, htmlCyan)
 
       case RunCompleted(ordinal, duration, summary, formatter, location, payload, threadName, timeStamp) => 
 
@@ -235,14 +263,14 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
       case RunAborted(ordinal, message, throwable, duration, summary, formatter, location, payload, threadName, timeStamp) => 
 
         val lines = stringsToPrintOnError("abortedNote", "runAborted", message, throwable, formatter, None, None, duration)
-        for (line <- lines) printPossiblyInColor(line, ansiRed)
+        for (line <- lines) printPossiblyInColor(line, htmlRed)
 
       case SuiteStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
 
         val stringToPrint = stringToPrintWhenNoError("suiteStarting", formatter, suiteName, None)
 
         stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, ansiGreen)
+          case Some(string) => printPossiblyInColor(string, htmlGreen)
           case None =>
         }
 
@@ -251,21 +279,21 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         val stringToPrint = stringToPrintWhenNoError("suiteCompleted", formatter, suiteName, None, duration)
 
         stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, ansiGreen)
+          case Some(string) => printPossiblyInColor(string, htmlGreen)
           case None =>
         }
 
       case SuiteAborted(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
 
         val lines = stringsToPrintOnError("abortedNote", "suiteAborted", message, throwable, formatter, Some(suiteName), None, duration)
-        for (line <- lines) printPossiblyInColor(line, ansiRed)
+        for (line <- lines) printPossiblyInColor(line, htmlRed)
         
       case TestStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
 
         val stringToPrint = stringToPrintWhenNoError("testStarting", formatter, suiteName, Some(testName))
 
         stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, ansiGreen)
+          case Some(string) => printPossiblyInColor(string, htmlGreen)
           case None =>
         }
 
@@ -274,7 +302,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(testName), duration)
 
         stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, ansiGreen)
+          case Some(string) => printPossiblyInColor(string, htmlGreen)
           case None =>
         }
     
@@ -288,14 +316,19 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           }
  
         stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, ansiYellow)
+          case Some(string) => printPossiblyInColor(string, htmlYellow)
           case None =>
         }
 
       case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
 
         val lines = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(testName), duration)
-        for (line <- lines) printPossiblyInColor(line, ansiRed)
+        for (line <- lines) printPossiblyInColor(line, htmlRed)
+        
+      case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
+
+        val lines = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(testName), duration)
+        for (line <- lines) printPossiblyInColor(line, htmlYellow)
 
       case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
 
@@ -310,8 +343,24 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             case Some(isPending) => isPending
             case None => false
           }
-        for (line <- lines) printPossiblyInColor(line, if (shouldBeYellow) ansiYellow else ansiGreen)
+        for (line <- lines) printPossiblyInColor(line, if (shouldBeYellow) htmlYellow else htmlGreen)
+        
+      case MarkupProvided(ordinal, text, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
 
+        val (suiteName, testName) =
+          nameInfo match {
+            case Some(NameInfo(suiteName, _, _, _, testNameInfo)) => (Some(suiteName), if (testNameInfo.isDefined) Some(testNameInfo.get.testName) else None)
+            case None => (None, None)
+          }
+        //val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", text, None, formatter, suiteName, testName, None)
+        val shouldBeYellow =
+          aboutAPendingTest match {
+            case Some(isPending) => isPending
+            case None => false
+          }
+        //for (line <- lines) printMarkupPossiblyInColor(line, if (shouldBeYellow) htmlYellow else htmlGreen)
+        printMarkupPossiblyInColor(text, if (shouldBeYellow) htmlYellow else htmlGreen)
+        
       case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, payload, threadName, timeStamp) =>
 
         val stringToPrint =
@@ -322,7 +371,40 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           }
 
         stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, ansiYellow)
+          case Some(string) => printPossiblyInColor(string, htmlYellow)
+          case None =>
+        }
+        
+      case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+
+        val testNameInfo = nameInfo.testName
+        val stringToPrint = stringToPrintWhenNoError("scopeOpened", formatter, nameInfo.suiteName, 
+                                                     testNameInfo match {
+                                                       case Some(tnInfo) => Some(tnInfo.testName)
+                                                       case None => None
+                                                     })
+        val isPending = aboutAPendingTest.getOrElse(false)
+        val wasCanceled = aboutACanceledTest.getOrElse(false)
+        val shouldBeYellow = isPending || wasCanceled
+        stringToPrint match {
+          case Some(string) => printPossiblyInColor(string, if (shouldBeYellow) htmlYellow else htmlGreen)
+          case None =>
+        }
+
+      // TODO: Reduce duplication among InfoProvided, ScopeOpened, and ScopeClosed
+      case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+
+        val testNameInfo = nameInfo.testName
+        val stringToPrint = stringToPrintWhenNoError("scopeClosed", formatter, nameInfo.suiteName, 
+                            testNameInfo match {
+                              case Some(tnInfo) => Some(tnInfo.testName)
+                              case None => None
+                            }) // TODO: I htink I want ot say Scope Closed - + message
+        val isPending = aboutAPendingTest.getOrElse(false)
+        val wasCanceled = aboutACanceledTest.getOrElse(false)
+        val shouldBeYellow = isPending || wasCanceled
+        stringToPrint match {
+          case Some(string) => printPossiblyInColor(string, if (shouldBeYellow) htmlYellow else htmlGreen)
           case None =>
         }
 
@@ -353,45 +435,46 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
 
         duration match {
           case Some(msSinceEpoch) =>
-            printPossiblyInColor(Resources(resourceName + "In", makeDurationString(msSinceEpoch)), ansiCyan)
+            printPossiblyInColor(Resources(resourceName + "In", makeDurationString(msSinceEpoch)), htmlCyan)
           case None =>
-            printPossiblyInColor(Resources(resourceName), ansiCyan)
+            printPossiblyInColor(Resources(resourceName), htmlCyan)
         }     
 
         // totalNumberOfTestsRun=Total number of tests run was: {0}
-        printPossiblyInColor(Resources("totalNumberOfTestsRun", testsCompletedCount.toString), ansiCyan)
+        printPossiblyInColor(Resources("totalNumberOfTestsRun", testsCompletedCount.toString), htmlCyan)
 
         // Suite Summary: completed {0}, aborted {1}
-        printPossiblyInColor(Resources("suiteSummary", suitesCompletedCount.toString, suitesAbortedCount.toString), ansiCyan)
+        printPossiblyInColor(Resources("suiteSummary", suitesCompletedCount.toString, suitesAbortedCount.toString), htmlCyan)
 
         // Test Summary: succeeded {0}, failed {1}, ignored, {2}, pending {3}
-        printPossiblyInColor(Resources("testSummary", testsSucceededCount.toString, testsFailedCount.toString, testsIgnoredCount.toString, testsPendingCount.toString), ansiCyan)
+        printPossiblyInColor(Resources("testSummary", testsSucceededCount.toString, testsFailedCount.toString, testsIgnoredCount.toString, testsPendingCount.toString), htmlCyan)
 
         // *** 1 SUITE ABORTED ***
         if (suitesAbortedCount == 1)
-          printPossiblyInColor(Resources("oneSuiteAborted"), ansiRed)
+          printPossiblyInColor(Resources("oneSuiteAborted"), htmlRed)
 
         // *** {0} SUITES ABORTED ***
         else if (suitesAbortedCount > 1)
-          printPossiblyInColor(Resources("multipleSuitesAborted", suitesAbortedCount.toString), ansiRed)
+          printPossiblyInColor(Resources("multipleSuitesAborted", suitesAbortedCount.toString), htmlRed)
 
         // *** 1 TEST FAILED ***
         if (testsFailedCount == 1)
-          printPossiblyInColor(Resources("oneTestFailed"), ansiRed)
+          printPossiblyInColor(Resources("oneTestFailed"), htmlRed)
 
         // *** {0} TESTS FAILED ***
         else if (testsFailedCount > 1)
-          printPossiblyInColor(Resources("multipleTestsFailed", testsFailedCount.toString), ansiRed)
+          printPossiblyInColor(Resources("multipleTestsFailed", testsFailedCount.toString), htmlRed)
 
         else if (suitesAbortedCount == 0) // Maybe don't want to say this if the run aborted or stopped because "all"
-          printPossiblyInColor(Resources("allTestsPassed"), ansiGreen)
+          printPossiblyInColor(Resources("allTestsPassed"), htmlGreen)
 
       case None =>
     }
+    
+    pw.println("</body>")
+    pw.println("</html>")
 
     pw.flush()
-
-    println("THAT'S ALL FOLKS!")
   }
 
   // We subtract one from test reports because we add "- " in front, so if one is actually zero, it will come here as -1
@@ -400,5 +483,38 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
   // Stupid properties file won't let me put spaces at the beginning of a property
   // "  {0}" comes out as "{0}", so I can't do indenting in a localizable way. For now
   // just indent two space to the left.  //  if (times <= 0) s 
-  //  else Resources("indentOnce", indent(s, times - 1))
+  //  else Resources("indentOnce", indent(s, times - 1)) 
+}
+
+private[tools] object HtmlReporter {
+  
+  final val htmlGreen = "green"
+  final val htmlCyan = "cyan"
+  final val htmlYellow = "yellow"
+  final val htmlRed = "red"
+  
+}
+
+// This class is partly taken from http://www.htmlescape.net/htmlescape_for_java.html, reimplemented in scala.
+private[tools] object HtmlEscape {
+     
+  def escape(original: String): String = {
+    if (original == null) 
+      ""
+    else {
+      val chars = original.toCharArray()
+      val escapedChars = chars.map { c => 
+        c match {
+          case 60 => "&lt;"
+          case 62 => "&gt;"
+          case 34 => "&quot;"
+          case '\n' => "<br/>"
+          case '\r' => ""
+          case ' ' => "&nbsp;"
+          case _ => c.toString
+        }
+      }
+      escapedChars.mkString
+    }
+  }
 }
