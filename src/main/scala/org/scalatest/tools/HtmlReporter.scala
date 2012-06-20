@@ -83,8 +83,6 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         "<font color=\"" + htmlColor + "\">" + HtmlEscape.escape(text) + "</font><br />"
       else
         HtmlEscape.escape(text) + "<br />"
-        
-      // pegDown.markdownToHtml(text)
     }
   }
   
@@ -447,7 +445,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         printPossiblyInColor(Resources("suiteSummary", suitesCompletedCount.toString, suitesAbortedCount.toString), htmlCyan)
 
         // Test Summary: succeeded {0}, failed {1}, ignored, {2}, pending {3}
-        printPossiblyInColor(Resources("testSummary", testsSucceededCount.toString, testsFailedCount.toString, testsIgnoredCount.toString, testsPendingCount.toString), htmlCyan)
+        printPossiblyInColor(Resources("testSummary", testsSucceededCount.toString, testsFailedCount.toString, testsIgnoredCount.toString, testsPendingCount.toString, testsCanceledCount.toString), htmlCyan)
 
         // *** 1 SUITE ABORTED ***
         if (suitesAbortedCount == 1)
@@ -508,6 +506,7 @@ private[tools] object HtmlEscape {
           case 60 => "&lt;"
           case 62 => "&gt;"
           case 34 => "&quot;"
+          case 38 => "&amp;"
           case '\n' => "<br/>"
           case '\r' => ""
           case ' ' => "&nbsp;"
