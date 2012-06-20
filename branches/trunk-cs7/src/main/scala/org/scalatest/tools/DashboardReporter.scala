@@ -70,18 +70,16 @@ private[scalatest] class DashboardReporter(directory: String,
   // Ignores info and markup events.
   //
   def apply(event: Event) {
-    synchronized {
-      event match {
-        case _: RunStarting    => timestamp = formatCurrentTime
-        case _: InfoProvided   =>
-        case _: ScopeOpened    =>
-        case _: ScopeClosed    =>
-        case _: MarkupProvided =>
-        case _: RunCompleted   => writeFiles(event)
-        case _: RunStopped     => writeFiles(event)
-        case _: RunAborted     => writeFiles(event)
-        case _ => events += event
-      }
+    event match {
+      case _: RunStarting    => timestamp = formatCurrentTime
+      case _: InfoProvided   =>
+      case _: ScopeOpened    =>
+      case _: ScopeClosed    =>
+      case _: MarkupProvided =>
+      case _: RunCompleted   => writeFiles(event)
+      case _: RunStopped     => writeFiles(event)
+      case _: RunAborted     => writeFiles(event)
+      case _ => events += event
     }
   }
 
