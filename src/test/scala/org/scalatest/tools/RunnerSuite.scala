@@ -17,6 +17,7 @@ package org.scalatest.tools
 
 import org.scalatest._
 import java.util.regex.Pattern
+import org.scalatest.exceptions.DuplicateSuiteIdException
 
 class RunnerSuite() extends Suite with PrivateMethodTester {
 
@@ -1217,6 +1218,46 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     }
     val testSortingReporterTimeout = Runner.parseDoubleArgument(List("-T", "888"), "-T", 15.0)
     assert(spanScaleFactor === 888)
+  }
+  
+  def testVerifySuiteId() {
+    class Suite1 extends Suite {}
+    class Suite2 extends Suite {}
+    class Suite3 extends Suite {}
+    
+    class Suite4 extends Suite {
+      override def nestedSuites = IndexedSeq(new Suite1, new Suite2, new Suite3)
+    }
+    
+    class Suite5 extends Suite {
+      override def nestedSuites = IndexedSeq(new Suite1, new Suite1, new Suite3)
+    }
+    
+    import Runner.SuiteConfig
+    
+    Runner.verifySuiteId(List(
+      SuiteConfig(new Suite1, DynaTags(Map.empty, Map.empty), false, false), 
+      SuiteConfig(new Suite2, DynaTags(Map.empty, Map.empty), false, false), 
+      SuiteConfig(new Suite3, DynaTags(Map.empty, Map.empty), false, false)
+    ))
+    
+    intercept[DuplicateSuiteIdException] {
+      Runner.verifySuiteId(List(
+        SuiteConfig(new Suite1, DynaTags(Map.empty, Map.empty), false, false), 
+        SuiteConfig(new Suite2, DynaTags(Map.empty, Map.empty), false, false), 
+        SuiteConfig(new Suite1, DynaTags(Map.empty, Map.empty), false, false)
+      ))
+    }
+    
+    Runner.verifySuiteId(List(
+      SuiteConfig(new Suite4, DynaTags(Map.empty, Map.empty), false, false)
+    ))
+    
+    intercept[DuplicateSuiteIdException] {
+      Runner.verifySuiteId(List(
+        SuiteConfig(new Suite5, DynaTags(Map.empty, Map.empty), false, false)
+      ))
+    }
   }
 
 /*
