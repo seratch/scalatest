@@ -23,5 +23,11 @@
 	<classpathentry kind="var" path="M2_REPO/org/scala-tools/testing/test-interface/0.5/test-interface-0.5.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/testng/testng/6.3.1/testng-6.3.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/inject/guice/3.0/guice-3.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/asm/asm-tree/3.3.1/asm-tree-3.3.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/asm/asm-analysis/3.3.1/asm-analysis-3.3.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/pegdown/pegdown/1.1.0/pegdown-1.1.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/parboiled/parboiled-core/1.0.2/parboiled-core-1.0.2.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/parboiled/parboiled-java/1.0.2/parboiled-java-1.0.2.jar"/>
+	<classpathentry kind="var" path="M2_REPO/asm/asm/3.3.1/asm-3.3.1.jar"/>
 	<classpathentry kind="output" path="target/tests"/>
 </classpath>
