@@ -123,7 +123,7 @@
       <!-- enable scalatest -->
       <plugin>
         <groupId>org.scalatest</groupId>
-        <artifactId>maven-scalatest-plugin</artifactId>
+        <artifactId>scalatest-maven-plugin</artifactId>
         <executions>
           <execution>
             <goals>
@@ -138,7 +138,7 @@
     <plugins>
       <plugin>
         <groupId>org.scalatest</groupId>
-        <artifactId>maven-scalatest-plugin</artifactId>
+        <artifactId>scalatest-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </reporting>
