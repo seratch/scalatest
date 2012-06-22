@@ -34,6 +34,8 @@ import org.pegdown.PegDownProcessor
 import scala.collection.mutable.ListBuffer
 import scala.xml.NodeSeq
 import scala.xml.XML
+import java.util.UUID
+import scala.xml.Node
 
 /**
  * A <code>Reporter</code> that prints test status information in HTML format to a file.
@@ -79,10 +81,12 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
       case _ => stringToPrint
     }
   }
+  
+  case class ErrorContent(messages: List[String], stackTraces: List[String])
 
   // Called for TestFailed, InfoProvided (because it can have a throwable in it), and SuiteAborted
   private def stringsToPrintOnError(noteResourceName: String, errorResourceName: String, message: String, throwable: Option[Throwable],
-    formatter: Option[Formatter], suiteName: Option[String], testName: Option[String], duration: Option[Long]): List[String] = {
+    formatter: Option[Formatter], suiteName: Option[String], testName: Option[String], duration: Option[Long]): ErrorContent = {
 
     val stringToPrint =
       formatter match {
@@ -175,9 +179,9 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
       }
 
     if (possiblyEmptyMessage.isEmpty)
-      stringToPrintWithPossibleLineNumberAndDuration :: getStackTrace(throwable)
+      ErrorContent(List(stringToPrintWithPossibleLineNumberAndDuration), getStackTrace(throwable))
     else
-      stringToPrintWithPossibleLineNumberAndDuration :: "  " + possiblyEmptyMessage :: getStackTrace(throwable)
+      ErrorContent(List(stringToPrintWithPossibleLineNumberAndDuration, "  " + possiblyEmptyMessage), getStackTrace(throwable))
   }
 
   private def stringToPrintWhenNoError(resourceName: String, formatter: Option[Formatter], suiteName: String, testName: Option[String]): Option[String] =
@@ -258,7 +262,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta http-equiv="Expires" content="-1" />
         <meta http-equiv="Pragma" content="no-cache" />
-        <style type="text/css"> { """
+        <style type="text/css"> { PCDATA("""
           body {
             margin: 0;
             padding: 0;
@@ -328,16 +332,29 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             color: #C20000; background: #FFFBD3;
           }
 
-          """ }
+          """) }
         </style>
         <script type="text/javascript">
-      
+          { PCDATA("""
+          function toggleStackTrace(contentId, linkId) {
+              var ele = document.getElementById(contentId);
+              var text = document.getElementById(linkId);
+              if(ele.style.display == "block") {
+                ele.style.display = "none";
+                text.innerHTML = "Show Stack Traces";
+              }
+              else {
+                ele.style.display = "block";
+                text.innerHTML = "Hide Stack Traces";
+              }
+            }
+          """) }
         </script>
       </head>
       <body>
         <div class="scalatest-report"> 
           { header(resourceName, duration, summary) } 
-          { results(eventList.toList) } 
+          { results(eventList.sorted.toList) } 
         </div>
       </body>
 </html>
@@ -379,7 +396,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           case SuiteStarting(ordinal, suiteName, suiteId, suiteClassName, decodedSuiteName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             val stringToPrint = stringToPrintWhenNoError("suiteStarting", formatter, suiteName, None)
             stringToPrint match {
-              case Some(string) => suite(suiteId, suiteName, getIndentLevel(formatter))
+              case Some(string) => suite(suiteId, decodedSuiteName.getOrElse(suiteName), getIndentLevel(formatter))
               case None => NodeSeq.Empty
             }
             
@@ -396,18 +413,23 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             }
           
           case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
-
-            val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(testName), duration)
+            
+            val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(decodedTestName.getOrElse(testName)), duration)
 
             stringToPrint match {
               case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_passed")
               case None =>
             }
             
+            // TODO: Print recorded events, when merge into trunk.
+            
           case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
 
-            val lines = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(testName), duration)
-            test(lines, getIndentLevel(formatter) + 1, "test_failed")
+            val errorContent = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
+            //test(lines, getIndentLevel(formatter) + 1, "test_failed")
+            testWithStackTraces(errorContent.messages, errorContent.stackTraces, getIndentLevel(formatter) + 1, "test_failed")
+            
+            // TODO: Print recorded events, when merge into trunk.
             
           case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, payload, threadName, timeStamp) => 
 
@@ -415,7 +437,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
               formatter match {
                 case Some(IndentedText(formattedText, _, _)) => Some(Resources("specTextAndNote", formattedText, Resources("ignoredNote")))
                 case Some(MotionToSuppress) => None
-                case _ => Some(Resources("testIgnored", suiteName + ": " + testName))
+                case _ => Some(Resources("testIgnored", decodedSuiteName.getOrElse(suiteName) + ": " + decodedTestName.getOrElse(testName)))
               }
  
               stringToPrint match {
@@ -429,7 +451,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
               formatter match {
                 case Some(IndentedText(formattedText, _, _)) => Some(Resources("specTextAndNote", formattedText, Resources("pendingNote")))
                 case Some(MotionToSuppress) => None
-                case _ => Some(Resources("testPending", suiteName + ": " + testName))
+                case _ => Some(Resources("testPending", decodedSuiteName.getOrElse(suiteName) + ": " + decodedTestName.getOrElse(testName)))
               }
 
             stringToPrint match {
@@ -437,10 +459,15 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
               case None =>
             }
             
+            // TODO: Print recorded events, when merge into trunk.
+            
           case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
 
-            val lines = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(testName), duration)
-            test(lines, getIndentLevel(formatter) + 1, "test_yellow")
+            val errorContent = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
+            //test(lines, getIndentLevel(formatter) + 1, "test_yellow")
+            testWithStackTraces(errorContent.messages, errorContent.stackTraces, getIndentLevel(formatter) + 1, "test_yellow")
+            
+            // TODO: Print recorded events, when merge into trunk.
             
           case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
 
@@ -449,14 +476,14 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
                 case Some(NameInfo(suiteName, _, _, _, testNameInfo)) => (Some(suiteName), if (testNameInfo.isDefined) Some(testNameInfo.get.testName) else None)
                 case None => (None, None)
               }
-            val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", message, throwable, formatter, suiteName, testName, None)
+            val infoContent = stringsToPrintOnError("infoProvidedNote", "infoProvided", message, throwable, formatter, suiteName, testName, None)
             val shouldBeYellow =
               aboutAPendingTest match {
                 case Some(isPending) => isPending
                 case None => false
               }
             
-            test(lines, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+            test(infoContent.messages, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
         
           case MarkupProvided(ordinal, text, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
 
@@ -481,9 +508,9 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     </div>
         
   private def suite(suiteId: String, suiteName: String, indentLevel: Int) = 
-    <div id={ "suite_" + HtmlEscape.escape(suiteId) } class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+    <div id={ "suite_" + suiteId } class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
       <dl>
-        <dt>{ HtmlEscape.escape(suiteName) }</dt>
+        <dt>{ suiteName }</dt>
       </dl>
     </div>
         
@@ -502,6 +529,31 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         }
       </dl>
     </div>
+  
+        
+  private def testWithStackTraces(lines: List[String], stackTraces: List[String], indentLevel: Int, styleName: String) = {
+    val linkId = UUID.randomUUID.toString
+    val contentId = UUID.randomUUID.toString
+    <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+      <dl>
+        {
+          lines.map { line => 
+            <dt>{ line }</dt>
+          }
+        }
+      </dl>
+      <a id={ linkId } href={ "javascript:toggleStackTrace('" + contentId + "', '" + linkId + "');" }>Show Stack Traces</a>
+      <div id={ contentId } style="display: none">
+        <dl>
+          {
+            stackTraces.map { line => 
+              <dt>{ line }</dt>
+            }
+          }
+        </dl>
+      </div>
+    </div>
+  }
         
   private def markup(text: String, indentLevel: Int, styleName: String) = 
     <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
@@ -587,27 +639,6 @@ private[tools] object HtmlReporter {
   final val yellow = "yellow"
 }
 
-// This class is partly taken from http://www.htmlescape.net/htmlescape_for_java.html, reimplemented in scala.
-private[tools] object HtmlEscape {
-     
-  def escape(original: String): String = {
-    if (original == null) 
-      ""
-    else {
-      val chars = original.toCharArray()
-      val escapedChars = chars.map { c => 
-        c match {
-          case 60 => "&lt;"
-          case 62 => "&gt;"
-          case 34 => "&quot;"
-          case 38 => "&amp;"
-          case '\n' => "<br/>"
-          case '\r' => ""
-          case ' ' => "&nbsp;"
-          case _ => c.toString
-        }
-      }
-      escapedChars.mkString
-    }
-  }
+private[tools] object PCDATA {
+  def apply(in: String): Node = scala.xml.Unparsed(in)
 }
