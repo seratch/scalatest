@@ -266,11 +266,11 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             font-size: 80%;
           }
     
-          #rspec-header {
+          #scalatest-header {
             background: """ + getHeaderStatusColor(summary) + """; color: #fff; height: 4.5em;
           }
 
-          .rspec-report h1 {
+          .scalatest-report h1 {
             margin: 0px 10px 0px 10px;
             padding: 10px;
             font-family: "Lucida Grande", Helvetica, sans-serif;
@@ -335,7 +335,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         </script>
       </head>
       <body>
-        <div class="rspec-report"> 
+        <div class="scalatest-report"> 
           { header(resourceName, duration, summary) } 
           { results(eventList.toList) } 
         </div>
@@ -357,7 +357,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
   }
   
   private def header(resourceName: String, duration: Option[Long], summary: Option[Summary]) = 
-    <div id="rspec-header">
+    <div id="scalatest-header">
       <div id="label">
         <h1>ScalaTest Results</h1>
       </div>
