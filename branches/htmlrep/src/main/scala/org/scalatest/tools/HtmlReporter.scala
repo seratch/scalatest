@@ -31,6 +31,9 @@ import org.scalatest.exceptions.TestFailedException
 import PrintReporter.{BufferSize, makeDurationString}
 import HtmlReporter._
 import org.pegdown.PegDownProcessor
+import scala.collection.mutable.ListBuffer
+import scala.xml.NodeSeq
+import scala.xml.XML
 
 /**
  * A <code>Reporter</code> that prints test status information in HTML format to a file.
@@ -74,24 +77,6 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           case None => stringToPrint
         }
       case _ => stringToPrint
-    }
-  }
-
-  private def printPossiblyInColor(text: String, htmlColor: String) {
-    pw.println {
-      if (presentInColor)
-        "<font color=\"" + htmlColor + "\">" + HtmlEscape.escape(text) + "</font><br />"
-      else
-        HtmlEscape.escape(text) + "<br />"
-    }
-  }
-  
-  private def printMarkupPossiblyInColor(text: String, htmlColor: String) {
-    pw.println {
-      if (presentInColor)
-        "<font color=\"" + htmlColor + "\">" + pegDown.markdownToHtml(text) + "</font><br />"
-      else
-        pegDown.markdownToHtml(text) + "<br />"
     }
   }
 
@@ -230,183 +215,320 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     }
   }
   
+  private def getIndentLevel(formatter: Option[Formatter]) = 
+    formatter match {
+      case Some(IndentedText(formattedText, rawText, indentationLevel)) => indentationLevel
+      case _ => 0
+  }
+  
   private def makeHtmlHeader() {
     pw.println("<html>")
     pw.println("<head><title>ScalaTest Run Result</title></head>")
     pw.println("<body bgcolor=\"black\">")
   }
+  
+  private def makeHtmlFile(resourceName: String, duration: Option[Long], summary: Option[Summary]) {
+    pw.println {
+      """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+        
+      """ + getHtml(resourceName, duration, summary) 
+    }
+  }
+  
+  private def getSolidStatusColor(succeeded: Boolean) = 
+    if (succeeded)
+      green
+    else
+      red
+      
+  private def getHeaderStatusColor(summary: Option[Summary]) = 
+    summary match {
+      case Some(summary) => getSolidStatusColor(summary.testsFailedCount == 0)
+      case None => "C20000"
+    }
+  
+  private def getHtml(resourceName: String, duration: Option[Long], summary: Option[Summary]) = 
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+      <head>
+        <title>ScalaTest Results</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="Expires" content="-1" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <style type="text/css"> { """
+          body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-size: 80%;
+          }
+    
+          #rspec-header {
+            background: """ + getHeaderStatusColor(summary) + """; color: #fff; height: 4.5em;
+          }
 
+          .rspec-report h1 {
+            margin: 0px 10px 0px 10px;
+            padding: 10px;
+            font-family: "Lucida Grande", Helvetica, sans-serif;
+            font-size: 1.8em;
+            position: absolute;
+          }
+
+          #label {
+            float:left;
+          }
+
+          #display-filters {
+            float:left;
+            padding: 35px 0 0 15px;
+            font-family: "Lucida Grande", Helvetica, sans-serif;
+          }
+
+          #summary {
+            float:right;
+            padding: 5px 10px;
+            font-family: "Lucida Grande", Helvetica, sans-serif;
+            text-align: right;
+          }
+
+          #summary p {
+            margin: 0 0 0 2px;
+          }
+            
+          .scope {
+            margin: 0 10px 5px;
+            background: """ + green + """;
+            color: #fff;
+            font-weight: bold;
+            font: normal 11px "Lucida Grande", Helvetica, sans-serif;
+          }
+
+          .test_passed {
+            margin: 0 10px 5px;
+            border-left: 5px solid #65C400;
+            border-bottom: 1px solid #65C400;
+            background: #DBFFB4; color: #3D7700;
+          }
+
+          .test_yellow {
+            margin: 0 10px 5px;
+            border-left: 5px solid #FAF834;
+            border-bottom: 1px solid #FAF834;
+            background: #FCFB98; color: #131313;
+          }
+
+          .test_failed {
+            margin: 0 10px 5px;
+            border-left: 5px solid #C20000;
+            border-bottom: 1px solid #C20000;
+            color: #C20000; background: #FFFBD3;
+          }
+
+          """ }
+        </style>
+        <script type="text/javascript">
+      
+        </script>
+      </head>
+      <body>
+        <div class="rspec-report"> 
+          { header(resourceName, duration, summary) } 
+          { results(eventList.toList) } 
+        </div>
+      </body>
+</html>
+          
+  private def getStatistic(summary: Option[Summary]) = {
+    summary match {
+      case Some(summary) => 
+        <div id="display-filters">
+          <input id="succeeded_checkbox" name="succeeded_checkbox" type="checkbox" /> <label for="passed_checkbox">Succeeded: { summary.testsSucceededCount }</label>
+          <input id="failed_checkbox" name="failed_checkbox" type="checkbox" /> <label for="failed_checkbox">Failed: { summary.testsFailedCount }</label>
+          <input id="ignored_checkbox" name="ignored_checkbox" type="checkbox" /> <label for="ignored_checkbox">Ignored: { summary.testsIgnoredCount }</label>
+          <input id="pending_checkbox" name="pending_checkbox" type="checkbox" /> <label for="pending_checkbox">Pending: { summary.testsPendingCount }</label>
+          <input id="canceled_checkbox" name="canceled_checkbox" type="checkbox" /> <label for="canceled_checkbox">Canceled: { summary.testsCanceledCount }</label>
+        </div>
+      case None => <div id="display-filters" />
+    }
+  }
+  
+  private def header(resourceName: String, duration: Option[Long], summary: Option[Summary]) = 
+    <div id="rspec-header">
+      <div id="label">
+        <h1>ScalaTest Results</h1>
+      </div>
+
+      { getStatistic(summary) }
+
+      <div id="summary">
+        <p id="duration">{ getDuration(resourceName, duration) }</p>    
+        <p id="totalTests">{ getTotalTests(summary) }</p>
+        <p id="suiteSummary">{ getSuiteSummary(summary) }</p>
+      </div>
+    </div>
+        
+  private def results(eventList: List[Event]) = 
+    <div class="results"> {
+      eventList.map { e => 
+        e match {
+          
+          case SuiteStarting(ordinal, suiteName, suiteId, suiteClassName, decodedSuiteName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+            val stringToPrint = stringToPrintWhenNoError("suiteStarting", formatter, suiteName, None)
+            stringToPrint match {
+              case Some(string) => suite(suiteId, suiteName, getIndentLevel(formatter))
+              case None => NodeSeq.Empty
+            }
+            
+          case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
+            val testNameInfo = nameInfo.testName
+            val stringToPrint = stringToPrintWhenNoError("scopeOpened", formatter, nameInfo.suiteName, 
+                                                         testNameInfo match {
+                                                           case Some(tnInfo) => Some(tnInfo.testName)
+                                                           case None => None
+                                                         })
+            stringToPrint match {
+              case Some(string) => scope(string, getIndentLevel(formatter) + 1)
+              case None => NodeSeq.Empty
+            }
+          
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
+
+            val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(testName), duration)
+
+            stringToPrint match {
+              case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_passed")
+              case None =>
+            }
+            
+          case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
+
+            val lines = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(testName), duration)
+            test(lines, getIndentLevel(formatter) + 1, "test_failed")
+            
+          case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, payload, threadName, timeStamp) => 
+
+            val stringToPrint =
+              formatter match {
+                case Some(IndentedText(formattedText, _, _)) => Some(Resources("specTextAndNote", formattedText, Resources("ignoredNote")))
+                case Some(MotionToSuppress) => None
+                case _ => Some(Resources("testIgnored", suiteName + ": " + testName))
+              }
+ 
+              stringToPrint match {
+                case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_yellow")
+                case None =>
+              }
+              
+          case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, payload, threadName, timeStamp) =>
+
+            val stringToPrint =
+              formatter match {
+                case Some(IndentedText(formattedText, _, _)) => Some(Resources("specTextAndNote", formattedText, Resources("pendingNote")))
+                case Some(MotionToSuppress) => None
+                case _ => Some(Resources("testPending", suiteName + ": " + testName))
+              }
+
+            stringToPrint match {
+              case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_yellow")
+              case None =>
+            }
+            
+          case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
+
+            val lines = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(testName), duration)
+            test(lines, getIndentLevel(formatter) + 1, "test_yellow")
+            
+          case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
+
+            val (suiteName, testName) =
+              nameInfo match {
+                case Some(NameInfo(suiteName, _, _, _, testNameInfo)) => (Some(suiteName), if (testNameInfo.isDefined) Some(testNameInfo.get.testName) else None)
+                case None => (None, None)
+              }
+            val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", message, throwable, formatter, suiteName, testName, None)
+            val shouldBeYellow =
+              aboutAPendingTest match {
+                case Some(isPending) => isPending
+                case None => false
+              }
+            
+            test(lines, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+        
+          case MarkupProvided(ordinal, text, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
+
+            val (suiteName, testName) =
+              nameInfo match {
+                case Some(NameInfo(suiteName, _, _, _, testNameInfo)) => (Some(suiteName), if (testNameInfo.isDefined) Some(testNameInfo.get.testName) else None)
+                case None => (None, None)
+              }
+            
+            val shouldBeYellow =
+              aboutAPendingTest match {
+                case Some(isPending) => isPending
+                case None => false
+              }
+        
+            markup(text, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+            
+          case _ => NodeSeq.Empty
+        }
+      }
+    }
+    </div>
+        
+  private def suite(suiteId: String, suiteName: String, indentLevel: Int) = 
+    <div id={ "suite_" + HtmlEscape.escape(suiteId) } class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+      <dl>
+        <dt>{ HtmlEscape.escape(suiteName) }</dt>
+      </dl>
+    </div>
+        
+  private def scope(message: String, indentLevel: Int) = 
+    <div class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+      { message }
+    </div>
+      
+  private def test(lines: List[String], indentLevel: Int, styleName: String) = 
+    <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+      <dl>
+        {
+          lines.map { line => 
+            <dt>{ line }</dt>
+          }
+        }
+      </dl>
+    </div>
+        
+  private def markup(text: String, indentLevel: Int, styleName: String) = 
+    <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+       { XML.loadString(pegDown.markdownToHtml(text)) }
+    </div>
+
+  private val eventList = new ListBuffer[Event]()
+        
   def apply(event: Event) {
     
     event match {
 
       case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) => 
 
-        if (testCount < 0)
-          throw new IllegalArgumentException
-          
-        makeHtmlHeader()
-  
-        val string = Resources("runStarting", testCount.toString)
-        printPossiblyInColor(string, htmlCyan)
-
       case RunCompleted(ordinal, duration, summary, formatter, location, payload, threadName, timeStamp) => 
 
-        makeFinalReport("runCompleted", duration, summary)
+        makeHtmlFile("runCompleted", duration, summary)
 
       case RunStopped(ordinal, duration, summary, formatter, location, payload, threadName, timeStamp) =>
 
-        makeFinalReport("runStopped", duration, summary)
+        makeHtmlFile("runStopped", duration, summary)
 
       case RunAborted(ordinal, message, throwable, duration, summary, formatter, location, payload, threadName, timeStamp) => 
 
-        val lines = stringsToPrintOnError("abortedNote", "runAborted", message, throwable, formatter, None, None, duration)
-        for (line <- lines) printPossiblyInColor(line, htmlRed)
-
-      case SuiteStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
-
-        val stringToPrint = stringToPrintWhenNoError("suiteStarting", formatter, suiteName, None)
-
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, htmlGreen)
-          case None =>
-        }
-
-      case SuiteCompleted(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
-
-        val stringToPrint = stringToPrintWhenNoError("suiteCompleted", formatter, suiteName, None, duration)
-
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, htmlGreen)
-          case None =>
-        }
-
-      case SuiteAborted(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
-
-        val lines = stringsToPrintOnError("abortedNote", "suiteAborted", message, throwable, formatter, Some(suiteName), None, duration)
-        for (line <- lines) printPossiblyInColor(line, htmlRed)
+        makeHtmlFile("runAborted", duration, summary)
         
-      case TestStarting(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
-
-        val stringToPrint = stringToPrintWhenNoError("testStarting", formatter, suiteName, Some(testName))
-
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, htmlGreen)
-          case None =>
-        }
-
-      case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
-
-        val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(testName), duration)
-
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, htmlGreen)
-          case None =>
-        }
-    
-      case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, formatter, location, payload, threadName, timeStamp) => 
-
-        val stringToPrint =
-          formatter match {
-            case Some(IndentedText(formattedText, _, _)) => Some(Resources("specTextAndNote", formattedText, Resources("ignoredNote")))
-            case Some(MotionToSuppress) => None
-            case _ => Some(Resources("testIgnored", suiteName + ": " + testName))
-          }
- 
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, htmlYellow)
-          case None =>
-        }
-
-      case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
-
-        val lines = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(testName), duration)
-        for (line <- lines) printPossiblyInColor(line, htmlRed)
-        
-      case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
-
-        val lines = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(testName), duration)
-        for (line <- lines) printPossiblyInColor(line, htmlYellow)
-
-      case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
-
-        val (suiteName, testName) =
-          nameInfo match {
-            case Some(NameInfo(suiteName, _, _, _, testNameInfo)) => (Some(suiteName), if (testNameInfo.isDefined) Some(testNameInfo.get.testName) else None)
-            case None => (None, None)
-          }
-        val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", message, throwable, formatter, suiteName, testName, None)
-        val shouldBeYellow =
-          aboutAPendingTest match {
-            case Some(isPending) => isPending
-            case None => false
-          }
-        for (line <- lines) printPossiblyInColor(line, if (shouldBeYellow) htmlYellow else htmlGreen)
-        
-      case MarkupProvided(ordinal, text, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
-
-        val (suiteName, testName) =
-          nameInfo match {
-            case Some(NameInfo(suiteName, _, _, _, testNameInfo)) => (Some(suiteName), if (testNameInfo.isDefined) Some(testNameInfo.get.testName) else None)
-            case None => (None, None)
-          }
-        //val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", text, None, formatter, suiteName, testName, None)
-        val shouldBeYellow =
-          aboutAPendingTest match {
-            case Some(isPending) => isPending
-            case None => false
-          }
-        //for (line <- lines) printMarkupPossiblyInColor(line, if (shouldBeYellow) htmlYellow else htmlGreen)
-        printMarkupPossiblyInColor(text, if (shouldBeYellow) htmlYellow else htmlGreen)
-        
-      case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, payload, threadName, timeStamp) =>
-
-        val stringToPrint =
-          formatter match {
-            case Some(IndentedText(formattedText, _, _)) => Some(Resources("specTextAndNote", formattedText, Resources("pendingNote")))
-            case Some(MotionToSuppress) => None
-            case _ => Some(Resources("testPending", suiteName + ": " + testName))
-          }
-
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, htmlYellow)
-          case None =>
-        }
-        
-      case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
-
-        val testNameInfo = nameInfo.testName
-        val stringToPrint = stringToPrintWhenNoError("scopeOpened", formatter, nameInfo.suiteName, 
-                                                     testNameInfo match {
-                                                       case Some(tnInfo) => Some(tnInfo.testName)
-                                                       case None => None
-                                                     })
-        val isPending = aboutAPendingTest.getOrElse(false)
-        val wasCanceled = aboutACanceledTest.getOrElse(false)
-        val shouldBeYellow = isPending || wasCanceled
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, if (shouldBeYellow) htmlYellow else htmlGreen)
-          case None =>
-        }
-
-      // TODO: Reduce duplication among InfoProvided, ScopeOpened, and ScopeClosed
-      case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
-
-        val testNameInfo = nameInfo.testName
-        val stringToPrint = stringToPrintWhenNoError("scopeClosed", formatter, nameInfo.suiteName, 
-                            testNameInfo match {
-                              case Some(tnInfo) => Some(tnInfo.testName)
-                              case None => None
-                            }) // TODO: I htink I want ot say Scope Closed - + message
-        val isPending = aboutAPendingTest.getOrElse(false)
-        val wasCanceled = aboutACanceledTest.getOrElse(false)
-        val shouldBeYellow = isPending || wasCanceled
-        stringToPrint match {
-          case Some(string) => printPossiblyInColor(string, if (shouldBeYellow) htmlYellow else htmlGreen)
-          case None =>
-        }
-
-     // case _ => throw new RuntimeException("Unhandled event")
+      case _ => eventList += event
     }
 
     pw.flush()
@@ -415,65 +537,33 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
   // Closes the print writer. Subclasses StandardOutReporter and StandardErrReporter override dispose to do nothing
   // so that those aren't closed.
   override def dispose() {
+    pw.flush()
     pw.close()
   }
-
-  private def printResourceString(resourceName: String) {
-
-    pw.println(Resources(resourceName))
-    pw.flush()
-  }
-
-  private def makeFinalReport(resourceName: String, duration: Option[Long], summaryOption: Option[Summary]) {
-
-    summaryOption match {
-      case Some(summary) =>
-
-        import summary._
-
-        duration match {
-          case Some(msSinceEpoch) =>
-            printPossiblyInColor(Resources(resourceName + "In", makeDurationString(msSinceEpoch)), htmlCyan)
-          case None =>
-            printPossiblyInColor(Resources(resourceName), htmlCyan)
-        }     
-
-        // totalNumberOfTestsRun=Total number of tests run was: {0}
-        printPossiblyInColor(Resources("totalNumberOfTestsRun", testsCompletedCount.toString), htmlCyan)
-
-        // Suite Summary: completed {0}, aborted {1}
-        printPossiblyInColor(Resources("suiteSummary", suitesCompletedCount.toString, suitesAbortedCount.toString), htmlCyan)
-
-        // Test Summary: succeeded {0}, failed {1}, ignored, {2}, pending {3}
-        printPossiblyInColor(Resources("testSummary", testsSucceededCount.toString, testsFailedCount.toString, testsIgnoredCount.toString, testsPendingCount.toString, testsCanceledCount.toString), htmlCyan)
-
-        // *** 1 SUITE ABORTED ***
-        if (suitesAbortedCount == 1)
-          printPossiblyInColor(Resources("oneSuiteAborted"), htmlRed)
-
-        // *** {0} SUITES ABORTED ***
-        else if (suitesAbortedCount > 1)
-          printPossiblyInColor(Resources("multipleSuitesAborted", suitesAbortedCount.toString), htmlRed)
-
-        // *** 1 TEST FAILED ***
-        if (testsFailedCount == 1)
-          printPossiblyInColor(Resources("oneTestFailed"), htmlRed)
-
-        // *** {0} TESTS FAILED ***
-        else if (testsFailedCount > 1)
-          printPossiblyInColor(Resources("multipleTestsFailed", testsFailedCount.toString), htmlRed)
-
-        else if (suitesAbortedCount == 0) // Maybe don't want to say this if the run aborted or stopped because "all"
-          printPossiblyInColor(Resources("allTestsPassed"), htmlGreen)
-
+  
+  private def getDuration(resourceName: String, duration: Option[Long]) = {
+    duration match {
+      case Some(msSinceEpoch) =>
+        Resources(resourceName + "In", makeDurationString(msSinceEpoch))
       case None =>
+        Resources(resourceName)
+    }
+  }
+  
+  private def getTotalTests(summary: Option[Summary]) = 
+    summary match {
+      case Some(summary) =>
+        Resources("totalNumberOfTestsRun", summary.testsCompletedCount.toString)
+      case None => ""
     }
     
-    pw.println("</body>")
-    pw.println("</html>")
-
-    pw.flush()
-  }
+    
+  private def getSuiteSummary(summary: Option[Summary]) = 
+    summary match {
+      case Some(summary) => 
+        Resources("suiteSummary", summary.suitesCompletedCount.toString, summary.suitesAbortedCount.toString)
+      case None => ""
+    }
 
   // We subtract one from test reports because we add "- " in front, so if one is actually zero, it will come here as -1
   // private def indent(s: String, times: Int) = if (times <= 0) s else ("  " * times) + s
@@ -491,6 +581,10 @@ private[tools] object HtmlReporter {
   final val htmlYellow = "yellow"
   final val htmlRed = "red"
   
+    
+  final val green = "#65C400"
+  final val red = "#C20000"
+  final val yellow = "yellow"
 }
 
 // This class is partly taken from http://www.htmlescape.net/htmlescape_for_java.html, reimplemented in scala.
