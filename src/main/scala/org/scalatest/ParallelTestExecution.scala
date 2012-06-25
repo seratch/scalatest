@@ -19,6 +19,7 @@ import OneInstancePerTest.RunTestInNewInstance
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
 import tools.{SuiteSortingReporter, DistributorWrapper, DistributedTestRunnerSuite, TestSortingReporter, Runner}
+import org.scalatest.events.Event
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -90,15 +91,57 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
           distribute(new DistributedTestRunnerSuite(oneInstance, testName, args), args.tracker.nextTracker)
       }
     }
-    else // In test-specific (distributed) instance, so just run the test. (RTINI was
+    else {// In test-specific (distributed) instance, so just run the test. (RTINI was
          // removed by OIPT's implementation of runTests.)
-      super.runTest(testName, args)
+      args.distributor match {
+        case None => 
+          super.runTest(testName, args)
+        case Some(distribute) => 
+          distribute match {
+            case distribute: DistributorWrapper =>
+              val testSortingReporter = distribute.testSortingReporter              
+              super.runTest(testName, args)
+              testSortingReporter.completedTest(testName)
+            case _ => 
+              super.runTest(testName, args)
+          }
+      }
+      
+    }
   }
 
   // Narrow the type
   override def newInstance: Suite with ParallelTestExecution = {
     val instance = getClass.newInstance.asInstanceOf[Suite with ParallelTestExecution]
     instance
+  }
+  
+  private class TestEventReporter(testSortingReporter: TestSortingReporter, testName: String) extends Reporter {
+    def apply(event: Event) {
+      testSortingReporter.apply(testName, event)
+    }
+  }
+  
+  abstract override def run(testName: Option[String], args: RunArgs) {
+    val newArgs = testName match {
+      case Some(testName) => 
+        args.distributor match {
+          case None => 
+            args
+          case Some(distribute) => 
+            distribute match {
+              case distribute: DistributorWrapper =>
+                val testSortingReporter = distribute.testSortingReporter   
+                val testReporter = new TestEventReporter(testSortingReporter, testName)
+                args.copy(reporter = testReporter)
+              case _ => 
+                args
+            }
+        }
+      case None =>
+        args
+    }
+    super.run(testName, newArgs)
   }
   
   protected def sortingTimeout: Span = Runner.testSortingReporterTimeout

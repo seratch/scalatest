@@ -53,7 +53,7 @@ private[scalatest] class ConcurrentDistributor(args: RunArgs, execSvc: ExecutorS
   }
 }
 
-private[scalatest] class DistributorWrapper(distributor: Distributor, testSortingReporter: TestSortingReporter) extends Distributor {
+private[scalatest] class DistributorWrapper(distributor: Distributor, val testSortingReporter: TestSortingReporter) extends Distributor {
 
   def apply(suite: Suite, tracker: Tracker) {
     waitForTestCompleted(suite)
