@@ -11,13 +11,7 @@ import java.util.UUID
 
 private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, testCount: Int) extends ResourcefulReporter {
 
-  case class Slot(uuid: UUID, startEvent: Option[Event], completedEvent: Option[Event], ready: Boolean) extends Ordered[Slot] {
-    def compare(that: Slot): Int = //ordinal.compare(that.ordinal)
-      if (startEvent.isDefined && that.startEvent.isDefined)
-        startEvent.get compare that.startEvent.get
-      else
-        0
-  }
+  case class Slot(uuid: UUID, eventList: ListBuffer[Event], ready: Boolean)
   
   private val waitingBuffer = new ListBuffer[Slot]()
   private val slotMap = new collection.mutable.HashMap[String, Slot]()  // testName -> Slot
@@ -34,9 +28,35 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, 
   
   def waitForTestCompleted(testName: String) {
     synchronized {
-      val slot = Slot(UUID.randomUUID, None, None, false)
-      waitingBuffer += slot
+      val slot = Slot(UUID.randomUUID, new ListBuffer[Event](), false)
       slotMap.put(testName, slot)
+      waitingBuffer += slot
+    }
+  }
+  
+  def completedTest(testName: String) {
+    synchronized {
+      val slot = slotMap(testName)
+      val newSlot = slot.copy(ready = true)
+      val slotIdx = waitingBuffer.indexOf(slot)
+      if (slotIdx >= 0)
+        waitingBuffer.update(slotIdx, newSlot)
+      slotMap.put(testName, newSlot)
+      completedTestCount += 1
+      fireReadyEvents()
+    }
+  }
+  
+  def apply(testName: String, event: Event) {
+    synchronized {
+      event match {
+        case _: InfoProvided | _: MarkupProvided => 
+          val slot = slotMap(testName)
+          slot.eventList += event
+          fireReadyEvents()
+        case _ =>
+          apply(event)
+      }
     }
   }
   
@@ -45,13 +65,10 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, 
       event match {
         case testStarting: TestStarting => 
           slotMap.get(testStarting.testName) match {
-            case Some(slot) => 
+            case Some(slot) =>
               val slotIdx = waitingBuffer.indexOf(slot)
-              if (slotIdx >= 0) {
-                val newSlot = slot.copy(startEvent = Some(testStarting))
-                waitingBuffer.update(slotIdx, newSlot)
-                slotMap.put(testStarting.testName, newSlot)
-              }
+              if (slotIdx >= 0) 
+                slot.eventList += testStarting
               else
                 dispatch(testStarting)
             case None => 
@@ -61,17 +78,13 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, 
           slotMap.get(testIgnored.testName) match {
             case Some(slot) => 
               val slotIdx = waitingBuffer.indexOf(slot)
-              if (slotIdx >= 0) {
-                val newSlot = slot.copy(startEvent = Some(testIgnored), ready = true)
-                waitingBuffer.update(slotIdx, newSlot)
-                slotMap.put(testIgnored.testName, newSlot)
-              }
+              if (slotIdx >= 0) 
+                slot.eventList += testIgnored
               else
                 dispatch(testIgnored)
             case None => 
               dispatch(testIgnored)
           }
-          completedTestCount += 1
         case testSucceeded: TestSucceeded => 
           handleTestCompleted(testSucceeded, testSucceeded.testName)
         case testFailed: TestFailed => 
@@ -96,7 +109,9 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, 
   }
   
   private def handleSuiteEvent(event: Event) {
-    val slot = Slot(UUID.randomUUID, Some(event), None, true)
+    val listBuffer = new ListBuffer[Event]()
+    listBuffer += event
+    val slot = Slot(UUID.randomUUID, listBuffer, true)
     waitingBuffer += slot
   }
   
@@ -104,48 +119,22 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span, 
     slotMap.get(testName) match {
       case Some(slot) =>
         val slotIdx = waitingBuffer.indexOf(slot)
-        if (slotIdx >= 0) {
-          val newSlot = slot.copy(completedEvent = Some(event), ready = true)
-          waitingBuffer.update(slotIdx, newSlot)
-          slotMap.put(testName, newSlot)
-        }
+        if (slotIdx >= 0) 
+          slot.eventList += event
         else // could happen when timeout, just fire the test completed event.
           dispatch(event)
       case None => 
         dispatch(event)
     }
-    completedTestCount += 1
   }
   
   private def fireReadyEvents() {
-    // Check if there's InfoProvided or MarkupProvided in the buffer.
-    val infoMarkupOpt = waitingBuffer.find { slot =>
-      if (slot.startEvent.isDefined) 
-        slot.startEvent.get.isInstanceOf[InfoProvided] || slot.startEvent.get.isInstanceOf[MarkupProvided]
-      else
-        false
+    val (ready, pending) = {
+      val ready = waitingBuffer.takeWhile(slot => slot.ready)
+      (ready, waitingBuffer.drop(ready.size))
     }
-    
-    // We need to sort the buffer based on ordinal if there's InfoProvided or MarkupProvided in the buffer, 
-    // this is because the InfoProvided can be fired from runTest, but before TestStarting (e.g. info in before 
-    // of BeforeAndAfter trait)
-    infoMarkupOpt match {
-      case Some(slot) => 
-        val sortedBuffer = waitingBuffer.sortWith((a, b) => a < b)
-        waitingBuffer.clear()
-        waitingBuffer ++= sortedBuffer
-      case None =>
-    }
-    
-    val (ready, pending) = waitingBuffer.span(slot => slot.ready)
-    ready.foreach { slot => 
-      dispatch(slot.startEvent.get)
-      slot.completedEvent match {
-        case Some(completedEvent) => 
-          dispatch(completedEvent)
-        case None =>
-      }
-    }
+
+    ready.foreach { slot => slot.eventList.foreach(dispatch(_)) }
     waitingBuffer.clear()
     waitingBuffer ++= pending
     if (waitingBuffer.size > 0) 

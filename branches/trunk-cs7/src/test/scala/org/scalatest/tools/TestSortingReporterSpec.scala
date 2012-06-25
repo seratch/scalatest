@@ -95,8 +95,11 @@ class TestSortingReporterSpec extends FunSpec with ShouldMatchers {
       dispatch.waitForTestCompleted(s1s2t3Starting.testName)
       dispatch(s1s2t3Starting)
       dispatch(s1s2t3Succeeded)
+      dispatch.completedTest(s1s2t3Succeeded.testName)
       dispatch(s1s2t1Succeeded)
+      dispatch.completedTest(s1s2t1Succeeded.testName)
       dispatch(s1s2t2Succeeded)
+      dispatch.completedTest(s1s2t2Succeeded.testName)
       dispatch(scope2Closed)
       dispatch(scope1Closed)
       
@@ -108,8 +111,11 @@ class TestSortingReporterSpec extends FunSpec with ShouldMatchers {
       dispatch.waitForTestCompleted(s3t3Starting.testName)
       dispatch(s3t3Starting)
       dispatch(s3t3Succeeded)
+      dispatch.completedTest(s3t3Succeeded.testName)
       dispatch(s3t1Succeeded)
+      dispatch.completedTest(s3t1Succeeded.testName)
       dispatch(s3t2Succeeded)
+      dispatch.completedTest(s3t2Succeeded.testName)
       dispatch(scope3Closed)
       
       val recordedEvents = recordingReporter.eventsReceived
@@ -146,10 +152,13 @@ class TestSortingReporterSpec extends FunSpec with ShouldMatchers {
       dispatch.waitForTestCompleted(s1s2t3Starting.testName)
       dispatch(s1s2t3Starting)
       dispatch(s1s2t3Succeeded)
+      dispatch.completedTest(s1s2t3Succeeded.testName)
       dispatch(s1s2t2Succeeded)
+      dispatch.completedTest(s1s2t2Succeeded.testName)
       
       Thread.sleep(4000)
       dispatch(s1s2t1Succeeded)
+      dispatch.completedTest(s1s2t1Succeeded.testName)
       
       dispatch(scope2Closed)
       dispatch(scope1Closed)
