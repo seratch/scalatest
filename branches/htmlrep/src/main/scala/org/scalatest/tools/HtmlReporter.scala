@@ -36,6 +36,7 @@ import scala.xml.NodeSeq
 import scala.xml.XML
 import java.util.UUID
 import scala.xml.Node
+import scala.annotation.tailrec
 
 /**
  * A <code>Reporter</code> that prints test status information in HTML format to a file.
@@ -82,106 +83,24 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     }
   }
   
-  case class ErrorContent(messages: List[String], stackTraces: List[String])
-
-  // Called for TestFailed, InfoProvided (because it can have a throwable in it), and SuiteAborted
   private def stringsToPrintOnError(noteResourceName: String, errorResourceName: String, message: String, throwable: Option[Throwable],
-    formatter: Option[Formatter], suiteName: Option[String], testName: Option[String], duration: Option[Long]): ErrorContent = {
+    formatter: Option[Formatter], suiteName: Option[String], testName: Option[String], duration: Option[Long]): String = {
 
-    val stringToPrint =
-      formatter match {
-        case Some(IndentedText(formattedText, _, _)) =>
-          Resources("specTextAndNote", formattedText, Resources(noteResourceName))
-        case _ =>
-          // Deny MotionToSuppress directives in error events, because error info needs to be seen by users
-            suiteName match {
-              case Some(sn) =>
-                testName match {
-                  case Some(tn) => Resources(errorResourceName, sn + ": " + tn)
-                  case None => Resources(errorResourceName, sn)
-                }
-              // Should not get here with built-in ScalaTest stuff, but custom stuff could get here.
-              case None => Resources(errorResourceName, Resources("noNameSpecified"))
-            }
-    }
-
-    val stringToPrintWithPossibleLineNumber = withPossibleLineNumber(stringToPrint, throwable)
-
-    val stringToPrintWithPossibleLineNumberAndDuration =
-      duration match {
-        case Some(milliseconds) =>
-          if (presentAllDurations)
-            Resources("withDuration", stringToPrintWithPossibleLineNumber, makeDurationString(milliseconds))
-          else
-            stringToPrintWithPossibleLineNumber
-        case None => stringToPrintWithPossibleLineNumber
-      }
-
-    // If there's a message, put it on the next line, indented two spaces, unless this is an IndentedText
-    val possiblyEmptyMessage =
-      formatter match {
-        case Some(IndentedText(_, _, _)) => ""
-        case _ =>
-          Reporter.messageOrThrowablesDetailMessage(message, throwable)
-      }
-
-    // I don't want to put a second line out there if the event's message contains the throwable's message,
-    // or if niether the event message or throwable message has any message in it.
-    val throwableIsATestFailedExceptionWithRedundantMessage =
-      throwable match {
-        case Some(t) =>
-          t.isInstanceOf[TestFailedException] && ((t.getMessage != null &&
-          !t.getMessage.trim.isEmpty && possiblyEmptyMessage.indexOf(t.getMessage.trim) != -1) || // This part is where a throwable message exists
-          (possiblyEmptyMessage.isEmpty && (t.getMessage == null || t.getMessage.trim.isEmpty))) // This part detects when both have no message
-        case None => false
-      }
-
-    def getStackTrace(throwable: Option[Throwable]): List[String] =
-      throwable match {
-        case Some(throwable) =>
-
-          def useConciseTestFailedExceptionForm =
-            !presentFullStackTraces && (
-              throwable match {
-                case tfe: TestFailedException => tfe.cause.isEmpty // If there's a cause inside, show the whole stack trace
-                case _ => false
+    formatter match {
+      case Some(IndentedText(formattedText, _, _)) =>
+        Resources("specTextAndNote", formattedText, Resources(noteResourceName))
+      case _ =>
+        // Deny MotionToSuppress directives in error events, because error info needs to be seen by users
+          suiteName match {
+            case Some(sn) =>
+              testName match {
+                case Some(tn) => Resources(errorResourceName, sn + ": " + tn)
+                case None => Resources(errorResourceName, sn)
               }
-            )
-
-          def stackTrace(throwable: Throwable, isCause: Boolean): List[String] = {
-            val className = throwable.getClass.getName 
-            val labeledClassName = if (isCause) Resources("DetailsCause") + ": " + className else className
-            val labeledClassNameWithMessage =
-              if (throwable.getMessage != null && !throwable.getMessage.trim.isEmpty)
-                if (!useConciseTestFailedExceptionForm)
-                  "  " + labeledClassName + ": " + throwable.getMessage.trim
-                else
-                  "  " + throwable.getMessage.trim // Don't show "org.scalatest.TestFailedException: " if no stack trace to follow
-              else
-                "  " + labeledClassName
-
-            if (!useConciseTestFailedExceptionForm) {
-              val stackTraceElements = throwable.getStackTrace.toList map { "  " + _.toString } // Indent each stack trace item two spaces
-              val cause = throwable.getCause
-
-              val stackTraceThisThrowable = labeledClassNameWithMessage :: stackTraceElements
-              if (cause == null)
-                stackTraceThisThrowable
-              else
-                stackTraceThisThrowable ::: stackTrace(cause, true) // Not tail recursive, but shouldn't be too deep
-            }
-            else List(labeledClassNameWithMessage)
+            // Should not get here with built-in ScalaTest stuff, but custom stuff could get here.
+            case None => Resources(errorResourceName, Resources("noNameSpecified"))
           }
-          if (!throwableIsATestFailedExceptionWithRedundantMessage || !useConciseTestFailedExceptionForm)
-            stackTrace(throwable, false)
-          else List()
-        case None => List()
       }
-
-    if (possiblyEmptyMessage.isEmpty)
-      ErrorContent(List(stringToPrintWithPossibleLineNumberAndDuration), getStackTrace(throwable))
-    else
-      ErrorContent(List(stringToPrintWithPossibleLineNumberAndDuration, "  " + possiblyEmptyMessage), getStackTrace(throwable))
   }
 
   private def stringToPrintWhenNoError(resourceName: String, formatter: Option[Formatter], suiteName: String, testName: Option[String]): Option[String] =
@@ -331,21 +250,34 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             border-bottom: 1px solid #C20000;
             color: #C20000; background: #FFFBD3;
           }
+            
+          .gray { 
+            color: grey; 
+          }
+          
+          .dark { 
+            font-weight: bold; 
+          }
+            
+          .label { 
+            color: #444444; 
+            font-weight: bold; 
+          }
 
           """) }
         </style>
         <script type="text/javascript">
           { PCDATA("""
-          function toggleStackTrace(contentId, linkId) {
+          function toggleDetails(contentId, linkId) {
               var ele = document.getElementById(contentId);
               var text = document.getElementById(linkId);
               if(ele.style.display == "block") {
                 ele.style.display = "none";
-                text.innerHTML = "Show Stack Traces";
+                text.innerHTML = "Show Details";
               }
               else {
                 ele.style.display = "block";
-                text.innerHTML = "Hide Stack Traces";
+                text.innerHTML = "Hide Details";
               }
             }
           """) }
@@ -425,9 +357,8 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             
           case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
 
-            val errorContent = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
-            //test(lines, getIndentLevel(formatter) + 1, "test_failed")
-            testWithStackTraces(errorContent.messages, errorContent.stackTraces, getIndentLevel(formatter) + 1, "test_failed")
+            val stringToPrint = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
+            testWithDetails(List(stringToPrint), message, throwable, getIndentLevel(formatter) + 1, "test_failed")            
             
             // TODO: Print recorded events, when merge into trunk.
             
@@ -463,10 +394,8 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             
           case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
 
-            val errorContent = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
-            //test(lines, getIndentLevel(formatter) + 1, "test_yellow")
-            testWithStackTraces(errorContent.messages, errorContent.stackTraces, getIndentLevel(formatter) + 1, "test_yellow")
-            
+            val stringToPrint = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
+            testWithDetails(List(stringToPrint), message, throwable, getIndentLevel(formatter) + 1, "test_yellow")
             // TODO: Print recorded events, when merge into trunk.
             
           case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
@@ -483,7 +412,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
                 case None => false
               }
             
-            test(infoContent.messages, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+            test(List(infoContent), getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
         
           case MarkupProvided(ordinal, text, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
 
@@ -530,8 +459,61 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
       </dl>
     </div>
   
-        
-  private def testWithStackTraces(lines: List[String], stackTraces: List[String], indentLevel: Int, styleName: String) = {
+  private def testWithDetails(lines: List[String], message: String, throwable: Option[Throwable], indentLevel: Int, styleName: String) = {
+    def getHTMLForStackTrace(stackTraceList: List[StackTraceElement]) =
+              stackTraceList.map((ste: StackTraceElement) => <span>{ ste.toString }</span><br />)
+    
+    def getHTMLForCause(throwable: Throwable): scala.xml.NodeBuffer = {
+      val cause = throwable.getCause
+      if (cause != null) {
+        <table>
+          <tr valign="top">
+            <td align="right"><span class="label">{ Resources("DetailsCause") + ":" }</span></td>
+            <td align="left">{ cause.getClass.getName }</td>
+          </tr>
+          <tr valign="top">
+            <td align="right"><span class="label">{ Resources("DetailsMessage") + ":" }</span></td>
+            <td align="left"><span>{ if (cause.getMessage != null) cause.getMessage else Resources("None") }</span></td>
+          </tr>
+        </table>
+        <table>
+          <tr valign="top">
+            <td align="left" colspan="2">{ getHTMLForStackTrace(cause.getStackTrace.toList) }</td>
+          </tr>
+        </table> &+ getHTMLForCause(cause)
+      }
+      else new scala.xml.NodeBuffer
+    }
+    
+    val (grayStackTraceElements, blackStackTraceElements) =
+      throwable match {
+        case Some(throwable) =>
+          val stackTraceElements = throwable.getStackTrace.toList
+          throwable match {
+            case tfe: TestFailedException =>
+              (stackTraceElements.take(tfe.failedCodeStackDepth), stackTraceElements.drop(tfe.failedCodeStackDepth))
+            case _ => (List(), stackTraceElements)
+          } 
+        case None => (List(), List())
+      }
+    
+    val throwableTitle = 
+      throwable match {
+        case Some(throwable) => Some(throwable.getClass.getName)
+        case None => None
+      }
+    
+    val fileAndLineOption: Option[String] = 
+      throwable match {
+        case Some(throwable) =>
+          throwable match {
+            case stackDepth: StackDepth =>
+              stackDepth.failedCodeFileNameAndLineNumberString
+            case _ => None
+          }
+        case None => None
+      }
+    
     val linkId = UUID.randomUUID.toString
     val contentId = UUID.randomUUID.toString
     <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
@@ -542,15 +524,54 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           }
         }
       </dl>
-      <a id={ linkId } href={ "javascript:toggleStackTrace('" + contentId + "', '" + linkId + "');" }>Show Stack Traces</a>
+      <a id={ linkId } href={ "javascript:toggleDetails('" + contentId + "', '" + linkId + "');" }>Show Details</a>
       <div id={ contentId } style="display: none">
-        <dl>
+        <table>
           {
-            stackTraces.map { line => 
-              <dt>{ line }</dt>
+            //if (mainMessage.isDefined) {
+              <tr valign="top"><td align="left"><span class="label">{ Resources("DetailsMessage") + ":" }</span></td><td align="left">
+                <span class="dark">
+                { 
+                  // Put <br>'s in for line returns at least, so property check failure messages look better
+                  val messageLines = message.split("\n")
+                  if (messageLines.size > 1)
+                    messageLines.map(line => <span>{ line }<br/></span>)
+                  else
+                    <span>{ message }</span>
+                }
+                </span>
+              </td></tr>
+            //}
+            //else <!-- -->
+          }
+          {
+            fileAndLineOption match {
+              case Some(fileAndLine) =>
+                <tr valign="top"><td align="left"><span class="label">{ Resources("LineNumber") + ":" }</span></td><td align="left"><span class="dark">{ "(" + fileAndLine + ")" }</span></td></tr>
+              case None =>
             }
           }
-        </dl>
+          {
+            throwableTitle match {
+              case Some(title) =>
+                <tr valign="top"><td align="right"><span class="label">{ Resources("DetailsThrowable") + ":" }</span></td><td align="left">{ title }</td></tr>
+              case None => new scala.xml.NodeBuffer
+            }
+          }
+        </table>
+        <table>
+          <tr valign="top"><td align="left" colspan="2">
+            { grayStackTraceElements.map((ste: StackTraceElement) => <span class="gray">{ ste.toString }</span><br />) }
+            { blackStackTraceElements.map((ste: StackTraceElement) => <span class="dark">{ ste.toString }</span><br />) }
+            </td>
+          </tr>
+        </table>
+        {
+          throwable match {
+            case Some(t) => getHTMLForCause(t)
+            case None =>
+          }
+        }
       </div>
     </div>
   }
