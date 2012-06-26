@@ -18,8 +18,9 @@ package org.scalatest
 import OneInstancePerTest.RunTestInNewInstance
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
-import tools.{SuiteSortingReporter, DistributorWrapper, DistributedTestRunnerSuite, TestSortingReporter, Runner}
+import tools.{SuiteSortingReporter, DistributedTestRunnerSuite, TestSortingReporter, Runner}
 import org.scalatest.events.Event
+import org.scalatest.tools.ConcurrentDistributor
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -50,32 +51,24 @@ import org.scalatest.events.Event
  */
 trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
   
-  @volatile private var testSortingReporter: Option[TestSortingReporter] = None
-  
   protected abstract override def runTests(testName: Option[String], args: RunArgs) {
-    val newArgs =
+    val newArgs = 
       if (args.configMap.contains(RunTestInNewInstance))
         args
       else {
+        // Create TestSortingReporter for this suite, when distributor is ConcurrentDistributor
         args.distributor match {
           case Some(distributor) =>
-            val testSortingReporter = new TestSortingReporter(args.reporter, sortingTimeout, testNames.size)
-            // TODO: needs a better way of getting the SuiteSortingReporter, since it might not come on top.
-            args.reporter match {
-              case suiteSortingReporter: SuiteSortingReporter =>
-                suiteSortingReporter.setTestSortingReporter(suiteId, testSortingReporter)
+            distributor match {
+              case concurrentDistributor: ConcurrentDistributor => 
+                args.copy(reporter = concurrentDistributor.createTestSortingReporter(suiteId, sortingTimeout, testNames.size))
               case _ =>
+                args
             }
-            args.copy(reporter = testSortingReporter, distributor = Some(new DistributorWrapper(distributor, testSortingReporter)))
           case None =>
             args
         }
       }
-
-    // Always call super.runTests, which is OneInstancePerTest's runTests. But if RTINI is NOT
-    // set, that means we are in the initial instance.In that case, we wrap the reporter in
-    // a new TestSortingReporter, and wrap the distributor in a new DistributorWrapper that
-    // knows is passed the TestSortingReporter. We then call super.runTests, which is OIPT's runTests.
     super.runTests(testName, newArgs)
   }
 
@@ -85,10 +78,14 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
       // In initial instance, so wrap the test in a DistributedTestRunnerSuite and pass it to the Distributor.
       val oneInstance = newInstance
       args.distributor match {
+        case Some(distribute) =>
+          distribute match {
+            case concurrentDistributor: ConcurrentDistributor => 
+              val testSortingReporter = concurrentDistributor.getTestSortingReporter(suiteId)
+              distribute(new DistributedTestRunnerSuite(oneInstance, testName, args, testSortingReporter), args.tracker.nextTracker)
+          }
         case None =>
           oneInstance.run(Some(testName), args)
-        case Some(distribute) =>
-          distribute(new DistributedTestRunnerSuite(oneInstance, testName, args), args.tracker.nextTracker)
       }
     }
     else {// In test-specific (distributed) instance, so just run the test. (RTINI was
@@ -98,8 +95,8 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
           super.runTest(testName, args)
         case Some(distribute) => 
           distribute match {
-            case distribute: DistributorWrapper =>
-              val testSortingReporter = distribute.testSortingReporter              
+            case concurrentDistributor: ConcurrentDistributor =>
+              val testSortingReporter = concurrentDistributor.getTestSortingReporter(suiteId)              
               super.runTest(testName, args)
               testSortingReporter.completedTest(testName)
             case _ => 
@@ -130,8 +127,8 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
             args
           case Some(distribute) => 
             distribute match {
-              case distribute: DistributorWrapper =>
-                val testSortingReporter = distribute.testSortingReporter   
+              case distribute: ConcurrentDistributor =>
+                val testSortingReporter = distribute.getTestSortingReporter(suiteId)   
                 val testReporter = new TestEventReporter(testSortingReporter, testName)
                 args.copy(reporter = testReporter)
               case _ => 

@@ -5,6 +5,7 @@ import org.scalatest.events._
 import DispatchReporter.propagateDispose
 import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
+import org.scalatest.time.Span
 
 private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter {
 
@@ -63,6 +64,8 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends Resour
             handleTestEvents(scopeOpened.nameInfo.suiteID, scopeOpened)
           case scopeClosed: ScopeClosed =>
             handleTestEvents(scopeClosed.nameInfo.suiteID, scopeClosed)
+          case _ =>
+            dispatch(event)  // Just dispatch it if got unexpected event.
         }
         fireReadyEvents()
       }
@@ -129,11 +132,15 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends Resour
     }
     pending
   }
-
-  private[scalatest] def setTestSortingReporter(suiteId: String, testSortingReporter: TestSortingReporter) {
+  
+  private[scalatest] def createTestSortingReporter(suiteId: String, timeout: Span, testCount: Int) = {
+    val testSortingReporter = new TestSortingReporter(this, timeout, testCount)
     val slot = slotMap(suiteId)
     slot.testSortingReporter = Some(testSortingReporter)
+    testSortingReporter
   }
+  
+  private[scalatest] def getTestSortingReporter(suiteId: String) = slotMap(suiteId).testSortingReporter.get
 
   override def dispose() = {
     try {

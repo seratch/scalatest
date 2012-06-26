@@ -20,14 +20,14 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Future
-import tools.DistributedTestRunnerSuite
+import org.scalatest.time.Span
 
 /**
  * This Distributor can be used by multiple threads.
  *
  * @author Bill Venners
  */
-private[scalatest] class ConcurrentDistributor(args: RunArgs, execSvc: ExecutorService) extends Distributor {
+private[scalatest] class ConcurrentDistributor(args: RunArgs, execSvc: ExecutorService, suiteSortingReporter: SuiteSortingReporter) extends Distributor {
 
   private val futureQueue = new LinkedBlockingQueue[Future[T] forSome { type T }]
 
@@ -40,6 +40,7 @@ private[scalatest] class ConcurrentDistributor(args: RunArgs, execSvc: ExecutorS
       throw new NullPointerException("suite is null")
     if (args == null)
       throw new NullPointerException("args is null")
+    waitForTestCompleted(suite)
     val suiteRunner = new SuiteRunner(suite, args)
     val future: Future[_] = execSvc.submit(suiteRunner)
     futureQueue.put(future)
@@ -51,26 +52,16 @@ private[scalatest] class ConcurrentDistributor(args: RunArgs, execSvc: ExecutorS
     while (futureQueue.peek != null)
       futureQueue.poll().get()
   }
-}
-
-private[scalatest] class DistributorWrapper(distributor: Distributor, val testSortingReporter: TestSortingReporter) extends Distributor {
-
-  def apply(suite: Suite, tracker: Tracker) {
-    waitForTestCompleted(suite)
-    distributor.apply(suite, tracker)
-  }
-
-  def apply(suite: Suite, args: RunArgs) {
-    waitForTestCompleted(suite)
-    distributor.apply(suite, args)
-  }
-
-  private def waitForTestCompleted(suite: Suite) {
+  
+  def waitForTestCompleted(suite: Suite) {
     suite match {
-      case dtrs: DistributedTestRunnerSuite =>
-        testSortingReporter.waitForTestCompleted(dtrs.testName)
+      case dtrs: DistributedTestRunnerSuite => dtrs.waitForTestCompleted()
       case _ =>
     }
   }
+  
+  def createTestSortingReporter(suiteId: String, timeout: Span, testCount: Int) = suiteSortingReporter.createTestSortingReporter(suiteId, timeout, testCount)
+  
+  def getTestSortingReporter(suiteId: String) = suiteSortingReporter.getTestSortingReporter(suiteId)
 }
 

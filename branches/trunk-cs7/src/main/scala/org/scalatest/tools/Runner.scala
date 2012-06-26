@@ -2014,7 +2014,7 @@ object Runner {
             val execSvc: ExecutorService = Executors.newFixedThreadPool(poolSize)
             try {
 
-              val distributor = new ConcurrentDistributor(RunArgs(dispatch, stopRequested, Filter(if (tagsToIncludeSet.isEmpty) None else Some(tagsToIncludeSet), tagsToExcludeSet), configMap, None, tracker, chosenStyleSet), execSvc)
+              val distributor = new ConcurrentDistributor(RunArgs(dispatch, stopRequested, Filter(if (tagsToIncludeSet.isEmpty) None else Some(tagsToIncludeSet), tagsToExcludeSet), configMap, None, tracker, chosenStyleSet), execSvc, sortingDispatch)
               if (System.getProperty("org.scalatest.tools.Runner.forever", "false") == "true") {
 
                 while (true) {
