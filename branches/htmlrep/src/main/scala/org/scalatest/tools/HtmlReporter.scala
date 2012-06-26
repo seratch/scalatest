@@ -190,7 +190,15 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           }
     
           #scalatest-header {
-            background: """ + getHeaderStatusColor(summary) + """; color: #fff; height: 4.5em;
+            background: """ + getHeaderStatusColor(summary) + """; 
+            color: #fff; 
+            height: 4.5em;
+          }
+            
+          #title {
+            font-size: 2.0em;
+            float: left;
+            font-family: "Lucida Grande", Helvetica, sans-serif;
           }
 
           .scalatest-report h1 {
@@ -201,14 +209,11 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             position: absolute;
           }
 
-          #label {
-            float:left;
-          }
-
           #display-filters {
             float:left;
-            padding: 35px 0 0 15px;
+            padding: 0px 0 0 0px;
             font-family: "Lucida Grande", Helvetica, sans-serif;
+            font-size: 0.5em;
           }
 
           #summary {
@@ -295,11 +300,11 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     summary match {
       case Some(summary) => 
         <div id="display-filters">
-          <input id="succeeded_checkbox" name="succeeded_checkbox" type="checkbox" /> <label for="passed_checkbox">Succeeded: { summary.testsSucceededCount }</label>
-          <input id="failed_checkbox" name="failed_checkbox" type="checkbox" /> <label for="failed_checkbox">Failed: { summary.testsFailedCount }</label>
-          <input id="ignored_checkbox" name="ignored_checkbox" type="checkbox" /> <label for="ignored_checkbox">Ignored: { summary.testsIgnoredCount }</label>
-          <input id="pending_checkbox" name="pending_checkbox" type="checkbox" /> <label for="pending_checkbox">Pending: { summary.testsPendingCount }</label>
-          <input id="canceled_checkbox" name="canceled_checkbox" type="checkbox" /> <label for="canceled_checkbox">Canceled: { summary.testsCanceledCount }</label>
+          <input id="succeeded_checkbox" name="succeeded_checkbox" type="checkbox" checked="checked" /> <label for="passed_checkbox">Succeeded: { summary.testsSucceededCount }</label>
+          <input id="failed_checkbox" name="failed_checkbox" type="checkbox" checked="checked" /> <label for="failed_checkbox">Failed: { summary.testsFailedCount }</label>
+          <input id="ignored_checkbox" name="ignored_checkbox" type="checkbox" checked="checked" /> <label for="ignored_checkbox">Ignored: { summary.testsIgnoredCount }</label>
+          <input id="pending_checkbox" name="pending_checkbox" type="checkbox" checked="checked" /> <label for="pending_checkbox">Pending: { summary.testsPendingCount }</label>
+          <input id="canceled_checkbox" name="canceled_checkbox" type="checkbox" checked="checked" /> <label for="canceled_checkbox">Canceled: { summary.testsCanceledCount }</label>
         </div>
       case None => <div id="display-filters" />
     }
@@ -307,11 +312,10 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
   
   private def header(resourceName: String, duration: Option[Long], summary: Option[Summary]) = 
     <div id="scalatest-header">
-      <div id="label">
-        <h1>ScalaTest Results</h1>
+      <div id="title">
+        ScalaTest Results
+        { getStatistic(summary) }
       </div>
-
-      { getStatistic(summary) }
 
       <div id="summary">
         <p id="duration">{ getDuration(resourceName, duration) }</p>    
