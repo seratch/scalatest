@@ -52,7 +52,7 @@ import Suite.createMarkupProvided
 import scala.reflect.NameTransformer
 import exceptions.StackDepthExceptionHelper.getStackDepthFun
 import exceptions._
-import tools.{SuiteSortingReporter, StandardOutReporter, SuiteDiscoveryHelper, Runner}
+import tools.{StandardOutReporter, SuiteDiscoveryHelper, Runner}
 
 /**
  * A suite of tests. A <code>Suite</code> instance encapsulates a conceptual
@@ -2577,7 +2577,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   private[scalatest] def wrapReporterIfNecessary(reporter: Reporter) = reporter match {
     case dr: DispatchReporter => dr
     case cr: CatchReporter => cr
-    case ssr: SuiteSortingReporter => ssr
     case _ => new CatchReporter(reporter)
   }
   

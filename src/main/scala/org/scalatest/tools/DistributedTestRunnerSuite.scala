@@ -17,8 +17,12 @@ package org.scalatest.tools
 
 import org.scalatest._
 
-private[scalatest] class DistributedTestRunnerSuite(suite: ParallelTestExecution, val testName: String, args: RunArgs) extends Suite {
+private[scalatest] class DistributedTestRunnerSuite(suite: ParallelTestExecution, testName: String, args: RunArgs, testSortingReporter: TestSortingReporter) extends Suite {
   override def run(ignoreThisTestName: Option[String], ignoreExceptForTheTracker: RunArgs) {
     suite.run(Some(testName), args.copy(tracker = ignoreExceptForTheTracker.tracker))
+  }
+  
+  def waitForTestCompleted() {
+    testSortingReporter.waitForTestCompleted(testName)
   }
 }
