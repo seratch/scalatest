@@ -210,7 +210,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           }
 
           #display-filters {
-            float:left;
+            
             padding: 0px 0 0 0px;
             font-family: "Lucida Grande", Helvetica, sans-serif;
             font-size: 0.5em;
@@ -268,7 +268,6 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
             color: #444444; 
             font-weight: bold; 
           }
-
           """) }
         </style>
         <script type="text/javascript">
