@@ -66,8 +66,14 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
       else {
         args.distributor match {  // This is the initial instance
           case Some(distributor) =>
-            val testSortingReporter = new TestSortingReporter(args.reporter, sortingTimeout)
-            args.copy(reporter = testSortingReporter, distributedTestSorter = Some(testSortingReporter))
+            //val testSortingReporter = new TestSortingReporter(args.reporter, sortingTimeout, testNames.size)
+            args.distributedSuiteSorter match {
+              case Some(suiteSorter) => 
+                args.copy(reporter = suiteSorter.distributingTests(suiteId, sortingTimeout, testNames.size))
+              case None =>
+                args
+            }
+            
           case None =>
             args
         }
@@ -102,8 +108,8 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
           oneInstance.run(Some(testName), args)
         case Some(distribute) =>
           // Tell the TSR that the test is being distributed
-          for (sorter <- args.distributedTestSorter)
-            sorter.distributingTest(testName)
+          for (sorter <- args.distributedSuiteSorter) 
+            sorter.getDistributedTestSorter(suiteId).distributingTest(testName)
 
           // It will be oneInstance, testName, args.copy(reporter = ...)
           distribute(new DistributedTestRunnerSuite(oneInstance, testName, args), args.copy(tracker = args.tracker.nextTracker))
@@ -115,12 +121,8 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
          // wrapReporter? And after runTest returns, call testCompleted() on
          // the TSR.
       super.runTest(testName, args)
-      args.distributedTestSorter match {
-        case Some(testSorter) => 
-          testSorter.completedTest(testName)
-        case None => 
-      }
-      
+      for (suiteSorter <- args.distributedSuiteSorter)
+        suiteSorter.getDistributedTestSorter(suiteId).completedTest(testName)
     }
   }
 
@@ -181,14 +183,14 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
   abstract override def run(testName: Option[String], args: RunArgs) {
     val newArgs = testName match {
       case Some(testName) => 
-        args.distributedTestSorter match {
-          case Some(testSorter) => 
+        args.distributedSuiteSorter match {
+          case Some(suiteSorter) => 
             class TestSpecificReporter(testSorter: DistributedTestSorter, testName: String) extends Reporter {
               def apply(event: Event) {
                 testSorter.apply(testName, event)
               }
             }
-            args.copy(reporter = new TestSpecificReporter(testSorter, testName))
+            args.copy(reporter = new TestSpecificReporter(suiteSorter.getDistributedTestSorter(suiteId), testName))
           case None =>
             args
         }

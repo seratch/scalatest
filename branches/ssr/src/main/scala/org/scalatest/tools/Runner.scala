@@ -38,6 +38,8 @@ import scala.collection.mutable.ArrayBuffer
 import SuiteDiscoveryHelper._
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
+import scala.annotation.tailrec
+import org.scalatest.exceptions.DuplicateSuiteIdException
 
 private[tools] case class SuiteParam(className: String, testNames: Array[String], wildcardTestNames: Array[String], nestedSuites: Array[NestedSuiteParam])
 private[tools] case class NestedSuiteParam(suiteId: String, testNames: Array[String], wildcardTestNames: Array[String])
@@ -1756,6 +1758,31 @@ object Runner {
     a + (if (a.contains(kv._1)) kv._1 -> f(a(kv._1), kv._2) else kv)
   }
   
+  private[scalatest] case class SuiteConfig(suite: Suite, dynaTags: DynaTags, requireSelectedTag: Boolean, excludeNestedSuites: Boolean)
+        
+  private[scalatest] def verifySuiteId(suiteConfigList: List[SuiteConfig]) {
+    @tailrec
+    def verifySuiteIdAcc(suiteConfigList: List[SuiteConfig], suiteIdMap: Map[String, Suite]) {
+      suiteConfigList match {
+        case head :: tail => 
+          val suite = head.suite
+          suiteIdMap.get(suite.suiteId) match {
+            case Some(conflictingSuite) => 
+              throw new DuplicateSuiteIdException(suite.suiteId, suite.getClass.getName, conflictingSuite.getClass.getName)
+            case None => 
+              val nestedSuites: List[SuiteConfig] = 
+                if (head.excludeNestedSuites)
+                  Nil
+                else 
+                  suite.nestedSuites.map(ns => SuiteConfig(ns, head.dynaTags, head.requireSelectedTag, head.excludeNestedSuites)).toList
+              verifySuiteIdAcc(nestedSuites ::: tail, suiteIdMap + (suite.suiteId -> suite))
+          }
+        case Nil =>
+      }
+    }  
+    verifySuiteIdAcc(suiteConfigList, Map.empty)
+  }
+  
   private[scalatest] def doRunRunRunDaDoRunRun(
     dispatch: DispatchReporter,
     suitesList: List[SuiteParam],
@@ -1836,8 +1863,6 @@ object Runner {
         }
   
       if (!loadProblemsExist) {
-        
-        case class SuiteConfig(suite: Suite, dynaTags: DynaTags, requireSelectedTag: Boolean, excludeNestedSuites: Boolean)
         
         try {
           val namedSuiteInstances: List[SuiteConfig] =
@@ -1975,6 +2000,8 @@ object Runner {
 
           dispatch(RunStarting(tracker.nextOrdinal(), expectedTestCount, configMap))
           
+          verifySuiteId(suiteInstances)
+          
           if (concurrent) {
 
             // Because some tests may do IO, will create a pool of 2 times the number of processors reported
@@ -1982,6 +2009,8 @@ object Runner {
             val poolSize =
               if (numThreads > 0) numThreads
               else Runtime.getRuntime.availableProcessors * 2
+              
+            val sortingDispatch = new SuiteSortingReporter(dispatch)
 
             val execSvc: ExecutorService = Executors.newFixedThreadPool(poolSize)
             try {
@@ -1993,7 +2022,7 @@ object Runner {
                   for (suiteConfig <- suiteInstances) {
                     val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                     val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                    val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet)
+                    val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet, false, Some(sortingDispatch))
                     distributor.apply(suiteConfig.suite, runArgs)
                   }
                   distributor.waitUntilDone()
@@ -2003,7 +2032,7 @@ object Runner {
                 for (suiteConfig <- suiteInstances) {
                   val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                   val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                  val runArgs = RunArgs(dispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet)
+                  val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet, false, Some(sortingDispatch))
                   distributor.apply(suiteConfig.suite, runArgs)
                 }
                 distributor.waitUntilDone()
@@ -2011,6 +2040,7 @@ object Runner {
             }
             finally {
               execSvc.shutdown()
+              sortingDispatch.dispose()
             }
           }
           else {

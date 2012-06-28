@@ -15,12 +15,15 @@
  */
 package org.scalatest
 
+import org.scalatest.time.Span
+
 /**
  * If distributingTests comes through, then the DSR will not use
  * a SuiteCompleted message to indicate that the suite is done, but instead
  * will wait for a completedTests invocation.
  */
 trait DistributedSuiteSorter {
-  def distributingTests(suiteId: String)
+  def distributingTests(suiteId: String, timeout: Span, testCount: Int): Reporter with DistributedTestSorter
   def completedTests(suiteId: String)
+  def getDistributedTestSorter(suiteId: String): Reporter with DistributedTestSorter
 }
