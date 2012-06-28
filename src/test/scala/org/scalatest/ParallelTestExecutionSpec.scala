@@ -13,6 +13,11 @@ import org.scalatest.tools.ConcurrentDistributor
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import org.scalatest.tools.SuiteRunner
+import org.scalatest.tools.SuiteSortingReporter
+import org.scalatest.events.SuiteStarting
+import org.scalatest.events.SuiteCompleted
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.Future
 
 class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
   /*
@@ -62,6 +67,20 @@ class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
     }
   }
   
+  private def checkSuiteStarting(event: Event, suiteId: String) {
+    event match {
+      case suiteStarting: SuiteStarting => assert(suiteStarting.suiteId === suiteId)
+      case _ => fail("Expected SuiteStarting, but got " + event.getClass.getName)
+    }
+  }
+  
+  private def checkSuiteCompleted(event: Event, suiteId: String) {
+    event match {
+      case suiteCompleted: SuiteCompleted => assert(suiteCompleted.suiteId === suiteId)
+      case _ => fail("Expected SuiteCompleted, but got " + event.getClass.getName)
+    }
+  }
+  
   describe("ParallelTestExecution") {
 
     class ControlledOrderDistributor extends Distributor {
@@ -86,6 +105,8 @@ class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
     }
     
     class ControlledOrderConcurrentDistributor(poolSize: Int) extends Distributor {
+      private val futureQueue = new LinkedBlockingQueue[Future[T] forSome { type T }]
+      
       val buf = ListBuffer.empty[SuiteRunner]
       val execSvc: ExecutorService = Executors.newFixedThreadPool(2)
       def apply(suite: Suite, args: RunArgs) {
@@ -93,13 +114,20 @@ class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
       }
       def executeInOrder() {
         for (suiteRunner <- buf) {
-          execSvc.submit(suiteRunner)
+          val future: Future[_] = execSvc.submit(suiteRunner)
+          futureQueue.put(future)
         }
+        Thread.sleep(3000)
+        //while (futureQueue.peek != null) 
+          //futureQueue.poll().get()
       }
       def executeInReverseOrder() {
         for (suiteRunner <- buf.reverse) {
-          execSvc.submit(suiteRunner)
+          val future: Future[_] = execSvc.submit(suiteRunner)
+          futureQueue.put(future)
         }
+        while (futureQueue.peek != null)
+          futureQueue.poll().get()
       }
 
       def apply(suite: Suite, tracker: Tracker) {
@@ -113,28 +141,38 @@ class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
 
         val recordingReporter = new EventRecordingReporter
         val outOfOrderDistributor = new ControlledOrderDistributor
-        (new ExampleParallelSpec).run(None, RunArgs(recordingReporter, distributor = Some(outOfOrderDistributor)))
+        val suiteSortingReporter = new SuiteSortingReporter(recordingReporter)
+        val spec = new ExampleParallelSpec
+        val tracker = new Tracker()
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec.suiteName, spec.suiteId, Some(spec.getClass.getName), None))
+        spec.run(None, RunArgs(suiteSortingReporter, distributor = Some(outOfOrderDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec.suiteName, spec.suiteId, Some(spec.getClass.getName), None))
+        
         fun(outOfOrderDistributor)
 
         val eventRecorded = recordingReporter.eventsReceived
 
-        checkScopeOpened(eventRecorded(0), "Subject 1")
-        checkTestStarting(eventRecorded(1), "Subject 1 should have behavior 1a")
-        checkTestSucceeded(eventRecorded(2), "Subject 1 should have behavior 1a")
-        checkTestStarting(eventRecorded(3), "Subject 1 should have behavior 1b")
-        checkTestSucceeded(eventRecorded(4), "Subject 1 should have behavior 1b")
-        checkTestStarting(eventRecorded(5), "Subject 1 should have behavior 1c")
-        checkTestSucceeded(eventRecorded(6), "Subject 1 should have behavior 1c")
-        checkScopeClosed(eventRecorded(7), "Subject 1")
+        assert(eventRecorded.size === 18)
+        
+        checkSuiteStarting(eventRecorded(0), spec.suiteId)
+        checkScopeOpened(eventRecorded(1), "Subject 1")
+        checkTestStarting(eventRecorded(2), "Subject 1 should have behavior 1a")
+        checkTestSucceeded(eventRecorded(3), "Subject 1 should have behavior 1a")
+        checkTestStarting(eventRecorded(4), "Subject 1 should have behavior 1b")
+        checkTestSucceeded(eventRecorded(5), "Subject 1 should have behavior 1b")
+        checkTestStarting(eventRecorded(6), "Subject 1 should have behavior 1c")
+        checkTestSucceeded(eventRecorded(7), "Subject 1 should have behavior 1c")
+        checkScopeClosed(eventRecorded(8), "Subject 1")
 
-        checkScopeOpened(eventRecorded(8), "Subject 2")
-        checkTestStarting(eventRecorded(9), "Subject 2 should have behavior 2a")
-        checkTestSucceeded(eventRecorded(10), "Subject 2 should have behavior 2a")
-        checkTestStarting(eventRecorded(11), "Subject 2 should have behavior 2b")
-        checkTestSucceeded(eventRecorded(12), "Subject 2 should have behavior 2b")
-        checkTestStarting(eventRecorded(13), "Subject 2 should have behavior 2c")
-        checkTestSucceeded(eventRecorded(14), "Subject 2 should have behavior 2c")
-        checkScopeClosed(eventRecorded(15), "Subject 2")
+        checkScopeOpened(eventRecorded(9), "Subject 2")
+        checkTestStarting(eventRecorded(10), "Subject 2 should have behavior 2a")
+        checkTestSucceeded(eventRecorded(11), "Subject 2 should have behavior 2a")
+        checkTestStarting(eventRecorded(12), "Subject 2 should have behavior 2b")
+        checkTestSucceeded(eventRecorded(13), "Subject 2 should have behavior 2b")
+        checkTestStarting(eventRecorded(14), "Subject 2 should have behavior 2c")
+        checkTestSucceeded(eventRecorded(15), "Subject 2 should have behavior 2c")
+        checkScopeClosed(eventRecorded(16), "Subject 2")
+        checkSuiteCompleted(eventRecorded(17), spec.suiteId)
       }
       withDistributor(_.executeInOrder())
       withDistributor(_.executeInReverseOrder())
@@ -146,41 +184,48 @@ class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
 
         val recordingReporter = new EventRecordingReporter
         val outOfOrderDistributor = new ControlledOrderDistributor
-        (new ExampleBeforeAfterParallelSpec).run(None, RunArgs(recordingReporter, distributor = Some(outOfOrderDistributor)))
+        val suiteSortingReporter = new SuiteSortingReporter(recordingReporter)
+        val spec = new ExampleBeforeAfterParallelSpec
+        val tracker = new Tracker()
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec.suiteName, spec.suiteId, Some(spec.getClass.getName), None))
+        spec.run(None, RunArgs(suiteSortingReporter, distributor = Some(outOfOrderDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec.suiteName, spec.suiteId, Some(spec.getClass.getName), None))
         fun(outOfOrderDistributor)
-
-        val eventRecorded = recordingReporter.eventsReceived
-        assert(eventRecorded.size === 28)
-
-        checkScopeOpened(eventRecorded(0), "Thing 1")
-        checkInfoProvided(eventRecorded(1), "In Before")
-        checkTestStarting(eventRecorded(2), "Thing 1 do thing 1a")
-        checkTestSucceeded(eventRecorded(3), "Thing 1 do thing 1a")
-        checkInfoProvided(eventRecorded(4), "In After")
-        checkInfoProvided(eventRecorded(5), "In Before")
-        checkTestStarting(eventRecorded(6), "Thing 1 do thing 1b")
-        checkTestSucceeded(eventRecorded(7), "Thing 1 do thing 1b")
-        checkInfoProvided(eventRecorded(8), "In After")
-        checkInfoProvided(eventRecorded(9), "In Before")
-        checkTestStarting(eventRecorded(10), "Thing 1 do thing 1c")
-        checkTestSucceeded(eventRecorded(11), "Thing 1 do thing 1c")
-        checkInfoProvided(eventRecorded(12), "In After")
-        checkScopeClosed(eventRecorded(13), "Thing 1")
         
-        checkScopeOpened(eventRecorded(14), "Thing 2")
-        checkInfoProvided(eventRecorded(15), "In Before")
-        checkTestStarting(eventRecorded(16), "Thing 2 do thing 2a")
-        checkTestSucceeded(eventRecorded(17), "Thing 2 do thing 2a")
-        checkInfoProvided(eventRecorded(18), "In After")
-        checkInfoProvided(eventRecorded(19), "In Before")
-        checkTestStarting(eventRecorded(20), "Thing 2 do thing 2b")
-        checkTestSucceeded(eventRecorded(21), "Thing 2 do thing 2b")
-        checkInfoProvided(eventRecorded(22), "In After")
-        checkInfoProvided(eventRecorded(23), "In Before")
-        checkTestStarting(eventRecorded(24), "Thing 2 do thing 2c")
-        checkTestSucceeded(eventRecorded(25), "Thing 2 do thing 2c")
-        checkInfoProvided(eventRecorded(26), "In After")
-        checkScopeClosed(eventRecorded(27), "Thing 2")
+        val eventRecorded = recordingReporter.eventsReceived
+        assert(eventRecorded.size === 30)
+
+        checkSuiteStarting(eventRecorded(0), spec.suiteId)
+        checkScopeOpened(eventRecorded(1), "Thing 1")
+        checkInfoProvided(eventRecorded(2), "In Before")
+        checkTestStarting(eventRecorded(3), "Thing 1 do thing 1a")
+        checkTestSucceeded(eventRecorded(4), "Thing 1 do thing 1a")
+        checkInfoProvided(eventRecorded(5), "In After")
+        checkInfoProvided(eventRecorded(6), "In Before")
+        checkTestStarting(eventRecorded(7), "Thing 1 do thing 1b")
+        checkTestSucceeded(eventRecorded(8), "Thing 1 do thing 1b")
+        checkInfoProvided(eventRecorded(9), "In After")
+        checkInfoProvided(eventRecorded(10), "In Before")
+        checkTestStarting(eventRecorded(11), "Thing 1 do thing 1c")
+        checkTestSucceeded(eventRecorded(12), "Thing 1 do thing 1c")
+        checkInfoProvided(eventRecorded(13), "In After")
+        checkScopeClosed(eventRecorded(14), "Thing 1")
+        
+        checkScopeOpened(eventRecorded(15), "Thing 2")
+        checkInfoProvided(eventRecorded(16), "In Before")
+        checkTestStarting(eventRecorded(17), "Thing 2 do thing 2a")
+        checkTestSucceeded(eventRecorded(18), "Thing 2 do thing 2a")
+        checkInfoProvided(eventRecorded(19), "In After")
+        checkInfoProvided(eventRecorded(20), "In Before")
+        checkTestStarting(eventRecorded(21), "Thing 2 do thing 2b")
+        checkTestSucceeded(eventRecorded(22), "Thing 2 do thing 2b")
+        checkInfoProvided(eventRecorded(23), "In After")
+        checkInfoProvided(eventRecorded(24), "In Before")
+        checkTestStarting(eventRecorded(25), "Thing 2 do thing 2c")
+        checkTestSucceeded(eventRecorded(26), "Thing 2 do thing 2c")
+        checkInfoProvided(eventRecorded(27), "In After")
+        checkScopeClosed(eventRecorded(28), "Thing 2")
+        checkSuiteCompleted(eventRecorded(29), spec.suiteId)
       }
       withDistributor(_.executeInOrder())
       withDistributor(_.executeInReverseOrder())
@@ -191,36 +236,182 @@ class ParallelTestExecutionSpec extends FunSpec with ShouldMatchers {
         val recordingReporter = new EventRecordingReporter
         val args = RunArgs(recordingReporter)
         val outOfOrderConcurrentDistributor = new ControlledOrderConcurrentDistributor(2)
-        (new ExampleTimeoutParallelSpec).run(None, RunArgs(recordingReporter, distributor = Some(outOfOrderConcurrentDistributor)))
+        val suiteSortingReporter = new SuiteSortingReporter(recordingReporter)
+        val spec = new ExampleTimeoutParallelSpec()
+        val tracker = new Tracker()
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec.suiteName, spec.suiteId, Some(spec.getClass.getName), None))
+        spec.run(None, RunArgs(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec.suiteName, spec.suiteId, Some(spec.getClass.getName), None))
+        
         fun(outOfOrderConcurrentDistributor)
-        Thread.sleep(3000)  // Get enough time for the timeout to reach, and the missing event to fire.
 
         val eventRecorded = recordingReporter.eventsReceived
-        assert(eventRecorded.size === 16)
+        assert(eventRecorded.size === 18)
 
-        checkScopeOpened(eventRecorded(0), "Thing 1")
-        checkTestStarting(eventRecorded(1), "Thing 1 do thing 1a")
-        checkTestSucceeded(eventRecorded(2), "Thing 1 do thing 1a")
-        checkTestStarting(eventRecorded(3), "Thing 1 do thing 1b")        
-        checkTestStarting(eventRecorded(4), "Thing 1 do thing 1c")
-        checkTestSucceeded(eventRecorded(5), "Thing 1 do thing 1c")
-        checkScopeClosed(eventRecorded(6), "Thing 1")
+        checkSuiteStarting(eventRecorded(0), spec.suiteId)
+        checkScopeOpened(eventRecorded(1), "Thing 1")
+        checkTestStarting(eventRecorded(2), "Thing 1 do thing 1a")
+        checkTestSucceeded(eventRecorded(3), "Thing 1 do thing 1a")
+        checkTestStarting(eventRecorded(4), "Thing 1 do thing 1b")        
+        checkTestStarting(eventRecorded(5), "Thing 1 do thing 1c")
+        checkTestSucceeded(eventRecorded(6), "Thing 1 do thing 1c")
+        checkScopeClosed(eventRecorded(7), "Thing 1")
         
-        checkScopeOpened(eventRecorded(7), "Thing 2")
-        checkTestStarting(eventRecorded(8), "Thing 2 do thing 2a")
-        checkTestSucceeded(eventRecorded(9), "Thing 2 do thing 2a")
-        checkTestStarting(eventRecorded(10), "Thing 2 do thing 2b")
-        checkTestSucceeded(eventRecorded(11), "Thing 2 do thing 2b")
-        checkTestStarting(eventRecorded(12), "Thing 2 do thing 2c")
-        checkTestSucceeded(eventRecorded(13), "Thing 2 do thing 2c")
-        checkScopeClosed(eventRecorded(14), "Thing 2")
-        
+        checkScopeOpened(eventRecorded(8), "Thing 2")
+        checkTestStarting(eventRecorded(9), "Thing 2 do thing 2a")
+        checkTestSucceeded(eventRecorded(10), "Thing 2 do thing 2a")
+        checkTestStarting(eventRecorded(11), "Thing 2 do thing 2b")
+        checkTestSucceeded(eventRecorded(12), "Thing 2 do thing 2b")
+        checkTestStarting(eventRecorded(13), "Thing 2 do thing 2c")
+        checkTestSucceeded(eventRecorded(14), "Thing 2 do thing 2c")
+        checkScopeClosed(eventRecorded(15), "Thing 2")
         // Now the missing one.
-        checkTestSucceeded(eventRecorded(15), "Thing 1 do thing 1b")
+        checkTestSucceeded(eventRecorded(16), "Thing 1 do thing 1b")
+        
+        checkSuiteCompleted(eventRecorded(17), spec.suiteId)
       }
 
       withDistributor(_.executeInOrder())
       withDistributor(_.executeInReverseOrder())
+    }
+    
+    it("should have the events reported in correct order when multiple suite's tests are executed in parallel") {
+      def withDistributor(fun: ControlledOrderConcurrentDistributor => Unit) = {
+        val recordingReporter = new EventRecordingReporter
+        val outOfOrderConcurrentDistributor = new ControlledOrderConcurrentDistributor(2)
+        val suiteSortingReporter = new SuiteSortingReporter(recordingReporter)
+        val spec1 = new ExampleParallelSpec()
+        val spec2 = new ExampleBeforeAfterParallelSpec()
+        
+        val tracker = new Tracker()
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
+        suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
+        
+        spec1.run(None, RunArgs(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
+        spec2.run(None, RunArgs(suiteSortingReporter, distributor = Some(outOfOrderConcurrentDistributor), distributedSuiteSorter = Some(suiteSortingReporter)))
+        
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec1.suiteName, spec1.suiteId, Some(spec1.getClass.getName), None))
+        suiteSortingReporter(SuiteCompleted(tracker.nextOrdinal, spec2.suiteName, spec2.suiteId, Some(spec2.getClass.getName), None))
+        
+        fun(outOfOrderConcurrentDistributor)
+        
+        recordingReporter.eventsReceived
+      }
+      
+      val spec1SuiteId = new ExampleParallelSpec().suiteId
+      val spec2SuiteId = new ExampleBeforeAfterParallelSpec().suiteId
+      
+      val inOrderEvents = withDistributor(_.executeInOrder)
+      
+      assert(inOrderEvents.size === 48)
+      
+      checkSuiteStarting(inOrderEvents(0), spec1SuiteId)
+      checkScopeOpened(inOrderEvents(1), "Subject 1")
+      checkTestStarting(inOrderEvents(2), "Subject 1 should have behavior 1a")
+      checkTestSucceeded(inOrderEvents(3), "Subject 1 should have behavior 1a")
+      checkTestStarting(inOrderEvents(4), "Subject 1 should have behavior 1b")
+      checkTestSucceeded(inOrderEvents(5), "Subject 1 should have behavior 1b")
+      checkTestStarting(inOrderEvents(6), "Subject 1 should have behavior 1c")
+      checkTestSucceeded(inOrderEvents(7), "Subject 1 should have behavior 1c")
+      checkScopeClosed(inOrderEvents(8), "Subject 1")
+
+      checkScopeOpened(inOrderEvents(9), "Subject 2")
+      checkTestStarting(inOrderEvents(10), "Subject 2 should have behavior 2a")
+      checkTestSucceeded(inOrderEvents(11), "Subject 2 should have behavior 2a")
+      checkTestStarting(inOrderEvents(12), "Subject 2 should have behavior 2b")
+      checkTestSucceeded(inOrderEvents(13), "Subject 2 should have behavior 2b")
+      checkTestStarting(inOrderEvents(14), "Subject 2 should have behavior 2c")
+      checkTestSucceeded(inOrderEvents(15), "Subject 2 should have behavior 2c")
+      checkScopeClosed(inOrderEvents(16), "Subject 2")
+      checkSuiteCompleted(inOrderEvents(17), spec1SuiteId)
+      
+      checkSuiteStarting(inOrderEvents(18), spec2SuiteId)
+      checkScopeOpened(inOrderEvents(19), "Thing 1")
+      checkInfoProvided(inOrderEvents(20), "In Before")
+      checkTestStarting(inOrderEvents(21), "Thing 1 do thing 1a")
+      checkTestSucceeded(inOrderEvents(22), "Thing 1 do thing 1a")
+      checkInfoProvided(inOrderEvents(23), "In After")
+      checkInfoProvided(inOrderEvents(24), "In Before")
+      checkTestStarting(inOrderEvents(25), "Thing 1 do thing 1b")
+      checkTestSucceeded(inOrderEvents(26), "Thing 1 do thing 1b")
+      checkInfoProvided(inOrderEvents(27), "In After")
+      checkInfoProvided(inOrderEvents(28), "In Before")
+      checkTestStarting(inOrderEvents(29), "Thing 1 do thing 1c")
+      checkTestSucceeded(inOrderEvents(30), "Thing 1 do thing 1c")
+      checkInfoProvided(inOrderEvents(31), "In After")
+      checkScopeClosed(inOrderEvents(32), "Thing 1")
+        
+      checkScopeOpened(inOrderEvents(33), "Thing 2")
+      checkInfoProvided(inOrderEvents(34), "In Before")
+      checkTestStarting(inOrderEvents(35), "Thing 2 do thing 2a")
+      checkTestSucceeded(inOrderEvents(36), "Thing 2 do thing 2a")
+      checkInfoProvided(inOrderEvents(37), "In After")
+      checkInfoProvided(inOrderEvents(38), "In Before")
+      checkTestStarting(inOrderEvents(39), "Thing 2 do thing 2b")
+      checkTestSucceeded(inOrderEvents(40), "Thing 2 do thing 2b")
+      checkInfoProvided(inOrderEvents(41), "In After")
+      checkInfoProvided(inOrderEvents(42), "In Before")
+      checkTestStarting(inOrderEvents(43), "Thing 2 do thing 2c")
+      checkTestSucceeded(inOrderEvents(44), "Thing 2 do thing 2c")
+      checkInfoProvided(inOrderEvents(45), "In After")
+      checkScopeClosed(inOrderEvents(46), "Thing 2")
+      checkSuiteCompleted(inOrderEvents(47), spec2SuiteId)
+      
+      val reverseOrderEvents = withDistributor(_.executeInReverseOrder)
+      
+      assert(reverseOrderEvents.size === 48)
+      
+      checkSuiteStarting(reverseOrderEvents(0), spec1SuiteId)
+      checkScopeOpened(reverseOrderEvents(1), "Subject 1")
+      checkTestStarting(reverseOrderEvents(2), "Subject 1 should have behavior 1a")
+      checkTestSucceeded(reverseOrderEvents(3), "Subject 1 should have behavior 1a")
+      checkTestStarting(reverseOrderEvents(4), "Subject 1 should have behavior 1b")
+      checkTestSucceeded(reverseOrderEvents(5), "Subject 1 should have behavior 1b")
+      checkTestStarting(reverseOrderEvents(6), "Subject 1 should have behavior 1c")
+      checkTestSucceeded(reverseOrderEvents(7), "Subject 1 should have behavior 1c")
+      checkScopeClosed(reverseOrderEvents(8), "Subject 1")
+
+      checkScopeOpened(reverseOrderEvents(9), "Subject 2")
+      checkTestStarting(reverseOrderEvents(10), "Subject 2 should have behavior 2a")
+      checkTestSucceeded(reverseOrderEvents(11), "Subject 2 should have behavior 2a")
+      checkTestStarting(reverseOrderEvents(12), "Subject 2 should have behavior 2b")
+      checkTestSucceeded(reverseOrderEvents(13), "Subject 2 should have behavior 2b")
+      checkTestStarting(reverseOrderEvents(14), "Subject 2 should have behavior 2c")
+      checkTestSucceeded(reverseOrderEvents(15), "Subject 2 should have behavior 2c")
+      checkScopeClosed(reverseOrderEvents(16), "Subject 2")
+      checkSuiteCompleted(reverseOrderEvents(17), spec1SuiteId)
+      
+      checkSuiteStarting(reverseOrderEvents(18), spec2SuiteId)
+      checkScopeOpened(reverseOrderEvents(19), "Thing 1")
+      checkInfoProvided(reverseOrderEvents(20), "In Before")
+      checkTestStarting(reverseOrderEvents(21), "Thing 1 do thing 1a")
+      checkTestSucceeded(reverseOrderEvents(22), "Thing 1 do thing 1a")
+      checkInfoProvided(reverseOrderEvents(23), "In After")
+      checkInfoProvided(reverseOrderEvents(24), "In Before")
+      checkTestStarting(reverseOrderEvents(25), "Thing 1 do thing 1b")
+      checkTestSucceeded(reverseOrderEvents(26), "Thing 1 do thing 1b")
+      checkInfoProvided(reverseOrderEvents(27), "In After")
+      checkInfoProvided(reverseOrderEvents(28), "In Before")
+      checkTestStarting(reverseOrderEvents(29), "Thing 1 do thing 1c")
+      checkTestSucceeded(reverseOrderEvents(30), "Thing 1 do thing 1c")
+      checkInfoProvided(reverseOrderEvents(31), "In After")
+      checkScopeClosed(reverseOrderEvents(32), "Thing 1")
+        
+      checkScopeOpened(reverseOrderEvents(33), "Thing 2")
+      checkInfoProvided(reverseOrderEvents(34), "In Before")
+      checkTestStarting(reverseOrderEvents(35), "Thing 2 do thing 2a")
+      checkTestSucceeded(reverseOrderEvents(36), "Thing 2 do thing 2a")
+      checkInfoProvided(reverseOrderEvents(37), "In After")
+      checkInfoProvided(reverseOrderEvents(38), "In Before")
+      checkTestStarting(reverseOrderEvents(39), "Thing 2 do thing 2b")
+      checkTestSucceeded(reverseOrderEvents(40), "Thing 2 do thing 2b")
+      checkInfoProvided(reverseOrderEvents(41), "In After")
+      checkInfoProvided(reverseOrderEvents(42), "In Before")
+      checkTestStarting(reverseOrderEvents(43), "Thing 2 do thing 2c")
+      checkTestSucceeded(reverseOrderEvents(44), "Thing 2 do thing 2c")
+      checkInfoProvided(reverseOrderEvents(45), "In After")
+      checkScopeClosed(reverseOrderEvents(46), "Thing 2")
+      checkSuiteCompleted(reverseOrderEvents(47), spec2SuiteId)
     }
   }
 }

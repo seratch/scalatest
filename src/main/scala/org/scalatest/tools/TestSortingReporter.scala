@@ -9,7 +9,7 @@ import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
 
-private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) extends ResourcefulReporter with DistributedTestSorter {
+private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter, timeout: Span, testCount: Int, suiteSorter: Option[DistributedSuiteSorter]) extends ResourcefulReporter with DistributedTestSorter {
 
   case class Slot(uuid: UUID, eventList: ListBuffer[Event], ready: Boolean)
   
@@ -139,7 +139,6 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) 
       val ready = waitingBuffer.takeWhile(slot => slot.ready)
       (ready, waitingBuffer.drop(ready.size))
     }
-
     ready.foreach { slot => slot.eventList.foreach(dispatch(_)) }
     waitingBuffer.clear()
     waitingBuffer ++= pending
@@ -152,6 +151,13 @@ private[scalatest] class TestSortingReporter(dispatch: Reporter, timeout: Span) 
           timeoutTask = None
         case None =>
       }
+      
+      if (completedTestCount == testCount)
+        suiteSorter match {
+          case Some(suiteSorter) => 
+            suiteSorter.completedTests(suiteId)
+          case None =>
+        }
     }
   }
   
