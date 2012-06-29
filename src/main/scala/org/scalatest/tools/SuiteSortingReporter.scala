@@ -9,10 +9,13 @@ import org.scalatest.time.Span
 
 private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends ResourcefulReporter with DistributedSuiteSorter {
 
+  // the testSortingReporter is only used for isDefined. Can change that to a flag:
+  // suiteHasDistributedTests
   case class Slot(suiteId: String, doneEvent: Option[Event], testSortingReporter: Option[TestSortingReporter], testsCompleted: Boolean)
 
   @volatile private var slotList = new ListBuffer[Slot]()
   private val slotMap = collection.mutable.HashMap[String, Slot]()
+  // suiteEventMap is suite Id -> events for that suite (should be a Vector)
   private val suiteEventMap = collection.mutable.HashMap[String, List[Event]]()
 
   override def apply(event: Event) {
@@ -21,7 +24,7 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends Resour
         event match {
           case suiteStarting: SuiteStarting =>
             val slot = Slot(suiteStarting.suiteId, None, None, false)
-            slotList += slot
+            slotList += slot // Why put this in the list then throw an exception?
             slotMap.get(suiteStarting.suiteId) match {
               case Some(slot) =>
                 throw new RuntimeException("2 SuiteStarting (" + slot.suiteId + ", " + suiteStarting.suiteId + ") having same suiteId '" + suiteStarting.suiteId + "'.")
@@ -78,50 +81,54 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends Resour
     }
   }
 
+  // Handles just SuiteCompleted and SuiteAborted
   private def handleSuiteEvents(suiteId: String, event: Event) {
     val slot = slotMap(suiteId)
     //slot.doneEvent = Some(event)
-    val newSlot = slot.copy(doneEvent = Some(event))
-    slotMap.put(suiteId, newSlot)
+    val newSlot = slot.copy(doneEvent = Some(event))  // Assuming here that a done event hasn't already arrived
+    slotMap.put(suiteId, newSlot)                     // Probably should fail on the second one
     val slotIdx = slotList.indexOf(slot)
-    if (slotIdx >= 0)
-      slotList.update(slotIdx, newSlot)
+    if (slotIdx >= 0)                                 // In what case would it not be there?
+      slotList.update(slotIdx, newSlot)  // Why not fire ready events here? Oh, at end of apply
   }
-
+  // Handles SuiteStarting, TestStarting, TestIgnored, TestSucceeded, TestFailed, TestPending,
+  // TestCanceled, InfoProvided, MarkupProvided, ScopeOpened, ScopeClosed.
   private def handleTestEvents(suiteId: String, event: Event) {
-    suiteEventMap.get(suiteId) match {
+    suiteEventMap.get(suiteId) match { // Can probably use the transform or some such method
       case Some(eventList) =>
-        suiteEventMap.put(suiteId, eventList ::: List(event))
-      case None =>
+        suiteEventMap.put(suiteId, eventList ::: List(event)) // Linear operation. Change to vector
+      case None =>                                            // oldest events at front of list
         suiteEventMap.put(suiteId, List(event))
     }
-    fireReadyEvents()
+    fireReadyEvents() // Then if at end of apply, why have it here too?
   }
 
+  // Only called within synchronized
   private def fireReadyEvents() {
     if (slotList.size > 0) {
       val head = slotList.head
       fireSuiteEvents(head.suiteId)
       if (isDone(head)) {
-        dispatch(head.doneEvent.get)
+        dispatch(head.doneEvent.get)  // Assuming it is existing again.
         slotList = fireReadySuiteEvents(slotList.tail)
       }
     }
   }
 
+  // suiteId must exist in the suiteEventMap
   private def fireSuiteEvents(suiteId: String) {
     suiteEventMap.get(suiteId) match {
       case Some(eventList) =>
-        eventList.foreach(dispatch(_))
-        suiteEventMap.put(suiteId, List.empty[Event])
+        eventList.foreach(dispatch(_)) // Fire all of them and empty it out. The done event is stored elsewhere
+        suiteEventMap.put(suiteId, List.empty[Event]) // Just fire in order they appear. (Could sort them here.)
       case None =>
       // Unable to get event list from map, shouldn't happen
     }
   }
 
   private def isDone(slot: Slot) = {
-    slot.testSortingReporter match {
-      case Some(testSortingReporter) =>
+    slot.testSortingReporter match {    // This should just be a flag
+      case Some(testSortingReporter) => // Only look at testCompleted flag if there's a TSR
         slot.doneEvent.isDefined && slot.testsCompleted
       case None =>
         slot.doneEvent.isDefined
@@ -129,13 +136,13 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends Resour
   }
 
   private def fireReadySuiteEvents(remainingSlotList: ListBuffer[Slot]): ListBuffer[Slot] = {
-    val (done, pending) = remainingSlotList.span(isDone(_))
+    val (done, undone) = remainingSlotList.span(isDone(_)) // Grab all the done slots
     done.foreach {
       slot =>
         fireSuiteEvents(slot.suiteId)
         dispatch(slot.doneEvent.get)
     }
-    pending
+    undone
   }
   
   def completedTests(suiteId: String) {
@@ -147,7 +154,11 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter) extends Resour
       slotList.update(slotIdx, newSlot)
     fireReadyEvents()
   }
-  
+
+  // Will need a timeout. Hmm. Because can change it. Hmm. This is an issue. I wanted
+  // suite's timeout to be 20% longer than the -T one. If an overridden sortingTimeout timeout is shorter, then
+  // that's no prob. But if it is longer, then the suiteTimeout will timeout first. I think that's fine. I'll
+  // just document that behavior.
   def distributingTests(suiteId: String, timeout: Span, testCount: Int) = {
     val testSortingReporter = new TestSortingReporter(suiteId, this, timeout, testCount, Some(this))
     val slot = slotMap(suiteId)
