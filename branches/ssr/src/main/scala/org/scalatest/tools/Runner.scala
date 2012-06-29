@@ -2022,7 +2022,7 @@ object Runner {
                   for (suiteConfig <- suiteInstances) {
                     val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                     val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                    val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet, false, Some(sortingDispatch))
+                    val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet, false, None, Some(sortingDispatch))
                     distributor.apply(suiteConfig.suite, runArgs)
                   }
                   distributor.waitUntilDone()
@@ -2032,7 +2032,7 @@ object Runner {
                 for (suiteConfig <- suiteInstances) {
                   val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
                   val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
-                  val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet, false, Some(sortingDispatch))
+                  val runArgs = RunArgs(sortingDispatch, stopRequested, filter, configMap, Some(distributor), tracker.nextTracker, chosenStyleSet, false, None, Some(sortingDispatch))
                   distributor.apply(suiteConfig.suite, runArgs)
                 }
                 distributor.waitUntilDone()
