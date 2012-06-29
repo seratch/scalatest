@@ -272,7 +272,9 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
         </style>
         <script type="text/javascript">
           { PCDATA("""
-          function toggleDetails(contentId, linkId) {
+          var tagMap = {};    
+              
+            function toggleDetails(contentId, linkId) {
               var ele = document.getElementById(contentId);
               var text = document.getElementById(linkId);
               if(ele.style.display == "block") {
@@ -284,6 +286,37 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
                 text.innerHTML = "Hide Details";
               }
             }
+            
+            var SUCCEEDED_BIT = 1;
+            var FAILED_BIT = 2;
+            var IGNORED_BIT = 4;
+            var PENDING_BIT = 8;
+            var CANCELED_BIT = 16;
+              
+            function applyFilter() {
+              var mask = 0;
+              if (document.getElementById('succeeded_checkbox').checked)
+                mask |= SUCCEEDED_BIT; 
+              if (document.getElementById('failed_checkbox').checked)
+                mask |= FAILED_BIT;
+              if (document.getElementById('ignored_checkbox').checked)
+                mask |= IGNORED_BIT;
+              if (document.getElementById('pending_checkbox').checked)
+                mask |= PENDING_BIT;
+              if (document.getElementById('canceled_checkbox').checked)
+                mask |= CANCELED_BIT;
+
+              for (var key in tagMap) {
+                if (tagMap.hasOwnProperty(key)) {
+                  var bitSet = tagMap[key];
+                  var element = document.getElementById(key);
+                  if ((bitSet & mask) != 0) 
+                    element.style.display = "block";
+                  else 
+                    element.style.display = "none";
+                }
+              }
+            }
           """) }
         </script>
       </head>
@@ -292,6 +325,9 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           { header(resourceName, duration, summary) } 
           { results(eventList.sorted.toList) } 
         </div>
+        <script type="text/javascript">
+          { PCDATA(tagMapScript) }
+        </script>
       </body>
 </html>
           
@@ -299,11 +335,11 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     summary match {
       case Some(summary) => 
         <div id="display-filters">
-          <input id="succeeded_checkbox" name="succeeded_checkbox" type="checkbox" checked="checked" /> <label for="passed_checkbox">Succeeded: { summary.testsSucceededCount }</label>
-          <input id="failed_checkbox" name="failed_checkbox" type="checkbox" checked="checked" /> <label for="failed_checkbox">Failed: { summary.testsFailedCount }</label>
-          <input id="ignored_checkbox" name="ignored_checkbox" type="checkbox" checked="checked" /> <label for="ignored_checkbox">Ignored: { summary.testsIgnoredCount }</label>
-          <input id="pending_checkbox" name="pending_checkbox" type="checkbox" checked="checked" /> <label for="pending_checkbox">Pending: { summary.testsPendingCount }</label>
-          <input id="canceled_checkbox" name="canceled_checkbox" type="checkbox" checked="checked" /> <label for="canceled_checkbox">Canceled: { summary.testsCanceledCount }</label>
+          <input id="succeeded_checkbox" name="succeeded_checkbox" type="checkbox" checked="checked" onchange="applyFilter()" /> <label for="passed_checkbox">Succeeded: { summary.testsSucceededCount }</label>
+          <input id="failed_checkbox" name="failed_checkbox" type="checkbox" checked="checked" onchange="applyFilter()" /> <label for="failed_checkbox">Failed: { summary.testsFailedCount }</label>
+          <input id="ignored_checkbox" name="ignored_checkbox" type="checkbox" checked="checked" onchange="applyFilter()" /> <label for="ignored_checkbox">Ignored: { summary.testsIgnoredCount }</label>
+          <input id="pending_checkbox" name="pending_checkbox" type="checkbox" checked="checked" onchange="applyFilter()" /> <label for="pending_checkbox">Pending: { summary.testsPendingCount }</label>
+          <input id="canceled_checkbox" name="canceled_checkbox" type="checkbox" checked="checked" onchange="applyFilter()" /> <label for="canceled_checkbox">Canceled: { summary.testsCanceledCount }</label>
         </div>
       case None => <div id="display-filters" />
     }
@@ -323,17 +359,42 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
       </div>
     </div>
         
+  private def generateElementId = UUID.randomUUID.toString
+  
+  private def setBit(stack: collection.mutable.Stack[String], tagMap: collection.mutable.HashMap[String, Int], bit: Int) {
+    stack.foreach { scopeElementId => 
+      val currentBits = tagMap(scopeElementId)
+      tagMap.put(scopeElementId, currentBits | bit)
+    }
+  }
+  
+  val tagMap = collection.mutable.HashMap[String, Int]()
+        
   private def results(eventList: List[Event]) = 
     <div class="results"> {
+      val scopeStack = new collection.mutable.Stack[String]()
       eventList.map { e => 
         e match {
           
           case SuiteStarting(ordinal, suiteName, suiteId, suiteClassName, decodedSuiteName, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             val stringToPrint = stringToPrintWhenNoError("suiteStarting", formatter, suiteName, None)
             stringToPrint match {
-              case Some(string) => suite(suiteId, decodedSuiteName.getOrElse(suiteName), getIndentLevel(formatter))
-              case None => NodeSeq.Empty
+              case Some(string) => 
+                val elementId = generateElementId
+                tagMap.put(elementId, 0)
+                scopeStack.push(elementId)
+                suite(elementId, decodedSuiteName.getOrElse(suiteName), getIndentLevel(formatter))
+              case None => 
+                NodeSeq.Empty
             }
+            
+          case SuiteCompleted(ordinal, suiteName, suiteId, suiteClassName, decodedSuiteName, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+            scopeStack.clear()
+            NodeSeq.Empty
+            
+          case SuiteAborted(ordinal, message, suiteName, suiteId, suiteClassName, decodedSuiteName, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+            scopeStack.clear()
+            NodeSeq.Empty
             
           case ScopeOpened(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
             val testNameInfo = nameInfo.testName
@@ -343,17 +404,31 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
                                                            case None => None
                                                          })
             stringToPrint match {
-              case Some(string) => scope(string, getIndentLevel(formatter) + 1)
-              case None => NodeSeq.Empty
+              case Some(string) => 
+                val elementId = generateElementId
+                tagMap.put(elementId, 0)
+                scopeStack.push(elementId)
+                scope(elementId, string, getIndentLevel(formatter) + 1)
+              case None => 
+                NodeSeq.Empty
             }
+            
+          case ScopeClosed(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) =>
+            scopeStack.pop
+            NodeSeq.Empty
           
           case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
             
             val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(decodedTestName.getOrElse(testName)), duration)
 
             stringToPrint match {
-              case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_passed")
+              case Some(string) => 
+                val elementId = generateElementId
+                tagMap.put(elementId, SUCCEEDED_BIT)
+                setBit(scopeStack, tagMap, SUCCEEDED_BIT)
+                test(elementId, List(string), getIndentLevel(formatter) + 1, "test_passed")
               case None =>
+                NodeSeq.Empty
             }
             
             // TODO: Print recorded events, when merge into trunk.
@@ -361,7 +436,10 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
 
             val stringToPrint = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
-            testWithDetails(List(stringToPrint), message, throwable, getIndentLevel(formatter) + 1, "test_failed")            
+            val elementId = generateElementId
+            tagMap.put(elementId, FAILED_BIT)
+            setBit(scopeStack, tagMap, FAILED_BIT)
+            testWithDetails(elementId, List(stringToPrint), message, throwable, getIndentLevel(formatter) + 1, "test_failed")            
             
             // TODO: Print recorded events, when merge into trunk.
             
@@ -375,8 +453,13 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
               }
  
               stringToPrint match {
-                case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_yellow")
+                case Some(string) => 
+                  val elementId = generateElementId
+                  tagMap.put(elementId, IGNORED_BIT)
+                  setBit(scopeStack, tagMap, IGNORED_BIT)
+                  test(elementId, List(string), getIndentLevel(formatter) + 1, "test_yellow")
                 case None =>
+                  NodeSeq.Empty
               }
               
           case TestPending(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, duration, formatter, location, payload, threadName, timeStamp) =>
@@ -389,8 +472,13 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
               }
 
             stringToPrint match {
-              case Some(string) => test(List(string), getIndentLevel(formatter) + 1, "test_yellow")
+              case Some(string) => 
+                val elementId = generateElementId
+                tagMap.put(elementId, PENDING_BIT)
+                setBit(scopeStack, tagMap, PENDING_BIT)
+                test(elementId, List(string), getIndentLevel(formatter) + 1, "test_yellow")
               case None =>
+                NodeSeq.Empty
             }
             
             // TODO: Print recorded events, when merge into trunk.
@@ -398,7 +486,11 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
           case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
 
             val stringToPrint = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(decodedTestName.getOrElse(testName)), duration)
-            testWithDetails(List(stringToPrint), message, throwable, getIndentLevel(formatter) + 1, "test_yellow")
+            val elementId = generateElementId
+            tagMap.put(elementId, CANCELED_BIT)
+            setBit(scopeStack, tagMap, CANCELED_BIT)
+            testWithDetails(elementId, List(stringToPrint), message, throwable, getIndentLevel(formatter) + 1, "test_yellow")
+            
             // TODO: Print recorded events, when merge into trunk.
             
           case InfoProvided(ordinal, message, nameInfo, aboutAPendingTest, aboutACanceledTest, throwable, formatter, location, payload, threadName, timeStamp) =>
@@ -415,7 +507,12 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
                 case None => false
               }
             
-            test(List(infoContent), getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+            val elementId = generateElementId
+            if (scopeStack.size > 0) {
+              val topElementId = scopeStack.top
+              tagMap.put(elementId, tagMap(topElementId))
+            }
+            test(elementId, List(infoContent), getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
         
           case MarkupProvided(ordinal, text, nameInfo, aboutAPendingTest, aboutACanceledTest, formatter, location, payload, threadName, timeStamp) => 
 
@@ -431,7 +528,13 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
                 case None => false
               }
         
-            markup(text, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+            val elementId = generateElementId
+            if (scopeStack.size > 0) {
+              val topElementId = scopeStack.top
+              tagMap.put(elementId, tagMap(topElementId))
+            }
+            markup(elementId, text, getIndentLevel(formatter) + 1, if (shouldBeYellow) "test_yellow" else "test_passed")
+            // TO CONTINUE: XML element must be last
             
           case _ => NodeSeq.Empty
         }
@@ -439,20 +542,20 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     }
     </div>
         
-  private def suite(suiteId: String, suiteName: String, indentLevel: Int) = 
-    <div id={ "suite_" + suiteId } class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+  private def suite(elementId: String, suiteName: String, indentLevel: Int) = 
+    <div id={ elementId } class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
       <dl>
         <dt>{ suiteName }</dt>
       </dl>
     </div>
         
-  private def scope(message: String, indentLevel: Int) = 
-    <div class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+  private def scope(elementId: String, message: String, indentLevel: Int) = 
+    <div id={ elementId } class="scope" style={ "margin-left: " + (20 * indentLevel) + "px;" }>
       { message }
     </div>
       
-  private def test(lines: List[String], indentLevel: Int, styleName: String) = 
-    <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+  private def test(elementId: String, lines: List[String], indentLevel: Int, styleName: String) = 
+    <div id={ elementId } class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
       <dl>
         {
           lines.map { line => 
@@ -462,7 +565,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
       </dl>
     </div>
   
-  private def testWithDetails(lines: List[String], message: String, throwable: Option[Throwable], indentLevel: Int, styleName: String) = {
+  private def testWithDetails(elementId: String, lines: List[String], message: String, throwable: Option[Throwable], indentLevel: Int, styleName: String) = {
     def getHTMLForStackTrace(stackTraceList: List[StackTraceElement]) =
               stackTraceList.map((ste: StackTraceElement) => <span>{ ste.toString }</span><br />)
     
@@ -519,7 +622,7 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     
     val linkId = UUID.randomUUID.toString
     val contentId = UUID.randomUUID.toString
-    <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+    <div id={ elementId } class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
       <dl>
         {
           lines.map { line => 
@@ -579,10 +682,16 @@ private[scalatest] class HtmlReporter(pw: PrintWriter, presentAllDurations: Bool
     </div>
   }
         
-  private def markup(text: String, indentLevel: Int, styleName: String) = 
-    <div class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
+  private def markup(elementId: String, text: String, indentLevel: Int, styleName: String) = 
+    <div id={ elementId } class={ styleName } style={ "margin-left: " + (20 * indentLevel) + "px;" }>
        { XML.loadString(pegDown.markdownToHtml(text)) }
     </div>
+       
+  private def tagMapScript = 
+    "tagMap = { \n" + 
+      tagMap.map { case (elementId, bitSet) => "\"" + elementId + "\": " + bitSet }.mkString(", \n") + 
+    "};\n" + 
+    "applyFilter();"
 
   private val eventList = new ListBuffer[Event]()
         
@@ -661,6 +770,12 @@ private[tools] object HtmlReporter {
   final val green = "#65C400"
   final val red = "#C20000"
   final val yellow = "yellow"
+    
+  final val SUCCEEDED_BIT = 1
+  final val FAILED_BIT = 2
+  final val IGNORED_BIT = 4
+  final val PENDING_BIT = 8
+  final val CANCELED_BIT = 16
 }
 
 private[tools] object PCDATA {
