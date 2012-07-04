@@ -29,7 +29,7 @@ class ConfigMapFixtureSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
       }
       val suite = new MySuite
-      suite.run(None, Args(SilentReporter, new Stopper {}, Filter(), myConfigMap, None, new Tracker, Set.empty))
+      suite.run(None, SilentReporter, new Stopper {}, Filter(), myConfigMap, None, new Tracker)
       assert(suite.configMapPassed)
     }
   }

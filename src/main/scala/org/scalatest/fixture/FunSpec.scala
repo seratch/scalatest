@@ -445,7 +445,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-      registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", 3, -2, None, None, testTags: _*)
+      registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", 1, None, None, testTags: _*)
     }
 
     /**
@@ -554,7 +554,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-      registerTest(specText, testFun, "theyCannotAppearInsideAnotherThey", sourceFileName, "apply", 3, -2, None, None, testTags: _*)
+      registerTest(specText, testFun, "theyCannotAppearInsideAnotherThey", sourceFileName, "apply", 1, None, None, testTags: _*)
     }
 
     /**
@@ -639,7 +639,7 @@ trait FunSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", 6, -2, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", 1, testTags: _*)
   }
 
   /**
@@ -672,7 +672,7 @@ trait FunSpec extends Suite { thisSuite =>
    * description string and immediately invoke the passed function.
    */
   protected def describe(description: String)(fun: => Unit) {
-    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", 4, -2)
+    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", 1)
   }
 
   /**
@@ -693,22 +693,23 @@ trait FunSpec extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FunSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args) {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
         case wrapper: NoArgTestWrapper[_] =>
-          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-        case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
+          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
+        case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
       }
     }
 
-    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
   }
 
   /**
@@ -761,13 +762,18 @@ trait FunSpec extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>FunSpec</code>.
-   * @param args the <code>Args</code> to which results will be reported
-   *
-   * @throws NullPointerException if any of <code>testName</code> or <code>args</code> is <code>null</code>.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>FunSpec</code>
+   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>FunSpec</code>
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>FunSpec</code>'s executing tests.
+   * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
+   *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args) {
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runTestsImpl(thisSuite, testName, args, info, true, runTest)
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
   /**
@@ -786,8 +792,10 @@ trait FunSpec extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args) {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**

@@ -16,12 +16,13 @@
 package org.scalatest.testng
 
 import org.scalatest._
+import org.scalatest.Suite
+import org.scalatest.TestRerunner
 import org.scalatest.events._
-import Suite.getIndentedTextForTest
+import Suite.getIndentedText
 import Suite.formatterForSuiteAborted
 import Suite.formatterForSuiteStarting
 import Suite.formatterForSuiteCompleted
-import Suite.getDecodedName
 import events.MotionToSuppress
 
 import org.testng.TestNG
@@ -86,10 +87,22 @@ trait TestNGSuite extends Suite { thisSuite =>
    * 
    * @param testName an optional name of one test to execute. If <code>None</code>, this class will execute all relevant tests.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>TestNGSuite</code>.
-   * @param args the <code>Args</code> for this run
+   * @param   reporter	 The reporter to be notified of test events (success, failure, etc).
+   * @param   groupsToInclude	Contains the names of groups to run. Only tests in these groups will be executed.
+   * @param   groupsToExclude	Tests in groups in this Set will not be executed.
+   *
+   * @param stopper the <code>Stopper</code> may be used to request an early termination of a suite of tests. However, because TestNG does
+   *                not support the notion of aborting a run early, this class ignores this parameter.
+   * @param   properties         a <code>Map</code> of properties that can be used by the executing <code>Suite</code> of tests. This class
+   *                      does not use this parameter.
+   * @param distributor an optional <code>Distributor</code>, into which nested <code>Suite</code>s could be put to be executed
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be executed sequentially.
+   *              Because TestNG handles its own concurrency, this class ignores this parameter.
+   * <br><br>
    */
-  override def run(testName: Option[String], args: Args) {
-    import args._
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper,
+      filter: Filter, properties: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+    
     runTestNG(testName, reporter, filter, tracker)
   }
 
@@ -213,8 +226,6 @@ trait TestNGSuite extends Suite { thisSuite =>
     
     private val className = TestNGSuite.this.getClass.getName
 
-    def getTopOfMethod(className: String, methodName: String) = Some(TopOfMethod(className, "public void " + className + "." + methodName + "()"))
-
     /**
      * This method is called when TestNG starts, and maps to ScalaTest's suiteStarting. 
      * @TODO TestNG doesn't seem to know how many tests are going to be executed.
@@ -223,7 +234,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      */
     override def onStart(itc: ITestContext) = {
       val formatter = formatterForSuiteStarting(thisSuite)
-      report(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, formatter, Some(TopOfClass(thisSuite.getClass.getName))))
+      report(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), formatter))
     }
 
     /**
@@ -233,7 +244,7 @@ trait TestNGSuite extends Suite { thisSuite =>
      */
     override def onFinish(itc: ITestContext) = {
       val formatter = formatterForSuiteCompleted(thisSuite)
-      report(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, None, formatter, Some(TopOfClass(thisSuite.getClass.getName))))
+      report(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), None, formatter))
     }
     
     /**
@@ -241,8 +252,8 @@ trait TestNGSuite extends Suite { thisSuite =>
      * and pass it to the Reporter.
      */
     override def onTestStart(result: ITestResult) = {
-      report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, result.getName + params(result), result.getName + params(result),
-             getDecodedName(result.getName + params(result)), Some(MotionToSuppress), getTopOfMethod(thisSuite.getClass.getName, result.getName), Some(className)))
+      report(TestStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), result.getName + params(result),
+          Some(MotionToSuppress), Some(new TestRerunner(className, result.getName))))
     }
 
     /**
@@ -251,9 +262,9 @@ trait TestNGSuite extends Suite { thisSuite =>
      */
     override def onTestSuccess(result: ITestResult) = {
       val testName = result.getName + params(result)
-      val formatter = getIndentedTextForTest(testName, 1, true)
-      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, thisSuite.decodedSuiteName, Some(thisSuite.getClass.getName), testName, testName, 
-          getDecodedName(testName), Vector.empty, None, Some(formatter), getTopOfMethod(thisSuite.getClass.getName, result.getName), Some(className))) // Can I add a duration?
+      val formatter = getIndentedText(testName, 1, true)
+      report(TestSucceeded(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName,
+          None, Some(formatter), Some(new TestRerunner(className, result.getName)))) // Can I add a duration?
     }
 
     /**
@@ -262,8 +273,8 @@ trait TestNGSuite extends Suite { thisSuite =>
      */
     override def onTestSkipped(result: ITestResult) = {
       val testName = result.getName + params(result)
-      val formatter = getIndentedTextForTest(testName, 1, true)
-      report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), Some(formatter), getTopOfMethod(thisSuite.getClass.getName, result.getName)))
+      val formatter = getIndentedText(testName, 1, true)
+      report(TestIgnored(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(formatter)))
     }
 
     /**
@@ -274,7 +285,7 @@ trait TestNGSuite extends Suite { thisSuite =>
       val throwable = if (throwableOrNull != null) Some(throwableOrNull) else None
       val message = if (throwableOrNull != null && throwableOrNull.getMessage != null) throwableOrNull.getMessage else Resources("testNGConfigFailed")
       val testName = result.getName + params(result)
-      val formatter = getIndentedTextForTest(testName, 1, true)
+      val formatter = getIndentedText(testName, 1, true)
       val payload = 
       throwable match {
         case optPayload: PayloadField => 
@@ -282,7 +293,7 @@ trait TestNGSuite extends Suite { thisSuite =>
         case _ => 
           None
       }
-      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), Vector.empty, throwable, None, Some(formatter), Some(SeeStackDepthException), Some(className), payload)) // Can I add a duration?
+      report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, throwable, None, Some(formatter), Some(new TestRerunner(className, result.getName)), payload)) // Can I add a duration?
     }
 
     /**
@@ -296,7 +307,7 @@ trait TestNGSuite extends Suite { thisSuite =>
       val throwable = if (throwableOrNull != null) Some(throwableOrNull) else None
       val message = if (throwableOrNull != null && throwableOrNull.getMessage != null) throwableOrNull.getMessage else Resources("testNGConfigFailed")
       val formatter = formatterForSuiteAborted(thisSuite, message)
-      report(SuiteAborted(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.getClass.getName, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, throwable, None, formatter, Some(SeeStackDepthException)))
+      report(SuiteAborted(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), throwable, None, formatter))
     }
 
     /**
@@ -355,11 +366,18 @@ trait TestNGSuite extends Suite { thisSuite =>
    * in behavior would very likely not work.
    * </p>
    *
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(args: Args) {
+  override final protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
+                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     throw new UnsupportedOperationException
   }
@@ -378,11 +396,17 @@ trait TestNGSuite extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTests(testName: Option[String], args: Args) {
+  override protected final def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                            configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     throw new UnsupportedOperationException
   }
 
@@ -399,12 +423,15 @@ trait TestNGSuite extends Suite { thisSuite =>
    * </p>
    *
    * @param testName the name of one test to run.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTest(testName: String, args: Args) {
-    throw new UnsupportedOperationException
+  override protected final def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+
+        throw new UnsupportedOperationException
   }
 
   /**

@@ -64,32 +64,9 @@ trait OneInstancePerTest extends AbstractSuite {
   this: Suite =>
 
   /**
-   * Modifies the behavior of <code>super.runTest</code> to facilitate running each test in its
-   * own instance of this <code>Suite</code>'s class.
+   * Run this <code>Suite's</code> tests each in their own instance of this <code>Suite</code>'s class.
    *
    * <p>
-   * TODO: Discuss...
-   * </p>
-   *
-   * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   */
-  protected abstract override def runTest(testName: String, args: Args) {
-
-    if (args.runTestInNewInstance) {
-      // In initial instance, so create a new test-specific instance for this test and invoke run on it.
-      val oneInstance = newInstance
-      oneInstance.run(Some(testName), args)
-    }
-    else // Therefore, in test-specific instance, so run the test.
-      super.runTest(testName, args)
-  }
-
-  /**
-   * Modifies the behavior of <code>super.runTests</code> to facilitate running each test in its
-   * own instance of this <code>Suite</code>'s class.
-   *
-   * <p> TODO: Update
    * If the passed <code>testName</code> is <code>None</code>, this trait's implementation of this
    * method will for each test name returned by <code>testNames</code>, invoke <code>newInstance</code>
    * to get a new instance of this <code>Suite</code>, and call <code>run</code> on it, passing
@@ -103,26 +80,26 @@ trait OneInstancePerTest extends AbstractSuite {
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of the passed parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected abstract override def runTests(testName: Option[String], args: Args) {
-
-// TODO: Define a better exception to throw if RTINI is in the config map but testName is not defined.
-    if (args.runTestInNewInstance) {
-      // In test-specific instance, so run the test. (We are removing RTINI
-      // so that runTest will realize it is in the test-specific instance.)
-      runTest(testName.get, args.copy(runTestInNewInstance = false))
-    }
-    else {
-      // In initial instance, so set the RTINI flag and call super.runTests, which
-      // will go through any scopes and call runTest as usual. If this method was called
-      // via super.runTests from PTE, the TestSortingReporter and WrappedDistributor
-      // will already be in place.
-      super.runTests(testName, args.copy(runTestInNewInstance = true))
+  protected abstract override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                             configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+    testName match {
+      case Some(tn) => super.runTests(testName, reporter, stopper, filter, configMap, None, tracker)
+      case None =>
+        for (tn <- testNames) {
+          val oneInstance = newInstance
+          oneInstance.run(Some(tn), reporter, stopper, filter, configMap, None, tracker)
+        }
     }
   }
   
@@ -161,6 +138,5 @@ trait OneInstancePerTest extends AbstractSuite {
    * }
    * </pre>
    */
-  def newInstance: Suite with OneInstancePerTest = this.getClass.newInstance.asInstanceOf[Suite with OneInstancePerTest]
+  def newInstance = this.getClass.newInstance.asInstanceOf[Suite]
 }
-

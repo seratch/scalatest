@@ -36,8 +36,8 @@ package org.scalatest
  *
  * @author Bill Venners
  */
-trait Distributor {
-  
+trait Distributor /* extends ((Suite, Tracker) => Unit) */ {
+
   /**
    * Puts a <code>Suite</code> into the <code>Distributor</code>.
    *
@@ -46,25 +46,34 @@ trait Distributor {
    *
    * @throws NullPointerException if either <code>suite</code> or <code>tracker</code> is <code>null</code>.
    */
-  @deprecated("Please use the apply method that takes a Args instead, the one with this signature: def apply(Suite, Args)")
   def apply(suite: Suite, tracker: Tracker)
-
-  /**
-   * Puts a <code>Suite</code> into the <code>Distributor</code>.
-   *
-   * <p>
-   * The <code>Distributor</code> can decide which, if any, of the passed <code>Args</code
-   * to pass to the <code>Suite</code>'s apply method. For example, a <code>Distributor</code>
-   * may pass itself wrapped in a <code>Some</code> in the <code>Args</code> it passes to the <code>Suite</code>'s <code>run</code>
-   * method instead of the <code>args.distributor</code> value.
-   * </p>
-   *
-   * @param suite the <code>Suite</code> to put into the <code>Distributor</code>.
-   * @param args a <code>Args</code> containing objects that may be passed to the <code>Suite</code>'s
-   *             <code>run</code> method via a <code>Args</code> instance.
-   *
-   * @throws NullPointerException if either <code>suite</code> or <code>tracker</code> is <code>null</code>.
-   */
-  def apply(suite: Suite, args: Args)
 }
 
+/**
+ * Companion object to Distributor that holds a deprecated implicit conversion.
+ */
+object Distributor {
+
+  /**
+   * Converts a <code>Distributor</code> to a function type that prior to the ScalaTest 1.5 release the
+   * <code>Distributor</code> extended.
+   *
+   * <p>
+   * Prior to ScalaTest 1.5, <code>Distributor</code> extended function type <code>(Suite, Tracker) => Unit</code>.
+   * This inheritance relationship was severed in 1.5 to make it possible to implement <code>Distributor</code>s in Java, a request by an IDE
+   * vendor to isolate their ScalaTest integration from binary incompatibility between different Scala/ScalaTest releases.
+   * To make a trait easily implementable in Java, it needs to have no concrete methods. <code>Distributor</code> itself does not declare
+   * any concrete methods, but <code>(Suite, Tracker) => Unit</code> does.
+   * </p>
+   *
+   * <p>
+   * This implicit conversion was added in ScalaTest 1.5 to avoid breaking any source code that was actually using
+   * <code>Distributor</code> as an <code>(Suite, Tracker) => Unit</code> function. It is unlikely anyone was actually doing that, but if you were
+   * and now get the deprecation warning, please email scalatest-users@googlegroups.com if you believe this implicit conversion should
+   * be retained. If no one steps forward with a compelling justification, it will be removed in a future version of ScalaTest.
+   * </p>
+   */
+  @deprecated("See the documentation for Distributor.convertDistributorToFunction for information")
+  implicit def convertDistributorToFunction(distributor: Distributor): (Suite, Tracker) => Unit =
+    (suite: Suite, tracker: Tracker) => distributor(suite, tracker)
+}

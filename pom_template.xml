@@ -67,6 +67,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-actors</artifactId>
+      <version>@SCALA_VERSION@</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-reflect</artifactId>
+      <version>@SCALA_VERSION@</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.scala-tools.testing</groupId>
       <artifactId>test-interface</artifactId>
       <version>0.5</version>
@@ -81,9 +93,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.scala-tools.testing</groupId>
-      <artifactId>scalacheck_@SCALA_VERSION@</artifactId>
-      <version>1.8</version>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.10.0-M4</artifactId>
+      <version>1.10-SNAPSHOT</version>
       <optional>true</optional>
     </dependency>
 

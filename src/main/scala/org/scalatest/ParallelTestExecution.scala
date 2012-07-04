@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.scalatest
+package org.scalatest    
 
-import events.Event
-import org.scalatest.time.Span
-import tools.{DistributedTestRunnerSuite, TestSortingReporter, Runner}
+import tools.DistributedTestRunnerSuite
 
 /**
  * Trait that causes that the tests of any suite it is mixed into to be run in parallel if
@@ -46,155 +44,64 @@ import tools.{DistributedTestRunnerSuite, TestSortingReporter, Runner}
  *
  * @author Bill Venners
  */
-trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
+trait ParallelTestExecution extends OneInstancePerTest {
+
+  this: Suite =>
+
+  // Skipping runTests here, but that's OK, because by mixing in ParallelTestExecution, the programmer decided
+  // that the super.runTests should be replaced by the one defined in ParallelTestExecution.
+  private[scalatest] def runOneTest(testName: String, reporter: Reporter, stopper: Stopper,
+                         configMap: Map[String, Any], tracker: Tracker) {
+
+    runTest(testName, reporter, stopper, configMap, tracker)
+  }
 
   /**
-   * Modifies the behavior of <code>super.runTests</code> to facilitate parallel test execution.
-   *
-   * <p>
-   * TODO: Discuss...
-   * </p>
+   * Run the tests of this suite in parallel.
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   * @throws NullPointerException if any of the passed parameters is <code>null</code>.
+   * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
+   *     exists in this <code>Suite</code>
    */
-  protected abstract override def runTests(testName: Option[String], args: Args) {
-    val newArgs =
-      if (args.runTestInNewInstance)
-        args // This is the test-specific instance
-      else {
-        args.distributor match {  // This is the initial instance
-          case Some(distributor) =>
-            val testSortingReporter = new TestSortingReporter(suiteId, args.reporter, sortingTimeout, testNames.size, args.distributedSuiteSorter)
-            args.copy(reporter = testSortingReporter, distributedTestSorter = Some(testSortingReporter))
+  protected abstract override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                             configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+
+    // testName distributor
+    //    None    None      call super, because no distributor
+    //    Some    None      call super, because no distributor
+    //    None    Some      wrap a newInstance and put it in the distributor
+    //    Some    Some      this would be the one where we need to actually run the test, ignore the distributor
+    distributor match {
+      // If there's no distributor, then just run sequentially, via the regular OneInstancePerTest
+      // algorithm
+      case None => super.runTests(testName, reporter,stopper, filter, configMap, distributor, tracker)
+      case Some(distribute) =>
+        testName match {
+          // The only way both testName and distributor should be defined is if someone called from the
+          // outside and did this. First run is called with testName None and a defined Distributor, it
+          // will not get here. So in this case, just do the usual OneInstancePerTest thing.
+          // TODO: Make sure it doesn't get back here. Walk through the scenarios.
+          case Some(tn) => super.runTests(testName, reporter, stopper, filter, configMap, distributor, tracker)
           case None =>
-            args
-        }
-      }
-
-    // Always call super.runTests, which is OneInstancePerTest's runTests. But if RTINI is NOT
-    // set, that means we are in the initial instance.In that case, we wrap the reporter in
-    // a new TestSortingReporter, and wrap the distributor in a new DistributorWrapper that
-    // knows is passed the TestSortingReporter. We then call super.runTests, which is OIPT's runTests.
-    super.runTests(testName, newArgs)
-  }
-
-  /**
-   * Modifies the behavior of <code>super.runTest</code> to facilitate parallel test execution.
-   *
-   * <p>
-   * TODO: Discuss...  Note this is final because don't want things like before and after to
-   * be executed by the wrong thread, and therefore, at the wrong time. With OIPT, if OIPT is
-   * super to BAA, then still things will happen in the expected order, because all is sequential.
-   * </p>
-   *
-   * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   */
-  final protected abstract override def runTest(testName: String, args: Args) {
-
-    if (args.runTestInNewInstance) {
-      // In initial instance, so wrap the test in a DistributedTestRunnerSuite and pass it to the Distributor.
-      val oneInstance = newInstance
-      args.distributor match {
-        case None =>
-          oneInstance.run(Some(testName), args)
-        case Some(distribute) =>
-          // Tell the TSR that the test is being distributed
-          for (sorter <- args.distributedTestSorter)
-            sorter.distributingTest(testName)
-
-          // It will be oneInstance, testName, args.copy(reporter = ...)
-          distribute(new DistributedTestRunnerSuite(oneInstance, testName, args), args.copy(tracker = args.tracker.nextTracker))
-      }
-    }
-    else {// In test-specific (distributed) instance, so just run the test. (RTINI was
-         // removed by OIPT's implementation of runTests.)
-         // New Approach: before calling super.runTest, wrap once again in the
-         // wrapReporter? And after runTest returns, call testCompleted() on
-         // the TSR.
-      super.runTest(testName, args)
-      args.distributedTestSorter match {
-        case Some(testSorter) => 
-          testSorter.completedTest(testName)
-        case None => 
-      }
-      
-    }
-  }
-
-  /**
-   * Construct a new instance of this <code>Suite</code>.
-   *
-   * <p>
-   * This trait's implementation of <code>runTests</code> invokes this method to create
-   * a new instance of this <code>Suite</code> for each test. This trait's implementation
-   * of this method uses reflection to call <code>this.getClass.newInstance</code>. This
-   * approach will succeed only if this <code>Suite</code>'s class has a public, no-arg
-   * constructor. In most cases this is likely to be true, because to be instantiated
-   * by ScalaTest's <code>Runner</code> a <code>Suite</code> needs a public, no-arg
-   * constructor. However, this will not be true of any <code>Suite</code> defined as
-   * an inner class of another class or trait, because every constructor of an inner
-   * class type takes a reference to the enclosing instance. In such cases, and in
-   * cases where a <code>Suite</code> class is explicitly defined without a public,
-   * no-arg constructor, you will need to override this method to construct a new
-   * instance of the <code>Suite</code> in some other way.
-   * </p>
-   *
-   * <p>
-   * Here's an example of how you could override <code>newInstance</code> to construct
-   * a new instance of an inner class:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * import org.scalatest.Suite
-   *
-   * class Outer {
-   *   class InnerSuite extends Suite with ParallelTestExecution {
-   *     def testOne() {}
-   *     def testTwo() {}
-   *     override def newInstance = new InnerSuite
-   *   }
-   * }
-   * </pre>
-   */
-  override def newInstance: Suite with ParallelTestExecution = {
-    val instance = getClass.newInstance.asInstanceOf[Suite with ParallelTestExecution]
-    instance
-  }
-
-  /**
-   * A maximum amount of time to wait for out-of-order events generated by running the tests
-   * of this <code>Suite</code> in parallel while sorting the events back into a more
-   * user-friendly, sequential order.
-   *
-   * <p>
-   * The default implementation of this method returns the value specified via <code>-T</code> to
-   * <a href="tools/Runner$.html"></code>Runner</code></a>, or 2 seconds, if no <code>-T</code> was given.
-   * </p>
-   *
-   * @return a maximum amount of time to wait for events while resorting them into sequential order
-   */
-  protected def sortingTimeout: Span = Runner.testSortingReporterTimeout
-  
-  abstract override def run(testName: Option[String], args: Args) {
-    val newArgs = testName match {
-      case Some(testName) => 
-        args.distributedTestSorter match {
-          case Some(testSorter) => 
-            class TestSpecificReporter(testSorter: DistributedTestSorter, testName: String) extends Reporter {
-              def apply(event: Event) {
-                testSorter.apply(testName, event)
-              }
+            for (tn <- testNames) {
+              val wrappedInstance =
+                new DistributedTestRunnerSuite(
+                  newInstance.asInstanceOf[ParallelTestExecution],
+                  tn
+                )
+              distribute(wrappedInstance, tracker.nextTracker)
             }
-            args.copy(reporter = new TestSpecificReporter(testSorter, testName))
-          case None =>
-            args
         }
-      case None =>
-        args
     }
-    super.run(testName, newArgs)
   }
 }
