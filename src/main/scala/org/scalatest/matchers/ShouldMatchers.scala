@@ -1213,17 +1213,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForDouble = {
       new ResultOfNotWordForDouble(left, false)
     }
-    
-    def shouldBe(right: Double) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[Double]) {
-      beMatcher.apply(left).matches
-    }
   }
 
   /**
@@ -1261,17 +1250,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForFloat = {
       new ResultOfNotWordForFloat(left, false)
-    }
-    
-    def shouldBe(right: Float) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[Float]) {
-      beMatcher.apply(left).matches
     }
   }
 
@@ -1311,17 +1289,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForLong = {
       new ResultOfNotWordForLong(left, false)
     }
-    
-    def shouldBe(right: Long) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[Long]) {
-      beMatcher.apply(left).matches
-    }
   }
 
   /**
@@ -1359,17 +1326,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForInt = {
       new ResultOfNotWordForInt(left, false)
-    }
-    
-    def shouldBe(right: Int) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[Int]) {
-      beMatcher.apply(left).matches
     }
   }
 
@@ -1409,17 +1365,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForShort = {
       new ResultOfNotWordForShort(left, false)
     }
-    
-    def shouldBe(right: Short) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[Short]) {
-      beMatcher.apply(left).matches
-    }
   }
 
   /**
@@ -1457,17 +1402,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForByte = {
       new ResultOfNotWordForByte(left, false)
-    }
-    
-    def shouldBe(right: Byte) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[Byte]) {
-      beMatcher.apply(left).matches
     }
   }
 
@@ -1541,7 +1475,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForMap[K, V] = {
       new ResultOfNotWordForMap(left, false)
     }
-
   }
 
   /**
@@ -1589,63 +1522,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(beWord: BeWord): ResultOfBeWordForAnyRef[T] = new ResultOfBeWordForAnyRef(left, true)
-    
-    def shouldBe = new ResultOfBeWordForAnyRef(left, true)
-    
-    def shouldBe(right: AnyRef) {
-      
-      def shouldBeEqual(right: AnyRef): Boolean = {
-        if (right.isInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]) {
-          // need to put in if because NoSuchMethodError when pattern match ResultOfAWordToBePropertyMatcherApplication
-          val app = right.asInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]
-          app.bePropertyMatcher.apply(left).matches
-        }
-        else if (right.isInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]) {
-          val app = right.asInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]
-          app.bePropertyMatcher.apply(left).matches
-        }
-        else {
-          val beWord = new BeWord
-          right match {
-            case rightSymbol: ResultOfAWordToSymbolApplication => 
-              beWord.a[AnyRef](rightSymbol.symbol)(left).matches
-            case rightSymbol: ResultOfAnWordToSymbolApplication => 
-              beWord.an[AnyRef](rightSymbol.symbol)(left).matches
-            case beMatcher: BeMatcher[AnyRef] => 
-              beMatcher.apply(left).matches
-            case bePropertyMatcher: BePropertyMatcher[AnyRef] => 
-              bePropertyMatcher.apply(left).matches
-            case _ => 
-              left == right
-          }
-        }
-      }
-      
-      if (!shouldBeEqual(right)) {
-        val (resourceName, leftee, rightee) = 
-          if (right.isInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]) {
-            val app = right.asInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]
-            val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, UnquotedString(app.bePropertyMatcher.apply(left).propertyName))
-            ("wasNotA", leftee, rightee)
-          }
-          else if (right.isInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]) {
-            val app = right.asInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]
-            val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, UnquotedString(app.bePropertyMatcher.apply(left).propertyName))
-            ("wasNotAn", leftee, rightee)
-          }
-          else {
-            right match {
-              case bePropertyMatcher: BePropertyMatcher[AnyRef] => 
-                val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, UnquotedString(bePropertyMatcher.apply(left).propertyName))
-                ("wasNot", leftee, rightee)
-              case _ => 
-                val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-                ("wasNotEqualTo", leftee, rightee)
-            }
-          }
-        throw newTestFailedException(FailureMessages(resourceName, leftee, rightee))
-      }
-    }
   }
 
   /**
@@ -1945,13 +1821,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForArray[T] =
       new ResultOfNotWordForArray(left, false)
-    
-    def shouldBe(right: Array[T]) {
-      if (!left.deep.equals(right.deep)) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
   }
   // Note, no should(beWord) is needed here because a different implicit conversion will be used
   // on "array shoudl be ..." because this one doesn't solve the type error.
@@ -2012,7 +1881,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForSeq[T, List[T]] =
       new ResultOfNotWordForSeq(left, false)
-    
   }
 
   /**
@@ -2063,7 +1931,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForJavaList[T, java.util.List[T]] = {
       new ResultOfNotWordForJavaList(left, false)
     }
-    
   }
 
   /**
@@ -2240,6 +2107,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    */
   implicit def convertHasIntGetLengthMethodToLengthShouldWrapper[T <: AnyRef { def getLength(): Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
 
+  /** 
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def getLength: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
    * a <code>getLength</code> <code>val</code> of type <code>Int</code>
@@ -2261,6 +2135,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    */
   implicit def convertHasIntLengthMethodToLengthShouldWrapper[T <: AnyRef { def length(): Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
 
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntParameterlessLengthMethodToLengthShouldWrapper[T <: AnyRef { def length: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
@@ -2268,6 +2149,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
    */
   implicit def convertHasLongGetLengthMethodToLengthShouldWrapper[T <: AnyRef { def getLength(): Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def getLength: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
@@ -2292,10 +2180,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def length: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
    * a <code>getSize</code> method that results in <code>Int</code>
    * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
    */
   implicit def convertHasIntGetSizeMethodToSizeShouldWrapper[T <: AnyRef { def getSize(): Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def getSize: Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
@@ -2318,6 +2220,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    */
   implicit def convertHasIntSizeMethodToSizeShouldWrapper[T <: AnyRef { def size(): Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
 
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def size: Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
@@ -2325,6 +2234,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
    */
   implicit def convertHasLongGetSizeMethodToSizeShouldWrapper[T <: AnyRef { def getSize(): Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def getSize: Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
@@ -2346,6 +2262,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
    */
   implicit def convertHasLongSizeMethodToSizeShouldWrapper[T <: AnyRef { def size(): Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def size: Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
 }
 /*
 When Scala must chose between an implicit with a structural type and one with a nominal one,

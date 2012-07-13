@@ -153,10 +153,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  * See also: <a href="http://www.scalatest.org/getting_started_with_feature_spec" target="_blank">Getting started with <code>FeatureSpec</code>.</a>
  * </p>
  * 
- * <p>
- * <em>Note: Trait <code>FeatureSpec</code>'s syntax is in part inspired by <a href="http://cukes.info/" target="_blank">Cucumber</a>, a Ruby BDD framework.</em>
- *</p>
- *
  * <h2>Ignored tests</h2>
  *
  * <p>
@@ -769,8 +765,8 @@ import Suite.anErrorThatShouldCauseAnAbort
  * <h4>Overriding <code>withFixture(OneArgTest)</code></h4>
  *
  * <p>
- * To use the loan pattern, you can extend <code>fixture.FeatureSpec</code> (from the <code>org.scalatest.fixture</code> package) instead of
- * <code>FeatureSpec</code>. Each test in a <code>fixture.FeatureSpec</code> takes a fixture as a parameter, allowing you to pass the fixture into
+ * To use the loan pattern, you can extend <code>FeatureSpec</code> (from the <code>org.scalatest.fixture</code> package) instead of
+ * <code>FeatureSpec</code>. Each test in a <code>FeatureSpec</code> takes a fixture as a parameter, allowing you to pass the fixture into
  * the test. You must indicate the type of the fixture parameter by specifying <code>FixtureParam</code>, and implement a
  * <code>withFixture</code> method that takes a <code>OneArgTest</code>. This <code>withFixture</code> method is responsible for
  * invoking the one-arg test function, so you can perform fixture set up before, and clean up after, invoking and passing
@@ -817,7 +813,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  * </pre>
  *
  * <p>
- * For more information, see the <a href="fixture/FeatureSpec.html">documentation for <code>fixture.FeatureSpec</code></a>.
+ * For more information, see the <a href="fixture/FeatureSpec.html">documentation for <code>FeatureSpec</code></a>.
  * </p>
  *
  * <a name="differentFixtures"></a><h2>Providing different fixtures to different tests</h2>
@@ -919,7 +915,7 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * <p>
  * Note that in this case, the loan pattern is being implemented via the <code>withWriter</code> method that takes a function, not
- * by overriding <code>fixture.FeatureSpec</code>'s <code>withFixture(OneArgTest)</code> method. <code>fixture.FeatureSpec</code> makes the most sense
+ * by overriding <code>FeatureSpec</code>'s <code>withFixture(OneArgTest)</code> method. <code>FeatureSpec</code> makes the most sense
  * if all (or at least most) tests need the same fixture, whereas in this <code>Suite</code> only two tests need the
  * <code>FileWriter</code>.
  * </p>
@@ -1540,7 +1536,6 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.FeatureSpecFinder")
 trait FeatureSpec extends Suite { thisSuite =>
 
   private final val engine = new Engine("concurrentFeatureSpecMod", "FeatureSpec")
@@ -1555,16 +1550,6 @@ trait FeatureSpec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>FeatureSpec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
@@ -1585,7 +1570,8 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(Resources("scenario", specText), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpec.scala", "scenario", 4, -2, None, None, testTags: _*)
+
+    registerTest(Resources("scenario", specText), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpec.scala", "scenario", 2, None, None, testTags: _*)
   }
 
   /**
@@ -1607,7 +1593,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(specText: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(Resources("scenario", specText), testFun _, "ignoreCannotAppearInsideAScenario", "FeatureSpec.scala", "ignore", 4, -2, testTags: _*)
+    registerIgnoredTest(Resources("scenario", specText), testFun _, "ignoreCannotAppearInsideAScenario", "FeatureSpec.scala", "ignore", 1, testTags: _*)
   }
   
   /**
@@ -1621,7 +1607,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun("FeatureSpec.scala", "feature"))
 
-    registerNestedBranch(description, None, fun, "featureCannotAppearInsideAScenario", "FeatureSpec.scala", "feature", 7, -2)
+    registerNestedBranch(description, None, fun, "featureCannotAppearInsideAScenario", "FeatureSpec.scala", "feature", 1)
   }
 
   /**
@@ -1642,15 +1628,16 @@ trait FeatureSpec extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FeatureSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args) {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     def invokeWithFixture(theTest: TestLeaf) {
-      val theConfigMap = args.configMap
+      val theConfigMap = configMap
       withFixture(
         new NoArgTest {
           def name = testName
@@ -1660,7 +1647,7 @@ trait FeatureSpec extends Suite { thisSuite =>
       )
     }
 
-    runTestImpl(thisSuite, testName, args, false, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, false, invokeWithFixture)
   }
 
   /**
@@ -1711,14 +1698,21 @@ trait FeatureSpec extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of the passed parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args) {
-    runTestsImpl(thisSuite, testName, args, info, false, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+    
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, false, runTest)
   }
 
   /**
@@ -1759,8 +1753,10 @@ trait FeatureSpec extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args) {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**

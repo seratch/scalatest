@@ -420,7 +420,8 @@ trait FreeSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 4, -3, None, None, testTags: _*)
+    // TODO: This is what was being used before but it is wrong
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -443,7 +444,8 @@ trait FreeSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 4, -3, testTags: _*)
+    // TODO: This is how these were, but it needs attention. Mentions "it".
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 1, testTags: _*)
   }
    /*
   private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
@@ -584,7 +586,9 @@ trait FreeSpec extends Suite { thisSuite =>
 
     // TODO: Fill in Scaladoc
     def - (fun: => Unit) {
-      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 3, -2)
+      // registerBranch(string, None, testFun)
+      // TODO: Fix the resource name and method name
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 1)
     }
 
     /**
@@ -685,6 +689,7 @@ trait FreeSpec extends Suite { thisSuite =>
      */
     def ignore(testFun: () => Any) {
       registerTestToIgnore(string, List(), "ignore", new NoArgTestWrapper(testFun))
+    
     }
 
     /**
@@ -734,22 +739,23 @@ trait FreeSpec extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FreeSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args) {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
         case wrapper: NoArgTestWrapper[_] =>
-          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-        case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
+          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
+        case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
       }
     }
 
-    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
   }
 
   /**
@@ -802,13 +808,18 @@ trait FreeSpec extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>FreeSpec</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>FreeSpec</code>
+   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>FreeSpec</code>
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>FreeSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
    *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args) {
-    runTestsImpl(thisSuite, testName, args, info, true, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
   /**
@@ -827,8 +838,10 @@ trait FreeSpec extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args) {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**

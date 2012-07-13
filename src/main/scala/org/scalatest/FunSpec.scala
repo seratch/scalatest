@@ -16,7 +16,16 @@
 package org.scalatest
 
 import scala.collection.immutable.ListSet
+import java.util.ConcurrentModificationException
+import java.util.concurrent.atomic.AtomicReference
+import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
+import org.scalatest.events._
+import Suite.anErrorThatShouldCauseAnAbort
+import Suite.checkRunTestParamsForNull
+import Suite.indentation
 import verb.BehaveWord
+import Suite.reportInfoProvided
+import Suite.reportTestIgnored
 
 /**
  * Trait that facilitates a &#8220;behavior-driven&#8221; style of development (BDD), in which tests
@@ -1253,13 +1262,11 @@ import verb.BehaveWord
  *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.FunSpecFinder")
 trait FunSpec extends Suite { thisSuite =>
 
   private final val engine = new Engine("concurrentSpecMod", "Spec")
   import engine._
-
-  // TODO: Probably make this private final val sourceFileName in a singleton object so it gets compiled in rather than carried around in each instance
+  
   private[scalatest] val sourceFileName = "FunSpec.scala"
 
   /**
@@ -1271,16 +1278,6 @@ trait FunSpec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-  
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>Spec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Class that, via an instance referenced from the <code>it</code> field,
@@ -1329,7 +1326,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: => Unit) {
-      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", 3, -2, None, None, testTags: _*)
+      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", 1, None, None, testTags: _*)
     }
 
     /**
@@ -1441,7 +1438,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: => Unit) {
-      registerTest(specText, testFun _, "theyCannotAppearInsideAnotherThey", sourceFileName, "apply", 3, -2, None, None, testTags: _*)
+      registerTest(specText, testFun _, "theyCannotAppearInsideAnotherThey", sourceFileName, "apply", 1, None, None, testTags: _*)
     }
 
     /**
@@ -1525,7 +1522,7 @@ trait FunSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(testText: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", 4, -2, testTags: _*)
+    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", 1, testTags: _*)
   }
 
   /**
@@ -1535,7 +1532,8 @@ trait FunSpec extends Suite { thisSuite =>
    * description string and immediately invoke the passed function.
    */
   protected def describe(description: String)(fun: => Unit) {
-    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", 4, -2)
+
+    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", 1)
   }
 
   /**
@@ -1586,15 +1584,16 @@ trait FunSpec extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FunSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args) {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     def invokeWithFixture(theTest: TestLeaf) {
-      val theConfigMap = args.configMap
+      val theConfigMap = configMap
       withFixture(
         new NoArgTest {
           def name = testName
@@ -1604,7 +1603,7 @@ trait FunSpec extends Suite { thisSuite =>
       )
     }
 
-    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
   }
 
   /**
@@ -1623,18 +1622,27 @@ trait FunSpec extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of the passed parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args) {
-    runTestsImpl(thisSuite, testName, args, info, true, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
-  override def run(testName: Option[String], args: Args) {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**

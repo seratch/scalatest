@@ -204,19 +204,20 @@ trait BeforeAndAfterAll  extends AbstractSuite {
    * exception, this method will complete abruptly with the same exception.
    * </p>
   */
-  abstract override def run(testName: Option[String], args: Args) {
+  abstract override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     var thrownException: Option[Throwable] = None
 
-    beforeAll(args.configMap)
+    beforeAll(configMap)
     try {
-      super.run(testName, args)
+      super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
     }
     catch {
       case e: Exception => thrownException = Some(e)
     }
     finally {
       try {
-        afterAll(args.configMap) // Make sure that afterAll is called even if run completes abruptly.
+        afterAll(configMap) // Make sure that afterAll is called even if run completes abruptly.
         thrownException match {
           case Some(e) => throw e
           case None =>

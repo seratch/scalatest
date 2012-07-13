@@ -158,40 +158,27 @@ trait BeforeAndAfter extends AbstractSuite {
    * exception, this method will complete abruptly with the exception thrown by the function registered with <code>after</code>.
    * </p>
   */
-  abstract protected override def runTest(testName: String, args: Args) {
+  abstract protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     var thrownException: Option[Throwable] = None
 
-    beforeFunctionAtomic.get match {
-      case Some(fun) => fun()
-      case None =>
-    }
+    beforeFunctionAtomic.get.foreach(fun => fun())
 
     try {
-      super.runTest(testName, args)
+      super.runTest(testName, reporter, stopper, configMap, tracker)
     }
     catch {
-      case e: Exception => thrownException = Some(e)
+      case e: Exception => thrownException = Some(e); throw e
     }
     finally {
       try {
         // Make sure that afterEach is called even if runTest completes abruptly.
-        afterFunctionAtomic.get match {
-          case Some(fun) => fun()
-          case None =>
-        }
-
-        thrownException match {
-          case Some(e) => throw e
-          case None =>
-        }
+        afterFunctionAtomic.get.foreach(fun => fun())
       }
       catch {
         case laterException: Exception =>
-          thrownException match { // If both run and afterAll throw an exception, report the test exception
-            case Some(earlierException) => throw earlierException
-            case None => throw laterException
-          }
+          // If both run and afterAll throw an exception, report the test exception
+          throw thrownException.getOrElse(laterException)
       }
     }
   }
@@ -201,8 +188,10 @@ trait BeforeAndAfter extends AbstractSuite {
    * any invocation to <code>before</code> or <code>after</code> will complete abruptly
    * with a <code>NotAllowedException</code>.
    */
-  abstract override def run(testName: Option[String], args: Args) {
+  abstract override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+    configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
     runHasBeenInvoked = true
-    super.run(testName, args)
+    super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
   }
 }
