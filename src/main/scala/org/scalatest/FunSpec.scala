@@ -16,7 +16,16 @@
 package org.scalatest
 
 import scala.collection.immutable.ListSet
+import java.util.ConcurrentModificationException
+import java.util.concurrent.atomic.AtomicReference
+import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
+import org.scalatest.events._
+import Suite.anErrorThatShouldCauseAnAbort
+import Suite.checkRunTestParamsForNull
+import Suite.indentation
 import verb.BehaveWord
+import Suite.reportInfoProvided
+import Suite.reportTestIgnored
 
 /**
  * Trait that facilitates a &#8220;behavior-driven&#8221; style of development (BDD), in which tests
@@ -24,34 +33,28 @@ import verb.BehaveWord
  * (Note: In BDD, the word <em>example</em> is usually used instead of <em>test</em>. The word test will not appear
  * in your code if you use <code>WordSpec</code>, so if you prefer the word <em>example</em> you can use it. However, in this documentation
  * the word <em>test</em> will be used, for clarity and to be consistent with the rest of ScalaTest.)
- * 
- * <table><tr><td class="usage">
- * <strong>Recommended Usage</strong>:
- * For teams coming from Ruby's RSpec tool, <code>FunSpec</code> will feel familiar; More generally, for any team that prefers BDD, <code>FunSpec</code>'s nesting 
- * and gentle guide to structuring text (with <code>describe</code> and <code>it</code>) provide an excellent general-purpose choice for writing specification-style tests. 
- * </td></tr></table>
- * 
- * <p>
  * Here's an example <code>FunSpec</code>:
- * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.funspec
- * 
  * import org.scalatest.FunSpec
- * 
- * class SetSpec extends FunSpec {
- * 
- *   describe("A Set") {
- *     describe("when empty") {
- *       it("should have size 0") {
- *         assert(Set.empty.size === 0)
- *       }
- *     
- *       it("should produce NoSuchElementException when head is invoked") {
- *         intercept[NoSuchElementException] {
- *           Set.empty.head
- *         }
+ * import scala.collection.mutable.Stack
+ *
+ * class StackSpec extends FunSpec {
+ *
+ *   describe("A Stack") {
+ *
+ *     it("should pop values in last-in-first-out order") {
+ *       val stack = new Stack[Int]
+ *       stack.push(1)
+ *       stack.push(2)
+ *       assert(stack.pop() === 2)
+ *       assert(stack.pop() === 1)
+ *     }
+ *
+ *     it("should throw NoSuchElementException if an empty stack is popped") {
+ *       val emptyStack = new Stack[String]
+ *       intercept[NoSuchElementException] {
+ *         emptyStack.pop()
  *       }
  *     }
  *   }
@@ -63,9 +66,9 @@ import verb.BehaveWord
  * with <code>describe</code>, and a test with <code>it</code>. Both
  * <code>describe</code> and <code>it</code> are methods, defined in
  * <code>FunSpec</code>, which will be invoked
- * by the primary constructor of <code>SetSpec</code>. 
+ * by the primary constructor of <code>StackSpec</code>. 
  * A describe clause names, or gives more information about, the <em>subject</em> (class or other entity) you are specifying
- * and testing. In the previous example, "A Set"
+ * and testing. In the previous example, "A Stack"
  * is the subject under specification and test. With each test you provide a string (the <em>spec text</em>) that specifies
  * one bit of behavior of the subject, and a block of code that tests that behavior.
  * You place the spec text between the parentheses, followed by the test code between curly
@@ -93,11 +96,11 @@ import verb.BehaveWord
  * When you execute a <code>FunSpec</code>, it will send <code>Formatter</code>s in the events it sends to the
  * <code>Reporter</code>. ScalaTest's built-in reporters will report these events in such a way
  * that the output is easy to read as an informal specification of the <em>subject</em> being tested.
- * For example, if you ran <code>SetSpec</code> from within the Scala interpreter:
+ * For example, if you ran <code>StackSpec</code> from within the Scala interpreter:
  * </p>
  *
  * <pre class="stREPL">
- * scala> new SetSpec execute
+ * scala> (new StackSpec).execute()
  * </pre>
  *
  * <p>
@@ -105,10 +108,9 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stREPL">
- * <span class="stGreen">A Set</span>
- * <span class="stGreen">  when empty</span>
- * <span class="stGreen"> - should have size 0</span>
- * <span class="stGreen"> - should produce NoSuchElementException when head is invoked</span>
+ * <span class="stGreen">A Stack
+ * - should pop values in last-in-first-out order
+ * - should throw NoSuchElementException if an empty stack is popped</span>
  * </pre>
  *
  * <p>
@@ -129,22 +131,25 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.ignore
- * 
  * import org.scalatest.FunSpec
- * 
- * class SetSpec extends FunSpec {
- *   
- *   describe("A Set") {
- *     describe("when empty") {
- *       ignore("should have size 0") {
- *         assert(Set.empty.size === 0)
- *       }
- *       
- *       it("should produce NoSuchElementException when head is invoked") {
- *         intercept[NoSuchElementException] {
- *           Set.empty.head
- *         }
+ * import scala.collection.mutable.Stack
+ *
+ * class StackSpec extends FunSpec {
+ *
+ *   describe("A Stack") {
+ *
+ *     ignore("should pop values in last-in-first-out order") {
+ *       val stack = new Stack[Int]
+ *       stack.push(1)
+ *       stack.push(2)
+ *       assert(stack.pop() === 2)
+ *       assert(stack.pop() === 1)
+ *     }
+ *
+ *     it("should throw NoSuchElementException if an empty stack is popped") {
+ *       val emptyStack = new Stack[String]
+ *       intercept[NoSuchElementException] {
+ *         emptyStack.pop()
  *       }
  *     }
  *   }
@@ -152,11 +157,11 @@ import verb.BehaveWord
  * </pre>
  *
  * <p>
- * If you run this version of <code>SetSpec</code> with:
+ * If you run this version of <code>StackSpec</code> with:
  * </p>
  *
  * <pre class="stREPL">
- * scala> new SetSpec execute
+ * scala> (new StackSpec).execute()
  * </pre>
  *
  * <p>
@@ -164,10 +169,9 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stREPL">
- * <span class="stGreen">A Set</span>
- * <span class="stGreen">  when empty</span>
- * <span class="stYellow">- should have size 0 !!! IGNORED !!!</span>
- * <span class="stGreen">- should produce NoSuchElementException when head is invoked</span>
+ * <span class="stGreen">A Stack</span>
+ * <span class="stYellow">- should pop values in last-in-first-out order !!! IGNORED !!!</span>
+ * <span class="stGreen">- should throw NoSuchElementException if an empty stack is popped</span>
  * </pre>
  *
  * <h2>Informers</h2>
@@ -187,28 +191,21 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.info
- * 
- * import collection.mutable
- * import org.scalatest._
- * 
- * class SetSpec extends FunSpec with GivenWhenThen {
- *   
- *   describe("A mutable Set") {
- *     it("should allow an element to be added") {
- *       given("an empty mutable Set")
- *       val set = mutable.Set.empty[String]
- * 
- *       when("an element is added")
- *       set += "clarity"
- * 
- *       then("the Set should have size 1")
- *       assert(set.size === 1)
- * 
- *       and("the Set should contain the added element")
- *       assert(set.contains("clarity"))
- * 
- *       info("That's all folks!")
+ * import org.scalatest.FunSpec
+ *
+ * class ExampleSpec extends FunSpec {
+ *
+ *   describe("The Scala language") {
+ *
+ *     it("should add correctly") {
+ *       val sum = 1 + 1
+ *       assert(sum === 2)
+ *       info("Addition seems to work")
+ *     }
+ *
+ *     it("should subtract correctly") {
+ *       val diff = 7 - 2
+ *       assert(diff === 5)
  *     }
  *   }
  * }
@@ -218,14 +215,11 @@ import verb.BehaveWord
  * included in the printed report:
  *
  * <pre class="stREPL">
- * scala&gt; new SetSpec execute
- * <span class="stGreen">A mutable Set
- * - should allow an element to be added
- *   + Given an empty mutable Set 
- *   + When an element is added 
- *   + Then the Set should have size 1 
- *   + And the Set should contain the added element 
- *   + That's all folks! </span> 
+ * <span class="stGreen">ExampleSpec:
+ * The Scala language
+ * - should add correctly
+ *   + Addition seems to work
+ * - should subtract correctly</span> 
  * </pre>
  *
  * <h2>Pending tests</h2>
@@ -259,22 +253,22 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.pending
- * 
- * import org.scalatest._
- * 
- * class SetSpec extends FunSpec {
- * 
- *   describe("A Set") {
- *     describe("when empty") {
- *       it("should have size 0") (pending)
- *       
- *       it("should produce NoSuchElementException when head is invoked") {
- *         intercept[NoSuchElementException] {
- *           Set.empty.head
- *         }
- *       }
+ * import org.scalatest.FunSpec
+ * import scala.collection.mutable.Stack
+ *
+ * class StackSpec extends FunSpec {
+ *
+ *   describe("A Stack") {
+ *
+ *     it("should pop values in last-in-first-out order") {
+ *       val stack = new Stack[Int]
+ *       stack.push(1)
+ *       stack.push(2)
+ *       assert(stack.pop() === 2)
+ *       assert(stack.pop() === 1)
  *     }
+ *
+ *     it("should throw NoSuchElementException if an empty stack is popped") (pending)
  *   }
  * }
  * </pre>
@@ -282,22 +276,21 @@ import verb.BehaveWord
  * <p>
  * (Note: "<code>(pending)</code>" is the body of the test. Thus the test contains just one statement, an invocation
  * of the <code>pending</code> method, which throws <code>TestPendingException</code>.)
- * If you run this version of <code>SetSpec</code> with:
+ * If you run this version of <code>StackSpec</code> with:
  * </p>
  *
  * <pre class="stREPL">
- * scala> new SetSpec execute
+ * scala> (new StackSpec).execute()
  * </pre>
  *
  * <p>
- * It will run both tests, but report that the test named "<code>should have size 0</code>" is pending. You'll see:
+ * It will run both tests, but report that the test named "<code>A stack should pop values in last-in-first-out order</code>" is pending. You'll see:
  * </p>
  *
  * <pre class="stREPL">
- * <span class="stGreen">A Set</span>
- * <span class="stGreen">  when empty</span>
- * <span class="stYellow">  - should have size 0 (pending)</span>
- * <span class="stGreen">  - should produce NoSuchElementException when head is invoked</span>
+ * <span class="stGreen">A Stack 
+ * - should pop values in last-in-first-out order</span>
+ * <span class="stYellow">- should throw NoSuchElementException if an empty stack is popped (pending)</span>
  * </pre>
  * 
  * <h2>Tagging tests</h2>
@@ -317,10 +310,8 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.tagging
- * 
  * import org.scalatest.Tag
- * 
+ *
  * object SlowTest extends Tag("com.mycompany.tags.SlowTest")
  * object DbTest extends Tag("com.mycompany.tags.DbTest")
  * </pre>
@@ -331,28 +322,24 @@ import verb.BehaveWord
  *
  * <pre class="stHighlight">
  * import org.scalatest.FunSpec
- * 
- * class SetSpec extends FunSpec {
- * 
- *   describe("A Set") {
- *     describe("when empty") {
- *       it("should have size 0", SlowTest) {
- *         assert(Set.empty.size === 0)
- *       }
- *       
- *       it("should produce NoSuchElementException when head is invoked", SlowTest, DbTest) {
- *         intercept[NoSuchElementException] {
- *           Set.empty.head
- *         }
- *       }
- *     }
+ *
+ * class ExampleSpec extends FunSpec {
+ *
+ *   it("should add correctly", SlowTest) {
+ *     val sum = 1 + 1
+ *     assert(sum === 2)
+ *   }
+ *
+ *   it("should subtract correctly", SlowTest, DbTest) {
+ *     val diff = 4 - 1
+ *     assert(diff === 3)
  *   }
  * }
  * </pre>
  *
  * <p>
  * This code marks both tests with the <code>com.mycompany.tags.SlowTest</code> tag, 
- * and test <code>"A calculator should subtract correctly"</code> with the <code>com.mycompany.tags.DbTest</code> tag.
+ * and test <code>"should subtract correctly"</code> with the <code>com.mycompany.tags.DbTest</code> tag.
  * </p>
  *
  * <p>
@@ -366,1009 +353,6 @@ import verb.BehaveWord
  * </p>
  *
  * <a name="sharedFixtures"></a><h2>Shared fixtures</h2>
- *
- * <p>
- * A test <em>fixture</em> is composed of the objects and other artifacts (files, sockets, database
- * connections, <em>etc.</em>) tests use to do their work.
- * When multiple tests need to work with the same fixtures, it is important to try and avoid
- * duplicating the fixture code across those tests. The more code duplication you have in your
- * tests, the greater drag the tests will have on refactoring the actual production code.
- * ScalaTest recommends several techniques to eliminate such code duplication, and provides several
- * traits to help. Each technique is geared towards helping you reduce code duplication without introducing
- * instance <code>var</code>s, shared mutable objects, or other dependencies between tests. Eliminating shared
- * mutable state across tests will make your test code easier to reason about and more amenable for parallel
- * test execution.
- * </p>
- *
- * <p>
- * The following sections
- * describe these techniques, including explaining the recommended usage
- * for each. But first, here's a table summarizing the options:
- * </p>
- *
- * <table style="border-collapse: collapse; border: 1px solid black">
- * <tr><th style="background-color: #CCCCCC; border-width: 1px; padding: 3px; text-align: center; border: 1px solid black">Technique</th><th style="background-color: #CCCCCC; border-width: 1px; padding: 3px; text-align: center; border: 1px solid black">Recommended uses</th></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#getFixtureMethods">get-fixture methods</a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when you need the same mutable fixture objects in multiple tests, and don't need to clean up after.</td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#fixtureContextObjects">fixture-context objects</a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when you need different combinations of mutable fixture objects in different tests, and don't need to clean up after. </td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#oneInstancePerTest"><code>OneInstancePerTest</code></a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when porting JUnit tests to ScalaTest, or if you prefer JUnit's approach to test isolation: running each test in its own instance of the test class.</td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#withFixtureNoArgTest"><code>withFixture(NoArgTest)</code></a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when you need to perform side effects at the beginning and end of all or most tests, or want to stack traits that perform such side-effects.</td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#loanFixtureMethods">loan-fixture methods</a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when different tests need different fixtures that must be cleaned up afterwords.</td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#withFixtureOneArgTest"><code>withFixture(OneArgTest)</code></a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when all or most tests need the same fixtures that must be cleaned up afterwords.</td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#beforeAndAfter"><code>BeforeAndAfter</code></a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when you need to perform the same side-effects before and/or after tests, rather than at the beginning or end of tests.</td></td></tr>
- * <tr><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: right"><a href="#composingFixtures"><code>BeforeAndAfterEach</code></a></td><td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">Use when you want to stack traits that perform the same side-effects before and/or after tests, rather than at the beginning or end of tests.</td></td></tr>
- * </table>
- *
- * <a name="getFixtureMethods"></a>
- * <h4>Calling get-fixture methods</h4>
- *
- * <p>
- * If you need to create the same mutable fixture objects in multiple tests, and don't need to clean them up after using them, the simplest approach is to write one or
- * more <em>get-fixture</em> methods. A get-fixture method returns a new instance of a needed fixture object (or an holder object containing
- * multiple fixture objects) each time it is called. You can call a get-fixture method at the beginning of each
- * test that needs the fixture, storing the returned object or objects in local variables. Here's an example:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.getfixture
- * 
- * import org.scalatest.FunSpec
- * import collection.mutable.ListBuffer
- * 
- * class ExampleSpec extends FunSpec {
- * 
- *   def fixture = 
- *     new {
- *       val builder = new StringBuilder("ScalaTest is ")
- *       val buffer = new ListBuffer[String]
- *     }
- *   
- *   describe("Testing") {
- *     it("should be easy") {
- *       val f = fixture
- *       f.builder.append("easy!")
- *       assert(f.builder.toString === "ScalaTest is easy!")
- *       assert(f.buffer.isEmpty)
- *       f.buffer += "sweet"
- *     }
- *   
- *     it("should be fun") {
- *       val f = fixture
- *       f.builder.append("fun!")
- *       assert(f.builder.toString === "ScalaTest is fun!")
- *       assert(f.buffer.isEmpty)
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * The &ldquo;<code>f.</code>&rdquo; in front of each use of a fixture object provides a visual indication of which objects 
- * are part of the fixture, but if you prefer, you can import the the members with &ldquo;<code>import f._</code>&rdquo; and use the names directly.
- * </p>
- *
- * <p>
- * If you need to configure fixture objects differently in different tests, you can pass configuration into the get-fixture method. For example, if you could pass
- * in an initial value for a mutable fixture object as a parameter to the get-fixture method.
- * </p>
- *
- * <a name="fixtureContextObjects"></a>
- * <h4>Instantiating fixture-context objects </h4>
- *
- * <p>
- * A alternate technique that is especially useful when different tests need different combinations of fixture objects is to define the fixture objects as instance variables
- * of <em>fixture-context objects</em> whose instantiation forms the body of tests. Like get-fixture methods, fixture-context objects are anly
- * appropriate if you don't need to clean up the fixtures after using them.
- * </p>
- *
- * To use this technique, you define instance variables intialized with fixture objects in traits and/or classes, then in each test instantiate an object that
- * contains just the fixture objects needed by the test. Keep in mind that traits allow you to mix together just the fixture objects needed by each test, whereas classes
- * allow you to pass data in via a constructor to configure the fixture objects. Here's an example in which fixture objects are partitioned into two traits
- * and each test just gets mixes together the traits it needs:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.fixturecontext
- * 
- * import collection.mutable.ListBuffer
- * import org.scalatest.FunSpec
- * 
- * class ExampleSpec extends FunSpec {
- * 
- *   trait Builder {
- *     val builder = new StringBuilder("ScalaTest is ")
- *   }
- * 
- *   trait Buffer {
- *     val buffer = ListBuffer("ScalaTest", "is")
- *   }
- * 
- *   describe("Testing") {
- *     // This test needs the StringBuilder fixture
- *     it("should be productive") {
- *       new Builder {
- *         builder.append("productive!")
- *         assert(builder.toString === "ScalaTest is productive!")
- *       }
- *     }
- *   }
- * 
- *   describe("Test code") {
- *     // This test needs the ListBuffer[String] fixture
- *     it("should be readable") {
- *       new Buffer {
- *         buffer += ("readable!")
- *         assert(buffer === List("ScalaTest", "is", "readable!"))
- *       }
- *     }
- * 
- *     // This test needs both the StringBuilder and ListBuffer
- *     it("should be clear and concise") {
- *       new Builder with Buffer {
- *         builder.append("clear!")
- *         buffer += ("concise!")
- *         assert(builder.toString === "ScalaTest is clear!")
- *         assert(buffer === List("ScalaTest", "is", "concise!"))
- *       }
- *     }
- *   }
- * }
- * </pre>
- *
- * <a name="oneInstancePerTest"></a>
- * <h4>Mixing in <code>OneInstancePerTest</code></h4>
- *
- * <p>
- * If every test method requires the same set of
- * mutable fixture objects, and none require cleanup, one other approach you can take is make them simply <code>val</code>s and mix in trait
- * <a href="OneInstancePerTest.html"><code>OneInstancePerTest</code></a>.  If you mix in <code>OneInstancePerTest</code>, each test
- * will be run in its own instance of the <code>Suite</code>, similar to the way JUnit tests are executed. Here's an example:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.oneinstancepertest
- * 
- * import org.scalatest._
- * import collection.mutable.ListBuffer
- * 
- * class ExampleSuite extends FunSpec with OneInstancePerTest {
- * 
- *   val builder = new StringBuilder("ScalaTest is ")
- *   val buffer = new ListBuffer[String]
- * 
- *   describe("Testing") {
- *     it("should be easy") {
- *       builder.append("easy!")
- *       assert(builder.toString === "ScalaTest is easy!")
- *       assert(buffer.isEmpty)
- *       buffer += "sweet"
- *     }
- * 
- *     it("should be fun") {
- *       builder.append("fun!")
- *       assert(builder.toString === "ScalaTest is fun!")
- *       assert(buffer.isEmpty)
- *     } 
- *   }
- * }
- * </pre>
- *
- * <p>
- * One way to think of <a href="OneInstancePerTest.html"><code>OneInstancePerTest</code></a> is that the entire <code>Suite</code> instance is like a fixture-context object,
- * but with the difference that the test code doesn't run during construction as it does with the real fixture-context object technique. Because this trait emulates JUnit's manner
- * of running tests, this trait can be helpful when porting JUnit tests to ScalaTest. The primary intended use of <code>OneInstancePerTest</code> is to serve as a supertrait for
- * <a href="ParallelTestExecution.html"><code>ParallelTestExecution</code></a> and the <a href="path/package.html">path traits</a>, but you can also mix it in
- * directly to help you port JUnit tests to ScalaTest or if you prefer JUnit's approach to test isolation.
- * </p>
- *
- * <a name="withFixtureNoArgTest"></a>
- * <h4>Overriding <code>withFixture(NoArgTest)</code></h4>
- *
- * <p>
- * Although the get-fixture method, fixture-context object, and <code>OneInstancePerTest</code> approaches take care of setting up a fixture at the beginning of each
- * test, they don't address the problem of cleaning up a fixture at the end of the test. If you just need to perform a side-effect at the beginning or end of
- * a test, and don't need to actually pass any fixture objects into the test, you can override <code>withFixture(NoArgTest)</code>, one of ScalaTest's
- * lifecycle methods defined in trait <a href="AbstractSuite.html"><code>AbstractSuite</code></a>.
- * </p>
- *
- * <p>
- * Trait <code>Suite</code>'s implementation of <code>runTest</code> passes a no-arg test function to <code>withFixture(NoArgTest)</code>. It is <code>withFixture</code>'s
- * responsibility to invoke that test function. <code>Suite</code>'s implementation of <code>withFixture</code> simply
- * invokes the function, like this:
- * </p>
- *
- * <pre class="stHighlight">
- * // Default implementation in trait Suite
- * protected def withFixture(test: NoArgTest) {
- *   test()
- * }
- * </pre>
- *
- * <p>
- * You can, therefore, override <code>withFixture</code> to perform setup before and/or cleanup after invoking the test function. If
- * you have cleanup to perform, you should invoke the test function inside a <code>try</code> block and perform the cleanup in
- * a <code>finally</code> clause, because the exception that causes a test to fail will propagate through <code>withFixture</code> back
- * to <code>runTest</code>. (In other words, if the test fails, the test function invoked by <code>withFixture</code> will throw an exception.)
- * </p>
- *
- * <p>
- * The <code>withFixture</code> method is designed to be stacked, and to enable this, you should always call the <code>super</code> implementation
- * of <code>withFixture</code>, and let it invoke the test function rather than invoking the test function directly. In other words, instead of writing
- * &ldquo;<code>test()</code>&rdquo;, you should write &ldquo;<code>super.withFixture(test)</code>&rdquo;, like this:
- * </p>
- *
- * <pre class="stHighlight">
- * // Your implementation
- * override def withFixture(test: NoArgTest) {
- *   // Perform setup
- *   try {
- *     super.withFixture(test) // Invoke the test function
- *   }
- *   finally {
- *     // Perform cleanup
- *   }
- * }
- * </pre>
- *
- * <p>
- * Here's an example in which <code>withFixture(NoArgTest)</code> is used to take a snapshot of the working directory if a test fails, and 
- * and send that information to the reporter:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.noargtest
- * 
- * import java.io.File
- * import org.scalatest.FunSpec
- * 
- * class ExampleSpec extends FunSpec {
- * 
- *   override def withFixture(test: NoArgTest) {
- * 
- *     try {
- *       super.withFixture(test)
- *     }
- *     catch {
- *       case e: Exception =&gt;
- *         val currDir = new File(".")
- *         val fileNames = currDir.list()
- *         info("Dir snapshot: " + fileNames.mkString(", "))
- *         throw e
- *     }
- *   }
- * 
- *   describe("This test") {
- *     it("should succeed") {
- *       assert(1 + 1 === 2)
- *     }
- * 
- *     it("should fail") {
- *       assert(1 + 1 === 3)
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * Running this version of <code>ExampleSuite</code> in the interpreter in a directory with two files, <code>hello.txt</code> and <code>world.txt</code>
- * would give the following output:
- * </p>
- *
- * <pre class="stREPL">
- * scala&gt; new ExampleSuite execute
- * <span class="stGreen">ExampleSuite:
- * This test
- * - should succeed
- * <span class="stRed">- should fail *** FAILED ***
- *   2 did not equal 3 (<console>:33)
- *   + Dir snapshot: hello.txt, world.txt </span>
- * </pre>
- *
- * <p>
- * Note that the <a href="Suite$NoArgTest.html"><code>NoArgTest</code></a> passed to <code>withFixture</code>, in addition to
- * an <code>apply</code> method that executes the test, also includes the test name and the <a href="#configMapSection">config
- * map</a> passed to <code>runTest</code>. Thus you can also use the test name and configuration objects in your <code>withFixture</code>
- * implementation.
- * </p>
- *
- * <a name="loanFixtureMethods"></a>
- * <h4>Calling loan-fixture methods</h4>
- *
- * <p>
- * If you need to both pass a fixture object into a test <em>and</em> and perform cleanup at the end of the test, you'll need to use the <em>loan pattern</em>.
- * If different tests need different fixtures that require cleanup, you can implement the loan pattern directly by writing <em>loan-fixture</em> methods.
- * A loan-fixture method takes a function whose body forms part or all of a test's code. It creates a fixture, passes it to the test code by invoking the
- * function, then cleans up the fixture after the function returns.
- * </p>
- *
- * <p>
- * The following example shows three tests that use two fixtures, a database and a file. Both require cleanup after, so each is provided via a
- * loan-fixture method. (In this example, the database is simulated with a <code>StringBuffer</code>.)
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.loanfixture
- * 
- * import java.util.concurrent.ConcurrentHashMap
- * 
- * object DbServer { // Simulating a database server
- *   type Db = StringBuffer
- *   private val databases = new ConcurrentHashMap[String, Db]
- *   def createDb(name: String): Db = {
- *     val db = new StringBuffer
- *     databases.put(name, db)
- *     db
- *   }
- *   def removeDb(name: String) {
- *     databases.remove(name)
- *   }
- * }
- * 
- * import org.scalatest.FunSpec
- * import DbServer._
- * import java.util.UUID.randomUUID
- * import java.io._
- * 
- * class ExampleSpec extends FunSpec {
- * 
- *   def withDatabase(testCode: Db =&gt; Any) {
- *     val dbName = randomUUID.toString
- *     val db = createDb(dbName) // create the fixture
- *     try {
- *       db.append("ScalaTest is ") // perform setup
- *       testCode(db) // "loan" the fixture to the test
- *     }
- *     finally {
- *       removeDb(dbName) // clean up the fixture
- *     }
- *   }
- * 
- *   def withFile(testCode: (File, FileWriter) =&gt; Any) {
- *     val file = File.createTempFile("hello", "world") // create the fixture
- *     val writer = new FileWriter(file)
- *     try {
- *       writer.write("ScalaTest is ") // set up the fixture
- *       testCode(file, writer) // "loan" the fixture to the test
- *     }
- *     finally {
- *       writer.close() // clean up the fixture
- *     }
- *   }
- * 
- *   describe("Testing") {
- *     // This test needs the file fixture
- *     it("should be productive") {
- *       withFile { (file, writer) =&gt;
- *         writer.write("productive!")
- *         writer.flush()
- *         assert(file.length === 24)
- *       }
- *     }
- *   }
- *   
- *   describe("Test code") {
- *     // This test needs the database fixture
- *     it("should be readable") {
- *       withDatabase { db =&gt;
- *         db.append("readable!")
- *         assert(db.toString === "ScalaTest is readable!")
- *       }
- *     }
- * 
- *     // This test needs both the file and the database
- *     it("should be clear and concise") {
- *       withDatabase { db =&gt;
- *        withFile { (file, writer) =&gt; // loan-fixture methods compose
- *           db.append("clear!")
- *           writer.write("concise!")
- *           writer.flush()
- *           assert(db.toString === "ScalaTest is clear!")
- *           assert(file.length === 21)
- *         }
- *       }
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * As demonstrated by the last test, loan-fixture methods compose. Not only do loan-fixture methods allow you to
- * give each test the fixture it needs, they allow you to give a test multiple fixtures and clean everything up afterwords.
- * </p>
- *
- * <p>
- * Also demonstrated in this example is the technique of giving each test its own "fixture sandbox" to play in. When your fixtures
- * involve external side-effects, like creating files or databases, it is a good idea to give each file or database a unique name as is
- * done in this example. This keeps tests completely isolated, allowing you to run them in parallel if desired.
- * </p>
- *
- * </pre>
- * <a name="withFixtureOneArgTest"></a>
- * <h4>Overriding <code>withFixture(OneArgTest)</code></h4>
- *
- * <p>
- * If all or most tests need the same fixture, you can avoid some of the boilerplate of the loan-fixture method approach by using a <code>fixture.Suite</code>
- * and overriding <code>withFixture(OneArgTest)</code>.
- * Each test in a <code>fixture.Suite</code> takes a fixture as a parameter, allowing you to pass the fixture into
- * the test. You must indicate the type of the fixture parameter by specifying <code>FixtureParam</code>, and implement a
- * <code>withFixture</code> method that takes a <code>OneArgTest</code>. This <code>withFixture</code> method is responsible for
- * invoking the one-arg test function, so you can perform fixture set up before, and clean up after, invoking and passing
- * the fixture into the test function.
- * </p>
- *
- * <p>
- * To enable the stacking of traits that define <code>withFixture(NoArgTest)</code>, it is a good idea to let
- * <code>withFixture(NoArgTest)</code> invoke the test function instead of invoking the test
- * function directly. To do so, you'll need to convert the <code>OneArgTest</code> to a <code>NoArgTest</code>. You can do that by passing
- * the fixture object to the <code>toNoArgTest</code> method of <code>OneArgTest</code>. In other words, instead of
- * writing &ldquo;<code>test(theFixture)</code>&rdquo;, you'd delegate responsibility for
- * invoking the test function to the <code>withFixture(NoArgTest)</code> method of the same instance by writing:
- * </p>
- *
- * <pre>
- * withFixture(test.toNoArgTest(theFixture))
- * </pre>
- *
- * <p>
- * Here's a complete example:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.oneargtest
- * 
- * import org.scalatest.fixture
- * import java.io._
- * 
- * class ExampleSpec extends fixture.FunSpec {
- * 
- *   case class F(file: File, writer: FileWriter)
- *   type FixtureParam = F
- * 
- *   def withFixture(test: OneArgTest) {
- *
- *     // create the fixture
- *     val file = File.createTempFile("hello", "world")
- *     val writer = new FileWriter(file)
- *     val theFixture = F(file, writer)
- *
- *     try {
- *       writer.write("ScalaTest is ") // set up the fixture
- *       withFixture(test.toNoArgTest(theFixture)) // "loan" the fixture to the test
- *     }
- *     finally {
- *       writer.close() // clean up the fixture
- *     }
- *   }
- *
- *   describe("Testing") {
- *     it("should be easy") { f =&gt;
- *       f.writer.write("easy!")
- *       f.writer.flush()
- *       assert(f.file.length === 18)
- *     }
- * 
- *     it("should be fun") { f =&gt;
- *       f.writer.write("fun!")
- *       f.writer.flush()
- *       assert(f.file.length === 17)
- *     }
- *   } 
- * }
- * </pre>
- *
- * <p>
- * In this example, the tests actually required two fixture objects, a <code>File</code> and a <code>FileWriter</code>. In such situations you can
- * simply define the <code>FixtureParam</code> type to be a tuple containing the objects, or as is done in this example, a case class containing
- * the objects.  For more information on the <code>withFixture(OneArgTest)</code> technique, see the <a href="fixture/Suite.html">documentation for <code>fixture.Suite</code></a>.
- * </p>
- *
- * <a name="beforeAndAfter"></a>
- * <h4>Mixing in <code>BeforeAndAfter</code></h4>
- *
- * <p>
- * In all the shared fixture examples shown so far, the activities of creating, setting up, and cleaning up the fixture objects have been
- * performed <em>during</em> the test.  This means that if an exception occurs during any of these activities, it will be reported as a test failure.
- * Sometimes, however, you may want setup to happen <em>before</em> the test starts, and cleanup <em>after</em> the test has completed, so that if an
- * exception occurs during setup or cleanup, the entire suite aborts and no more tests are attempted. The simplest way to accomplish this in ScalaTest is
- * to mix in trait <a href="BeforeAndAfter.html"><code>BeforeAndAfter</code></a>.  With this trait you can denote a bit of code to run before each test
- * with <code>before</code> and/or after each test each test with <code>after</code>, like this:
- * </p>
- * 
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.beforeandafter
- * 
- * import org.scalatest.FunSpec
- * import org.scalatest.BeforeAndAfter
- * import collection.mutable.ListBuffer
- * 
- * class ExampleSpec extends FunSpec with BeforeAndAfter {
- * 
- *   val builder = new StringBuilder
- *   val buffer = new ListBuffer[String]
- * 
- *   before {
- *     builder.append("ScalaTest is ")
- *   }
- * 
- *   after {
- *     builder.clear()
- *     buffer.clear()
- *   }
- * 
- *   describe("Testing") {
- *     it("should be easy") {
- *       builder.append("easy!")
- *       assert(builder.toString === "ScalaTest is easy!")
- *       assert(buffer.isEmpty)
- *       buffer += "sweet"
- *     }
- * 
- *     it("should be fun") {
- *       builder.append("fun!")
- *       assert(builder.toString === "ScalaTest is fun!")
- *       assert(buffer.isEmpty)
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * Note that the only way <code>before</code> and <code>after</code> code can communicate with test code is via some side-effecting mechanism, commonly by
- * reassigning instance <code>var</code>s or by changing the state of mutable objects held from instance <code>val</code>s (as in this example). If using
- * instance <code>var</code>s or mutable objects held from instance <code>val</code>s you wouldn't be able to run tests in parallel in the same instance
- * of the test class unless you synchronized access to the shared, mutable state. This is why ScalaTest's <code>ParallelTestExecution</code> trait extends
- * <code>OneInstancePerTest</code>. By running each test in its own instance of the class, each test has its own copy of the instance variables, so you
- * don't need to synchronize. If you mixed <code>ParallelTestExecution</code> into the <code>ExampleSuite</code> above, the tests would run in parallel just fine
- * without any synchronization needed on the mutable <code>StringBuilder</code> and <code>ListBuffer[String]</code> objects.
- * </p>
- *
- * <p>
- * Although <code>BeforeAndAfter</code> provides a minimal-boilerplate way to execute code before and after tests, it isn't designed to enable stackable
- * traits, because the order of execution would be non-obvious.  If you want to factor out before and after code that is common to multiple test suites, you 
- * should use trait <code>BeforeAndAfterEach</code> instead, as shown later in the next section,
- * <a href="#composingFixtures.html">composing fixtures by stacking traits</a>.
- * </p>
- *
- * <a name="composingFixtures"></a><h2>Composing fixtures by stacking traits</h2>
- *
- * <p>
- * In larger projects, teams often end up with several different fixtures that test classes need in different combinations,
- * and possibly initialized (and cleaned up) in different orders. A good way to accomplish this in ScalaTest is to factor the individual
- * fixtures into traits that can be composed using the <em>stackable trait</em> pattern. This can be done, for example, by placing
- * <code>withFixture</code> methods in several traits, each of which call <code>super.withFixture</code>. Here's an example in
- * which the <code>StringBuilder</code> and <code>ListBuffer[String]</code> fixtures used in the previous examples have been
- * factored out into two <em>stackable fixture traits</em> named <code>Builder</code> and <code>Buffer</code>:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.composingwithfixture
- * 
- * import org.scalatest._
- * import org.scalatest.AbstractSuite
- * import collection.mutable.ListBuffer
- * 
- * trait Builder extends AbstractSuite { this: Suite =&gt;
- * 
- *   val builder = new StringBuilder
- * 
- *   abstract override def withFixture(test: NoArgTest) {
- *     builder.append("ScalaTest is ")
- *     try {
- *       super.withFixture(test) // To be stackable, must call super.withFixture
- *     }
- *     finally {
- *       builder.clear()
- *     }
- *   }
- * }
- * 
- * trait Buffer extends AbstractSuite { this: Suite =&gt;
- * 
- *   val buffer = new ListBuffer[String]
- * 
- *   abstract override def withFixture(test: NoArgTest) {
- *     try {
- *       super.withFixture(test) // To be stackable, must call super.withFixture
- *     }
- *     finally {
- *       buffer.clear()
- *     }
- *   }
- * }
- * 
- * class ExampleSpec extends FunSpec with Builder with Buffer {
- * 
- *   describe("Testing") {
- *     it("should be easy") {
- *       builder.append("easy!")
- *       assert(builder.toString === "ScalaTest is easy!")
- *       assert(buffer.isEmpty)
- *       buffer += "sweet"
- *     }
- * 
- *     it("should be fun") {
- *       builder.append("fun!")
- *       assert(builder.toString === "ScalaTest is fun!")
- *       assert(buffer.isEmpty)
- *       buffer += "clear"
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * By mixing in both the <code>Builder</code> and <code>Buffer</code> traits, <code>ExampleSuite</code> gets both fixtures, which will be
- * initialized before each test and cleaned up after. The order the traits are mixed together determines the order of execution.
- * In this case, <code>Builder</code> is "super" to </code>Buffer</code>. If you wanted <code>Buffer</code> to be "super"
- * to <code>Builder</code>, you need only switch the order you mix them together, like this: 
- * </p>
- *
- * <pre class="stHighlight">
- * class Example2Suite extends Suite with Buffer with Builder
- * </pre>
- *
- * <p>
- * And if you only need one fixture you mix in only that trait:
- * </p>
- *
- * <pre class="stHighlight">
- * class Example3Suite extends Suite with Builder
- * </pre>
- *
- * <p>
- * Another way to create stackable fixture traits is by extending the <a href="BeforeAndAfterEach.html"><code>BeforeAndAfterEach</code></a>
- * and/or <a href="BeforeAndAfterAll.html"><code>BeforeAndAfterAll</code></a> traits.
- * <code>BeforeAndAfterEach</code> has a <code>beforeEach</code> method that will be run before each test (like JUnit's <code>setUp</code>),
- * and an <code>afterEach</code> method that will be run after (like JUnit's <code>tearDown</code>).
- * Similarly, <code>BeforeAndAfterAll</code> has a <code>beforeAll</code> method that will be run before all tests,
- * and an <code>afterAll</code> method that will be run after all tests. Here's what the previously shown example would look like if it
- * were rewritten to use the <code>BeforeAndAfterEach</code> methods instead of <code>withFixture</code>:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.funspec.composingbeforeandaftereach
- * 
- * import org.scalatest._
- * import org.scalatest.BeforeAndAfterEach
- * import collection.mutable.ListBuffer
- * 
- * trait Builder extends BeforeAndAfterEach { this: Suite =&gt;
- * 
- *   val builder = new StringBuilder
- * 
- *   override def beforeEach() {
- *     builder.append("ScalaTest is ")
- *     super.beforeEach() // To be stackable, must call super.beforeEach
- *   }
- * 
- *   override def afterEach() {
- *     try {
- *       super.afterEach() // To be stackable, must call super.afterEach
- *     }
- *     finally {
- *       builder.clear()
- *     }
- *   }
- * }
- * 
- * trait Buffer extends BeforeAndAfterEach { this: Suite =&gt;
- * 
- *   val buffer = new ListBuffer[String]
- * 
- *   override def afterEach() {
- *     try {
- *       super.afterEach() // To be stackable, must call super.afterEach
- *     }
- *     finally {
- *       buffer.clear()
- *     }
- *   }
- * }
- * 
- * class ExampleSpec extends FunSpec with Builder with Buffer {
- * 
- *   describe("Testing") {
- *     it("should be easy") {
- *       builder.append("easy!")
- *       assert(builder.toString === "ScalaTest is easy!")
- *       assert(buffer.isEmpty)
- *       buffer += "sweet"
- *     }
- * 
- *     it("should be fun") {
- *       builder.append("fun!")
- *       assert(builder.toString === "ScalaTest is fun!")
- *       assert(buffer.isEmpty)
- *       buffer += "clear"
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * To get the same ordering as <code>withFixture</code>, place your <code>super.beforeEach</code> call at the end of each
- * <code>beforeEach</code> method, and the <code>super.afterEach</code> call at the beginning of each <code>afterEach</code>
- * method, as shown in the previous example. It is a good idea to invoke <code>super.afterEach</code> in a <code>try</code>
- * block and perform cleanup in a <code>finally</code> clause, as shown in the previous example, because this ensures the
- * cleanup code is performed even if <code>super.afterEach</code> throws an exception.
- * </p>
- *
- * <p>
- * The difference between stacking traits that extend <code>BeforeAndAfterEach</code> versus traits that implement <code>withFixture</code> is
- * that setup and cleanup code happens before and after the test in <code>BeforeAndAfterEach</code>, but at the beginning and
- * end of the test in <code>withFixture</code>. Thus if a <code>withFixture</code> method completes abruptly with an exception, it is
- * considered a failed test. By contrast, if any of the <code>beforeEach</code> or <code>afterEach</code> methods of <code>BeforeAndAfterEach</code> 
- * complete abruptly, it is considered a failed suite, which will result in a <a href="events/SuiteAborted.html"><code>SuiteAborted</code></a> event.
- * </p>
- * 
- * <a name="SharedTests"></a><h2>Shared tests</h2>
- *
- * <p>
- * Sometimes you may want to run the same test code on different fixture objects. In other words, you may want to write tests that are "shared"
- * by different fixture objects.
- * To accomplish this in a <code>FunSpec</code>, you first place shared tests in <em>behavior functions</em>. These behavior functions will be
- * invoked during the construction phase of any <code>FunSpec</code> that uses them, so that the tests they contain will be registered as tests in that <code>FunSpec</code>.
- * For example, given this stack class:
- * </p>
- *
- * <pre class="stHighlight">
- * import scala.collection.mutable.ListBuffer
- * 
- * class Stack[T] {
- *
- *   val MAX = 10
- *   private val buf = new ListBuffer[T]
- *
- *   def push(o: T) {
- *     if (!full)
- *       buf.prepend(o)
- *     else
- *       throw new IllegalStateException("can't push onto a full stack")
- *   }
- *
- *   def pop(): T = {
- *     if (!empty)
- *       buf.remove(0)
- *     else
- *       throw new IllegalStateException("can't pop an empty stack")
- *   }
- *
- *   def peek: T = {
- *     if (!empty)
- *       buf(0)
- *     else
- *       throw new IllegalStateException("can't pop an empty stack")
- *   }
- *
- *   def full: Boolean = buf.size == MAX
- *   def empty: Boolean = buf.size == 0
- *   def size = buf.size
- *
- *   override def toString = buf.mkString("Stack(", ", ", ")")
- * }
- * </pre>
- *
- * <p>
- * You may want to test the <code>Stack</code> class in different states: empty, full, with one item, with one item less than capacity,
- * <em>etc</em>. You may find you have several tests that make sense any time the stack is non-empty. Thus you'd ideally want to run
- * those same tests for three stack fixture objects: a full stack, a stack with a one item, and a stack with one item less than
- * capacity. With shared tests, you can factor these tests out into a behavior function, into which you pass the
- * stack fixture to use when running the tests. So in your <code>FunSpec</code> for stack, you'd invoke the
- * behavior function three times, passing in each of the three stack fixtures so that the shared tests are run for all three fixtures. You
- * can define a behavior function that encapsulates these shared tests inside the <code>FunSpec</code> that uses them. If they are shared
- * between different <code>FunSpec</code>s, however, you could also define them in a separate trait that is mixed into each <code>FunSpec</code> that uses them.
- * </p>
- *
- * <p>
- * <a name="StackBehaviors">For</a> example, here the <code>nonEmptyStack</code> behavior function (in this case, a behavior <em>method</em>) is defined in a trait along with another
- * method containing shared tests for non-full stacks:
- * </p>
- * 
- * <pre class="stHighlight">
- * trait StackBehaviors { this: FunSpec =&gt;
- * 
- *   def nonEmptyStack(newStack: =&gt; Stack[Int], lastItemAdded: Int) {
- *
- *     it("should be non-empty") {
- *       assert(!newStack.empty)
- *     }
- *
- *     it("should return the top item on peek") {
- *       assert(newStack.peek === lastItemAdded)
- *     }
- *
- *     it("should not remove the top item on peek") {
- *       val stack = newStack
- *       val size = stack.size
- *       assert(stack.peek === lastItemAdded)
- *       assert(stack.size === size)
- *     }
- *
- *     it("should remove the top item on pop") {
- *       val stack = newStack
- *       val size = stack.size
- *       assert(stack.pop === lastItemAdded)
- *       assert(stack.size === size - 1)
- *     }
- *   }
- *
- *   def nonFullStack(newStack: =&gt; Stack[Int]) {
- *
- *     it("should not be full") {
- *       assert(!newStack.full)
- *     }
- *
- *     it("should add to the top on push") {
- *       val stack = newStack
- *       val size = stack.size
- *       stack.push(7)
- *       assert(stack.size === size + 1)
- *       assert(stack.peek === 7)
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * Given these behavior functions, you could invoke them directly, but <code>FunSpec</code> offers a DSL for the purpose,
- * which looks like this:
- * </p>
- *
- * <pre class="stHighlight">
- * it should behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
- * it should behave like nonFullStack(stackWithOneItem)
- * </pre>
- *
- * <p>
- * If you prefer to use an imperative style to change fixtures, for example by mixing in <code>BeforeAndAfterEach</code> and
- * reassigning a <code>stack</code> <code>var</code> in <code>beforeEach</code>, you could write your behavior functions
- * in the context of that <code>var</code>, which means you wouldn't need to pass in the stack fixture because it would be
- * in scope already inside the behavior function. In that case, your code would look like this:
- * </p>
- *
- * <pre class="stHighlight">
- * it should behave like nonEmptyStack // assuming lastValuePushed is also in scope inside nonEmptyStack
- * it should behave like nonFullStack
- * </pre>
- *
- * <p>
- * The recommended style, however, is the functional, pass-all-the-needed-values-in style. Here's an example:
- * </p>
- *
- * <pre class="stHighlight">
- * class SharedTestExampleSpec extends FunSpec with StackBehaviors {
- * 
- *   // Stack fixture creation methods
- *   def emptyStack = new Stack[Int]
- * 
- *   def fullStack = {
- *     val stack = new Stack[Int]
- *     for (i <- 0 until stack.MAX)
- *       stack.push(i)
- *     stack
- *   }
- * 
- *   def stackWithOneItem = {
- *     val stack = new Stack[Int]
- *     stack.push(9)
- *     stack
- *   }
- * 
- *   def stackWithOneItemLessThanCapacity = {
- *     val stack = new Stack[Int]
- *     for (i <- 1 to 9)
- *       stack.push(i)
- *     stack
- *   }
- * 
- *   val lastValuePushed = 9
- * 
- *   describe("A Stack") {
- * 
- *     describe("(when empty)") {
- *       
- *       it("should be empty") {
- *         assert(emptyStack.empty)
- *       }
- * 
- *       it("should complain on peek") {
- *         intercept[IllegalStateException] {
- *           emptyStack.peek
- *         }
- *       }
- * 
- *       it("should complain on pop") {
- *         intercept[IllegalStateException] {
- *           emptyStack.pop
- *         }
- *       }
- *     }
- * 
- *     describe("(with one item)") {
- *       it should behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
- *       it should behave like nonFullStack(stackWithOneItem)
- *     }
- *     
- *     describe("(with one item less than capacity)") {
- *       it should behave like nonEmptyStack(stackWithOneItemLessThanCapacity, lastValuePushed)
- *       it should behave like nonFullStack(stackWithOneItemLessThanCapacity)
- *     }
- * 
- *     describe("(full)") {
- *       
- *       it("should be full") {
- *         assert(fullStack.full)
- *       }
- * 
- *       it should behave like nonEmptyStack(fullStack, lastValuePushed)
- * 
- *       it("should complain on a push") {
- *         intercept[IllegalStateException] {
- *           fullStack.push(10)
- *         }
- *       }
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * If you load these classes into the Scala interpreter (with scalatest's JAR file on the class path), and execute it,
- * you'll see:
- * </p>
- *
- * <pre class="stREPL">
- * scala> (new StackSpec).execute()
- * <span class="stGreen">A Stack (when empty) 
- * - should be empty
- * - should complain on peek
- * - should complain on pop
- * A Stack (with one item) 
- * - should be non-empty
- * - should return the top item on peek
- * - should not remove the top item on peek
- * - should remove the top item on pop
- * - should not be full
- * - should add to the top on push
- * A Stack (with one item less than capacity) 
- * - should be non-empty
- * - should return the top item on peek
- * - should not remove the top item on peek
- * - should remove the top item on pop
- * - should not be full
- * - should add to the top on push
- * A Stack (full) 
- * - should be full
- * - should be non-empty
- * - should return the top item on peek
- * - should not remove the top item on peek
- * - should remove the top item on pop
- * - should complain on a push</span>
- * </pre>
- * 
- * <p>
- * One thing to keep in mind when using shared tests is that in ScalaTest, each test in a suite must have a unique name.
- * If you register the same tests repeatedly in the same suite, one problem you may encounter is an exception at runtime
- * complaining that multiple tests are being registered with the same test name. A good way to solve this problem in a <code>FunSpec</code> is to surround
- * each invocation of a behavior function with a <code>describe</code> clause, which will prepend a string to each test name.
- * For example, the following code in a <code>FunSpec</code> would register a test with the name <code>"A Stack (when empty) should be empty"</code>:
- * </p>
- *
- * <pre class="stHighlight">
- *   describe("A Stack") {
- * 
- *     describe("(when empty)") {
- *       
- *       it("should be empty") {
- *         assert(emptyStack.empty)
- *       }
- *       // ...
- * </pre>
- *
- * <p>
- * If the <code>"should be empty"</code> test was factored out into a behavior function, it could be called repeatedly so long
- * as each invocation of the behavior function is inside a different set of <code>describe</code> clauses.
- *
- * <a name="sharedFixtures"></a><h2>OLD ONE FOR REFERENCE: Shared fixtures</h2>
  *
  * <p>
  * A test <em>fixture</em> is objects or other artifacts (such as files, sockets, database
@@ -1677,13 +661,13 @@ import verb.BehaveWord
  * 
  *   describe("Testing") {
  *
- *     it("should be easy") { writer =&gt;
+ *     it("should be easy") { writer =>
  *       writer.write("Hello, test!")
  *       writer.flush()
  *       assert(new File(tmpFile).length === 12)
  *     }
  * 
- *     it("should be fun") { writer =&gt;
+ *     it("should be fun") { writer =>
  *       writer.write("Hi, test!")
  *       writer.flush()
  *       assert(new File(tmpFile).length === 9)
@@ -1722,7 +706,7 @@ import verb.BehaveWord
  *     val buffer = ListBuffer("ScalaTest", "is")
  *   }
  * 
- *   def withWriter(testCode: FileWriter =&gt; Any) {
+ *   def withWriter(testCode: FileWriter => Any) {
  *     val writer = new FileWriter(tmpFile) // set up the fixture
  *     try {
  *       testCode(writer) // "loan" the fixture to the test
@@ -1749,7 +733,7 @@ import verb.BehaveWord
  *     }
  * 
  *     it("should be friendly") { // This test needs the FileWriter fixture
- *       withWriter { writer =&gt;
+ *       withWriter { writer =>
  *         writer.write("Hello, user!")
  *         writer.flush()
  *         assert(new File(tmpFile).length === 12)
@@ -1771,7 +755,7 @@ import verb.BehaveWord
  *         buffer += ("concise!")
  *         assert(builder.toString === "ScalaTest is clear!")
  *         assert(buffer === List("ScalaTest", "is", "concise!"))
- *         withWriter { writer =&gt;
+ *         withWriter { writer =>
  *           writer.write(builder.toString)
  *           writer.flush()
  *           assert(new File(tmpFile).length === 19)
@@ -1812,7 +796,7 @@ import verb.BehaveWord
  * </p>
  *
  * <pre class="stHighlight">
- * def withDataInDatabase(test: =&gt; Any) {
+ * def withDataInDatabase(test: => Any) {
  *   // initialize the database across the network
  *   try {
  *     test // "loan" the initialized database to the test
@@ -1853,7 +837,7 @@ import verb.BehaveWord
  * import org.scalatest.AbstractSuite
  * import collection.mutable.ListBuffer
  * 
- * trait Builder extends AbstractSuite { this: Suite =&gt;
+ * trait Builder extends AbstractSuite { this: Suite =>
  *
  *   val builder = new StringBuilder
  *
@@ -1868,7 +852,7 @@ import verb.BehaveWord
  *   }
  * }
  *
- * trait Buffer extends AbstractSuite { this: Suite =&gt;
+ * trait Buffer extends AbstractSuite { this: Suite =>
  *
  *   val buffer = new ListBuffer[String]
  *
@@ -1937,7 +921,7 @@ import verb.BehaveWord
  * import org.scalatest.BeforeAndAfterEach
  * import collection.mutable.ListBuffer
  * 
- * trait Builder extends BeforeAndAfterEach { this: Suite =&gt;
+ * trait Builder extends BeforeAndAfterEach { this: Suite =>
  * 
  *   val builder = new StringBuilder
  * 
@@ -1956,7 +940,7 @@ import verb.BehaveWord
  *   }
  * }
  * 
- * trait Buffer extends BeforeAndAfterEach { this: Suite =&gt;
+ * trait Buffer extends BeforeAndAfterEach { this: Suite =>
  * 
  *   val buffer = new ListBuffer[String]
  * 
@@ -2008,15 +992,281 @@ import verb.BehaveWord
  * failed suite, which will result in a <a href="events/SuiteAborted.html"><code>SuiteAborted</code></a> event.
  * </p>
  * 
+ * <a name="SharedTests"></a><h2>Shared tests</h2>
+ *
+ * <p>
+ * Sometimes you may want to run the same test code on different fixture objects. In other words, you may want to write tests that are "shared"
+ * by different fixture objects.
+ * To accomplish this in a <code>FunSpec</code>, you first place shared tests in <em>behavior functions</em>. These behavior functions will be
+ * invoked during the construction phase of any <code>FunSpec</code> that uses them, so that the tests they contain will be registered as tests in that <code>FunSpec</code>.
+ * For example, given this stack class:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import scala.collection.mutable.ListBuffer
+ * 
+ * class Stack[T] {
+ *
+ *   val MAX = 10
+ *   private val buf = new ListBuffer[T]
+ *
+ *   def push(o: T) {
+ *     if (!full)
+ *       buf.prepend(o)
+ *     else
+ *       throw new IllegalStateException("can't push onto a full stack")
+ *   }
+ *
+ *   def pop(): T = {
+ *     if (!empty)
+ *       buf.remove(0)
+ *     else
+ *       throw new IllegalStateException("can't pop an empty stack")
+ *   }
+ *
+ *   def peek: T = {
+ *     if (!empty)
+ *       buf(0)
+ *     else
+ *       throw new IllegalStateException("can't pop an empty stack")
+ *   }
+ *
+ *   def full: Boolean = buf.size == MAX
+ *   def empty: Boolean = buf.size == 0
+ *   def size = buf.size
+ *
+ *   override def toString = buf.mkString("Stack(", ", ", ")")
+ * }
+ * </pre>
+ *
+ * <p>
+ * You may want to test the <code>Stack</code> class in different states: empty, full, with one item, with one item less than capacity,
+ * <em>etc</em>. You may find you have several tests that make sense any time the stack is non-empty. Thus you'd ideally want to run
+ * those same tests for three stack fixture objects: a full stack, a stack with a one item, and a stack with one item less than
+ * capacity. With shared tests, you can factor these tests out into a behavior function, into which you pass the
+ * stack fixture to use when running the tests. So in your <code>FunSpec</code> for stack, you'd invoke the
+ * behavior function three times, passing in each of the three stack fixtures so that the shared tests are run for all three fixtures. You
+ * can define a behavior function that encapsulates these shared tests inside the <code>FunSpec</code> that uses them. If they are shared
+ * between different <code>FunSpec</code>s, however, you could also define them in a separate trait that is mixed into each <code>FunSpec</code> that uses them.
+ * </p>
+ *
+ * <p>
+ * <a name="StackBehaviors">For</a> example, here the <code>nonEmptyStack</code> behavior function (in this case, a behavior <em>method</em>) is defined in a trait along with another
+ * method containing shared tests for non-full stacks:
+ * </p>
+ * 
+ * <pre class="stHighlight">
+ * trait StackBehaviors { this: FunSpec =&gt;
+ * 
+ *   def nonEmptyStack(newStack: =&gt; Stack[Int], lastItemAdded: Int) {
+ *
+ *     it("should be non-empty") {
+ *       assert(!newStack.empty)
+ *     }
+ *
+ *     it("should return the top item on peek") {
+ *       assert(newStack.peek === lastItemAdded)
+ *     }
+ *
+ *     it("should not remove the top item on peek") {
+ *       val stack = newStack
+ *       val size = stack.size
+ *       assert(stack.peek === lastItemAdded)
+ *       assert(stack.size === size)
+ *     }
+ *
+ *     it("should remove the top item on pop") {
+ *       val stack = newStack
+ *       val size = stack.size
+ *       assert(stack.pop === lastItemAdded)
+ *       assert(stack.size === size - 1)
+ *     }
+ *   }
+ *
+ *   def nonFullStack(newStack: =&gt; Stack[Int]) {
+ *
+ *     it("should not be full") {
+ *       assert(!newStack.full)
+ *     }
+ *
+ *     it("should add to the top on push") {
+ *       val stack = newStack
+ *       val size = stack.size
+ *       stack.push(7)
+ *       assert(stack.size === size + 1)
+ *       assert(stack.peek === 7)
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * Given these behavior functions, you could invoke them directly, but <code>FunSpec</code> offers a DSL for the purpose,
+ * which looks like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * it should behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
+ * it should behave like nonFullStack(stackWithOneItem)
+ * </pre>
+ *
+ * <p>
+ * If you prefer to use an imperative style to change fixtures, for example by mixing in <code>BeforeAndAfterEach</code> and
+ * reassigning a <code>stack</code> <code>var</code> in <code>beforeEach</code>, you could write your behavior functions
+ * in the context of that <code>var</code>, which means you wouldn't need to pass in the stack fixture because it would be
+ * in scope already inside the behavior function. In that case, your code would look like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * it should behave like nonEmptyStack // assuming lastValuePushed is also in scope inside nonEmptyStack
+ * it should behave like nonFullStack
+ * </pre>
+ *
+ * <p>
+ * The recommended style, however, is the functional, pass-all-the-needed-values-in style. Here's an example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * class SharedTestExampleSpec extends FunSpec with StackBehaviors {
+ * 
+ *   // Stack fixture creation methods
+ *   def emptyStack = new Stack[Int]
+ * 
+ *   def fullStack = {
+ *     val stack = new Stack[Int]
+ *     for (i <- 0 until stack.MAX)
+ *       stack.push(i)
+ *     stack
+ *   }
+ * 
+ *   def stackWithOneItem = {
+ *     val stack = new Stack[Int]
+ *     stack.push(9)
+ *     stack
+ *   }
+ * 
+ *   def stackWithOneItemLessThanCapacity = {
+ *     val stack = new Stack[Int]
+ *     for (i <- 1 to 9)
+ *       stack.push(i)
+ *     stack
+ *   }
+ * 
+ *   val lastValuePushed = 9
+ * 
+ *   describe("A Stack") {
+ * 
+ *     describe("(when empty)") {
+ *       
+ *       it("should be empty") {
+ *         assert(emptyStack.empty)
+ *       }
+ * 
+ *       it("should complain on peek") {
+ *         intercept[IllegalStateException] {
+ *           emptyStack.peek
+ *         }
+ *       }
+ * 
+ *       it("should complain on pop") {
+ *         intercept[IllegalStateException] {
+ *           emptyStack.pop
+ *         }
+ *       }
+ *     }
+ * 
+ *     describe("(with one item)") {
+ *       it should behave like nonEmptyStack(stackWithOneItem, lastValuePushed)
+ *       it should behave like nonFullStack(stackWithOneItem)
+ *     }
+ *     
+ *     describe("(with one item less than capacity)") {
+ *       it should behave like nonEmptyStack(stackWithOneItemLessThanCapacity, lastValuePushed)
+ *       it should behave like nonFullStack(stackWithOneItemLessThanCapacity)
+ *     }
+ * 
+ *     describe("(full)") {
+ *       
+ *       it("should be full") {
+ *         assert(fullStack.full)
+ *       }
+ * 
+ *       it should behave like nonEmptyStack(fullStack, lastValuePushed)
+ * 
+ *       it("should complain on a push") {
+ *         intercept[IllegalStateException] {
+ *           fullStack.push(10)
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * If you load these classes into the Scala interpreter (with scalatest's JAR file on the class path), and execute it,
+ * you'll see:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * scala> (new StackSpec).execute()
+ * <span class="stGreen">A Stack (when empty) 
+ * - should be empty
+ * - should complain on peek
+ * - should complain on pop
+ * A Stack (with one item) 
+ * - should be non-empty
+ * - should return the top item on peek
+ * - should not remove the top item on peek
+ * - should remove the top item on pop
+ * - should not be full
+ * - should add to the top on push
+ * A Stack (with one item less than capacity) 
+ * - should be non-empty
+ * - should return the top item on peek
+ * - should not remove the top item on peek
+ * - should remove the top item on pop
+ * - should not be full
+ * - should add to the top on push
+ * A Stack (full) 
+ * - should be full
+ * - should be non-empty
+ * - should return the top item on peek
+ * - should not remove the top item on peek
+ * - should remove the top item on pop
+ * - should complain on a push</span>
+ * </pre>
+ * 
+ * <p>
+ * One thing to keep in mind when using shared tests is that in ScalaTest, each test in a suite must have a unique name.
+ * If you register the same tests repeatedly in the same suite, one problem you may encounter is an exception at runtime
+ * complaining that multiple tests are being registered with the same test name. A good way to solve this problem in a <code>FunSpec</code> is to surround
+ * each invocation of a behavior function with a <code>describe</code> clause, which will prepend a string to each test name.
+ * For example, the following code in a <code>FunSpec</code> would register a test with the name <code>"A Stack (when empty) should be empty"</code>:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ *   describe("A Stack") {
+ * 
+ *     describe("(when empty)") {
+ *       
+ *       it("should be empty") {
+ *         assert(emptyStack.empty)
+ *       }
+ *       // ...
+ * </pre>
+ *
+ * <p>
+ * If the <code>"should be empty"</code> test was factored out into a behavior function, it could be called repeatedly so long
+ * as each invocation of the behavior function is inside a different set of <code>describe</code> clauses.
+ *
  * @author Bill Venners
  */
-@Style("org.scalatest.finders.FunSpecFinder")
 trait FunSpec extends Suite { thisSuite =>
 
   private final val engine = new Engine("concurrentSpecMod", "Spec")
   import engine._
-
-  // TODO: Probably make this private final val sourceFileName in a singleton object so it gets compiled in rather than carried around in each instance
+  
   private[scalatest] val sourceFileName = "FunSpec.scala"
 
   /**
@@ -2028,16 +1278,6 @@ trait FunSpec extends Suite { thisSuite =>
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-  
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>Spec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Class that, via an instance referenced from the <code>it</code> field,
@@ -2086,7 +1326,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: => Unit) {
-      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", 3, -2, None, None, testTags: _*)
+      registerTest(specText, testFun _, "itCannotAppearInsideAnotherIt", sourceFileName, "apply", 1, None, None, testTags: _*)
     }
 
     /**
@@ -2198,7 +1438,7 @@ trait FunSpec extends Suite { thisSuite =>
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(specText: String, testTags: Tag*)(testFun: => Unit) {
-      registerTest(specText, testFun _, "theyCannotAppearInsideAnotherThey", sourceFileName, "apply", 3, -2, None, None, testTags: _*)
+      registerTest(specText, testFun _, "theyCannotAppearInsideAnotherThey", sourceFileName, "apply", 1, None, None, testTags: _*)
     }
 
     /**
@@ -2282,7 +1522,7 @@ trait FunSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(testText: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", 4, -2, testTags: _*)
+    registerIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", sourceFileName, "ignore", 1, testTags: _*)
   }
 
   /**
@@ -2292,7 +1532,8 @@ trait FunSpec extends Suite { thisSuite =>
    * description string and immediately invoke the passed function.
    */
   protected def describe(description: String)(fun: => Unit) {
-    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", 4, -2)
+
+    registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "describe", 1)
   }
 
   /**
@@ -2343,15 +1584,16 @@ trait FunSpec extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FunSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args) {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     def invokeWithFixture(theTest: TestLeaf) {
-      val theConfigMap = args.configMap
+      val theConfigMap = configMap
       withFixture(
         new NoArgTest {
           def name = testName
@@ -2361,7 +1603,7 @@ trait FunSpec extends Suite { thisSuite =>
       )
     }
 
-    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
   }
 
   /**
@@ -2380,18 +1622,27 @@ trait FunSpec extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of the passed parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args) {
-    runTestsImpl(thisSuite, testName, args, info, true, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
-  override def run(testName: Option[String], args: Args) {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**

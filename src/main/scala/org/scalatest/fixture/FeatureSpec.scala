@@ -28,217 +28,6 @@ import org.scalatest.exceptions.NotAllowedException
 /**
  * A sister trait to <code>org.scalatest.FeatureSpec</code> that can pass a fixture object into its tests.
  *
- * <table><tr><td class="usage">
- * <strong>Recommended Usage</strong>:
- * Use trait <code>fixture.FeatureSpec</code> in situations for which <a href="../FeatureSpec.html"><code>FeatureSpec</code></a>
- * would be a good choice, such as XXXXXXX, when all or most tests need the same fixture objects
- * that must be cleaned up afterwords. <em>Note: <code>fixture.FeatureSpec</code> is intended for use in special situations, with trait <code>FeatureSpec</code> used for general needs. For
- * more insight into where <code>fixture.FeatureSpec</code> fits in the big picture, see the <a href="../FeatureSpec.html#withFixtureOneArgTest"><code>withFixture(OneArgTest)</code></a> subsection of the <a href="../FeatureSpec.html#sharedFixtures">Shared fixtures</a> section in the documentation for trait <code>FeatureSpec</code>.</em>
- * </td></tr></table>
- * 
- * <p>
- * Trait <code>fixture.FeatureSpec</code> behaves similarly to trait <code>org.scalatest.FeatureSpec</code>, except that tests may have a
- * fixture parameter. The type of the
- * fixture parameter is defined by the abstract <code>FixtureParam</code> type, which is declared as a member of this trait.
- * This trait also declares an abstract <code>withFixture</code> method. This <code>withFixture</code> method
- * takes a <code>OneArgTest</code>, which is a nested trait defined as a member of this trait.
- * <code>OneArgTest</code> has an <code>apply</code> method that takes a <code>FixtureParam</code>.
- * This <code>apply</code> method is responsible for running a test.
- * This trait's <code>runTest</code> method delegates the actual running of each test to <code>withFixture(OneArgTest)</code>, passing
- * in the test code to run via the <code>OneArgTest</code> argument. The <code>withFixture(OneArgTest)</code> method (abstract in this trait) is responsible
- * for creating the fixture argument and passing it to the test function.
- * </p>
- * 
- * <p>
- * Subclasses of this trait must, therefore, do three things differently from a plain old <code>org.scalatest.FeatureSpec</code>:
- * </p>
- * 
- * <ol>
- * <li>define the type of the fixture parameter by specifying type <code>FixtureParam</code></li>
- * <li>define the <code>withFixture(OneArgTest)</code> method</li>
- * <li>write tests that take a fixture parameter</li>
- * <li>(You can also define tests that don't take a fixture parameter.)</li>
- * </ol>
- *
- * <p>
- * If the fixture you want to pass into your tests consists of multiple objects, you will need to combine
- * them into one object to use this trait. One good approach to passing multiple fixture objects is
- * to encapsulate them in a case class. Here's an example:
- * </p>
- *
- * <pre class="stHighlight">
- * case class F(file: File, writer: FileWriter)
- * type FixtureParam = F
- * </pre>
- *
- * <p>
- * To enable the stacking of traits that define <code>withFixture(NoArgTest)</code>, it is a good idea to let
- * <code>withFixture(NoArgTest)</code> invoke the test function instead of invoking the test
- * function directly. To do so, you'll need to convert the <code>OneArgTest</code> to a <code>NoArgTest</code>. You can do that by passing
- * the fixture object to the <code>toNoArgTest</code> method of <code>OneArgTest</code>. In other words, instead of
- * writing &ldquo;<code>test(theFixture)</code>&rdquo;, you'd delegate responsibility for
- * invoking the test function to the <code>withFixture(NoArgTest)</code> method of the same instance by writing:
- * </p>
- *
- * <pre>
- * withFixture(test.toNoArgTest(theFixture))
- * </pre>
- *
- * <p>
- * Here's a complete example:
- * </p>
- *
- * <pre class="stHighlight">
- * package org.scalatest.examples.featurespec.oneargtest
- * 
- * import org.scalatest.fixture
- * import java.io._
- * 
- * class ExampleSpec extends fixture.FeatureSpec {
- * 
- *   case class F(file: File, writer: FileWriter)
- *   type FixtureParam = F
- * 
- *   def withFixture(test: OneArgTest) {
- * 
- *     // create the fixture
- *     val file = File.createTempFile("hello", "world")
- *     val writer = new FileWriter(file)
- *     val theFixture = F(file, writer)
- * 
- *     try {
- *       writer.write("ScalaTest is designed to be ") // set up the fixture
- *       withFixture(test.toNoArgTest(theFixture)) // "loan" the fixture to the test
- *     }
- *     finally {
- *       writer.close() // clean up the fixture
- *     }
- *   }
- * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") { f =&gt;
- *       f.writer.write("encourage clear code!")
- *       f.writer.flush()
- *       assert(f.file.length === 49)
- *     }
- * 
- *     scenario("User needs to understand what the tests are doing") { f =&gt;
- *       f.writer.write("be easy to reason about!")
- *       f.writer.flush()
- *       assert(f.file.length === 52)
- *     }
- *   } 
- * }
- * </pre>
- *
- * <p>
- * If a test fails, the <code>OneArgTest</code> function will complete abruptly with an exception describing the failure.
- * To ensure clean up happens even if a test fails, you should invoke the test function from inside a <code>try</code> block and do the cleanup in a
- * <code>finally</code> clause, as shown in the previous example.
- * </p>
- *
- * <a name="sharingFixturesAcrossClasses"></a><h2>Sharing fixtures across classes</h2>
- *
- * <p>
- * If multiple test classes need the same fixture, you can define the <code>FixtureParam</code> and <code>withFixture(OneArgTest)</code> implementations
- * in a trait, then mix that trait into the test classes that need it. For example, if your application requires a database and your integration tests
- * use with that database, you will likely have many test classes that need a database fixture. You can create a "database fixture" trait that creates a
- * database with a unique name, passes the connector into the test, then removes the database once the test completes. This is shown in the following example:
- * </p>
- * 
- * <pre class="stHighlight">
- * package org.scalatest.examples.fixture.featurespec.sharing
- * 
- * import java.util.concurrent.ConcurrentHashMap
- * import org.scalatest.fixture
- * import DbServer._
- * import java.util.UUID.randomUUID
- * 
- * object DbServer { // Simulating a database server
- *   type Db = StringBuffer
- *   private val databases = new ConcurrentHashMap[String, Db]
- *   def createDb(name: String): Db = {
- *     val db = new StringBuffer
- *     databases.put(name, db)
- *     db
- *   }
- *   def removeDb(name: String) {
- *     databases.remove(name)
- *   }
- * }
- * 
- * trait DbFixture { this: fixture.Suite =&gt;
- * 
- *   type FixtureParam = Db
- * 
- *   // Allow clients to populate the database after
- *   // it is created
- *   def populateDb(db: Db) {}
- * 
- *   def withFixture(test: OneArgTest) {
- *     val dbName = randomUUID.toString
- *     val db = createDb(dbName) // create the fixture
- *     try {
- *       populateDb(db) // setup the fixture
- *       withFixture(test.toNoArgTest(db)) // "loan" the fixture to the test
- *     }
- *     finally {
- *       removeDb(dbName) // clean up the fixture
- *     }
- *   }
- * }
- * 
- * class ExampleSpec extends fixture.FeatureSpec with DbFixture {
- * 
- *   override def populateDb(db: Db) { // setup the fixture
- *     db.append("ScalaTest is designed to ")
- *   }
- * 
- *   feature("Simplicity") {
- * 
- *     scenario("User needs to read test code written by others") { db =&gt;
- *       db.append("encourage clear code!")
- *       assert(db.toString === "ScalaTest is designed to encourage clear code!")
- *     }
- *     
- *     scenario("User needs to understand what the tests are doing") { db =&gt;
- *       db.append("be easy to reason about!")
- *       assert(db.toString === "ScalaTest is designed to be easy to reason about!")
- *     }
- * 
- *     scenario("User needs to write tests") { () =&gt;
- *       val buf = new StringBuffer
- *       buf.append("ScalaTest is designed to be ")
- *       buf.append("easy to learn!")
- *       assert(buf.toString === "ScalaTest is designed to be easy to learn!")
- *     }
- *   }
- * }
- * </pre>
- *
- * <p>
- * Often when you create fixtures in a trait like <code>DbFixture</code>, you'll still need to enable individual test classes
- * to "setup" a newly created fixture before it gets passed into the tests. A good way to accomplish this is to pass the newly
- * created fixture into a setup method, like <code>populateDb</code> in the previous example, before passing it to the test
- * function. Classes that need to perform such setup can override the method, as does <code>ExampleSuite</code>.
- * </p>
- *
- * <p>
- * If a test doesn't need the fixture, you can indicate that by providing a no-arg instead of a one-arg function, as is done in the
- * third test in the previous example, &ldquo;<code>Test code should be clear</code>&rdquo;. In other words, instead of starting your function literal
- * with something like &ldquo;<code>db =&gt;</code>&rdquo;, you'd start it with &ldquo;<code>() =&gt;</code>&rdquo;. For such tests, <code>runTest</code>
- * will not invoke <code>withFixture(OneArgTest)</code>. It will instead directly invoke <code>withFixture(NoArgTest)</code>.
- * </p>
- *
- * <p>
- * Both examples shown above demonstrate the technique of giving each test its own "fixture sandbox" to play in. When your fixtures
- * involve external side-effects, like creating files or databases, it is a good idea to give each file or database a unique name as is
- * done in these examples. This keeps tests completely isolated, allowing you to run them in parallel if desired. You could mix
- * <code>ParallelTestExecution</code> into either of these <code>ExampleSuite</code> classes, and the tests would run in parallel just fine.
- * </p>
- *
- * <h2>FOR REFERENCE, THE OLD STUFF</h2>
- *
  * <p>
  * The purpose of <code>FeatureSpec</code> and its subtraits is to facilitate writing tests in
  * a functional style. Some users may prefer writing tests in a functional style in general, but one
@@ -622,7 +411,8 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerTest(Resources("scenario", specText), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 4, -2, None, None, testTags: _*)
+
+    registerTest(Resources("scenario", specText), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 2, None, None, testTags: _*)
   }
 
   /**
@@ -644,7 +434,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerIgnoredTest(Resources("scenario", specText), testFun , "ignoreCannotAppearInsideAScenario", sourceFileName, "ignore", 4, -2, testTags: _*)
+    registerIgnoredTest(Resources("scenario", specText), testFun , "ignoreCannotAppearInsideAScenario", sourceFileName, "ignore", 2, testTags: _*)
   }
 
   /**
@@ -658,7 +448,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun(sourceFileName, "feature"))
 
-    registerNestedBranch(Resources("feature", description), None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 4, -2)
+    registerNestedBranch(description, None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 1)
   }
 
   /**
@@ -679,23 +469,24 @@ trait FeatureSpec extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FeatureSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args) {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
 
     def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
         case wrapper: NoArgTestWrapper[_] =>
-          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-        case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
+          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
+        case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
       }
     }
 
-    runTestImpl(thisSuite, testName, args, false, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, false, invokeWithFixture)
   }
 
   /**
@@ -748,12 +539,18 @@ trait FeatureSpec extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>FeatureSpec</code>.
-   * @param args the <code>Args</code> for this run
-   *
-   * @throws NullPointerException if any of <code>testName</code> or <code>args</code> is <code>null</code>.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>FeatureSpec</code>
+   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>FeatureSpec</code>
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>FeatureSpec</code>'s executing tests.
+   * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
+   *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args) {
-    runTestsImpl(thisSuite, testName, args, info, false, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, false, runTest)
   }
 
   /**
@@ -773,8 +570,10 @@ trait FeatureSpec extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args) {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**
