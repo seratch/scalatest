@@ -17,6 +17,7 @@
 package org.scalatest.finders
 
 import scala.annotation.tailrec
+import scala.reflect.NameTransformer
 
 class MethodFinder extends Finder {
 
@@ -25,7 +26,7 @@ class MethodFinder extends Finder {
     node match {
       case MethodDefinition(className, parent, children, name, paramTypes) 
         if parent != null && parent.isInstanceOf[ConstructorBlock] && paramTypes.length == 0 =>
-          Some(new Selection(className, className + "." + name, Array(name)))
+          Some(new Selection(className, NameTransformer.decode(className) + "." + name, Array(NameTransformer.encode(name))))
       case _ => 
         if (node.parent != null)
           find(node.parent)
