@@ -29,7 +29,7 @@ class FeatureSpecFinder extends Finder {
             Some(new Selection(className, "Scenario: " + args(0).toString.toString, Array("Scenario: " + args(0).toString)))
           case MethodInvocation(_, _, _, _, "feature", parentArgs)
             if parentArgs.length > 0 && parentArgs(0).isInstanceOf[StringLiteral] => 
-              val testName = parentArgs(0) + " Scenario: " + args(0).toString
+              val testName = "Feature: " + parentArgs(0) + " Scenario: " + args(0).toString
               Some(new Selection(className, testName, Array(testName)))
           case _ =>
             if (node.parent != null)
@@ -42,7 +42,7 @@ class FeatureSpecFinder extends Finder {
         if args.length > 0 && args(0).isInstanceOf[StringLiteral] => 
         parent match {
           case ConstructorBlock(_, _) => 
-            val featureText = args(0).toString
+            val featureText = "Feature: " + args(0).toString
             val testNameList = children.filter( childNode => 
                                childNode.isInstanceOf[MethodInvocation] 
                                && childNode.name == "scenario" 

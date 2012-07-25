@@ -66,25 +66,25 @@ class FeatureSpecFinderSuite extends FinderSuite {
     assert(finder.getClass == classOf[FeatureSpecFinder], "Suite that uses org.scalatest.FeatureSpec should use FeatureSpecFinder.")
     
     val f1s1 = finder.find(feature1Scenario1)                      
-    expectSelection(f1s1, suiteClass.getName, "feature 1 Scenario: scenario 1", Array("feature 1 Scenario: scenario 1"))
+    expectSelection(f1s1, suiteClass.getName, "Feature: feature 1 Scenario: scenario 1", Array("Feature: feature 1 Scenario: scenario 1"))
     val f1s2 = finder.find(feature1Scenario2)
-    expectSelection(f1s2, suiteClass.getName, "feature 1 Scenario: scenario 2", Array("feature 1 Scenario: scenario 2"))
+    expectSelection(f1s2, suiteClass.getName, "Feature: feature 1 Scenario: scenario 2", Array("Feature: feature 1 Scenario: scenario 2"))
     val nsf1s2 = finder.find(nestedScenario)
-    expectSelection(nsf1s2, suiteClass.getName, "feature 1 Scenario: scenario 2", Array("feature 1 Scenario: scenario 2"))
+    expectSelection(nsf1s2, suiteClass.getName, "Feature: feature 1 Scenario: scenario 2", Array("Feature: feature 1 Scenario: scenario 2"))
     
     val f2s1 = finder.find(feature2Scenario1)
-    expectSelection(f2s1, suiteClass.getName, "feature 2 Scenario: scenario 1", Array("feature 2 Scenario: scenario 1"))
+    expectSelection(f2s1, suiteClass.getName, "Feature: feature 2 Scenario: scenario 1", Array("Feature: feature 2 Scenario: scenario 1"))
     val f2s2 = finder.find(feature2Scenario2)
-    expectSelection(f2s2, suiteClass.getName, "feature 2 Scenario: scenario 2", Array("feature 2 Scenario: scenario 2"))
+    expectSelection(f2s2, suiteClass.getName, "Feature: feature 2 Scenario: scenario 2", Array("Feature: feature 2 Scenario: scenario 2"))
     
     val f1 = finder.find(feature1)
-    expectSelection(f1, suiteClass.getName, "feature 1", Array("feature 1 Scenario: scenario 1", "feature 1 Scenario: scenario 2"))
+    expectSelection(f1, suiteClass.getName, "Feature: feature 1", Array("Feature: feature 1 Scenario: scenario 1", "Feature: feature 1 Scenario: scenario 2"))
     
     val f2 = finder.find(feature2)
-    expectSelection(f2, suiteClass.getName, "feature 2", Array("feature 2 Scenario: scenario 1", "feature 2 Scenario: scenario 2"))
+    expectSelection(f2, suiteClass.getName, "Feature: feature 2", Array("Feature: feature 2 Scenario: scenario 1", "Feature: feature 2 Scenario: scenario 2"))
     
     val nsf2 = finder.find(nestedFeature2)
-    expectSelection(nsf2, suiteClass.getName, "feature 2", Array("feature 2 Scenario: scenario 1", "feature 2 Scenario: scenario 2"))
+    expectSelection(nsf2, suiteClass.getName, "Feature: feature 2", Array("Feature: feature 2 Scenario: scenario 1", "Feature: feature 2 Scenario: scenario 2"))
     
     val nscope = finder.find(noScopeScenario)
     expectSelection(nscope, suiteClass.getName, "Scenario: scenario with no scope", Array("Scenario: scenario with no scope"))
