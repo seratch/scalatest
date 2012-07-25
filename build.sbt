@@ -2,11 +2,11 @@ name := "scalatest-finders"
  
 organization := "org.scalatest"
 
-version := "0.9.1"
+version := "0.9.2"
  
 scalaVersion := "2.9.0"
 
-libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0.M1" % "test"
+libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0.M2" % "test"
 
 resolvers ++= Seq("releases" at "http://oss.sonatype.org/content/repositories/releases",
                   "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots")

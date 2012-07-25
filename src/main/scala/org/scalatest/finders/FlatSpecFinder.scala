@@ -83,25 +83,18 @@ class FlatSpecFinder extends Finder {
   }
   
   private def getScopeNode(node: AstNode, constructorChildren: Array[AstNode]): Option[AstNode] = {
-    var scopeNode: AstNode = null
-    if (isScope(node))
-      return Some(node)
-    else {
-      for (child <- constructorChildren) {
-        if (isScope(child))
-          scopeNode = child
-        else if(child == node || (child.isInstanceOf[MethodInvocation] && child.asInstanceOf[MethodInvocation].target == node)) {
-          if (scopeNode != null)
-            return Some(scopeNode)
-          else
-            return None
-        }
-      }
-    }
-    if (scopeNode != null)
-      Some(scopeNode)
-    else
-      None
+    @tailrec
+    def getTopLevelNode(node: AstNode): AstNode = 
+      if (node.parent.isInstanceOf[ConstructorBlock])
+        node
+      else
+        getTopLevelNode(node.parent)
+    
+    val topLevelNode = getTopLevelNode(node)
+    if (isScope(topLevelNode))
+      return Some(topLevelNode)
+    else 
+      constructorChildren.takeWhile(_ != topLevelNode).reverse.find(isScope(_))
   }
   
   private def isScope(node: AstNode): Boolean = {
