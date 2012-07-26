@@ -2,7 +2,7 @@ name := "scalatest-finders"
  
 organization := "org.scalatest"
 
-version := "0.9.2"
+version := "0.9.2-SNAPSHOT"
  
 scalaVersion := "2.9.0"
 
