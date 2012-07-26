@@ -16,6 +16,7 @@
 package org.scalatest.concurrent
 
 import org.scalatest._
+import Thread.State._
 import PimpedThreadGroup._
 import _root_.java.util.concurrent._
 import _root_.java.util.concurrent.atomic.AtomicReference
@@ -23,26 +24,8 @@ import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 import org.scalatest.exceptions.NotAllowedException
 
 /**
- * <strong><code>org.scalatest.concurrent.Conductor</code> has been deprecated and will
- * be removed in a future version of ScalaTest. Please mix in or import the members
- * of trait <a href="Conductors.html"><code>Conductors</code></a>, into which <code>Conductor</code> has been moved, instead
- * of using this class directly.</strong>
- *
- * <p>
- * <strong>The reason <code>Conductor</code> was moved into trait <code>Conductors</code>
- * was so that it can extend trait
- * <a href="PatienceConfiguration.html"><code>PatienceConfiguration</code></a>, which was
- * introduced in ScalaTest 1.8. This will make <code>Conductor</code> configurable in a
- * way consistent with traits <code>Eventually</code> and <code>AsyncAssertions</code>
- * (both of which were also introduced in ScalaTest 1.8), and scalable with the
- * <code>scaled</code> method of trait
- * <a href="ScaledTimeSpans.html"><code>ScaledTimeSpans</code></a>.</strong>
- * </p>
- *
- * <p>
  * Class that facilitates the testing of classes, traits, and libraries designed
  * to be used by multiple threads concurrently.
- * </p>
  *
  * <p>
  * A <code>Conductor</code> conducts a multi-threaded scenario by maintaining
@@ -134,7 +117,7 @@ import org.scalatest.exceptions.NotAllowedException
  * </pre>
  *
  * <p>
- * The <code>thread</code> method invocations will create the threads and start the threads, but will not immediately
+ * The <code>thread</code> calls create the threads and starts them, but they will not immediately
  * execute the by-name parameter passed to them. They will first block, waiting for the <code>Conductor</code>
  * to give them a green light to proceed.
  * </p>
@@ -183,7 +166,7 @@ import org.scalatest.exceptions.NotAllowedException
  * </p>
  *
  * <p>
- * If either the producer or consumer thread had completed abruptly with an exception, the <code>conduct</code> method
+ * If either the producer or consumer thread had completed abruptbly with an exception, the <code>conduct</code> method
  * (which was called by <code>whenFinished</code>) would have completed abruptly with an exception to indicate the test
  * failed. However, since both threads returned normally, <code>conduct</code> will return. Because <code>conduct</code> doesn't
  * throw an exception, <code>whenFinished</code> will execute the block of code passed as a by-name parameter to it: <code>buf should be ('empty)</code>.
@@ -250,27 +233,21 @@ import org.scalatest.exceptions.NotAllowedException
  * <p>
  * Class <code>Conductor</code> was inspired by the
  * <a href="http://www.cs.umd.edu/projects/PL/multithreadedtc/">MultithreadedTC project</a>,
- * created by Bill Pugh and Nat Ayewah of the University of Maryland, and was brought to ScalaTest with major
- * contributions by Josh Cough.
+ * created by Bill Pugh and Nat Ayewah of the University of Maryland.
  * </p>
  *
  * <p>
  * Although useful, bear in mind that a <code>Conductor</code>'s results are not guaranteed to be
  * accurate 100% of the time. The reason is that it uses <code>java.lang.Thread</code>'s <code>getState</code> method to
- * decide when to advance the beat. This type of use is advised against in the Javadoc documentation for
+ * decide when to advance the beat. This kind of use is advised against in the Javadoc documentation for
  * <code>getState</code>, which says, "This method is designed for use in monitoring of the system state, not for
- * synchronization." In short, sometimes the return value of <code>getState</code> may be inacurrate, which in turn means
- * that sometimes a <code>Conductor</code> may decide to advance the beat too early. The upshot is that while <code>Conductor</code>
- * can be quite helpful in developing a thread-safe class initially, once the class is done you may not want to run the resulting tests
- * all the time as regression tests because they may generate occassional false negatives. (<code>Conductor</code> should never generate
- * a false positive, though, so if a test passes you can believe that. If the test fails consistently, you can believe that as well. But
- * if a test fails only occasionally, it may or may not indicate an actual concurrency bug.) 
+ * synchronization." In short, sometimes the return value of <code>getState</code may be inacurrate, which in turn means
+ * that sometimes a <code>Conductor</code> may decide to advance the beat too early.
  * </p>
  *
  * @author Josh Cough
  * @author Bill Venners
  */
-@deprecated("org.scalatest.concurrent.Conductor has been deprecated and will be removed in a future version of ScalaTest. Please mix in trait Conductors, which now defines Conductor, instead of using Conductor directly.")
 final class Conductor {
 
   /**
@@ -295,7 +272,7 @@ final class Conductor {
   private final val threadNames = new CopyOnWriteArrayList[String]()
 
   // the main test thread
-  private final val mainThread = currentThread
+  private final val mainThread = Thread.currentThread
 
   /**
    * Creates a new thread that will execute the specified function.
@@ -425,7 +402,7 @@ final class Conductor {
    */
   def whenFinished(fun: => Unit) {
 
-    if (currentThread != mainThread)
+    if (Thread.currentThread != mainThread)
       throw new NotAllowedException(Resources("whenFinishedCanOnlyBeCalledByMainThread"), getStackDepthFun("Conductor.scala", "whenFinished"))
 
     if (conductingHasBegun)
@@ -840,7 +817,7 @@ final class Conductor {
      * Stop the test due to a timeout.
      */
     private def timeout() {
-      val errorMessage = Resources("testTimedOutDEPRECATED", maxRunTime.toString)
+      val errorMessage = Resources("testTimedOut", maxRunTime.toString)
       // The mainThread is likely joined to some test thread, so wake it up. It will look and
       // notice that the firstExceptionThrown is no longer empty, and will stop all live test threads,
       // then rethrow the rirst exception thrown.
@@ -855,7 +832,7 @@ final class Conductor {
       // Should never get to >= before ==, but just playing it safe
       if (deadlockCount >= MaxDeadlockDetectionsBeforeDeadlock) {
         // val errorMessage = "Apparent Deadlock! Threads waiting 50 clock periods (" + (clockPeriod * 50) + "ms)"
-         val errorMessage = Resources("suspectedDeadlockDEPRECATED", MaxDeadlockDetectionsBeforeDeadlock.toString, (clockPeriod * MaxDeadlockDetectionsBeforeDeadlock).toString)
+         val errorMessage = Resources("suspectedDeadlock", MaxDeadlockDetectionsBeforeDeadlock.toString, (clockPeriod * MaxDeadlockDetectionsBeforeDeadlock).toString)
         firstExceptionThrown offer new RuntimeException(errorMessage)
 
         // The mainThread is likely joined to some test thread, so wake it up. It will look and

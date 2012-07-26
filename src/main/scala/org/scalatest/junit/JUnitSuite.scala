@@ -23,7 +23,6 @@ import org.scalatest.Suite
 import org.junit.runner.notification.RunListener
 import org.junit.runner.notification.Failure
 import org.scalatest.events._
-import org.scalatest.Suite.autoTagClassAnnotations
 
 /**
  * A suite of tests that can be run with either JUnit or ScalaTest. This trait allows you to write JUnit 4 tests
@@ -115,11 +114,18 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    * in behavior would very likely not work.
    * </p>
    *
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(args: Args) {
+  override final protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
+                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     throw new UnsupportedOperationException
   }
@@ -138,11 +144,18 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTests(testName: Option[String], args: Args) {
+  override protected final def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                            configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
     throw new UnsupportedOperationException
   }
 
@@ -159,11 +172,14 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    * </p>
    *
    * @param testName the name of one test to run.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTest(testName: String, args: Args) {
+  override protected final def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+
     throw new UnsupportedOperationException
   }
 
@@ -217,7 +233,6 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
     if (filter.tagsToInclude.isDefined) 0 else (testNames.size - tags.size)
 
   // Returns just tests that have org.junit.Ignore on them, but calls it org.scalatest.Ignore!
-  // Also autotag suite level annotation.
   override def tags: Map[String, Set[String]] = {
 
     def getMethodForJUnitTestName(testName: String) =
@@ -229,19 +244,18 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
       for (testName <- testNames; if hasIgnoreTag(testName))
         yield testName -> Set("org.scalatest.Ignore")
 
-    autoTagClassAnnotations(Map() ++ elements, this)
+    Map() ++ elements
   }
 
-  override def run(testName: Option[String], args: Args) {
-
-    import args._
+  override def run(testName: Option[String], report: Reporter, stopper: Stopper,
+      filter: Filter, configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     theTracker = tracker
 
     if (!filter.tagsToInclude.isDefined) {
       val jUnitCore = new JUnitCore
-      jUnitCore.addListener(new MyRunListener(reporter, configMap, tracker))
-      val myClass = this.getClass
+      jUnitCore.addListener(new MyRunListener(report, configMap, tracker))
+      val myClass = getClass
       testName match {
         case None => jUnitCore.run(myClass)
         case Some(tn) =>
