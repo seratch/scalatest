@@ -1767,6 +1767,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     durations: Boolean = false,
     shortstacks: Boolean = false,
     fullstacks: Boolean = false,
+    unformatted: Boolean = false,
     stats: Boolean = false
   ) {
     if (configMap == null)
@@ -1774,7 +1775,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     if (testName != null && !testNames.contains(testName))
       throw new IllegalArgumentException(Resources("testNotFound", testName))
 
-    val dispatch = new DispatchReporter(List(new StandardOutReporter(durations, color, shortstacks, fullstacks)))
+    val dispatch = new DispatchReporter(List(new StandardOutReporter(durations, color, shortstacks, fullstacks, unformatted)))
     val tracker = new Tracker
     val filter = Filter()
     val runStartTime = System.currentTimeMillis
