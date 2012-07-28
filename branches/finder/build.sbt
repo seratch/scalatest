@@ -2,7 +2,7 @@ name := "scalatest-finders"
  
 organization := "org.scalatest"
 
-version := "0.9.2-SNAPSHOT"
+version := "0.9.2"
  
 scalaVersion := "2.9.0"
 
@@ -13,8 +13,8 @@ resolvers ++= Seq("releases" at "http://oss.sonatype.org/content/repositories/re
 
 publishTo <<= version { v: String =>
   val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else                             Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  if (v.trim.endsWith("SNAPSHOT")) Some("publish-snapshots" at nexus + "content/repositories/snapshots")
+  else                             Some("publish-releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
 publishMavenStyle := true
