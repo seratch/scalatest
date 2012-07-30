@@ -411,13 +411,29 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
             case Some(NameInfo(suiteName, _, testName)) => (Some(suiteName), testName)
             case None => (None, None)
           }
-        val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", message, throwable, formatter, suiteName, testName, None)
+
         val shouldBeYellow =
           aboutAPendingTest match {
             case Some(isPending) => isPending
             case None => false
           }
-        for (line <- lines) printPossiblyInColor(line, if (shouldBeYellow) ansiYellow else ansiGreen)
+
+        val color = if (shouldBeYellow) ansiYellow else ansiGreen
+
+        if (presentUnformatted) {
+          val prefix =
+           (suiteName, testName) match {
+             case (Some(sn), Some(tn)) => sn + ": " + tn + ": "
+             case (Some(sn), None)     => sn + ": "
+             case (None,     Some(tn)) => tn + ": "
+             case (None,     None)     => ""
+           }
+           printPossiblyInColor(Resources("infoProvided", prefix + message), color)
+        }
+        else {
+          val lines = stringsToPrintOnError("infoProvidedNote", "infoProvided", message, throwable, formatter, suiteName, testName, None)
+          for (line <- lines) printPossiblyInColor(line, color)
+        }
 
       case TestPending(ordinal, suiteName, suiteClassName, testName, formatter, payload, threadName, timeStamp) =>
 
