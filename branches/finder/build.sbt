@@ -2,8 +2,8 @@ name := "scalatest-finders"
  
 organization := "org.scalatest"
 
-version := "0.9.2"
- 
+version := "0.9.3"
+
 scalaVersion := "2.9.0"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0.M2" % "test"
