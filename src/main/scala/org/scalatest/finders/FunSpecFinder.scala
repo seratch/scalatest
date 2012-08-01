@@ -47,7 +47,8 @@ class FunSpecFinder extends Finder {
     getTestNamesTopDownAcc(List(invocation), List.empty).reverse
   }
   
-  def find(node: AstNode): Option[Selection] = {
+  @tailrec
+  final def find(node: AstNode): Option[Selection] = {
     node match {
       case invocation @ MethodInvocation(className, target, parent, children, name, args) =>
         name match {
