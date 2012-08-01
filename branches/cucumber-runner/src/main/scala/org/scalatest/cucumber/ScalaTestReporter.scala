@@ -20,6 +20,7 @@ import org.scalatest.events.TestSucceeded
 import org.scalatest.Suite
 import org.scalatest.events.TestPending
 import org.scalatest.events.TestFailed
+import scala.reflect.NameTransformer
 
 class ScalaTestReporter(reporter: Reporter, formatter: Formatter, suiteClass: Class[_], tracker: Tracker, dispatch: org.scalatest.Reporter) extends Reporter with Formatter {
 
@@ -29,37 +30,44 @@ class ScalaTestReporter(reporter: Reporter, formatter: Formatter, suiteClass: Cl
   
   private def getTestName(step: Step) = step.getKeyword + ": " + step.getName
   
+  private def getDecodedName(name:String): Option[String] = {
+    val decoded = NameTransformer.decode(name)
+    if(decoded == name) None else Some(decoded)
+  }
+  
   def result(result: Result) {
     val error = result.getError
     val testName = getTestName(currentStep)
-    val formatter = Suite.getIndentedText(testName, indentLevel + 1, true)
+    val formatter = Suite.getIndentedTextForTest(testName, indentLevel + 1, true)
     
     if (Result.SKIPPED == result) {
       // Skipped, should map to Ignore
       //println("#####SKIPPED - " + getTestName(currentStep))
-      dispatch(TestPending(tracker.nextOrdinal(), suiteClass.getSimpleName, Some(suiteClass.getName), testName, Some(formatter)))
+      dispatch(TestPending(tracker.nextOrdinal(), suiteClass.getSimpleName, suiteClass.getName, Some(suiteClass.getName), getDecodedName(suiteClass.getSimpleName), testName, testName, getDecodedName(testName), IndexedSeq.empty, None, Some(formatter)))
+      
     }
     else if (Result.UNDEFINED == result) {
       // This happens when step is not defined, should map to canceled?
       //println("####UNDEFINED - " + getTestName(currentStep))
-      dispatch(TestFailed(tracker.nextOrdinal(), "Step is not defined.", suiteClass.getSimpleName, Some(suiteClass.getName), testName, None, Some(result.getDuration), Some(formatter), None))
+      // Bill: should be TestPending
+      dispatch(TestFailed(tracker.nextOrdinal(), "Step is not defined.", suiteClass.getSimpleName, suiteClass.getName, Some(suiteClass.getName), getDecodedName(suiteClass.getSimpleName), testName, testName, getDecodedName(testName), IndexedSeq.empty, None, Some(result.getDuration), Some(formatter), None))
     }
     else if (error != null) {
       if (error.isInstanceOf[PendingException]) {
         // Pending
         //println("#####PENDING - " + getTestName(currentStep))
-        dispatch(TestPending(tracker.nextOrdinal(), suiteClass.getSimpleName, Some(suiteClass.getName), testName, Some(formatter)))
+        dispatch(TestPending(tracker.nextOrdinal(), suiteClass.getSimpleName, suiteClass.getName, Some(suiteClass.getName), getDecodedName(suiteClass.getSimpleName), testName, testName, getDecodedName(testName), IndexedSeq.empty, None, Some(formatter)))
       }
       else {
         // Failed
         //println("#####FAILED - " + getTestName(currentStep))
-        dispatch(TestFailed(tracker.nextOrdinal(), error.getMessage, suiteClass.getSimpleName, Some(suiteClass.getName), testName, Some(error), Some(result.getDuration), Some(formatter), None))
+        dispatch(TestFailed(tracker.nextOrdinal(), error.getMessage, suiteClass.getSimpleName, suiteClass.getName, Some(suiteClass.getName), getDecodedName(suiteClass.getSimpleName), testName, testName, getDecodedName(testName), IndexedSeq.empty, Some(error), Some(result.getDuration), Some(formatter), None))
       }
     }
     else {
       // Success
       //println("#####SUCCESS - " + getTestName(currentStep))
-      dispatch(TestSucceeded(tracker.nextOrdinal(), suiteClass.getSimpleName, Some(suiteClass.getName), testName, Some(result.getDuration), Some(formatter), None))
+      dispatch(TestSucceeded(tracker.nextOrdinal(), suiteClass.getSimpleName, suiteClass.getName, Some(suiteClass.getName), getDecodedName(suiteClass.getSimpleName), testName, testName, getDecodedName(testName), IndexedSeq.empty, Some(result.getDuration), Some(formatter), None))
     }
     reporter.result(result)
   }
@@ -67,7 +75,8 @@ class ScalaTestReporter(reporter: Reporter, formatter: Formatter, suiteClass: Cl
   def `match`(m: Match) {
     currentStep = steps.remove(0)
     //println("#####TEST STARTING - " + getTestName(currentStep))
-    dispatch(TestStarting(tracker.nextOrdinal(), suiteClass.getSimpleName, Some(suiteClass.getName), getTestName(currentStep), Some(MotionToSuppress), None))
+    val testName = getTestName(currentStep)
+    dispatch(TestStarting(tracker.nextOrdinal(), suiteClass.getSimpleName, suiteClass.getName, Some(suiteClass.getName), getDecodedName(suiteClass.getSimpleName), testName, testName, getDecodedName(testName), Some(MotionToSuppress), None, Some(suiteClass.getName)))
     reporter.`match`(m)
   }
   
