@@ -12,25 +12,17 @@ import cucumber.runtime.model.CucumberFeature
 import cucumber.runtime.model.CucumberScenario
 import cucumber.runtime.model.CucumberScenarioOutline
 import cucumber.runtime.model.CucumberTagStatement
+import org.scalatest.Args
 
 class CucumberRunner(cucumberClass: Class[_]) extends Suite {
   
-  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  override def run(testName: Option[String], args: Args) {
     if (testName == null)
       throw new NullPointerException("testName was null")
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (filter == null)
-      throw new NullPointerException("filter was null")
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (distributor == null)
-      throw new NullPointerException("distributor was null")
-    if (tracker == null)
-      throw new NullPointerException("tracker was null")
+    if (args == null)
+      throw new NullPointerException("args was null")
+    
+    import args._
 
     val stopRequested = stopper
     val report = wrapReporterIfNecessary(reporter)
