@@ -95,29 +95,29 @@ class ScalaTestNotifier(theSpec: Specification, theTracker: Tracker, reporter: R
   
   def exampleSucceeded(exampleName: String) {
     val duration = System.currentTimeMillis() - exampleStart
-    val formatter = Suite.getIndentedText(exampleName, indentLevel + 1, true)
+    val formatter = Suite.getIndentedTextForTest(exampleName, indentLevel + 1, true)
     val testName = getTestName(exampleName)
-    report(TestSucceeded(tracker.nextOrdinal(), spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(testName), Some(duration), Some(formatter), None))
+    report(TestSucceeded(tracker.nextOrdinal(), spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(testName), IndexedSeq.empty, Some(duration), Some(formatter), None))
   }
   
   def exampleFailed(exampleName: String, e: Throwable) {
     val duration = System.currentTimeMillis() - exampleStart
-    val formatter = Suite.getIndentedText(exampleName, indentLevel + 1, true)
+    val formatter = Suite.getIndentedTextForTest(exampleName, indentLevel + 1, true)
     val testName = getTestName(exampleName)
-    report(TestFailed(tracker.nextOrdinal(), e.getMessage, spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(testName), Some(e), Some(duration), Some(formatter), None))
+    report(TestFailed(tracker.nextOrdinal(), e.getMessage, spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(testName), IndexedSeq.empty, Some(e), Some(duration), Some(formatter), None))
   }
   
   def exampleError(exampleName: String, e: Throwable) {
     val duration = System.currentTimeMillis() - exampleStart
-    val formatter = Suite.getIndentedText(exampleName, indentLevel + 1, true)
+    val formatter = Suite.getIndentedTextForTest(exampleName, indentLevel + 1, true)
     val testName = getTestName(exampleName)
-    report(TestFailed(tracker.nextOrdinal(), e.getMessage, spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(spec.getClass.getSimpleName), Some(e), Some(duration), Some(formatter), None))
+    report(TestFailed(tracker.nextOrdinal(), e.getMessage, spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(spec.getClass.getSimpleName), IndexedSeq.empty, Some(e), Some(duration), Some(formatter), None))
   }
   
   def exampleSkipped(exampleName: String) {
-    val formatter = Suite.getIndentedText(exampleName, indentLevel + 1, true)
+    val formatter = Suite.getIndentedTextForTest(exampleName, indentLevel + 1, true)
     val testName = getTestName(exampleName)
-    report(TestPending(tracker.nextOrdinal(), spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(testName), None, Some(formatter)))
+    report(TestPending(tracker.nextOrdinal(), spec.getClass.getSimpleName, spec.getClass.getName, Some(spec.getClass.getName), getDecodedName(spec.getClass.getSimpleName), testName, exampleName, getDecodedName(testName), IndexedSeq.empty, None, Some(formatter)))
   }
   
   def exampleCompleted(exampleName: String) { }

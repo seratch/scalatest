@@ -14,6 +14,7 @@ import org.specs.specification.Example
 import org.specs.specification.Sus
 import org.scalatest.Style
 import scala.collection.mutable.Stack
+import org.scalatest.Args
 
 @Style("org.scalatest.specs.Spec1Finder")
 class Spec1Runner(specificationClass: Class[_ <: Specification]) extends Suite { thisSuite =>
@@ -77,22 +78,13 @@ class Spec1Runner(specificationClass: Class[_ <: Specification]) extends Suite {
   
   override def expectedTestCount(filter: Filter): Int = getSpecTestCount(spec, filter)//spec.firstLevelExamplesNb
   
-  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
-              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  override def run(testName: Option[String], args: Args) {
     if (testName == null)
       throw new NullPointerException("testName was null")
-    if (reporter == null)
-      throw new NullPointerException("reporter was null")
-    if (stopper == null)
-      throw new NullPointerException("stopper was null")
-    if (filter == null)
-      throw new NullPointerException("filter was null")
-    if (configMap == null)
-      throw new NullPointerException("configMap was null")
-    if (distributor == null)
-      throw new NullPointerException("distributor was null")
-    if (tracker == null)
-      throw new NullPointerException("tracker was null")
+    if (args == null)
+      throw new NullPointerException("args was null")
+    
+    import args._
 
     val stopRequested = stopper
     val report = wrapReporterIfNecessary(reporter)
