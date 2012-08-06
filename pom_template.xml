@@ -94,7 +94,7 @@
 
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10.0-M5</artifactId>
+      <artifactId>scalacheck_2.10.0-M6</artifactId>
       <version>1.10.0</version>
       <optional>true</optional>
     </dependency>
