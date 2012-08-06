@@ -6,7 +6,7 @@ version := "0.9.3"
 
 scalaVersion := "2.9.0"
 
-libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0.M2" % "test"
+libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0.M3" % "test"
 
 resolvers ++= Seq("releases" at "http://oss.sonatype.org/content/repositories/releases",
                   "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots")
