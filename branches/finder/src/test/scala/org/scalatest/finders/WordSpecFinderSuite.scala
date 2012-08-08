@@ -20,7 +20,7 @@ import org.scalatest.WordSpec
 
 class WordSpecFinderSuite extends FinderSuite {
 
-  test("FeatureSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using should and in") {
+  test("WordSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using should and in") {
     
     class TestingWordSpec1 extends WordSpec {
 
@@ -37,16 +37,15 @@ class WordSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingWordSpec1]
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.WordSpec.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
-    val constructorBlock = ConstructorBlock(suiteClass.getName, Array.empty)
-    val aStack = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "should", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val popValuesInLifo = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "pop values in last-in-first-out order"), aStack, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val throwNsee = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "throw NoSuchElementException if an empty stack is popped"), aStack, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val nested = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), throwNsee, Array.empty, "println", StringLiteral(suiteClass.getName, null, "nested"))
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val aStack = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "should", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val popValuesInLifo = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "pop values in last-in-first-out order"), aStack, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val throwNsee = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throw NoSuchElementException if an empty stack is popped"), aStack, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val nested = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), throwNsee, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
     List[AstNode](constructorBlock, aStack, popValuesInLifo, throwNsee, nested).foreach(_.parent)
     
     val aStackSelection = finder.find(aStack)
@@ -59,7 +58,7 @@ class WordSpecFinderSuite extends FinderSuite {
     expectSelection(nestedSelection, suiteClass.getName, "A Stack should throw NoSuchElementException if an empty stack is popped", Array("A Stack should throw NoSuchElementException if an empty stack is popped"))
   }
   
-  test("FeatureSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using when, must, can and in") {
+  test("WordSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using when, must, can and in") {
     class TestingWordSpec2 extends WordSpec {
       "A Stack" when {
         "empty" must {
@@ -85,21 +84,20 @@ class WordSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingWordSpec2]
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.WordSpec.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
-    val constructorBlock = ConstructorBlock(suiteClass.getName, Array.empty)
-    val aStack = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "when", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val empty = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "empty"), aStack, Array.empty, "must", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val beEmpty = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "be empty"), empty, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val complainOnPeek = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "complain on peek"), empty, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val nested = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), complainOnPeek, Array.empty, "println", StringLiteral(suiteClass.getName, null, "nested"))
-    val complainOnPop = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "complain on pop"), empty, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val full = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "full"), aStack, Array.empty, "can", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val beFull = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "be full"), full, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val complainOnPush = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "complain on push"), full, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val aStack = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "when", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val empty = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "empty"), aStack, Array.empty, "must", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val beEmpty = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "be empty"), empty, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val complainOnPeek = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "complain on peek"), empty, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val nested = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), complainOnPeek, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
+    val complainOnPop = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "complain on pop"), empty, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val full = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "full"), aStack, Array.empty, "can", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val beFull = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "be full"), full, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val complainOnPush = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "complain on push"), full, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
     List[AstNode](constructorBlock, aStack, empty, beEmpty, complainOnPeek, nested, complainOnPop, full, beFull, complainOnPush).foreach(_.parent)
     
@@ -124,7 +122,7 @@ class WordSpecFinderSuite extends FinderSuite {
     expectSelection(complainOnPushSelection, suiteClass.getName, "A Stack when full can complain on push", Array("A Stack when full can complain on push"))
   }
   
-  test("FeatureSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using should, which and in") {
+  test("WordSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using should, which and in") {
     class TestingWordSpec3 extends WordSpec {
 
       "The ScalaTest Matchers DSL" should { 
@@ -146,24 +144,23 @@ class WordSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingWordSpec3]
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.WordSpec.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
-    val constructorBlock = ConstructorBlock(suiteClass.getName, Array.empty)
-    val scalaTestDsl = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "The ScalaTest Matchers DSL"), constructorBlock, Array.empty, "should", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val provideAndOpr = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "provide an and operator"), scalaTestDsl, Array.empty, "that", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val andSilentTrueTrue = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true and true"), provideAndOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val andThrowTfeTrueFalse = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating true and false"), provideAndOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val andThrowTfeFalseTrue = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating false and true"), provideAndOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val nested = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "${Predef}"), andThrowTfeFalseTrue, Array.empty, "println", StringLiteral(suiteClass.getName, null, "nested"))
-    val andThrowTfeFalseFalse = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating false and false"), provideAndOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val provideOrOpr = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "provide an or operator"), scalaTestDsl, Array.empty, "which", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val orSilentTrueTrue = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true or true"), provideOrOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val orSilentTrueFalse = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true or false"), provideOrOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val orSilentFalseTrue = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating false or true"), provideOrOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val orSilentFalseFalse = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating false or false"), provideOrOpr, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val scalaTestDsl = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "The ScalaTest Matchers DSL"), constructorBlock, Array.empty, "should", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val provideAndOpr = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "provide an and operator"), scalaTestDsl, Array.empty, "that", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val andSilentTrueTrue = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true and true"), provideAndOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val andThrowTfeTrueFalse = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating true and false"), provideAndOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val andThrowTfeFalseTrue = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating false and true"), provideAndOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val nested = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "${Predef}"), andThrowTfeFalseTrue, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
+    val andThrowTfeFalseFalse = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating false and false"), provideAndOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val provideOrOpr = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "provide an or operator"), scalaTestDsl, Array.empty, "which", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val orSilentTrueTrue = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true or true"), provideOrOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val orSilentTrueFalse = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true or false"), provideOrOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val orSilentFalseTrue = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating false or true"), provideOrOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val orSilentFalseFalse = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throws a TestFailedException when evaluating false or false"), provideOrOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
     List[AstNode](constructorBlock, scalaTestDsl, provideAndOpr, andSilentTrueTrue, andThrowTfeTrueFalse, andThrowTfeFalseTrue, 
                   nested, andThrowTfeFalseFalse, provideOrOpr, orSilentTrueTrue, orSilentTrueFalse, orSilentFalseTrue, orSilentFalseFalse).foreach(_.parent)

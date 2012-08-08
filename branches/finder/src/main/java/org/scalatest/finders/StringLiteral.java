@@ -14,7 +14,53 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
+
+class StringLiteral implements AstNode {
+  
+  private String className;
+  private AstNode parent;
+  private String value;
+    
+  public StringLiteral(String className, AstNode parent, String value) {
+    this.className = className;
+    this.parent = parent;
+    if (parent != null)
+      parent.addChild(this);
+    this.value = value;
+  }
+  
+  public String className() {
+    return className;
+  }
+  
+  public AstNode parent() {
+    return parent;
+  }
+  
+  public AstNode[] children() {
+    return new AstNode[0];
+  }
+  
+  public String name() {
+    return "StringLiteral";
+  }
+  
+  public void addChild(AstNode node) {
+    throw new UnsupportedOperationException("StringLiteral does not support addChild method.");  
+  }
+  
+  public String value() {
+    return value;
+  }
+  
+  @Override
+  public String toString() {
+    return value.toString();
+  }
+}
+
+/*package org.scalatest.finders
 
 class StringLiteral(pClassName: String, pParent: AstNode, pValue: String) extends AstNode {
   def className = pClassName
@@ -41,4 +87,4 @@ object StringLiteral {
       Some((lit.className, lit.parent, lit.value))
     else
       None
-}
+}*/

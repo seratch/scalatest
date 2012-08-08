@@ -14,7 +14,57 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+class ToStringTarget implements AstNode {
+    
+  private String className;
+  private AstNode parent;
+  private List<AstNode> children;
+  private Object target;
+    
+  public ToStringTarget(String className, AstNode parent, AstNode[] children, Object target) {
+    this.className = className;
+    this.parent = parent;
+    if (parent != null)
+        parent.addChild(this);
+    this.children = new ArrayList<AstNode>();
+    this.children.addAll(Arrays.asList(children));
+    this.target = target;
+  }
+  
+  public String className() {
+    return className;
+  }
+  
+  public AstNode parent() {
+    return parent;
+  }
+  
+  public AstNode[] children() {
+    return new AstNode[0];
+  }
+  
+  public String name() {
+    return target.toString();
+  }
+    
+  public void addChild(AstNode node) {
+    if (!children.contains(node))
+      children.add(node);
+  }
+  
+  @Override
+  public String toString() {
+    return target.toString();
+  }
+}
+
+/*package org.scalatest.finders
 
 class ToStringTarget(pClassName: String, pParent: AstNode, pChildren: Array[AstNode], val target: AnyRef) extends AstNode {
   import scala.collection.mutable.ListBuffer
@@ -44,4 +94,4 @@ object ToStringTarget {
       Some((value.className, value.parent, value.children, value.target))
     else
       None
-}
+}*/

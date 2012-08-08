@@ -43,27 +43,26 @@ class FlatSpecFinderSuite extends FinderSuite {
       }
     }
     val suiteClass = classOf[TestingFlatSpec1]
-    val spec1Constructor = ConstructorBlock(suiteClass.getName, Array.empty)
+    val spec1Constructor = new ConstructorBlock(suiteClass.getName, Array.empty)
     
-    val spec1BehaviorOf1 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "behaviour"), spec1Constructor, Array.empty, "of", StringLiteral(suiteClass.getName, null, "A Stack"))
-    val spec1ItShould1 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
-    val spec1ItShouldIn1 = MethodInvocation(suiteClass.getName, spec1ItShould1, spec1Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val spec1Nested = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), spec1ItShouldIn1, Array.empty, "println", StringLiteral(suiteClass.getName, null, "nested"))
-    val spec1ItShould2 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "throw NoSuchElementException if an empty stack is popped"))
-    val spec1ItShouldIn2 = MethodInvocation(suiteClass.getName, spec1ItShould2, spec1Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec1BehaviorOf1 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "behaviour"), spec1Constructor, Array.empty, "of", new StringLiteral(suiteClass.getName, null, "A Stack"))
+    val spec1ItShould1 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
+    val spec1ItShouldIn1 = new MethodInvocation(suiteClass.getName, spec1ItShould1, spec1Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec1Nested = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), spec1ItShouldIn1, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
+    val spec1ItShould2 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "throw NoSuchElementException if an empty stack is popped"))
+    val spec1ItShouldIn2 = new MethodInvocation(suiteClass.getName, spec1ItShould2, spec1Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
-    val spec1BehaviorOf2 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "behaviour"), spec1Constructor, Array.empty, "of", StringLiteral(suiteClass.getName, null, "A List"))
-    val spec1ItShould3 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "put values in the sequence they are put in"))
-    val spec1ItShouldIn3 = MethodInvocation(suiteClass.getName, spec1ItShould3, spec1Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val spec1ItShould4 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "throw ArrayIndexOutOfBoundsException when invalid index is applied"))
-    val spec1ItShouldIn4 = MethodInvocation(suiteClass.getName, spec1ItShould4, spec1Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec1BehaviorOf2 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "behaviour"), spec1Constructor, Array.empty, "of", new StringLiteral(suiteClass.getName, null, "A List"))
+    val spec1ItShould3 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "put values in the sequence they are put in"))
+    val spec1ItShouldIn3 = new MethodInvocation(suiteClass.getName, spec1ItShould3, spec1Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec1ItShould4 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "throw ArrayIndexOutOfBoundsException when invalid index is applied"))
+    val spec1ItShouldIn4 = new MethodInvocation(suiteClass.getName, spec1ItShould4, spec1Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
     List[AstNode](spec1Constructor, spec1BehaviorOf1, spec1ItShould1, spec1ItShouldIn1, spec1ItShould2, spec1ItShouldIn2, 
                   spec1BehaviorOf2, spec1ItShould3, spec1ItShouldIn3, spec1ItShould4, spec1ItShouldIn4).foreach(_.parent)
     
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.FlatSpec.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.FlatSpec.")
     assert(finder.getClass == classOf[FlatSpecFinder], "Suite that uses org.scalatest.FlatSpec should use FlatSpecFinder.")
     
     val spec1ConstructorSelection = finder.find(spec1Constructor)
@@ -111,25 +110,24 @@ class FlatSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFlatSpec2]
-    val spec2Constructor = ConstructorBlock(suiteClass.getName, Array.empty)
+    val spec2Constructor = new ConstructorBlock(suiteClass.getName, Array.empty)
     
-    val spec2ItShould1 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
-    val spec2ItShouldIn1 = MethodInvocation(suiteClass.getName, spec2ItShould1, spec2Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val spec2Nested = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), spec2ItShouldIn1, Array.empty, "println", StringLiteral(suiteClass.getName, null, "nested"))
-    val spec2ItShould2 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "throw NoSuchElementException if an empty stack is popped"))
-    val spec2ItShouldIn2 = MethodInvocation(suiteClass.getName, spec2ItShould2, spec2Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec2ItShould1 =new  MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
+    val spec2ItShouldIn1 = new MethodInvocation(suiteClass.getName, spec2ItShould1, spec2Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec2Nested = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), spec2ItShouldIn1, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
+    val spec2ItShould2 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "throw NoSuchElementException if an empty stack is popped"))
+    val spec2ItShouldIn2 = new MethodInvocation(suiteClass.getName, spec2ItShould2, spec2Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
-    val spec2ItShould3 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "A List"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "put values in the sequence they are put in"))
-    val spec2ItShouldIn3 = MethodInvocation(suiteClass.getName, spec2ItShould3, spec2Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val spec2ItShould4 = MethodInvocation(suiteClass.getName, ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", StringLiteral(suiteClass.getName, null, "throw ArrayIndexOutOfBoundsException when invalid index is applied"))
-    val spec2ItShouldIn4 = MethodInvocation(suiteClass.getName, spec2ItShould4, spec2Constructor, Array.empty, "in", ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec2ItShould3 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A List"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "put values in the sequence they are put in"))
+    val spec2ItShouldIn3 = new MethodInvocation(suiteClass.getName, spec2ItShould3, spec2Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val spec2ItShould4 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "throw ArrayIndexOutOfBoundsException when invalid index is applied"))
+    val spec2ItShouldIn4 = new MethodInvocation(suiteClass.getName, spec2ItShould4, spec2Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
     List[AstNode](spec2Constructor, spec2ItShould1, spec2ItShouldIn1, spec2ItShould2, spec2ItShouldIn2, 
                   spec2ItShould3, spec2ItShouldIn3, spec2ItShould4, spec2ItShouldIn4).foreach(_.parent)
                   
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.FlatSpec.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.FlatSpec.")
     assert(finder.getClass == classOf[FlatSpecFinder], "Suite that uses org.scalatest.FlatSpec should use FlatSpecFinder.")
                   
     val spec2ConstructorSelection = finder.find(spec2Constructor)

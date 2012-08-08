@@ -27,9 +27,8 @@ import org.scalatest.PropSpec
 
 trait FinderSuite extends FunSuite {
   
-  def expectSelection(selectionOpt: Option[Selection], expectedClassName: String, expectedDisplayName: String, expectedTestNames: Array[String]) {
-    assert(selectionOpt.getClass == classOf[Some[_]], "Test is None, expected className=" + expectedClassName + ", displayName=" + expectedDisplayName + ", testNames=" + expectedTestNames.deepToString)
-    val selection = selectionOpt.get
+  def expectSelection(selection: Selection, expectedClassName: String, expectedDisplayName: String, expectedTestNames: Array[String]) {
+    assert(selection != null, "Test is null, expected className=" + expectedClassName + ", displayName=" + expectedDisplayName + ", testNames=" + expectedTestNames.deepToString)
     expect(expectedClassName)(selection.className)
     expect(expectedDisplayName)(selection.displayName)
     expect(expectedTestNames.deepToString)(selection.testNames.deepToString)

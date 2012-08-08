@@ -37,17 +37,16 @@ class MethodFinderSuite extends FinderSuite {
     
     val suiteClass = classOf[TestingSuite]
     val suiteConstructor = new ConstructorBlock(suiteClass.getName, Array.empty)
-    val testMethod1 = MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod1", "java.lang.String")
-    val testMethod2 = MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod2")
-    val testMethod3 = MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod3")
-    val testNested = MethodDefinition(suiteClass.getName, testMethod3, Array.empty, "testNested")
+    val testMethod1 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod1", "java.lang.String")
+    val testMethod2 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod2")
+    val testMethod3 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod3")
+    val testNested = new MethodDefinition(suiteClass.getName, testMethod3, Array.empty, "testNested")
     
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.Suite.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.Suite.")
     assert(finder.getClass == classOf[MethodFinder], "Suite that uses org.scalatest.Suite should use MethodFinder.")
     val selectionMethod1 = finder.find(testMethod1)
-    expect(None)(selectionMethod1)
+    expect(null)(selectionMethod1)
     val selectionMethod2 = finder.find(testMethod2)
     expectSelection(selectionMethod2, suiteClass.getName, suiteClass.getName + ".testMethod2", Array("testMethod2"))
     val selectionMethod3 = finder.find(testMethod3)
