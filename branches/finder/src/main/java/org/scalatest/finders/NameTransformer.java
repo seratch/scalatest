@@ -1,6 +1,6 @@
 package org.scalatest.finders;
 
-public class NameTransformer {
+class NameTransformer {
 
   private static int nops = 128;
   private static int ncodes = 26 * 26;

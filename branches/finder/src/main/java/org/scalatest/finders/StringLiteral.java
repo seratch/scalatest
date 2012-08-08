@@ -16,7 +16,7 @@
 
 package org.scalatest.finders;
 
-class StringLiteral implements AstNode {
+public class StringLiteral implements AstNode {
   
   private String className;
   private AstNode parent;

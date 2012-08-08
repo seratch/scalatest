@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-class ToStringTarget implements AstNode {
+public class ToStringTarget implements AstNode {
     
   private String className;
   private AstNode parent;
