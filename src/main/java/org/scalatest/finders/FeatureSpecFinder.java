@@ -19,7 +19,7 @@ package org.scalatest.finders;
 import java.util.ArrayList;
 import java.util.List;
 
-class FeatureSpecFinder implements Finder {
+public class FeatureSpecFinder implements Finder {
   
   public Selection find(AstNode node) {
     Selection result = null;

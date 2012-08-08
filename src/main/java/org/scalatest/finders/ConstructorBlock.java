@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-class ConstructorBlock implements AstNode {
+public class ConstructorBlock implements AstNode {
   
   private String className;
   private List<AstNode> children;

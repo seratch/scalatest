@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-class MethodInvocation implements AstNode {
+public class MethodInvocation implements AstNode {
   private String className;
   private AstNode target;
   private AstNode parent;

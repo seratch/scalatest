@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-class FlatSpecFinder implements Finder {
+public class FlatSpecFinder implements Finder {
   
   public Selection find(AstNode node) {
     Selection result = null;  
@@ -146,7 +146,7 @@ class FlatSpecFinder implements Finder {
     else if (node instanceof MethodInvocation) {
       MethodInvocation invocation = (MethodInvocation) node;
       String name = invocation.name();
-      if (name == "of") {
+      if (name.equals("of")) {
         List<AstNode> constructorChildrenList = Arrays.asList(constructorChildren);
         int nodeIdx = constructorChildrenList.indexOf(node);
         if (nodeIdx >= 0) {
@@ -164,7 +164,7 @@ class FlatSpecFinder implements Finder {
         else
           return null;
       }
-      else if (name == "should") {
+      else if (name.equals("should")) {
         AstNode parent = invocation.parent();
         if (parent instanceof MethodInvocation && parent.name().equals("in")) {
           String testName = getTestName(prefix, (MethodInvocation) parent);
@@ -173,7 +173,7 @@ class FlatSpecFinder implements Finder {
         else
           return null;
       }
-      else if (name == "in") {
+      else if (name.equals("in")) {
         String testName = getTestName(prefix, invocation);
         return new Selection(invocation.className(), testName, new String[] { testName });
       }

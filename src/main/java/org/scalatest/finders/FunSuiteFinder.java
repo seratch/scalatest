@@ -16,7 +16,7 @@
 
 package org.scalatest.finders;
 
-class FunSuiteFinder extends FunctionFinder {
+public class FunSuiteFinder extends FunctionFinder {
   protected String getName() {
     return "test";
   }

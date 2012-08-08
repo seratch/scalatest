@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-class FreeSpecFinder implements Finder {
+public class FreeSpecFinder implements Finder {
   
   private String getTestNameBottomUp(MethodInvocation invocation) {
     String result = "";

@@ -16,7 +16,7 @@
 
 package org.scalatest.finders;
 
-class PropSpecFinder extends FunctionFinder {
+public class PropSpecFinder extends FunctionFinder {
   protected String getName() {
     return "property";
   }

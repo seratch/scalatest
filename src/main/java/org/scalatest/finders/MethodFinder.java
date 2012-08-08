@@ -16,7 +16,7 @@
 
 package org.scalatest.finders;
 
-class MethodFinder implements Finder {
+public class MethodFinder implements Finder {
 
     public Selection find(AstNode node) {
       Selection result = null;

@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-class WordSpecFinder implements Finder {
+public class WordSpecFinder implements Finder {
     
   private Set<String> scopeSet;
     
