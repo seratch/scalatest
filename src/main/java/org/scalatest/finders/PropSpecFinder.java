@@ -14,8 +14,16 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
 
-class FunSuiteFinder extends FunctionFinder {
-  val name = "test"
+class PropSpecFinder extends FunctionFinder {
+  protected String getName() {
+    return "property";
+  }
 }
+
+/*package org.scalatest.finders
+
+class PropSpecFinder extends FunctionFinder {
+  val name = "property"
+}*/

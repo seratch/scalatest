@@ -14,7 +14,63 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+class MethodInvocation implements AstNode {
+  private String className;
+  private AstNode target;
+  private AstNode parent;
+  private List<AstNode> children;
+  private String name;
+  private AstNode[] args;
+  
+  public MethodInvocation(String className, AstNode target, AstNode parent, AstNode[] children, String name, AstNode... args) {
+    this.className = className;
+    this.target = target;
+    this.parent = parent;
+    if (parent != null)
+      parent.addChild(this);
+    this.children = new ArrayList<AstNode>();
+    this.children.addAll(Arrays.asList(children));
+    this.name = name;
+    this.args = args;
+  }
+  
+  public String className() {
+    return className;
+  }
+  
+  public AstNode parent() {
+    return parent;
+  }
+  
+  public AstNode[] children() {
+    return children.toArray(new AstNode[children.size()]);
+  }
+  
+  public String name() {
+    return name;
+  }
+  
+  public void addChild(AstNode node) {
+    if (!children.contains(node))
+      children.add(node);
+  }
+  
+  public AstNode target() {
+    return target;
+  }
+  
+  public AstNode[] args() {
+    return args;  
+  }
+}
+
+/*package org.scalatest.finders
 
 class MethodInvocation (
   pClassName: String,
@@ -50,4 +106,4 @@ object MethodInvocation {
       Some((value.className, value.target, value.parent, value.children, value.name, value.args.toArray))
     else
       None
-}
+}*/

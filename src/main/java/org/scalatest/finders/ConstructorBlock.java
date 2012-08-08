@@ -14,9 +14,46 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
 
-class ConstructorBlock(
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+class ConstructorBlock implements AstNode {
+  
+  private String className;
+  private List<AstNode> children;
+    
+  public ConstructorBlock(String className, AstNode[] childrenArr) {
+    this.className = className;
+    children = new ArrayList<AstNode>();
+    children.addAll(Arrays.asList(childrenArr));
+  }
+    
+  public String className() {
+    return className;
+  }
+  
+  public AstNode parent() {
+    return null;
+  }
+  
+  public AstNode[] children() {
+    return children.toArray(new AstNode[children.size()]);
+  }
+  
+  public String name() {
+    return "constructor";
+  }
+  
+  public void addChild(AstNode node) {
+    if (!children.contains(node)) 
+        children.add(node);
+  }
+}
+
+/*class ConstructorBlock(
     pClassName: String, 
     pChildren: Array[AstNode]) 
 extends AstNode {
@@ -34,4 +71,4 @@ extends AstNode {
 object ConstructorBlock {
   def apply(className: String, children: Array[AstNode]) = new ConstructorBlock(className, children)
   def unapply(value: ConstructorBlock): Option[(String, Array[AstNode])] = if (value != null) Some((value.className, value.children)) else None
-}
+}*/

@@ -47,22 +47,21 @@ class FeatureSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFeatureSpec]
-    val featureSpecConstructor = ConstructorBlock(suiteClass.getName, Array.empty)
-    val feature1 = MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array(), "feature", StringLiteral(suiteClass.getName, null, "feature 1"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val feature1Scenario1 = MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", StringLiteral(suiteClass.getName, null, "scenario 1"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val feature1Scenario2 = MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", StringLiteral(suiteClass.getName, null, "scenario 2"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val nestedScenario = MethodInvocation(suiteClass.getName, null, feature1Scenario2, Array.empty, "scenario", StringLiteral(suiteClass.getName, null, "nested scenario"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val featureSpecConstructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val feature1 = new MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array(), "feature", new StringLiteral(suiteClass.getName, null, "feature 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val feature1Scenario1 = new MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val feature1Scenario2 = new MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 2"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val nestedScenario = new MethodInvocation(suiteClass.getName, null, feature1Scenario2, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "nested scenario"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
-    val feature2 = MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array.empty, "feature", StringLiteral(suiteClass.getName, null, "feature 2"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val nestedFeature2 = MethodInvocation(suiteClass.getName, null, feature2, Array.empty, "println", StringLiteral(suiteClass.getName, null, "nested feature 2"))
-    val feature2Scenario1 = MethodInvocation(suiteClass.getName, null, feature2, Array.empty, "scenario", StringLiteral(suiteClass.getName, null, "scenario 1"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
-    val feature2Scenario2 = MethodInvocation(suiteClass.getName, null, feature2, Array.empty, "scenario", StringLiteral(suiteClass.getName, null, "scenario 2"), ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val feature2 = new MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array.empty, "feature", new StringLiteral(suiteClass.getName, null, "feature 2"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val nestedFeature2 = new MethodInvocation(suiteClass.getName, null, feature2, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested feature 2"))
+    val feature2Scenario1 = new MethodInvocation(suiteClass.getName, null, feature2, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val feature2Scenario2 = new MethodInvocation(suiteClass.getName, null, feature2, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 2"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     
-    val noScopeScenario = MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array.empty, "scenario", StringLiteral(suiteClass.getName, null, "scenario with no scope"))
+    val noScopeScenario = new MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario with no scope"))
     
-    val finderOpt: Option[Finder] = LocationUtils.getFinder(suiteClass)
-    assert(finderOpt.isDefined, "Finder not found for suite that uses org.scalatest.FeatureSpec.")
-    val finder = finderOpt.get
+    val finder: Finder = LocationUtils.getFinder(suiteClass)
+    assert(finder != null, "Finder not found for suite that uses org.scalatest.FeatureSpec.")
     assert(finder.getClass == classOf[FeatureSpecFinder], "Suite that uses org.scalatest.FeatureSpec should use FeatureSpecFinder.")
     
     val f1s1 = finder.find(feature1Scenario1)                      

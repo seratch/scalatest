@@ -14,7 +14,37 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
+
+abstract class FunctionFinder implements Finder {
+  protected abstract String getName();
+  
+  public Selection find(AstNode node) {
+    Selection result = null;
+    while (result == null) {
+      if (node instanceof MethodInvocation) {
+        MethodInvocation methodInv = (MethodInvocation) node;
+        if (getName().equals(methodInv.name()) && methodInv.parent() != null && methodInv.parent() instanceof ConstructorBlock && methodInv.args()[0] instanceof StringLiteral)
+          result = new Selection(methodInv.className(), methodInv.className() + ": \"" + methodInv.args()[0].toString() + "\"", new String[] { methodInv.args()[0].toString() });
+        else {
+          if (node.parent() != null) 
+            node = node.parent();
+          else
+            break;
+        }
+      }
+      else {
+        if (node.parent() != null) 
+          node = node.parent();
+        else
+          break;
+      }
+    }
+    return result;
+  }
+}
+
+/*package org.scalatest.finders
 
 import scala.annotation.tailrec
 
@@ -36,4 +66,4 @@ trait FunctionFinder extends Finder {
     }
   }
   
-}
+}*/

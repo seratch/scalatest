@@ -14,7 +14,40 @@
  * limitations under the License.
  */
 
-package org.scalatest.finders
+package org.scalatest.finders;
+
+class MethodFinder implements Finder {
+
+    public Selection find(AstNode node) {
+      Selection result = null;
+      while (result == null) {
+        if (node instanceof MethodDefinition) {
+          MethodDefinition methodDef = (MethodDefinition) node;
+          if (methodDef.parent() != null && methodDef.parent() instanceof ConstructorBlock && methodDef.paramTypes().length == 0) {
+            String displayName = NameTransformer.decode(methodDef.className()) + "." + methodDef.name();
+            String testName = NameTransformer.encode(methodDef.name());
+            result = new Selection(methodDef.className(), displayName, new String[] { testName });
+          }
+          else {
+            if (node.parent() != null) 
+              node = node.parent();
+            else
+              break;
+          }
+        }
+        else {
+          if (node.parent() != null) 
+            node = node.parent();
+          else
+            break;
+        }
+      }
+      return result;
+    }
+  
+}
+
+/*package org.scalatest.finders
 
 import scala.annotation.tailrec
 import scala.reflect.NameTransformer
@@ -35,4 +68,4 @@ class MethodFinder extends Finder {
     }
   }
   
-}
+}*/
