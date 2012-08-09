@@ -47,7 +47,7 @@ trait Distributor {
    * @throws NullPointerException if either <code>suite</code> or <code>tracker</code> is <code>null</code>.
    */
   @deprecated("Please use the apply method that takes a Args instead, the one with this signature: def apply(Suite, Args)")
-  def apply(suite: Suite, tracker: Tracker)
+  def apply(suite: AbstractSuite, tracker: Tracker)
 
   /**
    * Puts a <code>Suite</code> into the <code>Distributor</code>.
@@ -65,6 +65,6 @@ trait Distributor {
    *
    * @throws NullPointerException if either <code>suite</code> or <code>tracker</code> is <code>null</code>.
    */
-  def apply(suite: Suite, args: Args)
+  def apply(suite: AbstractSuite, args: Args)
 }
 

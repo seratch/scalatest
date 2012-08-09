@@ -79,7 +79,7 @@ import org.scalatest.Suite.autoTagClassAnnotations
  * @author Daniel Watson
  * @author Joel Neely
  */
-trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
+trait JUnitSuite extends AbstractSuite with AssertionsForJUnit { thisSuite =>
                  
   // This is volatile, because who knows what Thread JUnit will fire through this.
   @volatile private var theTracker = new Tracker
@@ -256,6 +256,10 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "JUnitSuite"
+
+  def nestedSuites: IndexedSeq[Suite] = {
+    throw new UnsupportedOperationException
+  }
 
 // verifySomething(org.scalatest.junit.helpers.HappySuite)
 // Description.displayName of a test report has the form <testMethodName>(<suiteClassName>)

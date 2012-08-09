@@ -676,10 +676,10 @@ class SuiteSuite extends Suite with PrivateMethodTester with SharedHelpers with 
     
     class CounterDistributor extends Distributor {
       var count = 0
-      def apply(suite: Suite, args: Args) {
+      def apply(suite: AbstractSuite, args: Args) {
         count += 1
       }
-      def apply(suite: Suite, tracker: Tracker) {
+      def apply(suite: AbstractSuite, tracker: Tracker) {
         count += 1
       }
     }

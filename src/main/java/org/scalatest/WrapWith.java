@@ -70,5 +70,5 @@ public @interface WrapWith {
      *
      * @return a wrapper suite class, which must have a constructor that takes a single <code>Class</code> to run
      */
-    Class<? extends Suite> value();
+    Class<? extends AbstractSuite> value();
 }

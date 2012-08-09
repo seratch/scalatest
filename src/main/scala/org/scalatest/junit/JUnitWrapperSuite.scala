@@ -44,7 +44,7 @@ import java.lang.reflect
  * @author Joel Neely
  * @author George Berger
  */
-class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends Suite {
+class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends AbstractSuite {
 
   // TODO: This may need to be made thread safe, because who
   // knows what Thread JUnit will fire through this
@@ -199,4 +199,11 @@ class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends Sui
   override protected final def runTest(testName: String, args: Args) {
         throw new UnsupportedOperationException
   }
+
+  def nestedSuites: IndexedSeq[AbstractSuite] = IndexedSeq.empty
+
+  /**
+   * Suite style name.
+   */
+  val styleName: String = "org.scalatest.junit.JUnitWrapperSuite"
 }

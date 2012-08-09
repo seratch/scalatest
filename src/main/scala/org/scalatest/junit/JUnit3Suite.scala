@@ -148,7 +148,7 @@ import exceptions._
  * 
  * @author Bill Venners
  */
-class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
+class JUnit3Suite extends TestCase with AbstractSuite with AssertionsForJUnit {
 
   // This is volatile, because who knows what Thread JUnit will fire through this.
   @volatile private var theTracker = new Tracker
@@ -314,6 +314,8 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    * Suite style name.
    */
   final override val styleName: String = "JUnit3Suite"
+
+  def nestedSuites: IndexedSeq[AbstractSuite] = IndexedSeq.empty
 }
 
 private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker) extends TestListener {
@@ -397,6 +399,5 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker) exte
       failedTestsSet -= testCase  
     }
   }
-
 }
 

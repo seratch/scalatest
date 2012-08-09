@@ -79,7 +79,7 @@ import exceptions._
  * @author Josh Cough
  * @author Bill Venners
  */
-trait TestNGSuite extends Suite { thisSuite =>
+trait TestNGSuite extends AbstractSuite with Assertions { thisSuite =>
 
   /**
    * Execute this <code>TestNGSuite</code>.
@@ -411,4 +411,6 @@ trait TestNGSuite extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "TestNGSuite"
+
+  def nestedSuites: IndexedSeq[AbstractSuite] = Vector.empty
 }
