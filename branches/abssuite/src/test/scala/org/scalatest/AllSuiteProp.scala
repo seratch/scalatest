@@ -3,7 +3,7 @@ package org.scalatest
 trait AllSuiteProp extends MethodSuiteProp with FunctionSuiteProp {
 
   override def examples =
-    Table(
+    Table[AbstractSuite with FixtureServices](
       "suite",
       suite,
       fixtureSuite,

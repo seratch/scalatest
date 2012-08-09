@@ -133,7 +133,7 @@ private[scalatest] object SuiteDiscoveryHelper {
 
   private[scalatest] def isAccessibleSuite(clazz: java.lang.Class[_]): Boolean = {
       try {
-        classOf[Suite].isAssignableFrom(clazz) && 
+        classOf[AbstractSuite].isAssignableFrom(clazz) && 
           Modifier.isPublic(clazz.getModifiers) &&
           !Modifier.isAbstract(clazz.getModifiers) &&
           Modifier.isPublic(clazz.getConstructor(emptyClassArray: _*).getModifiers)

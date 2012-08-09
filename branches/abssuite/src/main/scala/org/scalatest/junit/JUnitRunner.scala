@@ -68,7 +68,7 @@ final class JUnitRunner(suiteClass: java.lang.Class[_ <: Suite]) extends org.jun
    */
   val getDescription = createDescription(suiteToRun)
 
-  private def createDescription(suite: Suite): Description = {
+  private def createDescription(suite: AbstractSuite): Description = {
     val description = Description.createSuiteDescription(suite.getClass)
     // If we don't add the testNames and nested suites in, we get
     // Unrooted Tests show up in Eclipse

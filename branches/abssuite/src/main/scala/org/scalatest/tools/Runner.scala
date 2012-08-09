@@ -1942,7 +1942,7 @@ object Runner {
   
       if (!loadProblemsExist) {
         
-        case class SuiteConfig(suite: Suite, dynaTags: DynaTags, requireSelectedTag: Boolean, excludeNestedSuites: Boolean)
+        case class SuiteConfig(suite: AbstractSuite, dynaTags: DynaTags, requireSelectedTag: Boolean, excludeNestedSuites: Boolean)
         
         try {
           val namedSuiteInstances: List[SuiteConfig] =
@@ -1953,7 +1953,7 @@ object Runner {
                 val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
                 val suiteInstance = 
                 if (wrapWithAnnotation == null) 
-                  clazz.newInstance.asInstanceOf[Suite]
+                  clazz.newInstance.asInstanceOf[AbstractSuite]
                 else {
                   val suiteClazz = wrapWithAnnotation.value
                   val constructorList = suiteClazz.getDeclaredConstructors()
@@ -1961,7 +1961,7 @@ object Runner {
                     val types = c.getParameterTypes
                     types.length == 1 && types(0) == classOf[java.lang.Class[_]]
                   }
-                  constructor.get.newInstance(clazz).asInstanceOf[Suite]
+                  constructor.get.newInstance(clazz).asInstanceOf[AbstractSuite]
                 }
                 
                 if (suiteParam.testNames.length == 0 && suiteParam.wildcardTestNames.length == 0 && suiteParam.nestedSuites.length == 0)

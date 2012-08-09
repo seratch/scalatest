@@ -29,11 +29,11 @@ private[scalatest] class ConcurrentDistributor(args: Args, execSvc: ExecutorServ
 
   private val futureQueue = new LinkedBlockingQueue[Future[T] forSome { type T }]
 
-  def apply(suite: Suite, tracker: Tracker) {
+  def apply(suite: AbstractSuite, tracker: Tracker) {
     apply(suite, args.copy(tracker = tracker))
   }
  
-  def apply(suite: Suite, args: Args) {
+  def apply(suite: AbstractSuite, args: Args) {
     if (suite == null)
       throw new NullPointerException("suite is null")
     if (args == null)

@@ -25,8 +25,8 @@ class ParallelTestExecutionProp extends FunSuite
   with ParallelTestExecutionSuiteTimeoutExamples {
   
   class ControlledOrderDistributor extends Distributor {
-    val buf = ListBuffer.empty[(Suite, Args)]
-    def apply(suite: Suite, args: Args) {
+    val buf = ListBuffer.empty[(AbstractSuite, Args)]
+    def apply(suite: AbstractSuite, args: Args) {
       buf += ((suite, args))
     }
     def executeInOrder() {
@@ -40,7 +40,7 @@ class ParallelTestExecutionProp extends FunSuite
       }
     }
 
-    def apply(suite: Suite, tracker: Tracker) {
+    def apply(suite: AbstractSuite, tracker: Tracker) {
       throw new UnsupportedOperationException("Hey, we're not supposed to be calling this anymore!")
     }
   }
@@ -50,7 +50,7 @@ class ParallelTestExecutionProp extends FunSuite
       
       val buf = ListBuffer.empty[SuiteRunner]
       val execSvc: ExecutorService = Executors.newFixedThreadPool(2)
-      def apply(suite: Suite, args: Args) {
+      def apply(suite: AbstractSuite, args: Args) {
         buf += new SuiteRunner(suite, args)
       }
       def executeInOrder() {
@@ -70,7 +70,7 @@ class ParallelTestExecutionProp extends FunSuite
           futureQueue.poll().get()
       }
 
-      def apply(suite: Suite, tracker: Tracker) {
+      def apply(suite: AbstractSuite, tracker: Tracker) {
         throw new UnsupportedOperationException("Hey, we're not supposed to be calling this anymore!")
       }
     }

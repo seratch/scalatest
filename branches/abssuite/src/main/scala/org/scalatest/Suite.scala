@@ -1628,30 +1628,10 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   import Suite.TestMethodPrefix, Suite.InformerInParens, Suite.IgnoreAnnotation
 
   /**
-   * A test function taking no arguments, which also provides a test name and config map.
-   *
-   * <p>
-   * <code>Suite</code>'s implementation of <code>runTest</code> passes instances of this trait
-   * to <code>withFixture</code> for every test method it executes. It invokes <code>withFixture</code>
-   * for every test, including test methods that take an <code>Informer</code>. For the latter case,
-   * the <code>Informer</code> to pass to the test method is already contained inside the
-   * <code>NoArgTest</code> instance passed to <code>withFixture</code>.
-   * </p>
-   */
-  protected trait NoArgTest extends (() => Unit) with TestData {
-    
-    /**
-     * Runs the code of the test.
-     */
-    def apply()
-
-  }
-
-  /**
   * A <code>List</code> of this <code>Suite</code> object's nested <code>Suite</code>s. If this <code>Suite</code> contains no nested <code>Suite</code>s,
   * this method returns an empty <code>List</code>. This trait's implementation of this method returns an empty <code>List</code>.
   */
-  def nestedSuites: IndexedSeq[Suite] = Vector.empty
+  def nestedSuites: IndexedSeq[AbstractSuite] = Vector.empty
 
   /**
    * Executes one or more tests in this <code>Suite</code>, printing results to the standard output.
@@ -1958,137 +1938,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </pre>
    */
   final def execute { execute() }
-
-  /**
-   * A <code>Map</code> whose keys are <code>String</code> tag names with which tests in this <code>Suite</code> are marked, and
-   * whose values are the <code>Set</code> of test names marked with each tag.  If this <code>Suite</code> contains no tags, this
-   * method returns an empty <code>Map</code>.
-   *
-   * <p>
-   * This trait's implementation of this method uses Java reflection to discover any Java annotations attached to its test methods. The
-   * fully qualified name of each unique annotation that extends <code>TagAnnotation</code> is considered a tag. This trait's
-   * implementation of this method, therefore, places one key/value pair into to the
-   * <code>Map</code> for each unique tag annotation name discovered through reflection. The mapped value for each tag name key will contain
-   * the test method name, as provided via the <code>testNames</code> method. 
-   * </p>
-   * 
-   * <p>
-   * In addition to test methods annotations, this trait's implementation will also auto-tag test methods with class level annotations.  
-   * For example, if you annotate @Ignore at the class level, all test methods in the class will be auto-annotated with @Ignore.
-   * </p>
-   *
-   * <p>
-   * Subclasses may override this method to define and/or discover tags in a custom manner, but overriding method implementations
-   * should never return an empty <code>Set</code> as a value. If a tag has no tests, its name should not appear as a key in the
-   * returned <code>Map</code>.
-   * </p>
-   */
-  def tags: Map[String, Set[String]] = {
-    def getTags(testName: String) =
-      for {
-        a <- getMethodForTestName(testName).getDeclaredAnnotations
-        annotationClass = a.annotationType
-        if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
-      } yield annotationClass.getName
-
-    val testNameSet = testNames
-      
-    val testTags = Map() ++ 
-      (for (testName <- testNameSet; if !getTags(testName).isEmpty)
-        yield testName -> (Set() ++ getTags(testName)))
-
-    autoTagClassAnnotations(testTags, this)
-  }
-
-  /**
-  * A <code>Set</code> of test names. If this <code>Suite</code> contains no tests, this method returns an empty <code>Set</code>.
-  *
-  * <p>
-  * This trait's implementation of this method uses Java reflection to discover all public methods whose name starts with <code>"test"</code>,
-  * which take either nothing or a single <code>Informer</code> as parameters. For each discovered test method, it assigns a test name
-  * comprised of just the method name if the method takes no parameters, or the method name plus <code>(Informer)</code> if the
-  * method takes a <code>Informer</code>. Here are a few method signatures and the names that this trait's implementation assigns them:
-  * </p>
-  *
-  * <pre class="stHighlight">
-  * def testCat() {}         // test name: "testCat"
-  * def testCat(Informer) {} // test name: "testCat(Informer)"
-  * def testDog() {}         // test name: "testDog"
-  * def testDog(Informer) {} // test name: "testDog(Informer)"
-  * def test() {}            // test name: "test"
-  * def test(Informer) {}    // test name: "test(Informer)"
-  * </pre>
-  *
-  * <p>
-  * This trait's implementation of this method returns an immutable <code>Set</code> of all such names, excluding the name
-  * <code>testNames</code>. The iterator obtained by invoking <code>elements</code> on this
-  * returned <code>Set</code> will produce the test names in their <em>natural order</em>, as determined by <code>String</code>'s
-  * <code>compareTo</code> method.
-  * </p>
-  *
-  * <p>
-  * This trait's implementation of <code>runTests</code> invokes this method
-  * and calls <code>runTest</code> for each test name in the order they appear in the returned <code>Set</code>'s iterator.
-  * Although this trait's implementation of this method returns a <code>Set</code> whose iterator produces <code>String</code>
-  * test names in a well-defined order, the contract of this method does not required a defined order. Subclasses are free to
-  * override this method and return test names in an undefined order, or in a defined order that's different from <code>String</code>'s
-  * natural order.
-  * </p>
-  *
-  * <p>
-  * Subclasses may override this method to produce test names in a custom manner. One potential reason to override <code>testNames</code> is
-  * to run tests in a different order, for example, to ensure that tests that depend on other tests are run after those other tests.
-  * Another potential reason to override is allow tests to be defined in a different manner, such as methods annotated <code>@Test</code> annotations
-  * (as is done in <code>JUnitSuite</code> and <code>TestNGSuite</code>) or test functions registered during construction (as is
-  * done in <code>FunSuite</code> and <code>FunSpec</code>).
-  * </p>
-  */
-  def testNames: Set[String] = {
-
-    def isTestMethod(m: Method) = {
-
-      // Factored out to share code with fixture.Suite.testNames
-      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags) = isTestMethodGoodies(m)
-
-      isInstanceMethod && (firstFour == "test") && ((hasNoParams && !isTestNames && !isTestTags) || takesInformer(m) || takesCommunicator(m))
-    }
-
-    val testNameArray =
-      for (m <- getClass.getMethods; if isTestMethod(m)) 
-        yield if (takesInformer(m)) m.getName + InformerInParens else m.getName
-
-    val result = TreeSet.empty[String](EncodedOrdering) ++ testNameArray
-    if (result.size != testNameArray.length) {
-      throw new NotAllowedException("Howdy", 0)
-    }
-    result
-  }
-
-  /*
-  Old style method names will have (Informer) at the end still, but new ones will
-  not. This method will find the one without a Rep if the same name is used
-  with and without a Rep.
-   */
-  private[scalatest] def getMethodForTestName(testName: String) =
-    try {
-      getClass.getMethod(
-        simpleNameForTest(testName),
-        (if (testMethodTakesAnInformer(testName)) Array(classOf[Informer]) else new Array[Class[_]](0)): _*
-      )
-    }
-    catch {
-      case e: NoSuchMethodException =>
-        // Try (Rep) on the end
-        try {
-          getClass.getMethod(simpleNameForTest(testName), classOf[Rep])
-        }
-        catch {
-          case e: NoSuchMethodException =>
-            throw new IllegalArgumentException(Resources("testNotFound", testName))
-        }
-      case e =>
-        throw e
-    }
 
   /**
    *  Run the passed test function in the context of a fixture established by this method.
@@ -2495,7 +2344,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     val stopRequested = stopper
     val report = wrapReporterIfNecessary(reporter)
 
-    def callExecuteOnSuite(nestedSuite: Suite) {
+    def callExecuteOnSuite(nestedSuite: AbstractSuite) {
 
       if (!stopRequested()) {
 
@@ -2550,50 +2399,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
       }
     }
   }
-
-  /**
-   * A user-friendly suite name for this <code>Suite</code>.
-   *
-   * <p>
-   * This trait's
-   * implementation of this method returns the simple name of this object's class. This
-   * trait's implementation of <code>runNestedSuites</code> calls this method to obtain a
-   * name for <code>Report</code>s to pass to the <code>suiteStarting</code>, <code>suiteCompleted</code>,
-   * and <code>suiteAborted</code> methods of the <code>Reporter</code>.
-   * </p>
-   *
-   * @return this <code>Suite</code> object's suite name.
-   */
-  def suiteName = getSimpleNameOfAnObjectsClass(thisSuite)
-
-  // Decoded suite name enclosed using backtick (`), currently for internal use only.
-  private[scalatest] val decodedSuiteName:Option[String] = getDecodedName(suiteName)
-
-  /**
-   * A string ID for this <code>Suite</code> that is intended to be unique among all suites reported during a run.
-   *
-   * <p>
-   * This trait's
-   * implementation of this method returns the fully qualified name of this object's class. 
-   * Each suite reported during a run will commonly be an instance of a different <code>Suite</code> class,
-   * and in such cases, this default implementation of this method will suffice. However, in special cases
-   * you may need to override this method to ensure it is unique for each reported suite. For example, if you write
-   * a <code>Suite</code> subclass that reads in a file whose name is passed to its constructor and dynamically
-   * creates a suite of tests based on the information in that file, you will likely need to override this method
-   * in your <code>Suite</code> subclass, perhaps by appending the pathname of the file to the fully qualified class name. 
-   * That way if you run a suite of tests based on a directory full of these files, you'll have unique suite IDs for
-   * each reported suite.
-   * </p>
-   *
-   * <p>
-   * The suite ID is <em>intended</em> to be unique, because ScalaTest does not enforce that it is unique. If it is not
-   * unique, then you may not be able to uniquely identify a particular test of a particular suite. This ability is used,
-   * for example, to dynamically tag tests as having failed in the previous run when rerunning only failed tests.
-   * </p>
-   *
-   * @return this <code>Suite</code> object's ID.
-   */
-  def suiteId = thisSuite.getClass.getName
 
   /**
    * Throws <code>TestPendingException</code> to indicate a test is pending.
@@ -2681,36 +2486,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
         throw new TestFailedException(Resources("pendingUntilFixed"), 2)
   }
 
-  /**
-   * The total number of tests that are expected to run when this <code>Suite</code>'s <code>run</code> method is invoked.
-   *
-   * <p>
-   * This trait's implementation of this method returns the sum of:
-   * </p>
-   *
-   * <ul>
-   * <li>the size of the <code>testNames</code> <code>List</code>, minus the number of tests marked as ignored and
-   * any tests that are exluded by the passed <code>Filter</code></li>
-   * <li>the sum of the values obtained by invoking
-   *     <code>expectedTestCount</code> on every nested <code>Suite</code> contained in
-   *     <code>nestedSuites</code></li>
-   * </ul>
-   *
-   * @param filter a <code>Filter</code> with which to filter tests to count based on their tags
-   */
-  def expectedTestCount(filter: Filter): Int = {
-
-    // [bv: here was another tricky refactor. How to increment a counter in a loop]
-    def countNestedSuiteTests(nestedSuites: List[Suite], filter: Filter): Int =
-      nestedSuites.toList match {
-        case List() => 0
-        case nestedSuite :: nestedSuites => 
-          nestedSuite.expectedTestCount(filter) + countNestedSuiteTests(nestedSuites, filter)
-    }
-
-    filter.runnableTestCount(testNames, tags, suiteId) + countNestedSuiteTests(nestedSuites.toList, filter)
-  }
-
   // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
   // so that exceptions are caught and transformed
   // into error messages on the standard error stream.
@@ -2718,21 +2493,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     case dr: DispatchReporter => dr
     case cr: CatchReporter => cr
     case _ => new CatchReporter(reporter)
-  }
-  
-  /**
-   * The fully qualified class name of the rerunner to rerun this suite.  This implementation will look at this.getClass and see if it is
-   * either an accessible Suite, or it has a WrapWith annotation. If so, it returns the fully qualified class name wrapped in a Some, 
-   * or else it returns None.
-   */
-  def rerunner: Option[String] = {
-    val suiteClass = getClass
-    val isAccessible = SuiteDiscoveryHelper.isAccessibleSuite(suiteClass)
-    val hasWrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith]) != null
-    if (isAccessible || hasWrapWithAnnotation)
-      Some(suiteClass.getName)
-    else
-      None
   }
   
   private[scalatest] def getTopOfClass = TopOfClass(this.getClass.getName)
@@ -2853,16 +2613,16 @@ private[scalatest] object Suite {
       case _ => (a, b)
     }
 
-  private[scalatest] def formatterForSuiteStarting(suite: Suite): Option[Formatter] =
+  private[scalatest] def formatterForSuiteStarting(suite: AbstractSuite): Option[Formatter] =
       Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
 
-  private[scalatest] def formatterForSuiteCompleted(suite: Suite): Option[Formatter] =
+  private[scalatest] def formatterForSuiteCompleted(suite: AbstractSuite): Option[Formatter] =
       Some(MotionToSuppress)
 
-  private[scalatest] def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] =
+  private[scalatest] def formatterForSuiteAborted(suite: AbstractSuite, message: String): Option[Formatter] =
       Some(IndentedText(message, message, 0))
 
-  private def simpleNameForTest(testName: String) =
+  private[scalatest] def simpleNameForTest(testName: String) =
     if (testName.endsWith(InformerInParens))
       testName.substring(0, testName.length - InformerInParens.length)
     else
@@ -3049,7 +2809,7 @@ used for test events like succeeded/failed, etc.
       Resources("exceptionThrown", e.getClass.getName) // Say something like, "java.lang.Exception was thrown."
 
   def indentation(level: Int) = "  " * level
-  
+
   // Decode suite name enclosed using backtick (`)
   def getDecodedName(name:String): Option[String] = {
     val decoded = NameTransformer.decode(name)
@@ -3355,7 +3115,7 @@ used for test events like succeeded/failed, etc.
     }
   }
   
-  def autoTagClassAnnotations(tags: Map[String, Set[String]], theSuite: Suite) = {
+  def autoTagClassAnnotations(tags: Map[String, Set[String]], theSuite: AbstractSuite) = {
     val suiteTags = for { 
       a <- theSuite.getClass.getDeclaredAnnotations
       annotationClass = a.annotationType

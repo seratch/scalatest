@@ -198,7 +198,7 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
         val wrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith])
         val suite = 
         if (wrapWithAnnotation == null)
-          suiteClass.newInstance.asInstanceOf[Suite]
+          suiteClass.newInstance.asInstanceOf[AbstractSuite]
         else {
           val suiteClazz = wrapWithAnnotation.value
           val constructorList = suiteClazz.getDeclaredConstructors()

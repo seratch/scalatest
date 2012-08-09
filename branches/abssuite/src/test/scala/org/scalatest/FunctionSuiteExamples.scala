@@ -24,7 +24,7 @@ trait FunctionSuiteExamples extends Tables {
   def pathFunSpec: path.FunSpec with FixtureServices
   
   def examples =
-    Table(
+    Table[AbstractSuite with FixtureServices](
       "suite",
       funSuite,
       fixtureFunSuite,
