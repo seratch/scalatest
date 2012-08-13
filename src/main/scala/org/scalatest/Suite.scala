@@ -58,6 +58,7 @@ import tools.SuiteDiscoveryHelper
 import tools.Runner
 import exceptions.StackDepthExceptionHelper.getStackDepthFun
 import exceptions._
+import collection.mutable.ListBuffer
 
 /*
  * <h2>Using <code>info</code> and <code>markup</code></h2>
@@ -2160,7 +2161,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected def runTest(testName: String, args: Args) {
+  protected def runTest(testName: String, args: Args): Status = {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
@@ -2170,6 +2171,8 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
     if (!testName.startsWith("test$colon$u0020"))
       println("The name \"" + NameTransformer.decode(testName) + "\" has been deprecated. Please use the `test: ...` form instead.")
 
+    val status = new SimpleStatus()
+      
     import args._
 
     val (stopRequested, report, method, testStartTime) =
@@ -2220,6 +2223,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
       )
       val duration = System.currentTimeMillis - testStartTime
       reportTestSucceeded(this, report, tracker, testName, testName, getDecodedName(testName), messageRecorderForThisTest.recordedEvents(false, false), duration, formatter, rerunner, Some(getTopOfMethod(method)))
+      status.succeed()
     }
     catch { 
       case ite: InvocationTargetException =>
@@ -2229,6 +2233,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
             val duration = System.currentTimeMillis - testStartTime
             // testWasPending = true so info's printed out in the finally clause show up yellow
             reportTestPending(this, report, tracker, testName, testName, getDecodedName(testName), messageRecorderForThisTest.recordedEvents(true, false), duration, formatter, Some(getTopOfMethod(method)))
+            status.succeed()
           case e: TestCanceledException =>
             val duration = System.currentTimeMillis - testStartTime
             val message = getMessageForException(e)
@@ -2236,6 +2241,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
             // testWasCanceled = true so info's printed out in the finally clause show up yellow
             report(TestCanceled(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, 
                                 testName, testName, getDecodedName(testName), messageRecorderForThisTest.recordedEvents(false, true), Some(e), Some(duration), Some(formatter), Some(TopOfMethod(thisSuite.getClass.getName, method.toGenericString())), rerunner))
+            status.succeed()
           case e if !anErrorThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
             handleFailedTest(t, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
@@ -2246,6 +2252,10 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
         handleFailedTest(e, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
       case e => throw e  
     }
+    finally {
+      status.complete()
+    }
+    status
   }
   
   /**
@@ -2314,7 +2324,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected def runTests(testName: Option[String], args: Args) {
+  protected def runTests(testName: Option[String], args: Args): Status = {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
@@ -2338,6 +2348,8 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
     val report = wrapReporterIfNecessary(reporter)
     val newArgs = args.copy(reporter = report)
 
+    val statusBuffer = new ListBuffer[Status]()
+    
     // If a testName is passed to run, just run that, else run the tests returned
     // by testNames.
     testName match {
@@ -2348,7 +2360,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
           if (ignoreTest)
             reportTestIgnored(thisSuite, report, tracker, tn, tn, getDecodedName(tn), getEscapedIndentedTextForTest(tn, 1, true), Some(getTopOfMethod(tn)))
           else
-            runTest(tn, newArgs)
+            statusBuffer += runTest(tn, newArgs)
         }
 
       case None =>
@@ -2357,10 +2369,11 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
             if (ignoreTest)
               reportTestIgnored(thisSuite, report, tracker, tn, tn, getDecodedName(tn), getEscapedIndentedTextForTest(tn, 1, true), Some(getTopOfMethod(tn)))
             else
-              runTest(tn, newArgs)
+              statusBuffer += runTest(tn, newArgs)
           }
       }
     }
+    new CompositeStatus(statusBuffer.toIndexedSeq)
   }
 
   /**
@@ -2413,7 +2426,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  def run(testName: Option[String], args: Args) {
+  def run(testName: Option[String], args: Args): Status = {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
@@ -2430,7 +2443,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
       case None => runNestedSuites(newArgs)
       case Some(_) =>
     }
-    runTests(testName, newArgs)
+    val status = runTests(testName, newArgs)
 
     if (stopRequested()) {
       val rawString = Resources("executeStopping")
@@ -2441,6 +2454,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
              }
         ))))
     }
+    status
   }
 
   // TODO see if I can take away the [scalatest] from the private
@@ -2488,7 +2502,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
    *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  protected def runNestedSuites(args: Args) {
+  protected def runNestedSuites(args: Args): Status = {
 
     if (args == null)
       throw new NullPointerException("args was null")
@@ -2498,7 +2512,7 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
     val stopRequested = stopper
     val report = wrapReporterIfNecessary(reporter)
 
-    def callExecuteOnSuite(nestedSuite: Suite) {
+    def callExecuteOnSuite(nestedSuite: Suite): Status = {
 
       if (!stopRequested()) {
 
@@ -2514,13 +2528,14 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
 
         try { // TODO: pass runArgs down and that will get the chosenStyles passed down
           // Same thread, so OK to send same tracker
-          nestedSuite.run(None, Args(report, stopRequested, filter, configMap, distributor, tracker, Set.empty))
+          val status = nestedSuite.run(None, Args(report, stopRequested, filter, configMap, distributor, tracker, Set.empty))
 
           val rawString = Resources("suiteCompletedNormally")
           val formatter = formatterForSuiteCompleted(nestedSuite)
 
           val duration = System.currentTimeMillis - suiteStartTime
           report(SuiteCompleted(tracker.nextOrdinal(), nestedSuite.suiteName, nestedSuite.suiteId, Some(nestedSuite.getClass.getName), nestedSuite.decodedSuiteName, Some(duration), formatter, Some(TopOfClass(nestedSuite.getClass.getName)), nestedSuite.rerunner))
+          status
         }
         catch {       
           case e: RuntimeException => {
@@ -2534,24 +2549,29 @@ trait Suite extends Assertions with Style with Serializable { thisSuite =>
 
             val duration = System.currentTimeMillis - suiteStartTime
             report(SuiteAborted(tracker.nextOrdinal(), rawString, nestedSuite.suiteName, nestedSuite.suiteId, Some(nestedSuite.getClass.getName), nestedSuite.decodedSuiteName, Some(e), Some(duration), formatter, Some(SeeStackDepthException), nestedSuite.rerunner))
+            new SimpleStatus(true, false)
           }
         }
       }
+      else
+        new SimpleStatus(true, false)
     }
     
+    val statusBuffer = new ListBuffer[Status]()
     if (!filter.excludeNestedSuites) {
       val nestedSuitesArray = nestedSuites.toArray
       distributor match {
         case None =>
           for (nestedSuite <- nestedSuitesArray) {
             if (!stopRequested()) 
-              callExecuteOnSuite(nestedSuite)
+              statusBuffer += callExecuteOnSuite(nestedSuite)
           }
         case Some(distribute) =>
           for (nestedSuite <- nestedSuitesArray) 
-            distribute(nestedSuite, args.copy(tracker = tracker.nextTracker))
+            statusBuffer += distribute(nestedSuite, args.copy(tracker = tracker.nextTracker))
       }
     }
+    new CompositeStatus(statusBuffer.toIndexedSeq)
   }
 
   /**

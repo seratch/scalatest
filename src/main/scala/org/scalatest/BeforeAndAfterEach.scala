@@ -259,19 +259,22 @@ trait BeforeAndAfterEach extends AbstractStyle {
    * exception, this method will complete abruptly with the exception thrown by <code>afterEach</code>.
    * </p>
   */
-  abstract protected override def runTest(testName: String, args: Args) {
+  abstract protected override def runTest(testName: String, args: Args): Status = {
 
     var thrownException: Option[Throwable] = None
+    
 
     beforeEach(new TestData { 
                       val name = testName
                       val configMap = args.configMap 
                    })
-    try {
+    val status = try {
       super.runTest(testName, args)
     }
     catch {
-      case e: Exception => thrownException = Some(e)
+      case e: Exception => 
+        thrownException = Some(e)
+        new SimpleStatus(true, false)
     }
     finally {
       try {
@@ -292,5 +295,6 @@ trait BeforeAndAfterEach extends AbstractStyle {
           }
       }
     }
+    status
   }
 }

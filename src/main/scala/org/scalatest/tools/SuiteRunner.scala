@@ -24,7 +24,7 @@ import Suite.formatterForSuiteCompleted
 import Suite.formatterForSuiteAborted
 import org.scalatest.exceptions.NotAllowedException
 
-private[scalatest] class SuiteRunner(suite: Suite, args: Args) extends Runnable {
+private[scalatest] class SuiteRunner(suite: Suite, args: Args, status: SimpleStatus) extends Runnable {
 
   private val stopRequested = args.stopper
 
@@ -60,6 +60,7 @@ private[scalatest] class SuiteRunner(suite: Suite, args: Args) extends Runnable 
         val duration = System.currentTimeMillis - suiteStartTime
         if (!suite.isInstanceOf[DistributedTestRunnerSuite])
           dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, Some(duration), formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
+        status.succeed()
       }
       catch {
         case e: NotAllowedException =>
@@ -80,6 +81,9 @@ private[scalatest] class SuiteRunner(suite: Suite, args: Args) extends Runnable 
           val duration = System.currentTimeMillis - suiteStartTime
           dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, Some(e), Some(duration), formatter3, Some(SeeStackDepthException), suite.rerunner))
         }
+      }
+      finally {
+        status.complete()
       }
     }
   }
