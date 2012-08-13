@@ -252,15 +252,17 @@ trait BeforeAndAfterAll  extends AbstractStyle { this: Suite =>
    * exception, this method will complete abruptly with the same exception.
    * </p>
   */
-  abstract override def run(testName: Option[String], args: Args) {
+  abstract override def run(testName: Option[String], args: Args): Status = {
     var thrownException: Option[Throwable] = None
 
     beforeAll(args.configMap)
-    try {
+    val status = try {
       super.run(testName, args)
     }
     catch {
-      case e: Exception => thrownException = Some(e)
+      case e: Exception => 
+        thrownException = Some(e)
+        new SimpleStatus(true, false)
     }
     finally {
       try {
@@ -278,5 +280,6 @@ trait BeforeAndAfterAll  extends AbstractStyle { this: Suite =>
           }
       }
     }
+    status
   }
 }

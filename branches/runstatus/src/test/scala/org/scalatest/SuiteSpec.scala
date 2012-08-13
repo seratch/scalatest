@@ -708,53 +708,54 @@ class SuiteSpec extends FunSpec with PrivateMethodTester with SharedHelpers {
     it("should stop nested suites from being executed") {
       class SuiteA extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
           super.run(testName, args)
         }
       }
       class SuiteB extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
           super.run(testName, args)
         }
       }
       class SuiteC extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
           super.run(testName, args)
         }
       }
       class SuiteD extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
-          super.run(testName, args)
+          val status = super.run(testName, args)
           args.stopper match {
             case s: MyStopper => s.stop = true
             case _ =>
           }
+          status
         }
       }
       class SuiteE extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
           super.run(testName, args)
         }
       }
       class SuiteF extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
           super.run(testName, args)
         }
       }
       class SuiteG extends Suite {
         var executed = false;
-        override def run(testName: Option[String], args: Args) {
+        override def run(testName: Option[String], args: Args): Status = {
           executed = true
           super.run(testName, args)
         }
