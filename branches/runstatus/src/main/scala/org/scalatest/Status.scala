@@ -4,6 +4,10 @@ import org.scalatest.tools.SuiteRunner
 sealed trait Status {
   def isCompleted: Boolean
   def isSucceeded: Boolean
+  def waitUntilCompleted() {
+    while (!isCompleted) 
+      Thread.sleep(10)
+  }
 }
 
 final class SimpleStatus(complete: Boolean = false, succeed: Boolean = false) extends Status {

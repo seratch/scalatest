@@ -257,7 +257,9 @@ trait BeforeAndAfterAll  extends AbstractStyle { this: Suite =>
 
     beforeAll(args.configMap)
     val status = try {
-      super.run(testName, args)
+      val runStatus = super.run(testName, args)
+      runStatus.waitUntilCompleted()
+      runStatus
     }
     catch {
       case e: Exception => 
