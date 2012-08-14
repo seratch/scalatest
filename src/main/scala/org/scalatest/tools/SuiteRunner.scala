@@ -52,7 +52,7 @@ private[scalatest] class SuiteRunner(suite: Suite, args: Args, status: SimpleSta
         dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
         
       try {
-        suite.run(None, args)
+        val runStatus = suite.run(None, args)
   
         val rawString2 = Resources("suiteCompletedNormally")
         val formatter = formatterForSuiteCompleted(suite)
@@ -60,7 +60,9 @@ private[scalatest] class SuiteRunner(suite: Suite, args: Args, status: SimpleSta
         val duration = System.currentTimeMillis - suiteStartTime
         if (!suite.isInstanceOf[DistributedTestRunnerSuite])
           dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), suite.decodedSuiteName, Some(duration), formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
-        status.succeed()
+        
+        if (runStatus.isSucceeded)
+          status.succeed()
       }
       catch {
         case e: NotAllowedException =>
