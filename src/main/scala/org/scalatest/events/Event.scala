@@ -138,6 +138,7 @@ sealed abstract class Event extends Ordered[Event] with java.io.Serializable {
     def throwableOption(throwableOption: Option[Throwable]) = {
       throwableOption match {
         case Some(throwable) => 
+          <className>{ throwable.getClass.getName }</className>
           <message>{ throwable.getMessage }</message>
           <depth>{ getThrowableStackDepth(throwable) }</depth>
           <stackTraces>
