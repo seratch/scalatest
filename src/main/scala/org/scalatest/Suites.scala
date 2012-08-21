@@ -25,13 +25,13 @@ package org.scalatest
  * </p>
  *
  * <pre class="stHighlight">
- * class StepsSuite extends Suites(
+ * class StepsSuite extends Suites {
  *   new Step1Suite,
  *   new Step2Suite,
  *   new Step3Suite,
  *   new Step4Suite,
  *   new Step5Suite
- * )
+ * }
  * </pre>
  *
  * <p>
@@ -58,7 +58,7 @@ class Suites(suitesToNest: Suite*) extends Suite {
    * Returns a list containing the suites passed to the constructor in
    * the order they were passed.
    */
-  override val nestedSuites: IndexedSeq[Suite] = Vector.empty ++ suitesToNest
+  override val nestedSuites = suitesToNest.toList
 }
 
 /**
@@ -80,4 +80,13 @@ object Suites {
    */
   def apply(suitesToNest: Suite*): Suites = new Suites(suitesToNest: _*)
 }
+
+/**
+ * <strong>SuperSuite has been deprecated and will be removed in a future
+ * release of ScalaTest. Please change any uses of <code>SuperSuite</code>
+ * to a corresponding use of <a href="Suites.html"><code>Suites</code></a> or <a href="Specs.html"><code>Specs</code></a> instead.</strong>
+ */
+@deprecated("Please use org.scalatest.Suites or org.scalatest.Specs instead.")
+class SuperSuite(suitesToNest: List[Suite]) extends Suites(suitesToNest: _*)
+// deprecated in 1.5, so remove in 1.7 or later
 

@@ -23,20 +23,43 @@ package org.scalatest
  * Mix in this trait into any suite whose nested suites need to be run sequentially even with the rest of the
  * run is being executed concurrently.
  */
-trait SequentialNestedSuiteExecution extends SuiteMixin { this: Suite =>
+trait SequentialNestedSuiteExecution extends AbstractSuite { this: Suite =>
 
   /**
    * This trait's implementation of <code>runNestedSuites</code>s invokes <code>runNestedSuites</code> on <code>super</code>,
    * passing in <code>None</code> for the <code>Distributor</code>.
    *
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   *         
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  abstract override protected def runNestedSuites(args: Args) {
-    if (args == null)
-      throw new NullPointerException("args was null")
+  abstract override protected def runNestedSuites(
+    reporter: Reporter,
+    stopper: Stopper,
+    filter: Filter,
+    configMap: Map[String, Any],
+    distributor: Option[Distributor],
+    tracker: Tracker
+  ) {
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
 
-    super.runNestedSuites(args)
+    super.runNestedSuites(reporter, stopper, filter, configMap, None, tracker)
   }
 }

@@ -15,4 +15,20 @@
  */
 package org.scalatest
 
-trait Spec extends Suite
+/**
+ * <strong>Spec has been deprecated and will be used for a different purpose in a future
+ * version of ScalaTest. Please change any uses of <code>org.scalatest.Spec</code>
+ * to a corresponding use of <a href="FunSpec.html"><code>org.scalatest.FunSpec</code></a>.
+ * This is just a name change, so all you need to do is add <code>Fun</code> in front of <code>Spec</code>.</strong>
+ *
+ * <p>
+ * The purpose of this change is to allow the name <code>Spec</code> to be later used
+ * for a behavior-driven development style in which tests are methods, which eliminates
+ * one generated class file per test.
+ * </p>
+ * 
+ */
+@deprecated("Please use org.scalatest.FunSpec instead.")
+trait Spec extends FunSpec {
+  override private[scalatest] val sourceFileName = "Spec.scala"
+}

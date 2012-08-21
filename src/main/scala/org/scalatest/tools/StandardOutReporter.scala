@@ -24,12 +24,11 @@ import org.scalatest._
  * @author Bill Venners
  */
 private[scalatest] class StandardOutReporter(presentAllDurations: Boolean,
-    presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean,
-    presentUnformatted: Boolean)
+    presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean)
     extends PrintReporter(Console.out, presentAllDurations, presentInColor,
-    presentShortStackTraces, presentFullStackTraces, presentUnformatted) {
+    presentShortStackTraces, presentFullStackTraces) {
 
-  def this() = this(false, false, false, false, false)
+  def this() = this(false, false, false, false)
 
   /**
    * Does nothing, because don't want to dispose the standard output stream.

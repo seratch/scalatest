@@ -28,40 +28,31 @@ private[tools] case class GraphicReporterConfiguration(configSet: Set[ReporterCo
 private[tools] case class StandardOutReporterConfiguration(configSet: Set[ReporterConfigParam]) extends ReporterConfiguration
 private[tools] case class StandardErrReporterConfiguration(configSet: Set[ReporterConfigParam]) extends ReporterConfiguration
 private[tools] case class FileReporterConfiguration(configSet: Set[ReporterConfigParam], fileName: String) extends ReporterConfiguration
-private[tools] case class JunitXmlReporterConfiguration(configSet: Set[ReporterConfigParam], fileName: String) extends ReporterConfiguration
-private[tools] case class DashboardReporterConfiguration(configSet: Set[ReporterConfigParam], fileName: String, numOldFilesToKeep: Int) extends ReporterConfiguration
 private[tools] case class XmlReporterConfiguration(configSet: Set[ReporterConfigParam], fileName: String) extends ReporterConfiguration
 private[tools] case class HtmlReporterConfiguration(configSet: Set[ReporterConfigParam], fileName: String) extends ReporterConfiguration
 private[tools] case class CustomReporterConfiguration(configSet: Set[ReporterConfigParam], reporterClass: String) extends ReporterConfiguration
-private[tools] case class SocketReporterConfiguration(host: String, port: Int) extends ReporterConfiguration
 
 // If there were no fileReporterSpecList or customReporterSpecList specified, you get Nil
 // If there were no graphicReporterSpec, standardOutReporterSpec, or standardErrReporterSpec, you get None
 private[tools] case class ReporterConfigurations(
   val graphicReporterConfiguration: Option[GraphicReporterConfiguration],
   val fileReporterConfigurationList: List[FileReporterConfiguration],
-  val junitXmlReporterConfigurationList: List[JunitXmlReporterConfiguration],
-  val dashboardReporterConfigurationList: List[DashboardReporterConfiguration],
   val xmlReporterConfigurationList: List[XmlReporterConfiguration],
   val standardOutReporterConfiguration: Option[StandardOutReporterConfiguration],
   val standardErrReporterConfiguration: Option[StandardErrReporterConfiguration],
   val htmlReporterConfigurationList: List[HtmlReporterConfiguration],
-  val customReporterConfigurationList: List[CustomReporterConfiguration], 
-  val socketReporterConfigurationList: List[SocketReporterConfiguration]
+  val customReporterConfigurationList: List[CustomReporterConfiguration]
 ) extends Seq[ReporterConfiguration] {
 
   val reporterConfigurationList =
     List.concat[ReporterConfiguration](
       graphicReporterConfiguration.toList,
       fileReporterConfigurationList,
-      junitXmlReporterConfigurationList,
-      dashboardReporterConfigurationList,
       xmlReporterConfigurationList,
       standardOutReporterConfiguration.toList,
       standardErrReporterConfiguration.toList,
       htmlReporterConfigurationList,
-      customReporterConfigurationList, 
-      socketReporterConfigurationList
+      customReporterConfigurationList
     )
 
   // Need to add the null pointer checks, or later, NotNull

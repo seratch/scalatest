@@ -38,10 +38,8 @@ import StringReporter.colorizeLinesIndividually
  * @author Bill Venners
  */
 private[scalatest] abstract class PrintReporter(pw: PrintWriter, presentAllDurations: Boolean,
-        presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean,
-        presentUnformatted: Boolean) extends StringReporter(
-presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces,
-presentUnformatted) {
+        presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) extends StringReporter(
+presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) {
 
   /**
   * Construct a <code>PrintReporter</code> with passed
@@ -57,8 +55,7 @@ presentUnformatted) {
     presentAllDurations: Boolean,
     presentInColor: Boolean,
     presentShortStackTraces: Boolean,
-    presentFullStackTraces: Boolean,
-    presentUnformatted: Boolean
+    presentFullStackTraces: Boolean
   ) =
     this(
       new PrintWriter(
@@ -69,8 +66,7 @@ presentUnformatted) {
       presentAllDurations,
       presentInColor,
       presentShortStackTraces,
-      presentFullStackTraces,
-      presentUnformatted
+      presentFullStackTraces
     )
 
   /**
@@ -88,16 +84,14 @@ presentUnformatted) {
     presentAllDurations: Boolean,
     presentInColor: Boolean,
     presentShortStackTraces: Boolean,
-    presentFullStackTraces: Boolean,
-    presentUnformatted: Boolean
+    presentFullStackTraces: Boolean
   ) =
     this(
       new PrintWriter(new BufferedOutputStream(new FileOutputStream(new File(filename)), BufferSize)),
       presentAllDurations,
       presentInColor,
       presentShortStackTraces,
-      presentFullStackTraces,
-      presentUnformatted
+      presentFullStackTraces
     )
 
   protected def printPossiblyInColor(text: String, ansiColor: String) {

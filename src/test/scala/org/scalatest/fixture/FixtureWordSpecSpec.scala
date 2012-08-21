@@ -18,7 +18,6 @@ package org.scalatest.fixture
 import org.scalatest._
 import events.TestFailed
 import org.scalatest.exceptions.DuplicateTestNameException
-import org.scalatest.events.InfoProvided
 
 class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
@@ -36,7 +35,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
 
-      expectResult(List("Something should do that", "Something should do this")) {
+      expect(List("Something should do that", "Something should do this")) {
         a.testNames.iterator.toList
       }
 
@@ -45,7 +44,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         def withFixture(test: OneArgTest) {}
       }
 
-      expectResult(List[String]()) {
+      expect(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -60,7 +59,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
 
-      expectResult(List("Something should do this", "Something should do that")) {
+      expect(List("Something should do this", "Something should do that")) {
         c.testNames.iterator.toList
       }
     }
@@ -118,7 +117,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(!rep.eventsReceived.exists(_.isInstanceOf[TestFailed]))
     }
     it("should throw NullPointerException if a null test tag is provided") {
@@ -177,7 +176,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" ignore { fixture => }
         "test that" in { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
         a.tags
       }
 
@@ -187,7 +186,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" in { fixture => }
         "test that" ignore { fixture => }
       }
-      expectResult(Map("test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
         b.tags
       }
 
@@ -197,7 +196,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" ignore { fixture => }
         "test that" ignore { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
         c.tags
       }
 
@@ -207,7 +206,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" taggedAs(mytags.SlowAsMolasses) in { fixture => }
         "test that" taggedAs(mytags.SlowAsMolasses) ignore { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
         d.tags
       }
 
@@ -217,7 +216,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" in { fixture => }
         "test that" in { fixture => }
       }
-      expectResult(Map()) {
+      expect(Map()) {
         e.tags
       }
 
@@ -227,7 +226,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in { fixture => }
         "test that" taggedAs(mytags.SlowAsMolasses) in  { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         f.tags
       }
 
@@ -237,7 +236,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) in { fixture => }
         "test that" taggedAs(mytags.SlowAsMolasses) in  { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         g.tags
       }
     }
@@ -249,7 +248,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" ignore { fixture => }
         "test that" is (pending)
       }
-      expectResult(Map("test this" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
         a.tags
       }
 
@@ -259,7 +258,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" is (pending)
         "test that" ignore { fixture => }
       }
-      expectResult(Map("test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
         b.tags
       }
 
@@ -269,7 +268,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" ignore { fixture => }
         "test that" ignore { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
         c.tags
       }
 
@@ -279,7 +278,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" taggedAs(mytags.SlowAsMolasses) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) ignore { fixture => }
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
         d.tags
       }
 
@@ -289,7 +288,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" is (pending)
         "test that" is (pending)
       }
-      expectResult(Map()) {
+      expect(Map()) {
         e.tags
       }
 
@@ -299,7 +298,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) is (pending)
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         f.tags
       }
 
@@ -309,7 +308,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) is (pending)
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         g.tags
       }
     }
@@ -325,7 +324,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
     it("should execute all tests when run is called with testName None") {
 
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(b.theTestThisCalled)
       assert(b.theTestThatCalled)
     }
@@ -333,7 +332,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
     it("should execute one test when run is called with a defined testName") {
 
       val a = new TestWasCalledSuite
-      a.run(Some("run this"), Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      a.run(Some("run this"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(a.theTestThisCalled)
       assert(!a.theTestThatCalled)
     }
@@ -350,7 +349,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -365,7 +364,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      b.run(None, repB, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repB.testIgnoredReceived)
       assert(repB.lastEvent.isDefined)
       assert(repB.lastEvent.get.testName endsWith "test this")
@@ -382,7 +381,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repC, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      c.run(None, repC, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repC.testIgnoredReceived)
       assert(repC.lastEvent.isDefined)
       assert(repC.lastEvent.get.testName endsWith "test that", repC.lastEvent.get.testName)
@@ -401,7 +400,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      d.run(None, repD, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(repD.lastEvent.isDefined)
       assert(repD.lastEvent.get.testName endsWith "test that") // last because should be in order of appearance
@@ -422,7 +421,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val repE = new TestIgnoredTrackingReporter
-      e.run(Some("test this"), Args(repE, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      e.run(Some("test this"), repE, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(!e.theTestThatCalled)
@@ -440,7 +439,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test that" in { fixture => theTestThatCalled = true }
       }
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -455,7 +454,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test that" in { fixture => theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      b.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repB.testIgnoredReceived)
       assert(b.theTestThisCalled)
       assert(!b.theTestThatCalled)
@@ -470,7 +469,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test that" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      c.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repC.testIgnoredReceived)
       assert(c.theTestThisCalled)
       assert(c.theTestThatCalled)
@@ -485,7 +484,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test that" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
+      d.run(None, repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(!d.theTestThisCalled)
       assert(d.theTestThatCalled)
@@ -502,8 +501,8 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
-      e.run(None, Args(repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                Map(), None, new Tracker, Set.empty))
+      e.run(None, repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(e.theTestThatCalled)
@@ -521,8 +520,8 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
-      f.run(None, Args(repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                Map(), None, new Tracker, Set.empty))
+      f.run(None, repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repF.testIgnoredReceived)
       assert(!f.theTestThisCalled)
       assert(f.theTestThatCalled)
@@ -540,8 +539,8 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" ignore { fixture => theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
-      g.run(None, Args(repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                Map(), None, new Tracker, Set.empty))
+      g.run(None, repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repG.testIgnoredReceived)
       assert(!g.theTestThisCalled)
       assert(g.theTestThatCalled)
@@ -559,7 +558,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
-      h.run(None, Args(repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker, Set.empty))
+      h.run(None, repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker)
       assert(!repH.testIgnoredReceived)
       assert(!h.theTestThisCalled)
       assert(h.theTestThatCalled)
@@ -577,7 +576,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
-      i.run(None, Args(repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
+      i.run(None, repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!i.theTestThisCalled)
       assert(!i.theTestThatCalled)
@@ -595,7 +594,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
-      j.run(None, Args(repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
+      j.run(None, repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!j.theTestThisCalled)
       assert(!j.theTestThatCalled)
@@ -613,7 +612,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         "test the other" ignore { fixture => theTestTheOtherCalled = true }
       }
       val repK = new TestIgnoredTrackingReporter
-      k.run(None, Args(repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
+      k.run(None, repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repK.testIgnoredReceived)
       assert(!k.theTestThisCalled)
       assert(!k.theTestThatCalled)
@@ -694,7 +693,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
@@ -713,7 +712,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }
@@ -730,10 +729,9 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
       intercept[OutOfMemoryError] {
-        a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+        a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-/*
     it("should send InfoProvided events with aboutAPendingTest set to true for info " +
             "calls made from a test that is pending") {
       val a = new FixtureWordSpec with GivenWhenThen {
@@ -752,24 +750,11 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
-      val testPending = rep.testPendingEventsReceived
-      assert(testPending.size === 1)
-      val recordedEvents = testPending(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && ip.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 4)
+      for (event <- ip) {
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -790,27 +775,13 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
-      val testSucceeded = rep.testSucceededEventsReceived
-      assert(testSucceeded.size === 1)
-      val recordedEvents = testSucceeded(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && !ip.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 4)
+      for (event <- ip) {
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
-*/
     it("should allow both tests that take fixtures and tests that don't") {
       val a = new FixtureWordSpec {
 
@@ -828,7 +799,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
       }
 
-      a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.testNames.size === 2, a.testNames)
       assert(a.takesNoArgsInvoked)
       assert(a.takesAFixtureInvoked)
@@ -851,7 +822,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
 
       assert(!a.takesNoArgsInvoked)
       assert(!a.takesAFixtureInvoked)
-      a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.testNames.size === 2, a.testNames)
       assert(a.takesNoArgsInvoked)
       assert(a.takesAFixtureInvoked)
@@ -871,7 +842,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       assert(!a.takeNoArgsInvoked)
       assert(!a.takeAFixtureInvoked)
       val reporter = new EventRecordingReporter
-      a.run(None, Args(reporter, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      a.run(None, reporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(reporter.testIgnoredEventsReceived.size === 2)
       assert(!a.takeNoArgsInvoked)
       assert(!a.takeAFixtureInvoked)
@@ -893,7 +864,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val s = new MySpec
-      s.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(s.aNoArgTestWasPassed)
       assert(!s.aOneArgTestWasPassed)
     }
@@ -914,7 +885,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val s = new MySpec
-      s.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(!s.aNoArgTestWasPassed)
       assert(s.aOneArgTestWasPassed)
     }
@@ -933,7 +904,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
       }
 
       val s = new MySpec
-      s.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(s.theNoArgTestWasInvoked)
     }
     it("should pass the correct test name in the OneArgTest passed to withFixture") {
@@ -946,7 +917,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
         "do something" in { fixture => }
       }
-      a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.correctTestNameWasPassed)
     }
     it("should pass the correct config map in the OneArgTest passed to withFixture") {
@@ -959,7 +930,7 @@ class FixtureWordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester
         }
         "do something" in { fixture => }
       }
-      a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker())
       assert(a.correctConfigMapWasPassed)
     }
     describe("(when a nesting rule has been violated)") {

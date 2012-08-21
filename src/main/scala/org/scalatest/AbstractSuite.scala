@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2012 Artima, Inc.
+ * Copyright 2001-2008 Artima, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,41 +16,32 @@
 package org.scalatest
 
 /**
- * <strong><code>AbstractSuite</code> has been deprecated and will be removed in a future version of ScalaTest. Please change all occurances of
- * AbstractSuite to SuiteMixin.  This is just a name change for stackable traits extending <code>AbstractSuite</code>. If <code>AbstractSuite</code> was
- * being used in any other way, change <code>AbstractSuite</code> to <code>Suite</code>.
+ * Trait that defines abstract methods that are implemented in <code>Suite</code> that can
+ * be overriden in stackable modification traits.
  *
  * <p>
- * The main change will be to change stackable traits defined like this:
+ * The main purpose of <code>AbstractSuite</code> is to differentiate core <code>Suite</code>
+ * traits, such as <code>Suite</code>, <code>FunSuite</code>, and <code>FunSpec</code> from stackable
+ * modification traits for <code>Suite</code>s such as <code>BeforeAndAfterEach</code>, <code>OneInstancePerTest</code>,
+ * and <code>ParallelNestedSuiteExecution</code>. Because these stackable traits extend <code>AbstractSuite</code> 
+ * instead of <code>Suite</code>, you can't define a suite by simply extending one of the stackable traits:
  * </p>
  *
  * <pre class="stHighlight">
- * import org.scalatest._
- * import concurrent.Eventually._
- * 
- * trait RetriedTests extends AbstractSuite { Suite =>
- *   abstract override def withFixture(test: NoArgTest) {
- *     eventually { super.withFixture(test) }
- *   }
- * }
+ * class MySuite extends BeforeAndAfterEach // Won't compile
  * </pre>
- * 
+ *
  * <p>
- * The main change will be to change stackable traits defined like this:
+ * Instead, you need to extend a core <code>Suite</code> trait and mix the stackable <code>BeforeAndAfterEach</code> trait
+ * into that, like this:
  * </p>
  *
  * <pre class="stHighlight">
- * import org.scalatest._
- * import concurrent.Eventually._
- * 
- * trait RetriedTests extends SuiteMixin { Suite =>
- *   abstract override def withFixture(test: NoArgTest) {
- *     eventually { super.withFixture(test) }
- *   }
- * }
+ * class MySuite extends FunSuite with BeforeAndAfterEach // Compiles fine
  * </pre>
+ *
+ * @author Bill Venners
  */
-@deprecated("Please use SuiteMixin or Suite instead. For more info, see the Scaladoc for AbstractSuite.")
 trait AbstractSuite { this: Suite =>
 
   /**
@@ -61,7 +52,9 @@ trait AbstractSuite { this: Suite =>
    * current suite, invoke the test function, and if needed, perform any clean
    * up needed after the test completes. Because the <code>NoArgTest</code> function
    * passed to this method takes no parameters, preparing the fixture will require
-   * side effects, such as initializing an external database.
+   * side effects, such as reassigning instance <code>var</code>s in this <code>Suite</code> or initializing
+   * a globally accessible external database. If you want to avoid reassigning instance <code>var</code>s
+   * you can use <a href="Suite.html">fixture.Suite</a>.
    * </p>
    *
    * @param test the no-arg test function to run with a fixture
@@ -73,48 +66,85 @@ trait AbstractSuite { this: Suite =>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be executed
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be executed sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  def run(testName: Option[String], args: Args)
+  def run(
+    testName: Option[String],
+    reporter: Reporter,
+    stopper: Stopper,
+    filter: Filter,
+    configMap: Map[String, Any],
+    distributor: Option[Distributor],
+    tracker: Tracker
+  )
 
   /**
+   *
    * Runs zero to many of this suite's nested suites.
    *
-   * @param args the <code>Args</code> for this run
-   *
-   * @throws NullPointerException if <code>args</code> is <code>null</code>.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   *         
+   * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  protected def runNestedSuites(args: Args)
+  protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
+                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker)
 
   /**
    * Runs zero to many of this suite's tests.
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
-   * @throws NullPointerException if either <code>testName</code> or <code>args</code> is <code>null</code>.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which instances of this <code>Suite</code> class
+   *              that are responsible for executing individual tests contained in this </code>Suite</code>, or groups of this <code>Suite</code>'s
+   *              tests, may be placed so as to be run
+   *              by another entity, such as concurrently by a pool of threads.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>groupsToInclude</code>,
+   *     <code>groupsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected def runTests(testName: Option[String], args: Args)
+  protected def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                             configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker)
 
   /**
    * Runs a test.
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>configMap</code>,
    *     or <code>tracker</code> is <code>null</code>.
    */
   protected def runTest(
     testName: String,
-    args: Args
+    reporter: Reporter,
+    stopper: Stopper,
+    configMap: Map[String, Any],
+    tracker: Tracker
   )
 
   /**
-  * A <code>Set</code> of test names. If this <code>Suite</code> contains no tests, this method returns an empty <code>Set</code>.
+  * An <code>Set</code> of test names. If this <code>Suite</code> contains no tests, this method returns an empty <code>Set</code>.
   *
   * <p>
   * Although subclass and subtrait implementations of this method may return a <code>Set</code> whose iterator produces <code>String</code>
@@ -125,10 +155,10 @@ trait AbstractSuite { this: Suite =>
   def testNames: Set[String]
 
   /**
-  * An <code>IndexedSeq</code> of this <code>Suite</code> object's nested <code>Suite</code>s. If this <code>Suite</code> contains no nested <code>Suite</code>s,
-  * this method returns an empty <code>IndexedSeq</code>.
+  * A <code>List</code> of this <code>Suite</code> object's nested <code>Suite</code>s. If this <code>Suite</code> contains no nested <code>Suite</code>s,
+  * this method returns an empty <code>List</code>.
   */
-  def nestedSuites: IndexedSeq[Suite]
+  def nestedSuites: List[Suite]
 
   /**
    * A <code>Map</code> whose keys are <code>String</code> tag names with which tests in this <code>Suite</code> are marked, and
@@ -151,57 +181,7 @@ trait AbstractSuite { this: Suite =>
   def expectedTestCount(filter: Filter): Int
   
   /**
-   * The fully qualified name of the class that can be used to rerun this suite.
-   */
-  def rerunner: Option[String]
-  
-  /**
-   * This suite's style name.
-   *
-   * <p>
-   * This lifecycle method provides a string that is used to determine whether this suite object's
-   * style is one of the <a href="tools/Runner$.html#specifyingChosenStyles">chosen styles</a> for
-   * the project.
-   * </p>
+   * Suite style name.
    */
   val styleName: String
-
-  /**
-   * <strong>This overloaded form of <code>run</code> has been deprecated and will be removed in a future
-   * version of ScalaTest. Please use the <code>run</code> method that takes two parameters instead.</strong>
-   *
-   * <p>
-   * This final implementation of this method constructs a <code>Args</code> instance from the passed
-   * <code>reporter</code>, <code>stopper</code>, <code>filter</code>, <code>configMap</code>, <code>distributor</code>,
-   * and <code>tracker</code>, and invokes the overloaded <code>run</code> method that takes two parameters,
-   * passing in the specified <code>testName</code> and the newly constructed <code>Args</code>. This method
-   * implementation enables existing code that called into the old <code>run</code> method to continue to work
-   * during the deprecation cycle. Subclasses and subtraits that overrode this method, however, will need to
-   * be changed to use the new two-parameter form instead.
-   * </p>
-   *
-   * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
-   *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>Suite</code>.
-   * @param reporter the <code>Reporter</code> to which results will be reported
-   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param filter a <code>Filter</code> with which to filter tests based on their tags
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
-   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be executed
-   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be executed sequentially.
-   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
-   *
-   * @throws NullPointerException if any passed parameter is <code>null</code>.
-   */
-  final def run(
-    testName: Option[String],
-    reporter: Reporter,
-    stopper: Stopper,
-    filter: Filter,
-    configMap: Map[String, Any],
-    distributor: Option[Distributor],
-    tracker: Tracker
-  ) {  // TODO: test that this grabs chosenStyles out of config map
-    run(testName, Args(reporter, stopper, filter, configMap, distributor, tracker, Set.empty))
-  } 
 }
-

@@ -16,6 +16,7 @@
 package org.scalatest.testng {
 
   import org.scalatest._
+  import org.scalatest.TestRerunner
   import org.scalatest.jmock._
   import testng.testpackage._
   import org.jmock.Mockery
@@ -63,7 +64,7 @@ package org.scalatest.testng {
 
       // then
       testReporter.lastEvent match {
-        case Some(TestFailed(_, _, _, _, _, _, _, _, _, _, throwable, _, _, _, _, _, _, _)) =>
+        case Some(TestFailed(_, _, _, _, _, throwable, _, _, _, _, _, _)) =>
           assert(throwable.get.getMessage === "fail")
         case _ => fail()
       }
@@ -125,7 +126,7 @@ package org.scalatest.testng {
 
       // then get rerunnable from the event 
       testReporter.lastEvent match {
-        case Some(TestFailed(_, _, _, _, _, _, _, _, _, _, _, _, _, _, rerunnable, _, _, _)) =>
+        case Some(TestFailed(_, _, _, _, _, _, _, _, rerunnable, _, _, _)) =>
           assert(rerunnable.isDefined)
         case _ => fail()
       }
@@ -138,10 +139,9 @@ package org.scalatest.testng {
       // when - run the passing suite
       new SuccessTestNGSuite().runTestNG(testReporter, new Tracker)
 
-      // then get rerunner from report 
-      val rerunner = testReporter.lastEvent.get.asInstanceOf[TestSucceeded].rerunner
-      assert(rerunner != None)
-      assert(rerunner.get === classOf[SuccessTestNGSuite].getName)
+      // then get rerunnable from report 
+      val rerunner = testReporter.lastEvent.get.asInstanceOf[TestSucceeded].rerunner.get.asInstanceOf[TestRerunner];
+      // TODO we need a better assertion here
     }
     
     

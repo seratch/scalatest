@@ -30,13 +30,13 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
         @Test def doThat() {}
       }
 
-      expectResult(List("doThat", "doThis")) {
+      expect(List("doThat", "doThis")) {
         a.testNames.iterator.toList
       }
 
       val b = new JUnitSuite {}
 
-      expectResult(List[String]()) {
+      expect(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -45,7 +45,7 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
         @Test def doThis() {}
       }
 
-      expectResult(List("doThat", "doThis")) {
+      expect(List("doThat", "doThis")) {
         c.testNames.iterator.toList
       }
     }
@@ -115,7 +115,7 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
       TestWasCalledSuite.reinitialize()
 
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(TestWasCalledSuite.theDoThisCalled)
       assert(TestWasCalledSuite.theDoThatCalled)
     }
@@ -125,7 +125,7 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
       TestWasCalledSuite.reinitialize()
 
       val a = new TestWasCalledSuite
-      a.run(Some("doThis"), Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+      a.run(Some("doThis"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(TestWasCalledSuite.theDoThisCalled)
       assert(!TestWasCalledSuite.theDoThatCalled)
     }
@@ -135,7 +135,7 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
       val a = new TestWasCalledSuite
       intercept[IllegalArgumentException] {
         // Here, they forgot that the name is actually doThis(Fixture)
-        a.run(Some("misspelled"), Args(SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker, Set.empty))
+        a.run(Some("misspelled"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       }
     }
 
@@ -144,7 +144,7 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
       TestWasCalledSuite.reinitialize()
 
       val a = new TestWasCalledSuite
-      a.run(None, Args(SilentReporter, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!TestWasCalledSuite.theDoThisCalled)
       assert(!TestWasCalledSuite.theDoThatCalled)
     }
@@ -178,7 +178,7 @@ class JUnitSuiteSpec extends FunSpec with SharedHelpers {
             "known in JDK 1.5, excluding AssertionError") {
       val a = new ShouldFailSuite
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep, new Stopper {}, Filter(), Map(), None, new Tracker(), Set.empty))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }
