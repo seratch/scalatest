@@ -1916,38 +1916,36 @@ object Runner {
     var tracker = new Tracker(new Ordinal(runStamp))
 
     val runStartTime = System.currentTimeMillis
-    
+ 
     try {
-      val loadProblemsExist =
-        try {
-          val unrunnableList = suitesList.filter{ suiteParam => 
-            val className = suiteParam.className
+      val (unrunnableList, runnableSuitesList) = suitesList.partition { suiteParam => 
+        val className = suiteParam.className
+        val classExists = 
+          try {
             loader.loadClass(className) // Check if the class exist, so if not we get the nice cannot load suite error message.
-            !isAccessibleSuite(className, loader) && !isRunnable(className, loader)
-          }
-          if (!unrunnableList.isEmpty) {
-            val names = for (suiteParam <- unrunnableList) yield " " + suiteParam.className
-            dispatch(RunAborted(tracker.nextOrdinal(), Resources("nonSuite") + names.mkString(", "), None))
             true
           }
-          else {
-            false
-          }
+          catch { case e: ClassNotFoundException => false }
+        !isAccessibleSuite(className, loader) && !isRunnable(className, loader)
+      }
+      val loadProblemsExist =
+        if (!unrunnableList.isEmpty) {
+          val names = for (suiteParam <- unrunnableList) yield " " + suiteParam.className
+          println(Resources("nonSuite") + names.mkString(", "))
+          println("Forgiving this offense and running just the good Suites requested")
+          true
         }
-        catch {
-          case e: ClassNotFoundException => {
-            dispatch(RunAborted(tracker.nextOrdinal(), Resources("cannotLoadSuite", e.getMessage), Some(e)))
-            true
-          }
+        else {
+          false
         }
 
-      if (!loadProblemsExist) {
+      if (true) {
 
         case class SuiteConfig(suite: Suite, dynaTags: DynaTags, requireSelectedTag: Boolean, excludeNestedSuites: Boolean)
 
         try {
           val namedSuiteInstances: List[SuiteConfig] =
-            for (suiteParam <- suitesList)
+            for (suiteParam <- runnableSuitesList)
               yield {
                 val suiteClassName = suiteParam.className
                 val clazz = loader.loadClass(suiteClassName)
@@ -2014,7 +2012,7 @@ object Runner {
                 }
               }
           
-          val requireSelectedTag = suitesList.find(suiteParam => suiteParam.testNames.length > 0)
+          val requireSelectedTag = runnableSuitesList.find(suiteParam => suiteParam.testNames.length > 0)
           
           val emptyDynaTags = DynaTags(Map.empty[String, Set[String]], Map.empty[String, Map[String, Set[String]]])
 
@@ -2032,7 +2030,7 @@ object Runner {
 
             val membersOnlyAndWildcardListsAreEmpty = membersOnlyList.isEmpty && wildcardList.isEmpty // They didn't specify any -m's or -w's on the command line
 
-            if (membersOnlyAndWildcardListsAreEmpty && (!suitesList.isEmpty || !junitsList.isEmpty || !testNGList.isEmpty)) {
+            if (membersOnlyAndWildcardListsAreEmpty && (!runnableSuitesList.isEmpty || !junitsList.isEmpty || !testNGList.isEmpty)) {
               (Nil, Nil) // No DiscoverySuites in this case. Just run Suites named with -s or -j or -b
             }
             else {
@@ -2044,7 +2042,7 @@ object Runner {
               println("DEBUG: Discovery Completed: " + discoveryDuration + " milliseconds")
               // dispatch(DiscoveryCompleted(discoveryDuration))
 
-              if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
+              if (membersOnlyAndWildcardListsAreEmpty && runnableSuitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
                 // In this case, they didn't specify any -w, -m, -s, -j or -b on the command line, so the default
                 // is to run any accessible Suites discovered on the runpath
                 (Nil, List(SuiteConfig(new DiscoverySuite("", accessibleSuites, true, loader), emptyDynaTags, false, false)))
