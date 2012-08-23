@@ -15,6 +15,7 @@
 	<property name="for.scala" value="2.9.x" />
         <property name="release" value="2.0.M4-SNAPSHOT" />
 
+	<property name="spijavasrc" value="spi/src/main/java" />
     <property name="scalasrc" value="src/main/scala" />
     <property name="javasrc" value="src/main/java" />
     <property name="scalasrc.test" value="src/test/scala" />
@@ -27,8 +28,10 @@
 
     <property name="build" value="target" />
     <property name="jar.contents" value="${build}/jar_contents" />
+	<property name="spi.jar.contents" value="${build}/spi_jar_contents" />
     <!-- classes go in jar.contents. redundant, but makes the rest of build.xml easier to read -->
     <property name="classes" value="${jar.contents}" />
+	<property name="spi.classes" value="${spi.jar.contents}" />
     <property name="generators" value="project" />
     <property name="build.generated.src" value="${build}/scala-${scala.version}/src_managed/main/scala" />
     <property name="build.generated.tests" value="gen/${build}/scala-${scala.version}/src_managed/test/scala" />
@@ -41,6 +44,7 @@
     <property name="instrumented" value="${build}/instrumented" />
     <property name="doc" value="${build}/doc" />
     <property name="jdoc" value="${build}/jdoc" />
+	<property name="spi.jdoc" value="${build}/spi-jdoc" />
     <property name="zipper" value="zipper" />
     <property name="project.name" value="ScalaTest" />
     <property name="demo" value="${build}/demo" />
@@ -58,6 +62,7 @@
         <tstamp />
         <!-- Create the build directory structure used by compile -->
         <mkdir dir="${jar.contents}" />
+    	<mkdir dir="${spi.jar.contents}" />
         <mkdir dir="${build.tests}" />
         <mkdir dir="${build.examples}" />
         <mkdir dir="${build.generators}" />
@@ -80,12 +85,14 @@
 	
         <path id="build.class.path">
             <pathelement location="${classes}" />
+        	<pathelement location="${spi.classes}" />
             <path refid="lib.path"></path>
         </path>
 
         <!-- this is the class path used to run ScalaTest to test itself, in the "test" target -->
         <path id="test.class.path">
             <pathelement location="${classes}" />
+        	<pathelement location="${spi.classes}" />
 			<pathelement location="${build.examples}" />
             <path refid="lib.path"></path>
         </path>
@@ -93,11 +100,13 @@
         <path id="coverage.class.path">
             <pathelement location="${instrumented}" />
             <pathelement location="${classes}" />
+        	<pathelement location="${spi.classes}" />
             <path refid="lib.path"></path>
         </path>
      
         <path id="build.test.class.path">
             <pathelement location="${classes}" />
+        	<pathelement location="${spi.classes}" />
             <pathelement location="${build.tests}" />
             <path refid="lib.path"></path>
         </path>
@@ -229,6 +238,9 @@
         <!-- If ever want to see the typer output, add -Xprint:typer to the addparams like this: -->
         <!--<scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" classpathref="build.class.path" addparams="-no-specialization -Xprint:typer" fork="true" jvmargs="${jvmargs}" />-->
 
+    	<!-- Compile the SPI Java code -->
+    	<javac srcdir="${spijavasrc}" destdir="${spi.classes}" compiler="javac1.5" memoryMaximumSize="1500M" fork="true" classpathref="build.class.path" debug="yes" />
+    	
         <!-- Compile the Scala code from ${scalasrc} into ${classes}. Scalac will parse the referenced .java files. -->
         <!-- Compile the Scala code from ${build.generated.src} into ${classes}. Scalac will parse any referenced .java files. -->
         <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="no" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
@@ -239,7 +251,7 @@
     	    <include name="org/scalatest/DoNotDiscover.java" />
     	    <include name="org/scalatest/tools/ScalaTestTask.java" />
     	    <include name="org/scalatest/WrapWith.java" />
-    	    <include name="org/scalatest/Finders.java" />
+    	    <include name="org/scalatest/finders/**.java" />
     	</javac>
     	
        <!-- copy these here not in dist because sometimes I like to do -cp target/jar_contents things, such as REPL sessions -->
@@ -293,6 +305,7 @@
 
     <target name="doc" depends="compile-main">
       <javadoc sourcepath="${javasrc}" destdir="${jdoc}" packagenames="org.scalatest,org.scalatest.tools" classpathref="build.class.path" windowtitle="ScalaTest ${release}" doctitle="ScalaTest ${release}" bottom="Copyright (C) 2001-2012 Artima, Inc. All rights reserved." />
+      <javadoc sourcepath="${spijavasrc}" destdir="${spi.jdoc}" packagenames="org.scalatest,org.scalatest.finders" classpathref="build.class.path" windowtitle="ScalaTest ${release}" doctitle="ScalaTest ${release}" bottom="Copyright (C) 2001-2012 Artima, Inc. All rights reserved." />
       <delete dir="${build}/doc" />
       <mkdir  dir="${build}/doc" />
 
@@ -329,6 +342,7 @@
         <!-- Create the distribution directory -->
         <mkdir dir="${dist}/lib" />
         <delete file="${dist}/lib/scalatest.jar" />
+    	<delete file="${dist}/lib/scalatest-spi.jar" />
 
         <taskdef resource="aQute/bnd/ant/taskdef.properties"
                  classpath="ant-lib/biz.aQute.bnd.jar"/>
@@ -338,6 +352,8 @@
              eclipse="false" failok="false" exceptions="true" files="osgi.bnd"
              output="${dist}/lib/scalatest.jar" /> 
 
+    	<jar jarfile="${dist}/lib/scalatest-spi.jar" basedir="${spi.jar.contents}" />
+    	
         <jar jarfile="${dist}/lib/scalatest-wbt.jar" basedir="${build.tests}" includes="org/scalatest/*.class" />
 
         <echo message="All finished building ${project.name}!" />
@@ -349,6 +365,7 @@
 
         <copy file="${dist}/lib/scalatest.jar" tofile="${zipper}/scalatest-${release}/scalatest-${release}.jar" />
         <copy file="${dist}/lib/scalatest-wbt.jar" tofile="${zipper}/scalatest-${release}/scalatest-${release}-tests.jar" />
+    	<copy file="${dist}/lib/scalatest-spi.jar" tofile="${zipper}/scalatest-${release}/scalatest-spi-${release}.jar" />
 
         <copy file="README.txt" tofile="${zipper}/scalatest-${release}/README.txt" />
         <copy file="LICENSE" tofile="${zipper}/scalatest-${release}/LICENSE" />
@@ -360,6 +377,7 @@
 
         <copy todir="${zipper}/scalatest-${release}/src">
             <fileset dir="src/" />
+        	<fileset dir="spi/src/" />
         </copy>
 
         <!--
@@ -406,6 +424,7 @@
             <membersonly package="org.scalatest.mock" />
         	<membersonly package="org.scalatest.path" />
         	<membersonly package="org.scalatest.selenium" />
+        	<membersonly package="org.scalatest.finders" />
             <config name="dbname" value="testdb" />
         </scalatest>
     </target>
@@ -722,6 +741,9 @@
         <fileset dir="src/examples/java"/>
         <fileset dir="${build.generated.src}"/>
       </jar>
+      <jar jarfile="${build}/scalatest-spi-sources.jar">
+      	<fileset dir="spi/src/main/java" />
+      </jar>
     </target>
 
     <target name="jartestsrc">
@@ -751,6 +773,7 @@
 
       <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
       <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
+      <jar jarfile="${build}/scalatest-spi-javadoc.jar"  basedir="${spi.jdoc}"/>
 
       <property name="deploy.main"
                 value="${dist}/lib/scalatest.jar"/>
@@ -764,6 +787,8 @@
                 value="${build}/scalatest-scaladoc.jar"/>
       <property name="deploy.javadoc" 
                 value="${build}/scalatest-javadoc.jar"/>
+      <property name="deploy.spi.javadoc" 
+     	        value="${build}/scalatest-spi-javadoc.jar"/>
       <property name="deploy.release"
                 value="${release}"/>
 
@@ -826,6 +851,10 @@
                     artifactId="scalatest_${old.scala.version}"
                     version="${scalatest.version}"
                     classifier="javadoc"/>
+      	<dependency groupId="org.scalatest"
+      	            artifactId="scalatest_${old.scala.version}"
+      	            version="${scalatest.version}"
+      	            classifier="spi-javadoc"/>
       </artifact:dependencies>
 
       <copy file="pom_template.xml" tofile="${build}/pom.xml" overwrite="true">
@@ -861,6 +890,8 @@
                 value="target/redeploy/scalatest-scaladoc.jar"/>
       <property name="deploy.javadoc" 
                 value="target/redeploy/scalatest-javadoc.jar"/>
+      <property name="deploy.spi-javadoc" 
+    	        value="target/redeploy/scalatest-javadoc.jar"/>
       <property name="deploy.release"
                 value="${scalatest.version}"/>
 
@@ -966,6 +997,17 @@
         <arg value="-DrepositoryId=${repository.id}" />
         <arg value="-DuniqueVersion=false" />
         <arg value="-Pgpg" />
+      </artifact:mvn>
+    	
+      <artifact:mvn>
+    	<arg value="${mvn.deploy.plugin}" />
+    	<arg value="-Dfile=${deploy.javadoc}" />
+    	<arg value="-Dclassifier=spi-javadoc" />
+    	<arg value="-Durl=${maven.repository.url}" />
+    	<arg value="-DpomFile=${build}/pom.xml" />
+    	<arg value="-DrepositoryId=${repository.id}" />
+    	<arg value="-DuniqueVersion=false" />
+    	<arg value="-Pgpg" />
       </artifact:mvn>
     </target>
 
