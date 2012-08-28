@@ -43,7 +43,8 @@ class FlatSpecFinderSuite extends FinderSuite {
       }
     }
     val suiteClass = classOf[TestingFlatSpec1]
-    val spec1Constructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val spec1Class = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFlatSpec1")
+    val spec1Constructor = new ConstructorBlock(suiteClass.getName, spec1Class, Array.empty)
     
     val spec1BehaviorOf1 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "behaviour"), spec1Constructor, Array.empty, "of", new StringLiteral(suiteClass.getName, null, "A Stack"))
     val spec1ItShould1 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
@@ -110,7 +111,8 @@ class FlatSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFlatSpec2]
-    val spec2Constructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val spec2Class = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFlatSpec2")
+    val spec2Constructor = new ConstructorBlock(suiteClass.getName, spec2Class, Array.empty)
     
     val spec2ItShould1 =new  MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
     val spec2ItShouldIn1 = new MethodInvocation(suiteClass.getName, spec2ItShould1, spec2Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))

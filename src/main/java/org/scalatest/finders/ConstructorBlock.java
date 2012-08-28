@@ -23,10 +23,12 @@ import java.util.List;
 public class ConstructorBlock implements AstNode {
   
   private String className;
+  private AstNode parent;
   private List<AstNode> children;
     
-  public ConstructorBlock(String className, AstNode[] childrenArr) {
+  public ConstructorBlock(String className, AstNode parent, AstNode[] childrenArr) {
     this.className = className;
+    this.parent = parent;
     children = new ArrayList<AstNode>();
     children.addAll(Arrays.asList(childrenArr));
   }
@@ -36,7 +38,7 @@ public class ConstructorBlock implements AstNode {
   }
   
   public AstNode parent() {
-    return null;
+    return parent;
   }
   
   public AstNode[] children() {

@@ -47,7 +47,8 @@ class FeatureSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFeatureSpec]
-    val featureSpecConstructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val featureSpecClass = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFeatureSpec")
+    val featureSpecConstructor = new ConstructorBlock(suiteClass.getName, featureSpecClass, Array.empty)
     val feature1 = new MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array(), "feature", new StringLiteral(suiteClass.getName, null, "feature 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val feature1Scenario1 = new MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val feature1Scenario2 = new MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 2"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))

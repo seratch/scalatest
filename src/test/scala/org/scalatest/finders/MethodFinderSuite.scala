@@ -36,7 +36,8 @@ class MethodFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingSuite]
-    val suiteConstructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val suiteClassAst = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingSuite")
+    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassAst, Array.empty)
     val testMethod1 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod1", "java.lang.String")
     val testMethod2 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod2")
     val testMethod3 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod3")
