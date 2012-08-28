@@ -41,7 +41,8 @@ class WordSpecFinderSuite extends FinderSuite {
     assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
-    val constructorBlock = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec1")
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, classDef, Array.empty)
     val aStack = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "should", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val popValuesInLifo = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "pop values in last-in-first-out order"), aStack, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val throwNsee = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throw NoSuchElementException if an empty stack is popped"), aStack, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
@@ -88,7 +89,8 @@ class WordSpecFinderSuite extends FinderSuite {
     assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
-    val constructorBlock = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec2")
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, classDef, Array.empty)
     val aStack = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "when", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val empty = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "empty"), aStack, Array.empty, "must", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val beEmpty = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "be empty"), empty, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
@@ -148,7 +150,8 @@ class WordSpecFinderSuite extends FinderSuite {
     assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
-    val constructorBlock = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec3")
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, classDef, Array.empty)
     val scalaTestDsl = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "The ScalaTest Matchers DSL"), constructorBlock, Array.empty, "should", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val provideAndOpr = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "provide an and operator"), scalaTestDsl, Array.empty, "that", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val andSilentTrueTrue = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "returns silently when evaluating true and true"), provideAndOpr, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))

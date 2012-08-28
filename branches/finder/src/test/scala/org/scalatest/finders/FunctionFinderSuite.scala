@@ -36,7 +36,8 @@ class FunctionFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFunSuite]
-    val suiteConstructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val suiteClassAst = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFunSuite")
+    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassAst, Array.empty)
     val test1 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "test 1"))
     val test2 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "test 2"))
     val nested = new MethodInvocation(suiteClass.getName, null, test2, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "nested"))
@@ -67,7 +68,8 @@ class FunctionFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingPropSpec]
-    val suiteConstructor = new ConstructorBlock(suiteClass.getName, Array.empty)
+    val suiteClassAst = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingPropSpec")
+    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassAst, Array.empty)
     val prop1 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "property", new StringLiteral(suiteClass.getName, null, "Fraction constructor normalizes numerator and denominator."))
     val prop2 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "property", new StringLiteral(suiteClass.getName, null, "Fraction constructor throws IAE on bad data."))
     val nested = new MethodInvocation(suiteClass.getName, null, prop2, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
