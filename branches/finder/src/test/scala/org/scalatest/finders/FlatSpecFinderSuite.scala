@@ -43,8 +43,8 @@ class FlatSpecFinderSuite extends FinderSuite {
       }
     }
     val suiteClass = classOf[TestingFlatSpec1]
-    val spec1Class = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFlatSpec1")
-    val spec1Constructor = new ConstructorBlock(suiteClass.getName, spec1Class, Array.empty)
+    val spec1ClassDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFlatSpec1")
+    val spec1Constructor = new ConstructorBlock(suiteClass.getName, spec1ClassDef, Array.empty)
     
     val spec1BehaviorOf1 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "behaviour"), spec1Constructor, Array.empty, "of", new StringLiteral(suiteClass.getName, null, "A Stack"))
     val spec1ItShould1 = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "it"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
@@ -62,8 +62,9 @@ class FlatSpecFinderSuite extends FinderSuite {
     List[AstNode](spec1Constructor, spec1BehaviorOf1, spec1ItShould1, spec1ItShouldIn1, spec1ItShould2, spec1ItShouldIn2, 
                   spec1BehaviorOf2, spec1ItShould3, spec1ItShouldIn3, spec1ItShould4, spec1ItShouldIn4).foreach(_.parent)
     
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.FlatSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.FlatSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[FlatSpecFinder], "Suite that uses org.scalatest.FlatSpec should use FlatSpecFinder.")
     
     val spec1ConstructorSelection = finder.find(spec1Constructor)
@@ -111,8 +112,8 @@ class FlatSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFlatSpec2]
-    val spec2Class = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFlatSpec2")
-    val spec2Constructor = new ConstructorBlock(suiteClass.getName, spec2Class, Array.empty)
+    val spec2ClassDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFlatSpec2")
+    val spec2Constructor = new ConstructorBlock(suiteClass.getName, spec2ClassDef, Array.empty)
     
     val spec2ItShould1 =new  MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), null, Array.empty, "should", new StringLiteral(suiteClass.getName, null, "pop values in last-in-first-out order"))
     val spec2ItShouldIn1 = new MethodInvocation(suiteClass.getName, spec2ItShould1, spec2Constructor, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
@@ -128,8 +129,9 @@ class FlatSpecFinderSuite extends FinderSuite {
     List[AstNode](spec2Constructor, spec2ItShould1, spec2ItShouldIn1, spec2ItShould2, spec2ItShouldIn2, 
                   spec2ItShould3, spec2ItShouldIn3, spec2ItShould4, spec2ItShouldIn4).foreach(_.parent)
                   
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.FlatSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.FlatSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[FlatSpecFinder], "Suite that uses org.scalatest.FlatSpec should use FlatSpecFinder.")
                   
     val spec2ConstructorSelection = finder.find(spec2Constructor)

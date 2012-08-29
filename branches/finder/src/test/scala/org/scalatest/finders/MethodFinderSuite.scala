@@ -36,15 +36,16 @@ class MethodFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingSuite]
-    val suiteClassAst = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingSuite")
-    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassAst, Array.empty)
+    val suiteClassDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingSuite")
+    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassDef, Array.empty)
     val testMethod1 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod1", "java.lang.String")
     val testMethod2 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod2")
     val testMethod3 = new MethodDefinition(suiteClass.getName, suiteConstructor, Array.empty, "testMethod3")
     val testNested = new MethodDefinition(suiteClass.getName, testMethod3, Array.empty, "testNested")
     
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.Suite.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.Suite should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[MethodFinder], "Suite that uses org.scalatest.Suite should use MethodFinder.")
     val selectionMethod1 = finder.find(testMethod1)
     expect(null)(selectionMethod1)

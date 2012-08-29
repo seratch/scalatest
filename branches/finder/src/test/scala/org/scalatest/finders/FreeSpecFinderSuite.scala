@@ -50,8 +50,9 @@ class FreeSpecFinderSuite extends FinderSuite {
       }
     }
     val suiteClass = classOf[TestingFreeSpec]
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.FreeSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.FreeSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[FreeSpecFinder], "Suite that uses org.scalatest.FreeSpec should use FreeSpecFinder.")
     
     val aStackNode: MethodInvocation = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), null, Array.empty, "-", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))

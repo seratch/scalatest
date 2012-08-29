@@ -37,8 +37,9 @@ class WordSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingWordSpec1]
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.WordSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
     val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec1")
@@ -85,8 +86,9 @@ class WordSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingWordSpec2]
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.WordSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
     val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec2")
@@ -146,8 +148,9 @@ class WordSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingWordSpec3]
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.WordSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.WordSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
     
     val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec3")

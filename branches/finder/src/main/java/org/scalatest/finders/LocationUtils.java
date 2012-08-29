@@ -25,68 +25,65 @@ import java.util.List;
 import java.util.Set;
 
 
-class LocationUtils {
+public class LocationUtils {
   
-  private static Finder getFinderInstance(Class<?> clazz) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+  private static List<Finder> getFinderInstances(Class<?> clazz) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
     Annotation[] annotations = clazz.getAnnotations();
-    Annotation styleAnnotation = null;
+    Annotation findersAnnotation = null;
     for (Annotation annotation : annotations) {
-      if (annotation.annotationType().getName().equals("org.scalatest.Style")) {
-        styleAnnotation = annotation;
+      if (annotation.annotationType().getName().equals("org.scalatest.Finders")) {
+        findersAnnotation = annotation;
         break;
       }
     }
-    if (styleAnnotation != null) {
-      Method valueMethod = styleAnnotation.annotationType().getMethod("value");
-      String finderClassName = (String) valueMethod.invoke(styleAnnotation);
-      if (finderClassName != null) {
+    List<Finder> finderList = new ArrayList<Finder>();
+    if (findersAnnotation != null) {
+      Method valueMethod = findersAnnotation.annotationType().getMethod("value");
+      String[] finderClassNames = (String[]) valueMethod.invoke(findersAnnotation);
+      for (String finderClassName : finderClassNames) {
         Class<?> finderClass = clazz.getClassLoader().loadClass(finderClassName);
         Object instance = finderClass.newInstance();
         if (instance instanceof Finder)
-          return (Finder) instance;
-        else
-          return null;
+          finderList.add((Finder) instance);
       }
-      else
-        return null;
     }
-    else
-      return null;
+    
+    return finderList;
   }
   
-  private static Finder lookInSuperClasses(Class<?> clazz) throws SecurityException, IllegalArgumentException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+  private static List<Finder> lookInSuperClasses(Class<?> clazz) throws SecurityException, IllegalArgumentException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
     Class<?> superClass = null;
-    Finder finder = null;
-    while(finder != null && (superClass = clazz.getSuperclass()) != null) {
-      finder = getFinderInstance(superClass);
+    List<Finder> finders = new ArrayList<Finder>();
+    while(finders.size() == 0 && (superClass = clazz.getSuperclass()) != null) {
+      finders = getFinderInstances(superClass);
       clazz = superClass;
     }
-    return finder;
+    return finders;
   }
   
-  private static Finder lookInInterfaces(Class<?>[] interfaces) throws SecurityException, IllegalArgumentException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
-    Finder finder = null;
-    while(finder == null && interfaces.length != 0) {
+  private static List<Finder> lookInInterfaces(Class<?>[] interfaces) throws SecurityException, IllegalArgumentException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+    List<Finder> finders = new ArrayList<Finder>();
+    while(finders.size() == 0 && interfaces.length != 0) {
       List<Class<?>> newInterfaces = new ArrayList<Class<?>>();
       for (Class<?> itf : interfaces) {
-        finder = getFinderInstance(itf);
-        if (finder == null)
+        finders = getFinderInstances(itf);
+        if (finders.size() == 0)
           newInterfaces.addAll(Arrays.asList(itf.getInterfaces()));
         else
           break;
       }
       interfaces = newInterfaces.toArray(new Class<?>[newInterfaces.size()]);
     }
-    return finder;
+    return finders;
   }
   
-  public static Finder getFinder(Class<?> clazz) throws SecurityException, IllegalArgumentException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
-    Finder finder = getFinderInstance(clazz);
-    if (finder == null) // Look for super interface first since style traits are compiled as Java interfaces
-      finder = lookInInterfaces(clazz.getInterfaces());
-    if (finder == null ) // Look in super classes, in case custom test style is a class instead of trait.
-      finder = lookInSuperClasses(clazz);
-    return finder;
+  public static List<Finder> getFinders(Class<?> clazz) throws SecurityException, IllegalArgumentException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+    List<Finder> finders = getFinderInstances(clazz);
+    if (finders.size() == 0) // Look for super interface first since style traits are compiled as Java interfaces
+      finders = lookInInterfaces(clazz.getInterfaces());
+    if (finders.size() == 0) // Look in super classes, in case custom test style is a class instead of trait.
+      finders = lookInSuperClasses(clazz);
+    return finders;
   }
   
   public static <T extends AstNode> T getParentOfType(AstNode node, Class<T> clazz) {
