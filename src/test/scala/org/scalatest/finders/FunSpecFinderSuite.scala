@@ -16,13 +16,13 @@
 
 package org.scalatest.finders
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 
 class FunSpecFinderSuite extends FinderSuite {
   
   test("FunSpecFinder should find test name for tests written in test suite that extends org.scalatest.Spec") {
     
-    class TestingSpec extends Spec {
+    class TestingSpec extends FunSpec {
       describe("A Stack") {
         describe("whenever it is empty") {
           println("nested -")
@@ -50,9 +50,10 @@ class FunSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingSpec]
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.Spec.")
-    assert(finder.getClass == classOf[FunSpecFinder], "Suite that uses org.scalatest.Spec should use FunSpecFinder.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.FunSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
+    assert(finder.getClass == classOf[FunSpecFinder], "Suite that uses org.scalatest.FunSpec should use FunSpecFinder.")
     
     val aStackNode: MethodInvocation = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{this}"), null, Array.empty, "describe",new StringLiteral(suiteClass.getName, null, "A Stack"))
     val wheneverItIsEmpty = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{this}"), aStackNode, Array.empty, "describe", new StringLiteral(suiteClass.getName, null, "whenever it is empty")) 

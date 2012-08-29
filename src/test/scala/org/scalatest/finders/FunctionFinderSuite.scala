@@ -36,15 +36,16 @@ class FunctionFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFunSuite]
-    val suiteClassAst = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFunSuite")
-    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassAst, Array.empty)
+    val suiteClassDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFunSuite")
+    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassDef, Array.empty)
     val test1 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "test 1"))
     val test2 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "test 2"))
     val nested = new MethodInvocation(suiteClass.getName, null, test2, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "nested"))
     val test3 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "test", new StringLiteral(suiteClass.getName, null, "test 3"))
     
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.FunSuite.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.FunSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[FunSuiteFinder], "Suite that uses org.scalatest.FunSuite should use FunSuiteFinder.")
     val test1Selection = finder.find(test1)
     expectSelection(test1Selection, suiteClass.getName, suiteClass.getName + ": \"test 1\"", Array("test 1"))
@@ -68,14 +69,15 @@ class FunctionFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingPropSpec]
-    val suiteClassAst = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingPropSpec")
-    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassAst, Array.empty)
+    val suiteClassDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingPropSpec")
+    val suiteConstructor = new ConstructorBlock(suiteClass.getName, suiteClassDef, Array.empty)
     val prop1 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "property", new StringLiteral(suiteClass.getName, null, "Fraction constructor normalizes numerator and denominator."))
     val prop2 = new MethodInvocation(suiteClass.getName, null, suiteConstructor, Array.empty, "property", new StringLiteral(suiteClass.getName, null, "Fraction constructor throws IAE on bad data."))
     val nested = new MethodInvocation(suiteClass.getName, null, prop2, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
     
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.PropSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.PropSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[PropSpecFinder], "Suite that uses org.scalatest.PropSpec should use PropSpecFinder.")
     val prop1Selection = finder.find(prop1)
     expectSelection(prop1Selection, suiteClass.getName, suiteClass.getName + ": \"Fraction constructor normalizes numerator and denominator.\"", Array("Fraction constructor normalizes numerator and denominator."))

@@ -47,8 +47,8 @@ class FeatureSpecFinderSuite extends FinderSuite {
     }
     
     val suiteClass = classOf[TestingFeatureSpec]
-    val featureSpecClass = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFeatureSpec")
-    val featureSpecConstructor = new ConstructorBlock(suiteClass.getName, featureSpecClass, Array.empty)
+    val featureSpecClassDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingFeatureSpec")
+    val featureSpecConstructor = new ConstructorBlock(suiteClass.getName, featureSpecClassDef, Array.empty)
     val feature1 = new MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array(), "feature", new StringLiteral(suiteClass.getName, null, "feature 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val feature1Scenario1 = new MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 1"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
     val feature1Scenario2 = new MethodInvocation(suiteClass.getName, null, feature1, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario 2"), new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
@@ -61,8 +61,9 @@ class FeatureSpecFinderSuite extends FinderSuite {
     
     val noScopeScenario = new MethodInvocation(suiteClass.getName, null, featureSpecConstructor, Array.empty, "scenario", new StringLiteral(suiteClass.getName, null, "scenario with no scope"))
     
-    val finder: Finder = LocationUtils.getFinder(suiteClass)
-    assert(finder != null, "Finder not found for suite that uses org.scalatest.FeatureSpec.")
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.FeatureSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
     assert(finder.getClass == classOf[FeatureSpecFinder], "Suite that uses org.scalatest.FeatureSpec should use FeatureSpecFinder.")
     
     val f1s1 = finder.find(feature1Scenario1)                      
