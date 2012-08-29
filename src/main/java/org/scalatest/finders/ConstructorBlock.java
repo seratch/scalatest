@@ -29,6 +29,8 @@ public class ConstructorBlock implements AstNode {
   public ConstructorBlock(String className, AstNode parent, AstNode[] childrenArr) {
     this.className = className;
     this.parent = parent;
+    if (parent != null)
+      parent.addChild(this);
     children = new ArrayList<AstNode>();
     children.addAll(Arrays.asList(childrenArr));
   }

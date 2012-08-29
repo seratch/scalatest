@@ -2,14 +2,15 @@ name := "scalatest-finders"
  
 organization := "org.scalatest"
 
-version := "0.9.3"
+version := "0.9.4"
 
 scalaVersion := "2.9.0"
 
-libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0.M3" % "test"
+libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "2.0-SNAPSHOT-20120829" % "test"
 
 resolvers ++= Seq("releases" at "http://oss.sonatype.org/content/repositories/releases",
-                  "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots")
+                  "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots", 
+                  "localmaven" at "file://"+Path.userHome+"/.m2/repository")
 
 publishTo <<= version { v: String =>
   val nexus = "https://oss.sonatype.org/"
