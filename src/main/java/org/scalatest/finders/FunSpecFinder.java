@@ -23,13 +23,20 @@ import java.util.List;
 public class FunSpecFinder implements Finder {
   
   private String getTestNameBottomUp(MethodInvocation invocation) {
-    String result = "";
-    while (invocation != null) {
-      result = invocation.args()[0].toString() + " " + result;
-      if (invocation.parent() != null && invocation.parent() instanceof MethodInvocation)
-        invocation = (MethodInvocation) invocation.parent();
+    String result = invocation.args()[0].toString();
+    AstNode node = invocation.parent();
+    while (node != null) {
+      if (node instanceof MethodInvocation) {
+        MethodInvocation parentInvocation = (MethodInvocation) node;
+        if (parentInvocation.name().equals("describe")) {
+          result = parentInvocation.args()[0].toString() + " " + result;
+        }
+      }
+      
+      if (node.parent() != null && node.parent() instanceof MethodInvocation)
+        node = (MethodInvocation) node.parent();
       else
-        invocation = null;
+        node = null;
     }
     return result.trim();
   }
