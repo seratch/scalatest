@@ -158,8 +158,27 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
       if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
         // Why are we getting rid of empty strings? Were empty strings coming in from sbt? -bv 11/09/2011
         val translator = new FriendlyParamsTranslator()
-        val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
-            suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
+        //val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
+            //suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
+        
+        val (
+          runpathArgsList,
+          repoArgsList,
+          suiteArgsList,
+          junitArgsList,
+          propertiesArgsList,
+          includesArgsList,
+          excludesArgsList,
+          concurrentList,
+          membersOnlyArgsList,
+          wildcardArgsList,
+          testNGArgsList,
+          suffixes, 
+          chosenStyles, 
+          spanScaleFactors, 
+          testSortingReporterTimeouts
+        ) = Runner.parseArgs(args)
+        
         val configMap: Map[String, String] = parsePropertiesArgsIntoMap(propertiesArgsList)
         val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
         val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
