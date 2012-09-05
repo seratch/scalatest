@@ -35,6 +35,15 @@ object ScalatestBuild extends Build {
                               "org.scalatest.TestColonEscapeExampleJUnitSuite", 
                               "org.scalatest.NotAccessibleSuite")
                               
+   lazy val spi = Project("scalatest-spi", file("spi"))
+   .settings(
+     organization := "org.scalatest",
+     version := "2.0.M4-SNAPSHOT",
+     scalaVersion := scalaVersionToUse,
+     libraryDependencies ++= simpledependencies,
+     resolvers += "Sonatype Public" at "https://oss.sonatype.org/content/groups/public"
+   )
+                              
    lazy val scalatest = Project("scalatest", file("."))
    .settings(
      organization := "org.scalatest",
@@ -54,7 +63,7 @@ object ScalatestBuild extends Build {
      sourceGenerators in Compile <+=
            (baseDirectory, sourceManaged in Compile) map genFiles("matchers", "MustMatchers.scala")(GenMatchers.genMain),
      testOptions in Test := Seq(Tests.Filter(className => isIncludedTest(className)))
-   ).aggregate("gentests")
+   ).dependsOn(spi).aggregate("gentests")
    
    lazy val gentests = Project("gentests", file("gen"))
    .settings(
