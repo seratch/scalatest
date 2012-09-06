@@ -167,7 +167,7 @@ import java.util.Arrays
  *
  * @author Bill Venners
  */
-final class Ordinal private (val runStamp: Int, private val stamps: Array[Int]) extends Ordered[Ordinal] with java.io.Serializable {
+final class Ordinal private (val runStamp: Int, private val stamps: Array[Int]) extends Ordered[Ordinal] with java.io.Serializable with JOrdinal {
 
   /**
    * Construct a the first <code>Ordinal</code> for a run.
@@ -219,6 +219,11 @@ final class Ordinal private (val runStamp: Int, private val stamps: Array[Int]) 
     newArrayForOldSuite(stamps.length - 1) += 1
     (new Ordinal(runStamp, newArrayForNewSuite), new Ordinal(runStamp, newArrayForOldSuite))
   }
+  
+  def nextNewOldPairArray = {
+    val (newOrdinal, oldOrdinal) = nextNewOldPair
+    Array(newOrdinal, oldOrdinal)
+  }
 
   /**
    * Returns a <code>List[Int]</code> representation of this <code>Ordinal</code>. A set of <code>Ordinal</code>s will be ordered
@@ -229,6 +234,8 @@ final class Ordinal private (val runStamp: Int, private val stamps: Array[Int]) 
    */
   def toList: List[Int] = runStamp :: stamps.toList
 
+  def asArray = toList.toArray
+  
   /**
    * Compares this <code>Ordinal</code> with the passed <code>Ordinal</code> for order. If this object is "less than" (ordered before)
    * the passed object, <code>compare</code> will return a negative integer. If this class is "greater than" (ordered after)
