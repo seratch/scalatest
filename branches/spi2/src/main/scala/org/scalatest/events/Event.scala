@@ -204,7 +204,7 @@ sealed abstract class Event extends Ordered[Event] with java.io.Serializable {
 /**
  * Marker trait for test completed event's recordedEvents.
  */
-sealed trait RecordableEvent extends Event
+sealed trait RecordableEvent extends Event with JRecordableEvent 
 
 /**
  * Event that indicates a suite (or other entity) is about to start running a test.

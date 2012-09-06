@@ -15,10 +15,12 @@
  */
 package org.scalatest.events
 
+import org.scalatest.JLocation
+
 /**
  * Location in source code about which an event concerns.
  */
-sealed abstract class Location
+sealed abstract class Location extends JLocation
 
 /**
  * The location in a source file where the class whose by the fully qualified name
