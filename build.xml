@@ -258,7 +258,6 @@
     	    <include name="org/scalatest/DoNotDiscover.java" />
     	    <include name="org/scalatest/tools/ScalaTestTask.java" />
     	    <include name="org/scalatest/WrapWith.java" />
-    	    <include name="org/scalatest/Finders.java" />
     		<include name="org/scalatest/finders/**.java" />
     	</javac>
     	
