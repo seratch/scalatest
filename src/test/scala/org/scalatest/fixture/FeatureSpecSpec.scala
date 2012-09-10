@@ -943,10 +943,10 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
     (new ExamplePrefixSpec).run(None, Args(rep))
     val scopeOpened = rep.scopeOpenedEventsReceived
     assert(scopeOpened.size === 1)
-    assert(scopeOpened(0).message === "Feature: A Feature")
+    assert(scopeOpened(0).text === "Feature: A Feature")
     val scopeClosed = rep.scopeClosedEventsReceived
     assert(scopeClosed.size === 1)
-    assert(scopeClosed(0).message === "Feature: A Feature")
+    assert(scopeClosed(0).text === "Feature: A Feature")
   }
     
   it("should prefix scenario text with 'Scenario: '") {

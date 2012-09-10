@@ -163,9 +163,9 @@ class SocketReporterSpec extends FunSpec with SharedHelpers with Eventually {
     }
   }
   
-  def checkScopeEvents(scopeOpened: Elem, message: String, suiteName: String, suiteId: String, suiteClassName: Option[String], 
+  def checkScopeEvents(scopeOpened: Elem, text: String, suiteName: String, suiteId: String, suiteClassName: Option[String], 
                      decodedSuiteName:Option[String], fileName: String, lineNumber: Int) {
-    assert((scopeOpened \ "message").text === message )
+    assert((scopeOpened \ "text").text === text )
     assert((scopeOpened \ "nameInfo" \ "suiteName").text === suiteName )
     assert((scopeOpened \ "nameInfo" \ "suiteId").text === suiteId)
     checkStringOption((scopeOpened \ "nameInfo" \ "suiteClassName").text, suiteClassName)

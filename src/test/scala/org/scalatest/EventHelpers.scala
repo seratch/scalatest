@@ -11,16 +11,16 @@ import org.scalatest.events.SuiteCompleted
 
 trait EventHelpers extends Assertions {
 
-  def checkScopeOpened(event: Event, message: String) {
+  def checkScopeOpened(event: Event, text: String) {
     event match {
-      case scopeOpened: ScopeOpened => assert(scopeOpened.message === message)
+      case scopeOpened: ScopeOpened => assert(scopeOpened.text === text)
       case _ => fail("Expected ScopedOpened, but got " + event.getClass.getName)
     }
   }
 
-  def checkScopeClosed(event: Event, message: String) {
+  def checkScopeClosed(event: Event, text: String) {
     event match {
-      case scopeClosed: ScopeClosed => assert(scopeClosed.message === message)
+      case scopeClosed: ScopeClosed => assert(scopeClosed.text === text)
       case _ => fail("Expected ScopedOpened, but got " + event.getClass.getName)
     }
   }

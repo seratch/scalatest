@@ -1746,7 +1746,7 @@ final case class MarkupProvided (
  *
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
- * @param message a localized message suitable for presenting to the user
+ * @param text a localized text suitable for presenting to the user
  * @param nameInfo a <code>NameInfo</code> that provides names for the suite and optionally the test 
  *        in the context of which the scope was opened
  * @param formatter an optional formatter that provides extra information that can be used by reporters in determining
@@ -1761,7 +1761,7 @@ final case class MarkupProvided (
  */
 final case class ScopeOpened (
   ordinal: Ordinal,
-  message: String,
+  text: String,
   nameInfo: NameInfo,
   formatter: Option[Formatter] = None,
   location: Option[Location] = None,
@@ -1772,8 +1772,8 @@ final case class ScopeOpened (
 
   if (ordinal == null)
     throw new NullPointerException("ordinal was null")
-  if (message == null)
-    throw new NullPointerException("message was null")
+  if (text == null)
+    throw new NullPointerException("text was null")
   if (nameInfo == null)
     throw new NullPointerException("nameInfo was null")
   if (formatter == null)
@@ -1791,7 +1791,7 @@ final case class ScopeOpened (
       <ordinal>
         <runStamp>{ ordinal.runStamp }</runStamp>
       </ordinal>
-      <message>{ message }</message>
+      <text>{ text }</text>
       <nameInfo>{ nameInfoOption(if (nameInfo != null) Some(nameInfo) else None) }</nameInfo>
       <formatter>{ formatterOption(formatter) }</formatter>
       <location>{ locationOption(location) }</location>
@@ -1822,7 +1822,7 @@ final case class ScopeOpened (
  *
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
- * @param message a localized message suitable for presenting to the user
+ * @param text a localized text suitable for presenting to the user
  * @param nameInfo a <code>NameInfo</code> that provides names for the suite and optionally the test 
  *        in the context of which the scope was closed
  * @param formatter an optional formatter that provides extra information that can be used by reporters in determining
@@ -1837,7 +1837,7 @@ final case class ScopeOpened (
  */
 final case class ScopeClosed (
   ordinal: Ordinal,
-  message: String,
+  text: String,
   nameInfo: NameInfo,
   formatter: Option[Formatter] = None,
   location: Option[Location] = None,
@@ -1848,8 +1848,8 @@ final case class ScopeClosed (
 
   if (ordinal == null)
     throw new NullPointerException("ordinal was null")
-  if (message == null)
-    throw new NullPointerException("message was null")
+  if (text == null)
+    throw new NullPointerException("text was null")
   if (nameInfo == null)
     throw new NullPointerException("nameInfo was null")
   if (formatter == null)
@@ -1867,7 +1867,7 @@ final case class ScopeClosed (
       <ordinal>
         <runStamp>{ ordinal.runStamp }</runStamp>
       </ordinal>
-      <message>{ message }</message>
+      <text>{ text }</text>
       <nameInfo>{ nameInfoOption(if (nameInfo != null) Some(nameInfo) else None) }</nameInfo>
       <formatter>{ formatterOption(formatter) }</formatter>
       <location>{ locationOption(location) }</location>

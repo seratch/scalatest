@@ -36,16 +36,16 @@ trait TestLocationFunctionServices {
           case None => fail("Unknown TestStarting for testName=" + testStarting.testName + " in " + suiteTypeName)
         }
       case scopeOpened: ScopeOpened =>
-        val expectedScopeOpenedPairOpt = expectedScopeOpenedList.find { pair => pair.testName == scopeOpened.message }
+        val expectedScopeOpenedPairOpt = expectedScopeOpenedList.find { pair => pair.testName == scopeOpened.text }
         expectedScopeOpenedPairOpt match {
           case Some(expectedScopeOpenedPair) => expectedScopeOpenedPair.checked = checkFileNameLineNumber(suiteTypeName, expectedScopeOpenedPair.fileName, expectedScopeOpenedPair.lineNumber, event)
-          case None => fail("Unknown ScopeOpened for testName=" + scopeOpened.message + " in " + suiteTypeName)
+          case None => fail("Unknown ScopeOpened for text=" + scopeOpened.text + " in " + suiteTypeName)
         }
       case scopeClosed: ScopeClosed =>
-        val expectedScopeClosedPairOpt = expectedScopeClosedList.find { pair => pair.testName == scopeClosed.message }
+        val expectedScopeClosedPairOpt = expectedScopeClosedList.find { pair => pair.testName == scopeClosed.text }
         expectedScopeClosedPairOpt match {
           case Some(expectedScopeClosedPair) => expectedScopeClosedPair.checked = checkFileNameLineNumber(suiteTypeName, expectedScopeClosedPair.fileName, expectedScopeClosedPair.lineNumber, event)
-          case None => fail("Unknown ScopeClosed for testName=" + scopeClosed.message + " in " + suiteTypeName)
+          case None => fail("Unknown ScopeClosed for text=" + scopeClosed.text + " in " + suiteTypeName)
         }
       case _ =>
         val expectedResultPairOpt = expectedResultList.find { pair => pair.clazz == event.getClass() }

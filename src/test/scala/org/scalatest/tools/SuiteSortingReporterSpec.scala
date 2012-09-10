@@ -15,8 +15,8 @@ class SuiteSortingReporterSpec extends FunSpec with ShouldMatchers with EventHel
 
   def stringFor(event: Event): String = {
     event match {
-      case e: ScopeOpened => e.message
-      case e: ScopeClosed => e.message
+      case e: ScopeOpened => e.text
+      case e: ScopeClosed => e.text
       case e: TestStarting => e.testName
       case e: TestFailed => e.testName
       case e: TestSucceeded => e.testName

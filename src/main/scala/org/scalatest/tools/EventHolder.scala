@@ -59,7 +59,7 @@ private[tools] class EventHolder(val event: Event, val message: Option[String], 
           case event: RunStopped => firstString
           case event: RunAborted => firstString
           case event: RunCompleted => firstString
-          case event: ScopeOpened => firstString + " - " + event.message
+          case event: ScopeOpened => firstString + " - " + event.text
           case event: ScopeClosed => firstString
           case event: InfoProvided => firstString + " - " + event.message
           case event: MarkupProvided => firstString + " - " + event.text
