@@ -39,7 +39,7 @@ case class TestNameInfo(testName: String, decodedTestName: Option[String])
  * </p>
  *
  * <p>
- * If either <code>suiteClassName</code> or <code>testName</code> is defined, then <code>suiteName</code> and <code>suiteID</code> must be defined.
+ * If either <code>suiteClassName</code> or <code>testName</code> is defined, then <code>suiteName</code> and <code>suiteId</code> must be defined.
  * The suite class name parameter is optional even if a suite name is provided by passing a <code>Some</code> as <code>suiteName</code>,
  * because suites in ScalaTest are an abstraction that
  * need not necessarily correspond to one class. Nevertheless, it most cases each suite will correspond
@@ -50,14 +50,14 @@ case class TestNameInfo(testName: String, decodedTestName: Option[String])
  * </p>
  *
  * @param suiteName an optional name of the suite about which an information event was fired
- * @param suiteID an optional string ID for the suite about which an information event was fired, intended to be unique across all suites in a run
+ * @param suiteId an optional string ID for the suite about which an information event was fired, intended to be unique across all suites in a run
  * @param suiteClassName an optional fully qualifed <code>Suite</code> class name about which the information was provided
  * @param decodedSuiteName the decoded suite name, in case the suite name is put between backticks.  None if it is same as suiteName.
  * @param testName an optional test name information
  *
  * @author Bill Venners
  */
-final case class NameInfo(suiteName: String, suiteID: String, suiteClassName: Option[String], decodedSuiteName:Option[String],  testName: Option[TestNameInfo])
+final case class NameInfo(suiteName: String, suiteId: String, suiteClassName: Option[String], decodedSuiteName:Option[String],  testName: Option[TestNameInfo])
 // TODO: to put in an auxiliary constructor for existing code to go through.
 
 /**
@@ -66,12 +66,12 @@ final case class NameInfo(suiteName: String, suiteID: String, suiteClassName: Op
 object NameInfo {
   /**
    * <strong>This factory method has been deprecated and will be removed in a future version of ScalaTest. Please use
-   * the factory method taking five parameters (including the suiteID, added in ScalaTest 2.0) instead.</strong>
+   * the factory method taking five parameters (including the suiteId, added in ScalaTest 2.0) instead.</strong>
    */
-  @deprecated("Use the factory method taking five parameters (including the suiteID, added in ScalaTest 2.0) instead.")
+  @deprecated("Use the factory method taking five parameters (including the suiteId, added in ScalaTest 2.0) instead.")
   def apply(suiteName: String, suiteClassName: Option[String], testName: Option[String]): NameInfo = {
-    val suiteID = suiteClassName getOrElse suiteName
-    apply(suiteName, suiteID, suiteClassName, None, testName match {
+    val suiteId = suiteClassName getOrElse suiteName
+    apply(suiteName, suiteId, suiteClassName, None, testName match {
                                                       case Some(name) => Some(TestNameInfo(name, None))
                                                       case None => None
                                                     }  
@@ -90,9 +90,9 @@ object DeprecatedNameInfo {
 
   /**
    * <strong>This extractor has been deprecated and will be removed in a future version of ScalaTest. Please use
-   * the extractor returning five parameters (including the suiteID, added in ScalaTest 2.0) instead.</strong>
+   * the extractor returning five parameters (including the suiteId, added in ScalaTest 2.0) instead.</strong>
    */
-  @deprecated("Use the extractor returning five parameters (including the suiteID, added in ScalaTest 2.0) instead.")
-  def unapply(ni: NameInfo): Option[(String, String, Option[String], Option[String], Option[TestNameInfo])] = Some(ni.suiteName, ni.suiteID, ni.suiteClassName, ni.decodedSuiteName, ni.testName)
+  @deprecated("Use the extractor returning five parameters (including the suiteId, added in ScalaTest 2.0) instead.")
+  def unapply(ni: NameInfo): Option[(String, String, Option[String], Option[String], Option[TestNameInfo])] = Some(ni.suiteName, ni.suiteId, ni.suiteClassName, ni.decodedSuiteName, ni.testName)
 }
 
