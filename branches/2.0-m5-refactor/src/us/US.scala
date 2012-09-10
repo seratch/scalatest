@@ -146,7 +146,7 @@ trait StateSuite extends Suite {
     val testSucceededIcon = "-"
     val formattedText = indentation(level - 1) + (testSucceededIcon + " " + testText)
     report(TestIgnored(tracker.nextOrdinal(), suiteName, suiteId, Some(getClass.getName), getDecodedName(suiteName), testName, testText, decodeTestName, Some(IndentedText(formattedText, testText, level)),
-      Some(ToDoLocation)))
+      None))
 
   }
 
@@ -185,7 +185,7 @@ trait StateSuite extends Suite {
           val e = intercept[TestCanceledException] { cancel("Because of rain") }
           val message = getMessageForException(e)
           val formatter = getIndentedText(testName, 1, true)
-          args.reporter(TestCanceled(args.tracker.nextOrdinal(), message, suiteName, suiteId, getDecodedName(suiteName), Some(getClass.getName), testName, testName, getDecodedName(testName), Vector.empty, Some(e), Some(duration), Some(formatter), Some(ToDoLocation), None))
+          args.reporter(TestCanceled(args.tracker.nextOrdinal(), message, suiteName, suiteId, getDecodedName(suiteName), Some(getClass.getName), testName, testName, getDecodedName(testName), Vector.empty, Some(e), Some(duration), Some(formatter), None, None))
 
       case Failed(duration, remaining) =>
         if (remaining > 1)

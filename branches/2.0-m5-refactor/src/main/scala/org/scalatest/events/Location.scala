@@ -44,9 +44,3 @@ final case class LineInFile(lineNumber: Int, fileName: String) extends Location
  * the event that contained this location.
  */
 final case object SeeStackDepthException extends Location
-
-/**
- * Interim one that I can quickly put in to get the compile going, and later I can go back carefully and do them correctly.
- */
-final case object ToDoLocation extends Location
-
