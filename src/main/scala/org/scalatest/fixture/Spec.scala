@@ -279,7 +279,11 @@ trait Spec extends Suite  { thisSuite =>
         def getScopeDesc(m: Method): String = {
           val objName = m.getReturnType.getName
           val objClassName = decode(objName.substring(0, objName.length - 1))
-          objClassName.substring(objClassName.lastIndexOf("$") + 1)
+          val rawScopeDesc = objClassName.substring(objClassName.lastIndexOf("$") + 1)
+          if (rawScopeDesc.endsWith(" "))
+            rawScopeDesc.substring(0, rawScopeDesc.length - 1)
+          else
+            rawScopeDesc
         }
         
         val testTags = tags
@@ -306,12 +310,13 @@ trait Spec extends Suite  { thisSuite =>
             }
             else {
               val methodName = m.getName
-              val testName = 
-                // if (m.getParameterTypes.length == 0)
-                  decode(methodName)
-                // else
-                  // decode(methodName) + FixtureInParens
-              val methodTags = getMethodTags(o, testName)
+              val rawTestText = decode(methodName)
+              val testText = 
+                if (rawTestText.endsWith(" "))
+                  rawTestText.substring(0, rawTestText.length - 1)
+                else
+                  rawTestText
+              val methodTags = getMethodTags(o, methodName)
               val testFun: FixtureParam => Unit = (fixture: FixtureParam) => { 
                 val anyRefFixture: AnyRef = fixture.asInstanceOf[AnyRef] // TODO zap this cast
                 val argsArray: Array[Object] = 
@@ -332,9 +337,9 @@ trait Spec extends Suite  { thisSuite =>
                 case None => methodTags.contains(IgnoreAnnotation)
               }
               if (isIgnore)
-                registerIgnoredTest(testName, testFun, "registrationAlreadyClosed", sourceFileName, "ensureScopesAndTestsRegistered", 3, 0, Some(testLocation), methodTags.map(new Tag(_)): _*)
+                registerIgnoredTest(testText, testFun, "registrationAlreadyClosed", sourceFileName, "ensureScopesAndTestsRegistered", 3, 0, Some(testLocation), methodTags.map(new Tag(_)): _*)
               else
-                registerTest(testName, testFun, "registrationAlreadyClosed", sourceFileName, "ensureScopesAndTestsRegistered", 2, 1, None, Some(testLocation), None, methodTags.map(new Tag(_)): _*)
+                registerTest(testText, testFun, "registrationAlreadyClosed", sourceFileName, "ensureScopesAndTestsRegistered", 2, 1, None, Some(testLocation), None, methodTags.map(new Tag(_)): _*)
             }
           }
         }
