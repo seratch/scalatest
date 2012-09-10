@@ -2434,6 +2434,262 @@ class SpecSpec extends FunSpec with PrivateMethodTester with SharedHelpers {
     assert(caught3.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.Spec", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec"))))
   }
   
+  it("should remove trailing space in scope when scope name ends with single space") {
+    class SimpleSpec extends Spec {
+      object `Testing ` {
+        def `should be simple` {}
+        def `should cancel` { cancel }
+        def `should fail` { fail }
+        def `should pending` { pending }
+      }
+    }
+    
+    val rep = new EventRecordingReporter
+    val spec = new SimpleSpec
+    spec.run(None, Args(reporter = rep))
+    
+    val scopeOpenedEvents = rep.scopeOpenedEventsReceived
+    assert(scopeOpenedEvents.length === 1)
+    val scopeOpened = scopeOpenedEvents(0)
+    assert(scopeOpened.message === "Testing")
+    
+    val scopeClosedEvents = rep.scopeClosedEventsReceived
+    assert(scopeClosedEvents.length === 1)
+    val scopeClosed = scopeClosedEvents(0)
+    assert(scopeClosed.message === "Testing")
+    
+    val testStartingEvents = rep.testStartingEventsReceived
+    assert(testStartingEvents.length === 4)
+    val testStarting1 = testStartingEvents(0)
+    assert(testStarting1.testName === "Testing should be simple")
+    assert(testStarting1.testText === "should be simple")
+    val testStarting2 = testStartingEvents(1)
+    assert(testStarting2.testName === "Testing should cancel")
+    assert(testStarting2.testText === "should cancel")
+    val testStarting3 = testStartingEvents(2)
+    assert(testStarting3.testName === "Testing should fail")
+    assert(testStarting3.testText === "should fail")
+    val testStarting4 = testStartingEvents(3)
+    assert(testStarting4.testName === "Testing should pending")
+    assert(testStarting4.testText === "should pending")
+    
+    val testSucceededEvents = rep.testSucceededEventsReceived
+    assert(testSucceededEvents.length === 1)
+    val testSucceeded = testSucceededEvents(0)
+    assert(testSucceeded.testName === "Testing should be simple")
+    assert(testSucceeded.testText === "should be simple")
+    
+    val testCanceledEvents = rep.testCanceledEventsReceived
+    assert(testCanceledEvents.length === 1)
+    val testCanceled = testCanceledEvents(0)
+    assert(testCanceled.testName === "Testing should cancel")
+    assert(testCanceled.testText === "should cancel")
+    
+    val testFailedEvents = rep.testFailedEventsReceived
+    assert(testFailedEvents.length === 1)
+    val testFailed = testFailedEvents(0)
+    assert(testFailed.testName === "Testing should fail")
+    assert(testFailed.testText === "should fail")
+    
+    val testPendingEvents = rep.testPendingEventsReceived
+    assert(testPendingEvents.length === 1)
+    val testPending = testPendingEvents(0)
+    assert(testPending.testName === "Testing should pending")
+    assert(testPending.testText === "should pending")
+  }
+  
+  it("should remove only one trailing space in scope when scope name ends with two spaces") {
+    class SimpleSpec extends Spec {
+      object `Testing  ` {
+        def `should be simple` {}
+        def `should cancel` { cancel }
+        def `should fail` { fail }
+        def `should pending` { pending }
+      }
+    }
+    
+    val rep = new EventRecordingReporter
+    val spec = new SimpleSpec
+    spec.run(None, Args(reporter = rep))
+    
+    val scopeOpenedEvents = rep.scopeOpenedEventsReceived
+    assert(scopeOpenedEvents.length === 1)
+    val scopeOpened = scopeOpenedEvents(0)
+    assert(scopeOpened.message === "Testing ")
+    
+    val scopeClosedEvents = rep.scopeClosedEventsReceived
+    assert(scopeClosedEvents.length === 1)
+    val scopeClosed = scopeClosedEvents(0)
+    assert(scopeClosed.message === "Testing ")
+    
+    val testStartingEvents = rep.testStartingEventsReceived
+    assert(testStartingEvents.length === 4)
+    val testStarting1 = testStartingEvents(0)
+    assert(testStarting1.testName === "Testing should be simple")
+    assert(testStarting1.testText === "should be simple")
+    val testStarting2 = testStartingEvents(1)
+    assert(testStarting2.testName === "Testing should cancel")
+    assert(testStarting2.testText === "should cancel")
+    val testStarting3 = testStartingEvents(2)
+    assert(testStarting3.testName === "Testing should fail")
+    assert(testStarting3.testText === "should fail")
+    val testStarting4 = testStartingEvents(3)
+    assert(testStarting4.testName === "Testing should pending")
+    assert(testStarting4.testText === "should pending")
+    
+    val testSucceededEvents = rep.testSucceededEventsReceived
+    assert(testSucceededEvents.length === 1)
+    val testSucceeded = testSucceededEvents(0)
+    assert(testSucceeded.testName === "Testing should be simple")
+    assert(testSucceeded.testText === "should be simple")
+    
+    val testCanceledEvents = rep.testCanceledEventsReceived
+    assert(testCanceledEvents.length === 1)
+    val testCanceled = testCanceledEvents(0)
+    assert(testCanceled.testName === "Testing should cancel")
+    assert(testCanceled.testText === "should cancel")
+    
+    val testFailedEvents = rep.testFailedEventsReceived
+    assert(testFailedEvents.length === 1)
+    val testFailed = testFailedEvents(0)
+    assert(testFailed.testName === "Testing should fail")
+    assert(testFailed.testText === "should fail")
+    
+    val testPendingEvents = rep.testPendingEventsReceived
+    assert(testPendingEvents.length === 1)
+    val testPending = testPendingEvents(0)
+    assert(testPending.testName === "Testing should pending")
+    assert(testPending.testText === "should pending")
+  }
+  
+  it("should remove trailing space in test text when test text ends with single space") {
+    class SimpleSpec extends Spec {
+      object `Testing should be` {
+        def `cancel ` { cancel }
+        def `fail ` { fail }
+        def `pending ` { pending }
+        def `simple ` {}
+      }
+    }
+    
+    val rep = new EventRecordingReporter
+    val spec = new SimpleSpec
+    spec.run(None, Args(reporter = rep))
+    
+    val scopeOpenedEvents = rep.scopeOpenedEventsReceived
+    assert(scopeOpenedEvents.length === 1)
+    val scopeOpened = scopeOpenedEvents(0)
+    assert(scopeOpened.message === "Testing should be")
+    
+    val scopeClosedEvents = rep.scopeClosedEventsReceived
+    assert(scopeClosedEvents.length === 1)
+    val scopeClosed = scopeClosedEvents(0)
+    assert(scopeClosed.message === "Testing should be")
+    
+    val testStartingEvents = rep.testStartingEventsReceived
+    assert(testStartingEvents.length === 4)
+    val testStarting1 = testStartingEvents(0)
+    assert(testStarting1.testName === "Testing should be cancel")
+    assert(testStarting1.testText === "cancel")
+    val testStarting2 = testStartingEvents(1)
+    assert(testStarting2.testName === "Testing should be fail")
+    assert(testStarting2.testText === "fail")
+    val testStarting3 = testStartingEvents(2)
+    assert(testStarting3.testName === "Testing should be pending")
+    assert(testStarting3.testText === "pending")
+    val testStarting4 = testStartingEvents(3)
+    assert(testStarting4.testName === "Testing should be simple")
+    assert(testStarting4.testText === "simple")
+    
+    val testSucceededEvents = rep.testSucceededEventsReceived
+    assert(testSucceededEvents.length === 1)
+    val testSucceeded = testSucceededEvents(0)
+    assert(testSucceeded.testName === "Testing should be simple")
+    assert(testSucceeded.testText === "simple")
+    
+    val testCanceledEvents = rep.testCanceledEventsReceived
+    assert(testCanceledEvents.length === 1)
+    val testCanceled = testCanceledEvents(0)
+    assert(testCanceled.testName === "Testing should be cancel")
+    assert(testCanceled.testText === "cancel")
+    
+    val testFailedEvents = rep.testFailedEventsReceived
+    assert(testFailedEvents.length === 1)
+    val testFailed = testFailedEvents(0)
+    assert(testFailed.testName === "Testing should be fail")
+    assert(testFailed.testText === "fail")
+    
+    val testPendingEvents = rep.testPendingEventsReceived
+    assert(testPendingEvents.length === 1)
+    val testPending = testPendingEvents(0)
+    assert(testPending.testName === "Testing should be pending")
+    assert(testPending.testText === "pending")
+  }
+  
+  it("should remove trailing space in test text when test text ends with two spaces") {
+    class SimpleSpec extends Spec {
+      object `Testing should be` {
+        def `simple  ` {}
+        def `cancel  ` { cancel }
+        def `fail  ` { fail }
+        def `pending  ` { pending }
+      }
+    }
+    
+    val rep = new EventRecordingReporter
+    val spec = new SimpleSpec
+    spec.run(None, Args(reporter = rep))
+    
+    val scopeOpenedEvents = rep.scopeOpenedEventsReceived
+    assert(scopeOpenedEvents.length === 1)
+    val scopeOpened = scopeOpenedEvents(0)
+    assert(scopeOpened.message === "Testing should be")
+    
+    val scopeClosedEvents = rep.scopeClosedEventsReceived
+    assert(scopeClosedEvents.length === 1)
+    val scopeClosed = scopeClosedEvents(0)
+    assert(scopeClosed.message === "Testing should be")
+    
+    val testStartingEvents = rep.testStartingEventsReceived
+    assert(testStartingEvents.length === 4)
+    val testStarting1 = testStartingEvents(0)
+    assert(testStarting1.testName === "Testing should be cancel")
+    assert(testStarting1.testText === "cancel ")
+    val testStarting2 = testStartingEvents(1)
+    assert(testStarting2.testName === "Testing should be fail")
+    assert(testStarting2.testText === "fail ")
+    val testStarting3 = testStartingEvents(2)
+    assert(testStarting3.testName === "Testing should be pending")
+    assert(testStarting3.testText === "pending ")
+    val testStarting4 = testStartingEvents(3)
+    assert(testStarting4.testName === "Testing should be simple")
+    assert(testStarting4.testText === "simple ")
+    
+    val testSucceededEvents = rep.testSucceededEventsReceived
+    assert(testSucceededEvents.length === 1)
+    val testSucceeded = testSucceededEvents(0)
+    assert(testSucceeded.testName === "Testing should be simple")
+    assert(testSucceeded.testText === "simple ")
+    
+    val testCanceledEvents = rep.testCanceledEventsReceived
+    assert(testCanceledEvents.length === 1)
+    val testCanceled = testCanceledEvents(0)
+    assert(testCanceled.testName === "Testing should be cancel")
+    assert(testCanceled.testText === "cancel ")
+    
+    val testFailedEvents = rep.testFailedEventsReceived
+    assert(testFailedEvents.length === 1)
+    val testFailed = testFailedEvents(0)
+    assert(testFailed.testName === "Testing should be fail")
+    assert(testFailed.testText === "fail ")
+    
+    val testPendingEvents = rep.testPendingEventsReceived
+    assert(testPendingEvents.length === 1)
+    val testPending = testPendingEvents(0)
+    assert(testPending.testName === "Testing should be pending")
+    assert(testPending.testText === "pending ")
+  }
+  
   describe("when a test fails") {
     it("should send proper stack depth information") {
       class TestSpec extends Spec {
