@@ -11,7 +11,7 @@ public interface JSuite {
     *
     * @throws NullPointerException if any passed parameter is <code>null</code>.
     */
-  //void runJSuite(String testName, Args args); // Will be testName: nullable String, args: JArgs
+  void run(String testName, JArgs args); // Will be testName: nullable String, args: JArgs
   
   /**
    * A <code>Set</code> of test names. If this <code>Suite</code> contains no tests, this method returns an empty <code>Set</code>.
@@ -22,7 +22,7 @@ public interface JSuite {
    * implement this method and return test names in either a defined or undefined order.
    * </p>
    */
-  java.util.Set<String> getTestNames();
+  java.util.Set<String> testNames();
   
   /**
    * A <code>Map</code> whose keys are <code>String</code> tag names with which tests in this <code>Suite</code> are marked, and
@@ -35,19 +35,19 @@ public interface JSuite {
    * returned <code>Map</code>.
    * </p>
    */
-  java.util.Map<String, java.util.Set<String>> getTags();
+  java.util.Map<String, java.util.Set<String>> tags();
   
   /**
    * The total number of tests that are expected to run when this <code>Suite</code>'s <code>run</code> method is invoked.
    *
    * @param filter a <code>Filter</code> with which to filter tests to count based on their tags
    */
-  //int getExpectedTestCount(Filter filter); // Will be JFilter
+  int expectedTestCount(JFilter filter); // Will be JFilter
   
   /**
    * The fully qualified name of the class that can be used to rerun this suite.
    */
-  String getRerunner(); // Will return a nullable String
+  String rerunner(); // Will return a nullable String
   
   /**
    * This suite's style name.
@@ -58,7 +58,7 @@ public interface JSuite {
    * the project.
    * </p>
    */
-  String getStyleName(); // Actually, not sure we need this over in the JSuite area Maybe this will just not exist over there.
+  String styleName(); // Actually, not sure we need this over in the JSuite area Maybe this will just not exist over there.
   // But it might make it simpler to be consistent.
   
   /**
@@ -74,7 +74,7 @@ public interface JSuite {
    *
    * @return this <code>Suite</code> object's suite name.
    */
-  String getSuiteName();
+  String suiteName();
   
   /**
    * A string ID for this <code>Suite</code> that is intended to be unique among all suites reported during a run.
@@ -100,5 +100,5 @@ public interface JSuite {
    *
    * @return this <code>Suite</code> object's ID.
    */
-  String getSuiteId();
+  String suiteId();
 }
