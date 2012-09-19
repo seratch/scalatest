@@ -23,7 +23,7 @@ import Prop._
 import Integer.MIN_VALUE
 import org.scalatest.exceptions.TestFailedException
 
-class ShouldLengthSpec extends FunSpec with ShouldMatchers with Checkers with ReturnsNormallyThrowsAssertion {
+class ShouldLengthSpec extends FunSpec with ShouldMatchers with LengthShouldMatchers with Checkers with ReturnsNormallyThrowsAssertion {
 
   // Checking for a specific length
   describe("The 'have length (Int)' syntax") {
