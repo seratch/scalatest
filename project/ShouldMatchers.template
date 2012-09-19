@@ -20,6 +20,7 @@ import scala.reflect.Manifest
 import org.scalatest.verb.ShouldVerb
 import scala.collection.Traversable
 import Assertions.areEqualComparingArraysStructurally
+import Helper._
 
 /**
  * Trait that provides a domain specific language (DSL) for expressing assertions in tests
@@ -878,7 +879,7 @@ import Assertions.areEqualComparingArraysStructurally
  */
 trait ShouldMatchers extends Matchers with ShouldVerb {
 
-  private object ShouldMethodHelper {
+  private[scalatest] object ShouldMethodHelper {
     def shouldMatcher[T](left: T, rightMatcher: Matcher[T]) {
       rightMatcher(left) match {
         case MatchResult(false, failureMessage, _, _, _) => throw newTestFailedException(failureMessage)
@@ -921,68 +922,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(notWord: NotWord) = new ResultOfNotWord[T](left, false)
-  }
-
-  // I think the type hasn't been converted yet here. It is just a pass-through. It finally gets
-  // converted in ResultOfHaveWordForLengthWrapper, at which point the actual implicit conversions
-  // from String, Array, and the structural types get applied.
-  /**
-   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
-   * the matchers DSL.
-   *
-   * <p>
-   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
-   * be invoked on <code>AnyRef</code> objects that can be implicitly converted to type <code>LengthWrapper</code>.
-   * Trait <code>ShouldMatchers</code> includes implicit conversions from several types, including many structural types, to <code>LengthWrapper</code>.
-   * </p>
-   *
-   * @author Bill Venners
-   */
-  final class LengthShouldWrapper[A <: AnyRef <% LengthWrapper](left: A) {
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * objectWithLength should equal (3)
-     *                  ^
-     * </pre>
-     */
-    def should(rightMatcher: Matcher[A]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
-    }
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should have length (3)
-     *        ^
-     * </pre>
-     */
-    def should(haveWord: HaveWord): ResultOfHaveWordForLengthWrapper[A] =
-      new ResultOfHaveWordForLengthWrapper(left, true)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should not have length (3)
-     *        ^
-     * </pre>
-     */
-    def should(notWord: NotWord): ResultOfNotWordForLengthWrapper[A] =
-      new ResultOfNotWordForLengthWrapper(left, false)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should be theSameInstanceAs anotherObject
-     *        ^
-     * </pre>
-     */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[A] = new ResultOfBeWordForAnyRef[A](left, true)
   }
 
   /**
@@ -2232,91 +2171,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
   // treated nominally by the implicit conversion from plain old String to StringLengthWrapper. So when length is
   // ultimately invoked up in ResultOfHaveWordForLengthWrapper, it is done directly, not with reflection. That's my
   // theory anyway.
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>getLength</code> method that results in <code>Int</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasIntGetLengthMethodToLengthShouldWrapper[T <: AnyRef { def getLength(): Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>getLength</code> parameterless method that results in <code>Int</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   * */
-  implicit def convertHasIntGetLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def getLength: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>getLength</code> <code>val</code> of type <code>Int</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasIntGetLengthFieldToLengthShouldWrapper[T <: AnyRef { val getLength: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>length</code> <code>val</code> of type <code>Int</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasIntLengthFieldToLengthShouldWrapper[T <: AnyRef { val length: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>length</code> method that results in <code>Int</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasIntLengthMethodToLengthShouldWrapper[T <: AnyRef { def length(): Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>length</code> parameterless method that results in <code>Int</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   * */
-  implicit def convertHasIntParameterlessLengthMethodToLengthShouldWrapper[T <: AnyRef { def length: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>getLength</code> method that results in <code>Long</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasLongGetLengthMethodToLengthShouldWrapper[T <: AnyRef { def getLength(): Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>getLength</code> parameterless method that results in <code>Long</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   * */
-  implicit def convertHasLongGetLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def getLength: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>getLength</code> <code>val</code> of type <code>Long</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasLongGetLengthFieldToLengthShouldWrapper[T <: AnyRef { val getLength: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>length</code> <code>val</code> of type <code>Long</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasLongLengthFieldToLengthShouldWrapper[T <: AnyRef { val length: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>length</code> method that results in <code>Long</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   */
-  implicit def convertHasLongLengthMethodToLengthShouldWrapper[T <: AnyRef { def length(): Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
-
-  /**
-   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
-   * a <code>length</code> parameterless method that results in <code>Long</code>
-   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
-   * */
-  implicit def convertHasLongLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def length: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
 
   /**
    * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
