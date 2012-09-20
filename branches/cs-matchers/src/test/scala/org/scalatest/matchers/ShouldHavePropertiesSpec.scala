@@ -24,7 +24,7 @@ import scala.reflect.BeanProperty
 import org.scalatest.exceptions.TestFailedException
 
 // TODO: check not not and not not not to make sure those negative failure messages make sense.
-class ShouldHavePropertiesSpec extends FunSpec with ShouldMatchers with Checkers with ReturnsNormallyThrowsAssertion with BookPropertyMatchers {
+class ShouldHavePropertiesSpec extends FunSpec with ShouldMatchers with SizeShouldMatchers with Checkers with ReturnsNormallyThrowsAssertion with BookPropertyMatchers {
 
   // Checking for a specific size
   describe("The 'have (' syntax") {
