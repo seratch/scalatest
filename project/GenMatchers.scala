@@ -33,6 +33,49 @@ object GenMatchers {
     val temp7 = temp6.replaceAll("I_MUST_STAY_SHOULD", "should")
     temp7.replaceAll("I_WAS_Must_ORIGINALLY", "Should")
   }
+  
+  def genMatchers(targetDir: File, targetFileName: String, templateFileName: String, scalaVersion: String): File = {
+    val matchersFile = new File(targetDir, targetFileName)
+    val matchersWriter = new BufferedWriter(new FileWriter(matchersFile))
+    try {
+      val lines = Source.fromFile(new File(templateFileName)).getLines.toList
+      for (line <- lines) {
+        if (!scalaVersion.startsWith("2.10") && line.toLowerCase.indexOf("parameterless") >= 0 && line.trim.startsWith("implicit def "))
+          matchersWriter.write("//" + line)
+        else
+          matchersWriter.write(line)
+        matchersWriter.newLine()
+      }
+    }
+    finally {
+      matchersWriter.flush()
+      matchersWriter.close()
+      println("Generated " + matchersFile.getAbsolutePath)
+    }
+    matchersFile
+  }
+  
+  def genMustMatchers(targetDir: File, targetFileName: String, templateFileName: String, scalaVersion: String): File = {
+    val mustMatchersFile = new File(targetDir, targetFileName)
+    val mustMatchersWriter = new BufferedWriter(new FileWriter(mustMatchersFile))
+    try {
+      val lines = Source.fromFile(new File(templateFileName)).getLines.toList
+      for (line <- lines) {
+        val mustLine = translateShouldToMust(line)
+        if (!scalaVersion.startsWith("2.10") && mustLine.toLowerCase.indexOf("parameterless") >= 0 && mustLine.trim.startsWith("implicit def "))
+          mustMatchersWriter.write("//" + mustLine)
+        else
+          mustMatchersWriter.write(mustLine)
+        mustMatchersWriter.newLine()
+      }
+    }
+    finally {
+      mustMatchersWriter.flush()
+      mustMatchersWriter.close()
+      println("Generated " + mustMatchersFile.getAbsolutePath)
+    }
+    mustMatchersFile
+  }
 
   def genMain(targetDir: File, scalaVersion: String) {
     targetDir.mkdirs()
@@ -41,7 +84,16 @@ object GenMatchers {
     val junitDir = new File(targetDir, "junit")
     junitDir.mkdirs()
 
-    val matchersFile = new File(matchersDir, "Matchers.scala")
+    genMatchers(matchersDir, "Matchers.scala", "project/Matchers.template", scalaVersion)
+    genMatchers(matchersDir, "ShouldMatchers.scala", "project/ShouldMatchers.template", scalaVersion)
+    genMatchers(matchersDir, "LengthMatchers.scala", "project/LengthMatchers.template", scalaVersion)
+    genMatchers(matchersDir, "LengthShouldMatchers.scala", "project/LengthShouldMatchers.template", scalaVersion)
+    genMatchers(matchersDir, "SizeMatchers.scala", "project/SizeMatchers.template", scalaVersion)
+    genMatchers(matchersDir, "SizeShouldMatchers.scala", "project/SizeShouldMatchers.template", scalaVersion)
+    
+    
+    
+    /*val matchersFile = new File(matchersDir, "Matchers.scala")
     val matchersWriter = new BufferedWriter(new FileWriter(matchersFile))
     try {
       val lines = Source.fromFile(new File("project/Matchers.template")).getLines.toList
@@ -111,9 +163,13 @@ object GenMatchers {
       lengthShouldMatchersWriter.flush()
       lengthShouldMatchersWriter.close()
       println("Generated " + lengthShouldMatchersFile.getAbsolutePath)
-    }
+    }*/
 
-    val mustMatchersFile = new File(matchersDir, "MustMatchers.scala")
+    genMustMatchers(matchersDir, "MustMatchers.scala", "project/ShouldMatchers.template", scalaVersion)
+    genMustMatchers(matchersDir, "LengthMustMatchers.scala", "project/LengthShouldMatchers.template", scalaVersion)
+    genMustMatchers(matchersDir, "SizeMustMatchers.scala", "project/SizeShouldMatchers.template", scalaVersion)
+    
+    /*val mustMatchersFile = new File(matchersDir, "MustMatchers.scala")
     val mustMatchersWriter = new BufferedWriter(new FileWriter(mustMatchersFile))
     try {
       val lines = Source.fromFile(new File("project/ShouldMatchers.template")).getLines.toList
@@ -149,7 +205,7 @@ object GenMatchers {
       lengthMustMatchersWriter.flush()
       lengthMustMatchersWriter.close()
       println("Generated " + lengthMustMatchersFile.getAbsolutePath)
-    }
+    }*/
 
     val mustMatchersForJUnitFile = new File(junitDir, "MustMatchersForJUnit.scala")
     val mustMatchersForJUnitWriter = new BufferedWriter(new FileWriter(mustMatchersForJUnitFile))
