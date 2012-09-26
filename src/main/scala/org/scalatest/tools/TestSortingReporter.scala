@@ -222,12 +222,14 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
         fireSlotEvents(head)
         waitingBuffer.remove(0)
         cancelTimeoutTask()
-      }
-      if (completedTestCount == testCount)
-      suiteSorter match {
-        case Some(suiteSorter) => 
-          suiteSorter.completedTests(suiteId)
-        case None =>
+        
+        if (completedTestCount == testCount) {
+          suiteSorter match {
+            case Some(suiteSorter) => 
+              suiteSorter.completedTests(suiteId)
+            case None =>
+          }
+        }
       }
     }
   }
