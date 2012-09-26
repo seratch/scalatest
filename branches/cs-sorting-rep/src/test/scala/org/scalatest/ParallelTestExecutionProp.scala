@@ -17,9 +17,13 @@ import org.scalatest.events.SuiteCompleted
 import org.scalatest.time.Millis
 import java.io.PrintStream
 import java.io.ByteArrayOutputStream
+import org.scalatest.events.TestSucceeded
+import org.scalatest.tools.TestSortingReporter
+import org.scalatest.concurrent.Eventually
+import org.scalatest.tools.DistributedTestRunnerSuite
 
 class ParallelTestExecutionProp extends FunSuite 
-  with TableDrivenPropertyChecks with SharedHelpers  
+  with TableDrivenPropertyChecks with SharedHelpers with Eventually
   with ParallelTestExecutionOrderExamples 
   with ParallelTestExecutionInfoExamples 
   with ParallelTestExecutionTestTimeoutExamples
@@ -47,11 +51,48 @@ class ParallelTestExecutionProp extends FunSuite
     }
   }
   
+  class TestHoldingControlledOrderDistributor extends Distributor {
+    val buf = ListBuffer.empty[(DistributedTestRunnerSuite, Args)]
+    def apply(suite: Suite, args: Args) {
+      suite match {
+        case dtrs: DistributedTestRunnerSuite => 
+          buf += ((dtrs, args))
+        case _ => 
+          throw new UnsupportedOperationException("TestHoldingControlledOrderDistributor takes only DistributedTestRunnerSuite!")
+      }
+      
+    }
+    def executeInOrder() {
+      for ((suite, args) <- buf) {
+        suite.run(None, args)
+      }
+    }
+    def executeInReverseOrder() {
+      for ((suite, args) <- buf.reverse) {
+        suite.run(None, args)
+      }
+    }
+    def fireHoldEvent() {
+      for ((suite, args) <- buf) {
+        suite.suite match {
+          case tter: TestTimeoutExpectedResults => 
+            tter.holdingReporter.fireHoldEvent()
+          case other => 
+            throw new UnsupportedOperationException("Expected TestTimeoutExpectedResults type, but we got: " + other.getClass.getName)
+        }
+        
+      }
+    }
+    def apply(suite: Suite, tracker: Tracker) {
+      throw new UnsupportedOperationException("Hey, we're not supposed to be calling this anymore!")
+    }
+  }
+  
   class ControlledOrderConcurrentDistributor(poolSize: Int) extends Distributor {
       private val futureQueue = new LinkedBlockingQueue[Future[T] forSome { type T }]
       
       val buf = ListBuffer.empty[SuiteRunner]
-      val execSvc: ExecutorService = Executors.newFixedThreadPool(2)
+      val execSvc: ExecutorService = Executors.newFixedThreadPool(poolSize)
       def apply(suite: Suite, args: Args) {
         buf += new SuiteRunner(suite, args)
       }
@@ -83,6 +124,18 @@ class ParallelTestExecutionProp extends FunSuite
     suite.run(None, Args(recordingReporter, distributor = Some(outOfOrderDistributor)))
     fun(outOfOrderDistributor)
 
+    recordingReporter.eventsReceived
+  }
+  
+  def withDistributor(suite: Suite with TestTimeoutExpectedResults, fun: TestHoldingControlledOrderDistributor => Unit, holdUntilEventCount: Int, sortingTimeout: Span) = {
+    val recordingReporter = new EventRecordingReporter
+    val distributor = new TestHoldingControlledOrderDistributor
+    suite.run(None, Args(recordingReporter, distributor = Some(distributor)))
+    fun(distributor)
+    eventually(timeout(sortingTimeout.scaledBy(3.0))) { 
+      assert(recordingReporter.eventsReceived.size === holdUntilEventCount) 
+    }
+    distributor.fireHoldEvent()
     recordingReporter.eventsReceived
   }
   
@@ -136,10 +189,14 @@ class ParallelTestExecutionProp extends FunSuite
   
   test("ParallelTestExecution should have the blocking test's events fired without waiting when timeout reaches, and when the missing event finally reach later, it should just get fired") {
     forAll(testTimeoutExamples) { example => 
-      val inOrderEvents = withConcurrentDistributor(example, _.executeInOrder)
+      val inOrderEvents = withDistributor(example, _.executeInOrder, example.holdUntilEventCount, example.sortingTimeout)
+      example.assertTestTimeoutTest(inOrderEvents)
+      val reverseOrderEvents = withDistributor(example, _.executeInReverseOrder, example.holdUntilEventCount, example.sortingTimeout)
+      example.assertTestTimeoutTest(reverseOrderEvents)
+      /*val inOrderEvents = withConcurrentDistributor(example, _.executeInOrder)
       example.assertTestTimeoutTest(inOrderEvents)
       val reverseOrderEvents = withConcurrentDistributor(example, _.executeInReverseOrder)
-      example.assertTestTimeoutTest(reverseOrderEvents)
+      example.assertTestTimeoutTest(reverseOrderEvents)*/
     }
   }
   
