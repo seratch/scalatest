@@ -26,6 +26,8 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
   private val waitingBuffer = new ListBuffer[Slot]()
   private val slotMap = new collection.mutable.HashMap[String, Slot]()  // testName -> Slot
   @volatile private var completedTestCount = 0 // Called within synchronized. Don't need volatile and it wouldn't work anyway.
+  
+  checkCompletedTests()   // In case the suite does not comtain any test.
 
   // Passed slot will always be the head of waitingBuffer
   class TimeoutTask(val slot: Slot) extends TimerTask {
@@ -97,6 +99,18 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
       slotMap.put(testName, newSlot)
       completedTestCount += 1
       fireReadyEvents()
+      
+      checkCompletedTests()
+    }
+  }
+  
+  private def checkCompletedTests() {
+    if (completedTestCount == testCount) {
+      suiteSorter match {
+        case Some(suiteSorter) => 
+          suiteSorter.completedTests(suiteId)
+        case None =>
+      }
     }
   }
 
@@ -222,14 +236,6 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
         fireSlotEvents(head)
         waitingBuffer.remove(0)
         cancelTimeoutTask()
-        
-        if (completedTestCount == testCount) {
-          suiteSorter match {
-            case Some(suiteSorter) => 
-              suiteSorter.completedTests(suiteId)
-            case None =>
-          }
-        }
       }
     }
   }
