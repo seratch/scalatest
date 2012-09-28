@@ -17,6 +17,7 @@ package org.scalatest.tools
 
 import org.scalatest._
 import java.util.UUID
+import org.scalatest.spi.SuiteWrapper
 
 /**
  * A Suite that contains as nested suites accessible suites on the runpath whose fully qualified
@@ -26,7 +27,8 @@ import java.util.UUID
  *
  * @author Bill Venners
  */
-private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[String], wildcard: Boolean, runpathClassLoader: ClassLoader)  extends Suite {
+private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[String], wildcard: Boolean, runpathClassLoader: ClassLoader, 
+                                         serviceProviderManager: ServiceProviderManager)  extends Suite {
 
   if (path == null || accessibleSuites == null || runpathClassLoader == null)
     throw new NullPointerException
@@ -39,8 +41,18 @@ private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[Stri
         try {
           val clazz = runpathClassLoader.loadClass(suiteClassName)
           val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
-          if (wrapWithAnnotation == null)
-            clazz.newInstance.asInstanceOf[Suite]
+          if (wrapWithAnnotation == null) {
+            if (classOf[Suite].isAssignableFrom(clazz))
+              clazz.newInstance.asInstanceOf[Suite]
+            else if (classOf[JSuite].isAssignableFrom(clazz))
+              new SuiteWrapper(clazz.newInstance.asInstanceOf[JSuite])
+            else {
+              serviceProviderManager.adapt(clazz) match {
+                case Some(jSuite) => new SuiteWrapper(jSuite)
+                case None => throw new IllegalArgumentException("Unable to adapt suite: " + clazz.getName)
+              }
+            }
+          }
           else {
             val suiteClazz = wrapWithAnnotation.value
             val constructorList = suiteClazz.getDeclaredConstructors()

@@ -4,7 +4,7 @@ package org.scalatest.fingerprints;
 * Indicates that classes or modules with a specific annotation, either on at least one top level
 * method or on the class or module itself, should be discovered as test classes.
 * */
-public interface AnnotatedFingerprint {
+public interface AnnotatedFingerprint extends Fingerprint {
 
   /**
    * Indicates whether modules with the annotation should

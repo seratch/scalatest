@@ -38,7 +38,7 @@ import java.util.regex.Pattern
 private[scalatest] object SuiteDiscoveryHelper {
 
   def discoverSuiteNames(runpath: List[String], loader: ClassLoader,
-                         suffixes: Option[Pattern]): Set[String] =
+                         suffixes: Option[Pattern], serviceProviderManager: ServiceProviderManager): Set[String] =
   {
     val fileSeparatorString = System.getProperty("path.separator")
     val fileSeparator = if (!fileSeparatorString.isEmpty) fileSeparatorString(0) else ':'
@@ -88,12 +88,12 @@ private[scalatest] object SuiteDiscoveryHelper {
               }
     
             jarFileOption match {
-              case Some(jf) => processFileNames(getFileNamesIteratorFromJar(jf), '/', loader, suffixes)
+              case Some(jf) => processFileNames(getFileNamesIteratorFromJar(jf), '/', loader, suffixes, serviceProviderManager)
               case None => Set[String]()
             }
           }
           else {
-            processFileNames(getFileNamesSetFromFile(new File(path), fileSeparator).iterator, fileSeparator, loader, suffixes)
+            processFileNames(getFileNamesSetFromFile(new File(path), fileSeparator).iterator, fileSeparator, loader, suffixes, serviceProviderManager)
           }
         }
 
@@ -133,7 +133,7 @@ private[scalatest] object SuiteDiscoveryHelper {
 
   private[scalatest] def isAccessibleSuite(clazz: java.lang.Class[_]): Boolean = {
       try {
-        classOf[Suite].isAssignableFrom(clazz) && 
+        (classOf[Suite].isAssignableFrom(clazz) || classOf[JSuite].isAssignableFrom(clazz)) && 
           Modifier.isPublic(clazz.getModifiers) &&
           !Modifier.isAbstract(clazz.getModifiers) &&
           Modifier.isPublic(clazz.getConstructor(emptyClassArray: _*).getModifiers)
@@ -197,11 +197,13 @@ private[scalatest] object SuiteDiscoveryHelper {
   // test run.
   //
   // Returns Some(<class name>) if processed, else None
-  private def processClassName(className: String, loader: ClassLoader, suffixes: Option[Pattern]): Option[String] = {
+  private def processClassName(className: String, loader: ClassLoader, suffixes: Option[Pattern], 
+                                serviceProviderManager: ServiceProviderManager): Option[String] = {
 
     if (classNameSuffixOkay(className, suffixes) && isDiscoverableSuite(className, loader)
         && 
-        (isAccessibleSuite(className, loader) || isRunnable(className, loader))) 
+        (isAccessibleSuite(className, loader) || isRunnable(className, loader) || 
+         (serviceProviderManager.supported(loader.loadClass(className)) && serviceProviderManager.discoverable(loader.loadClass(className))) )) 
       Some(className)
     else 
       None 
@@ -231,11 +233,11 @@ private[scalatest] object SuiteDiscoveryHelper {
   // classes found that are to be included in run.
   //
   private def processFileNames(fileNames: Iterator[String], fileSeparator: Char, loader: ClassLoader,
-                               suffixes: Option[Pattern]): Set[String] =
+                               suffixes: Option[Pattern], serviceProviderManager: ServiceProviderManager): Set[String] =
   {
     val classNameOptions = // elements are Some(<class name>) if processed, else None
       for (className <- extractClassNames(fileNames, fileSeparator))
-        yield processClassName(className, loader, suffixes)
+        yield processClassName(className, loader, suffixes, serviceProviderManager)
 
     val classNames = 
       for (Some(className) <- classNameOptions)

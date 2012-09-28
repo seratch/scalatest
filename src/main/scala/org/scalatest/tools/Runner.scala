@@ -39,6 +39,7 @@ import SuiteDiscoveryHelper._
 import org.scalatest.time.Span
 import org.scalatest.time.Seconds
 import org.scalatest.time.Millis
+import org.scalatest.spi.SuiteWrapper
 
 private[tools] case class SuiteParam(className: String, testNames: Array[String], wildcardTestNames: Array[String], nestedSuites: Array[NestedSuiteParam])
 private[tools] case class NestedSuiteParam(suiteId: String, testNames: Array[String], wildcardTestNames: Array[String])
@@ -1916,14 +1917,15 @@ object Runner {
     var tracker = new Tracker(new Ordinal(runStamp))
 
     val runStartTime = System.currentTimeMillis
+    val serviceProviderManager = new ServiceProviderManager(loader)
     
     try {
       val loadProblemsExist =
         try {
           val unrunnableList = suitesList.filter{ suiteParam => 
             val className = suiteParam.className
-            loader.loadClass(className) // Check if the class exist, so if not we get the nice cannot load suite error message.
-            !isAccessibleSuite(className, loader) && !isRunnable(className, loader)
+            val clazz = loader.loadClass(className) // Check if the class exist, so if not we get the nice cannot load suite error message.
+            !isAccessibleSuite(className, loader) && !isRunnable(className, loader) && !serviceProviderManager.supported(clazz)
           }
           if (!unrunnableList.isEmpty) {
             val names = for (suiteParam <- unrunnableList) yield " " + suiteParam.className
@@ -1952,9 +1954,19 @@ object Runner {
                 val suiteClassName = suiteParam.className
                 val clazz = loader.loadClass(suiteClassName)
                 val wrapWithAnnotation = clazz.getAnnotation(classOf[WrapWith])
-                val suiteInstance = 
-                if (wrapWithAnnotation == null) 
-                  clazz.newInstance.asInstanceOf[Suite]
+                val suiteInstance: Suite = 
+                if (wrapWithAnnotation == null) {
+                  if (classOf[Suite].isAssignableFrom(clazz))
+                    clazz.newInstance.asInstanceOf[Suite]
+                  else if (classOf[JSuite].isAssignableFrom(clazz))
+                    new SuiteWrapper(clazz.newInstance.asInstanceOf[JSuite])
+                  else {
+                    serviceProviderManager.adapt(clazz) match {
+                      case Some(jSuite) => new SuiteWrapper(jSuite)
+                      case None => throw new IllegalArgumentException("Unable to adapt suite: " + clazz.getName)
+                    }
+                  }
+                }
                 else {
                   val suiteClazz = wrapWithAnnotation.value
                   val constructorList = suiteClazz.getDeclaredConstructors()
@@ -2039,7 +2051,7 @@ object Runner {
               println("DEBUG: Discovery Starting")
               // dispatch(DiscoveryStarting)
               val discoveryStartTime = System.currentTimeMillis
-              val accessibleSuites = discoverSuiteNames(runpath, loader, suffixes)
+              val accessibleSuites = discoverSuiteNames(runpath, loader, suffixes, serviceProviderManager)
               val discoveryDuration = System.currentTimeMillis - discoveryStartTime
               println("DEBUG: Discovery Completed: " + discoveryDuration + " milliseconds")
               // dispatch(DiscoveryCompleted(discoveryDuration))
@@ -2047,16 +2059,16 @@ object Runner {
               if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
                 // In this case, they didn't specify any -w, -m, -s, -j or -b on the command line, so the default
                 // is to run any accessible Suites discovered on the runpath
-                (Nil, List(SuiteConfig(new DiscoverySuite("", accessibleSuites, true, loader), emptyDynaTags, false, false)))
+                (Nil, List(SuiteConfig(new DiscoverySuite("", accessibleSuites, true, loader, serviceProviderManager), emptyDynaTags, false, false)))
               }
               else {
                 val membersOnlyInstances =
                   for (membersOnlyName <- membersOnlyList)
-                    yield SuiteConfig(new DiscoverySuite(membersOnlyName, accessibleSuites, false, loader), emptyDynaTags, false, false)
+                    yield SuiteConfig(new DiscoverySuite(membersOnlyName, accessibleSuites, false, loader, serviceProviderManager), emptyDynaTags, false, false)
 
                 val wildcardInstances =
                   for (wildcardName <- wildcardList)
-                    yield SuiteConfig(new DiscoverySuite(wildcardName, accessibleSuites, true, loader), emptyDynaTags, false, false)
+                    yield SuiteConfig(new DiscoverySuite(wildcardName, accessibleSuites, true, loader, serviceProviderManager), emptyDynaTags, false, false)
 
                 (membersOnlyInstances, wildcardInstances)
               }

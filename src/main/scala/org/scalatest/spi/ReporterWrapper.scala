@@ -1,8 +1,12 @@
 package org.scalatest
 
 import org.scalatest.events._
+import java.util.Date
+import Suite.wrapReporterIfNecessary
 
-class ReporterWrapper(dispatch: Reporter) extends JReporter {
+class ReporterWrapper(reporter: Reporter) extends JReporter {
+  
+  val dispatch = Suite.wrapReporterIfNecessary(reporter)
 
   def createMotionToSuppress = MotionToSuppress
   
@@ -55,7 +59,7 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
       None
       
   def createInfoProvided(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, testName: String, 
-                         throwable: Throwable, formatter: JFormatter, location: JLocation, payload: Object, threadName: String, timeStamp: Long) = 
+                         throwable: Throwable, formatter: JFormatter, location: JLocation, payload: Object) = 
     InfoProvided (
       ordinal,
       message,
@@ -64,12 +68,12 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
       formatterOpt(formatter),
       locationOpt(location),
       anyOpt(payload),
-      threadName,
-      timeStamp
+      Thread.currentThread.getName,
+      (new Date).getTime
     )
   
   def createMarkupProvided(ordinal: JOrdinal, text: String, suiteName: String, suiteId: String, suiteClassName: String, testName: String,
-                           formatter: JFormatter, location: JLocation, payload: Object, threadName: String, timeStamp: Long) = 
+                           formatter: JFormatter, location: JLocation, payload: Object) = 
     MarkupProvided (
       ordinal,
       text,
@@ -77,8 +81,8 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
       formatterOpt(formatter),
       locationOpt(location),
       anyOpt(payload),
-      threadName,
-      timeStamp)
+      Thread.currentThread.getName,
+      (new Date).getTime)
   
   def createTopOfClass(className: String) = TopOfClass(className)
   
@@ -89,7 +93,7 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
   def createSeeStackDepthException = SeeStackDepthException
   
   def fireTestStarting(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, testName: String, testText: String, formatter: JFormatter,
-                       location: JLocation, rerunner: String, payload: Object, threadName: String, timeStamp: Long) {
+                       location: JLocation, rerunner: String, payload: Object) {
     dispatch(
       TestStarting (
         ordinal,
@@ -104,14 +108,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         locationOpt(location),
         stringOpt(rerunner),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )
     )
   }
   
   def fireTestSucceeded(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, testName: String, testText: String, recordedEvents: Array[JRecordableEvent], 
-                        duration: Long, formatter: JFormatter, location: JLocation, rerunner: String, payload: Object, threadName: String, timeStamp: Long) {
+                        duration: Long, formatter: JFormatter, location: JLocation, rerunner: String, payload: Object) {
     dispatch (
       TestSucceeded (
         ordinal,
@@ -128,15 +132,15 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         locationOpt(location),
         stringOpt(rerunner),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )    
     )
   }
   
   def fireTestFailed(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, testName: String, testText: String, 
                      recordedEvents: Array[JRecordableEvent], throwable: Throwable, duration: Long, formatter: JFormatter, location: JLocation, rerunner: String, 
-                     payload: Object, threadName: String, timeStamp: Long) {
+                     payload: Object) {
     dispatch(
       TestFailed (
         ordinal,
@@ -155,14 +159,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         locationOpt(location),
         stringOpt(rerunner),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )    
     )
   }
   
   def fireTestIgnored(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, testName: String, testText: String, formatter: JFormatter, location: JLocation, 
-                      payload: Object, threadName: String, timeStamp: Long) {
+                      payload: Object) {
     dispatch(
       TestIgnored (
         ordinal,
@@ -176,14 +180,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         formatterOpt(formatter),
         locationOpt(location),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )    
     )
   }
   
   def fireTestPending(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, testName: String, testText: String, recordedEvents: Array[JRecordableEvent], 
-                      duration: Long, formatter: JFormatter, location: JLocation, payload: Object, threadName: String, timeStamp: Long) {
+                      duration: Long, formatter: JFormatter, location: JLocation, payload: Object) {
     dispatch(
       TestPending (
         ordinal,
@@ -199,14 +203,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         formatterOpt(formatter),
         locationOpt(location),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )    
     )
   }
   
   def fireTestCanceled(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, testName: String, testText: String, recordedEvents: Array[JRecordableEvent], 
-                       throwable: Throwable, duration: Long, formatter: JFormatter, location: JLocation, payload: Object, threadName: String, timeStamp: Long) {
+                       throwable: Throwable, duration: Long, formatter: JFormatter, location: JLocation, payload: Object) {
     dispatch(
       TestCanceled (
         ordinal,
@@ -224,14 +228,43 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         formatterOpt(formatter),
         locationOpt(location),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )
     )
   }
   
-  def fireSuiteStarting(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, formatter: JFormatter, location: JLocation, rerunner: String, payload: Object,
-                        threadName: String, timeStamp: Long) {
+  def fireScopeOpened(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, formatter: JFormatter, location: JLocation, payload: Object) {
+    dispatch(
+      ScopeOpened (
+        ordinal, 
+        message, 
+        NameInfo(suiteName, suiteId, stringOpt(suiteClassName), None, None), 
+        formatterOpt(formatter), 
+        locationOpt(location), 
+        anyOpt(payload), 
+        Thread.currentThread.getName,
+        (new Date).getTime
+      )
+    )
+  }
+  
+  def fireScopeClosed(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, formatter: JFormatter, location: JLocation, payload: Object) {
+    dispatch(
+      ScopeClosed (
+        ordinal, 
+        message, 
+        NameInfo(suiteName, suiteId, stringOpt(suiteClassName), None, None), 
+        formatterOpt(formatter), 
+        locationOpt(location), 
+        anyOpt(payload), 
+        Thread.currentThread.getName,
+        (new Date).getTime
+      )
+    )
+  }
+  
+  def fireSuiteStarting(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, formatter: JFormatter, location: JLocation, rerunner: String, payload: Object) {
     dispatch(
       SuiteStarting (
         ordinal,
@@ -243,14 +276,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         locationOpt(location),
         stringOpt(rerunner),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )
     )
   }
   
   def fireSuiteCompleted(ordinal: JOrdinal, suiteName: String, suiteId: String, suiteClassName: String, duration: Long, formatter: JFormatter, location: JLocation, rerunner: String,
-                         payload: Object, threadName: String, timeStamp: Long) {
+                         payload: Object) {
     dispatch(
       SuiteCompleted (
         ordinal,
@@ -263,14 +296,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         locationOpt(location),
         stringOpt(rerunner),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )    
     )
   }
   
   def fireSuiteAborted(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, throwable: Throwable, duration: Long, formatter: JFormatter,
-                       location: JLocation, rerunner: String, payload: Object, threadName: String, timeStamp: Long) {
+                       location: JLocation, rerunner: String, payload: Object) {
     dispatch(
       SuiteAborted (
         ordinal,
@@ -285,14 +318,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         locationOpt(location),
         stringOpt(rerunner),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )    
     )
   }
   
   def fireInfoProvided(ordinal: JOrdinal, message: String, suiteName: String, suiteId: String, suiteClassName: String, testName: String, 
-                       throwable: Throwable, formatter: JFormatter, location: JLocation, payload: Object, threadName: String, timeStamp: Long) {
+                       throwable: Throwable, formatter: JFormatter, location: JLocation, payload: Object) {
     dispatch(
       InfoProvided (
         ordinal,
@@ -302,14 +335,14 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         formatterOpt(formatter),
         locationOpt(location),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )
     )
   }
   
   def fireMarkupProvided(ordinal: JOrdinal, text: String, suiteName: String, suiteId: String, suiteClassName: String, testName: String,
-                         formatter: JFormatter, location: JLocation, payload: Object, threadName: String, timeStamp: Long) { 
+                         formatter: JFormatter, location: JLocation, payload: Object) { 
     dispatch(
       MarkupProvided (
         ordinal,
@@ -318,8 +351,8 @@ class ReporterWrapper(dispatch: Reporter) extends JReporter {
         formatterOpt(formatter),
         locationOpt(location),
         anyOpt(payload),
-        threadName,
-        timeStamp
+        Thread.currentThread.getName,
+        (new Date).getTime
       )
     )
   }

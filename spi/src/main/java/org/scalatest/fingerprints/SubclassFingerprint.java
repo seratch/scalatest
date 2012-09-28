@@ -4,7 +4,7 @@ package org.scalatest.fingerprints;
 * Indicates that classes (and possibly modules) that extend a particular superclass,
 * or mix in a particular supertrait, should be discovered as test classes.
 */
-public interface SubclassFingerprint {
+public interface SubclassFingerprint extends Fingerprint {
 
   /**
    * Indicates whether modules (singleton objects) that extend the superclass or
