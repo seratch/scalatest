@@ -114,9 +114,8 @@ class Specs1Suite(specificationClass: Class[_ <: Specification]) extends JSuite 
     }
     else {
       val testName = getTestName(scopeStack, example.description)
-      val filterResultArr = filter.doFilter(testName, tags, suiteId)
-      val filterExample = filterResultArr(0)
-      if (!filterExample)
+      val filtered = filter.doFilter(testName, tags, suiteId).filtered
+      if (!filtered)
         1
       else
         0

@@ -22,8 +22,8 @@ class ScalaTestNotifierRunner(val specification: Specification, val notifier: Sc
     if(example.examples.length == 0) {
       val testName = notifier.getTestName(example.description)
       val filterResultsArr = filter.doFilter(testName, tags, suiteId)
-      val filterExample = filterResultsArr(0)
-      if (!filterExample) {
+      val filtered = filter.doFilter(testName, tags, suiteId).filtered
+      if (!filtered) {
         notifiers.foreach { _.exampleStarting(example.description) }
     
         if (!planOnly && example.isOk && example.skipped.isEmpty)
