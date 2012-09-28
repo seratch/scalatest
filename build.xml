@@ -355,7 +355,7 @@
                  classpath="ant-lib/biz.aQute.bnd.jar"/>
 
         <!-- Create jar, including OSGi metadata -->
-        <bnd classpath="${jar.contents}" sourcepath="${jar.contents}"
+        <bnd classpath="${jar.contents}:${spi.jar.contents}" sourcepath="${jar.contents}:${spi.jar.contents}"
              eclipse="false" failok="false" exceptions="true" files="osgi.bnd"
              output="${dist}/lib/scalatest.jar" /> 
 
