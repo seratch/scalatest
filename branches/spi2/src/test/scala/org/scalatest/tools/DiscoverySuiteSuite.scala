@@ -37,14 +37,15 @@ private[scalatest] class DiscoverySuiteSuite extends Suite {
   val loader = DiscoverySuite.getClass.getClassLoader
 
   def testConstructor() {
+    val serviceProviderManager = new ServiceProviderManager(loader)
     intercept[NullPointerException] {
-      new DiscoverySuite(null, Set(), false, loader)
+      new DiscoverySuite(null, Set(), false, loader, serviceProviderManager)
     }
     intercept[NullPointerException] {
-      new DiscoverySuite("hi", null, false, loader)
+      new DiscoverySuite("hi", null, false, loader, serviceProviderManager)
     }
     intercept[NullPointerException] {
-      new DiscoverySuite(null, Set(), false, null)
+      new DiscoverySuite(null, Set(), false, null, serviceProviderManager)
     }
     expectResult(Nil) {
       DiscoverySuite.nestedSuiteNames("a.b.c", Set(), false)

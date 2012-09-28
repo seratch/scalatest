@@ -26,7 +26,6 @@ import org.scalatest.events.LineInFile
 import org.scalatest.events.SeeStackDepthException
 import scala.annotation.tailrec
 import org.scalatest.PathEngine.isInTargetPath
-import org.scalatest.Suite.checkChosenStyles
 import org.scalatest.events.Event
 import org.scalatest.events.Location
 
@@ -364,7 +363,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
     // so that exceptions are caught and transformed
     // into error messages on the standard error stream.
-    val report = theSuite.wrapReporterIfNecessary(reporter)
+    val report = Suite.wrapReporterIfNecessary(reporter)
     val newArgs = if (report eq reporter) args else args.copy(reporter = report)
 
     // If a testName is passed to run, just run that, else run the tests returned
@@ -403,7 +402,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     if (!registrationClosed)
       updateAtomic(oldBundle, Bundle(currentBranch, testNamesList, testsMap, tagsMap, true))
 
-    val report = theSuite.wrapReporterIfNecessary(reporter)
+    val report = Suite.wrapReporterIfNecessary(reporter)
 
     val informerForThisSuite =
       ConcurrentInformer(
@@ -846,7 +845,7 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
     if (!registrationClosed)
       updateAtomic(oldBundle, Bundle(currentBranch, testNamesList, testsMap, tagsMap, true))
 
-    val report = theSuite.wrapReporterIfNecessary(reporter)
+    val report = Suite.wrapReporterIfNecessary(reporter)
     val newArgs = if (report eq reporter) args else args.copy(reporter = report)
 
     val informerForThisSuite =

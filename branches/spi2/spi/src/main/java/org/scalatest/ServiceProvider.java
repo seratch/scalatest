@@ -7,5 +7,7 @@ public interface ServiceProvider {
 
   Fingerprint[] fingerprints();
   
-  JSuite suite(Fingerprint fingerprint, String className);
+  JSuite adapt(Class className);
+  
+  boolean supported(Class className);
 }

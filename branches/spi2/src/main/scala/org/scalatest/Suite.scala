@@ -43,6 +43,7 @@ import Suite.getIndentedTextForTest
 import Suite.getEscapedIndentedTextForTest
 import Suite.getDecodedName
 import Suite.autoTagClassAnnotations
+import Suite.wrapReporterIfNecessary
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
 import Suite.getMessageForException
@@ -1633,15 +1634,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
 
     filter.runnableTestCount(testNames, tags, suiteId) + countNestedSuiteTests(nestedSuites.toList, filter)
   }
-
-  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
-  // so that exceptions are caught and transformed
-  // into error messages on the standard error stream.
-  private[scalatest] def wrapReporterIfNecessary(reporter: Reporter) = reporter match {
-    case dr: DispatchReporter => dr
-    case cr: CatchReporter => cr
-    case _ => new CatchReporter(reporter)
-  }
   
   /**
    * The fully qualified class name of the rerunner to rerun this suite.  This implementation will look at this.getClass and see if it is
@@ -2270,6 +2262,15 @@ used for test events like succeeded/failed, etc.
         Map.empty[String, Set[String]]
     
     Runner.mergeMap[String, Set[String]](List(tags, autoTestTags)) ( _ ++ _ )
+  }
+  
+  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+  // so that exceptions are caught and transformed
+  // into error messages on the standard error stream.
+  private[scalatest] def wrapReporterIfNecessary(reporter: Reporter) = reporter match {
+    case dr: DispatchReporter => dr
+    case cr: CatchReporter => cr
+    case _ => new CatchReporter(reporter)
   }
 }
 
