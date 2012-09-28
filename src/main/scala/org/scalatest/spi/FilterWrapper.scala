@@ -1,6 +1,6 @@
 package org.scalatest.spi
 
-import org.scalatest.{JFilter, Filter}
+import org.scalatest.{JFilter, JFilterResult, Filter}
 import collection.JavaConversions._
 
 class FilterWrapper(filter: Filter) extends JFilter {
@@ -22,7 +22,7 @@ class FilterWrapper(filter: Filter) extends JFilter {
     
   def doFilter(testName: String, tags: java.util.Map[String, java.util.Set[String]], suiteId: String) = { 
     val (filtered, ignored) = filter(testName, convertMap(tags), suiteId)
-    Array(filtered, ignored)
+    new JFilterResult(filtered, ignored)
   }
   
   def runnableTestCount(testNames: java.util.Set[String], testTags: java.util.Map[String, java.util.Set[String]], suiteId: String): Int = 
