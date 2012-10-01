@@ -23,7 +23,7 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.exceptions.TestRegistrationClosedException
 import org.scalatest.events.InfoProvided
 
-class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
+class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers with EventHelpers {
 
   describe("A fixture.FeatureSpec") {
     it("should return the test names in order of registration from testNames") {
@@ -1038,6 +1038,101 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         assert("FeatureSpecSpec.scala" === trce.failedCodeFileName.get)
         assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
       }
+    
+    it("should send out justifications as info") {
+      class TestSpec extends FeatureSpec with StringFixture {
+        Justification(
+          "As a programmer",
+          "I want to be able to pop items off the stack",
+          "So that I can get them in last-in-first-out order"
+        )
+
+        Scenario("pop is invoked on a non-empty stack") { fixture => }
+        Scenario("pop is invoked on an empty stack") { fixture => }
+      }
+      
+      val rep = new EventRecordingReporter
+      val s = new TestSpec
+      s.run(None, Args(rep))
+      val events = rep.eventsReceived
+      assert(rep.eventsReceived.length === 7)
+      checkInfoProvided(events(0), "As a programmer")
+      checkInfoProvided(events(1), "I want to be able to pop items off the stack")
+      checkInfoProvided(events(2), "So that I can get them in last-in-first-out order")
+      checkTestStarting(events(3), "Scenario: pop is invoked on a non-empty stack")
+      checkTestSucceeded(events(4), "Scenario: pop is invoked on a non-empty stack")
+      checkTestStarting(events(5), "Scenario: pop is invoked on an empty stack")
+      checkTestSucceeded(events(6), "Scenario: pop is invoked on an empty stack")
+    }
+    
+    it("should allow justifications in Feature") {
+      class TestSpec extends FeatureSpec with StringFixture {
+        Feature("Stack") {
+          Justification(
+            "As a programmer",
+            "I want to be able to pop items off the stack",
+            "So that I can get them in last-in-first-out order"
+          )
+
+          Scenario("pop is invoked on a non-empty stack") { fixture => }
+          Scenario("pop is invoked on an empty stack") { fixture => }
+        }
+      }
+      
+      val rep = new EventRecordingReporter
+      val s = new TestSpec
+      s.run(None, Args(rep))
+      val events = rep.eventsReceived
+      assert(rep.eventsReceived.length === 9)
+      checkScopeOpened(events(0), "Feature: Stack")
+      checkInfoProvided(events(1), "As a programmer")
+      checkInfoProvided(events(2), "I want to be able to pop items off the stack")
+      checkInfoProvided(events(3), "So that I can get them in last-in-first-out order")
+      checkTestStarting(events(4), "Feature: Stack Scenario: pop is invoked on a non-empty stack")
+      checkTestSucceeded(events(5), "Feature: Stack Scenario: pop is invoked on a non-empty stack")
+      checkTestStarting(events(6), "Feature: Stack Scenario: pop is invoked on an empty stack")
+      checkTestSucceeded(events(7), "Feature: Stack Scenario: pop is invoked on an empty stack")
+      checkScopeClosed(events(8), "Feature: Stack")
+    }
+    
+    it("should throw NotAllowedException with correct stack depth when justification does not come first") {
+      class TestSpec extends FeatureSpec with StringFixture {
+        Scenario("pop is invoked on a non-empty stack") { fixture => }
+        
+        Justification(
+          "As a programmer",
+          "I want to be able to pop items off the stack",
+          "So that I can get them in last-in-first-out order"
+        )
+        
+        Scenario("pop is invoked on an empty stack") { fixture => }
+      }
+      val e = intercept[NotAllowedException] {
+        new TestSpec
+      }
+      assert("FeatureSpecSpec.scala" === e.failedCodeFileName.get)
+      assert(e.failedCodeLineNumber.get === thisLineNumber - 12)
+    }
+    
+    it("should also throw NotAllowedException with correct stack depth when justification does not come first in Feature block") {
+      class TestSpec extends FeatureSpec with StringFixture {
+        Feature("Stack") {
+          Scenario("pop is invoked on a non-empty stack") { fixture => }
+          Justification(
+            "As a programmer",
+            "I want to be able to pop items off the stack",
+            "So that I can get them in last-in-first-out order"
+          )
+          Scenario("pop is invoked on an empty stack") { fixture => }
+        }
+      }
+      
+      val e = intercept[NotAllowedException] {
+        new TestSpec
+      }
+      assert("FeatureSpecSpec.scala" === e.failedCodeFileName.get)
+      assert(e.failedCodeLineNumber.get === thisLineNumber - 13)
+    }
   }
   
 }

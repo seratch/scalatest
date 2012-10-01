@@ -75,6 +75,14 @@ class EngineSpec extends FlatSpec with SharedHelpers with ShouldMatchers {
     grandchildTest.indentationLevel should be (1)
     greatGrandchildTest.indentationLevel should be (2)
   }
+  
+  "currentBranchIsEmpty" should "return true when current branch is empty, false otherwise" in {
+    val engine = new Engine("concurrentFunSuiteBundleMod", "FunSuite")
+    import engine._
+    currentBranchIsEmpty should be (true)
+    registerTest("Test 1", () => {}, "scenarioCannotAppearInsideAnotherScenario", "EngineSpec.scala", "in", 4, -2, None, None, None)
+    currentBranchIsEmpty should be (false)
+  }
 
   def pathEngine = {
     import scala.collection.mutable.ListBuffer
