@@ -17,11 +17,11 @@ class ExampleSpec extends FeatureSpec {
     }
   }
 
-  scenario("This scenario should succeed") {
+  Scenario("This scenario should succeed") {
     assert(1 + 1 === 2)
   }
 
-  scenario("This scenario should fail") {
+  Scenario("This scenario should fail") {
     assert(1 + 1 === 3)
   }
 }

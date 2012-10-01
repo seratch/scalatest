@@ -19,15 +19,15 @@ class TVSetSpec extends FeatureSpec with GivenWhenThen {
   info("So I can watch TV when I want")
   info("And save energy when I'm not watching TV")
 
-  feature("TV power button") {
-    scenario("User presses power button when TV is off") {
+  Feature("TV power button") {
+    Scenario("User presses power button when TV is off") {
       Given("a TV that is switched off")
       When("the power button is pressed")
       Then("the TV should switch on")
       pending
     }
 
-    scenario("User presses power button when TV is on") {
+    Scenario("User presses power button when TV is on") {
       Given("a TV that is switched on")
       When("the power button is pressed")
       Then("the TV should switch off")

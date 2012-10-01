@@ -238,13 +238,13 @@ class ExampleParallelTestExecutionTestTimeoutFixtureFunSpec extends fixture.FunS
 
 @DoNotDiscover
 class ExampleParallelTestExecutionTestTimeoutFeatureSpec extends FeatureSpec with TestTimeoutExpectedResults with ParallelTestExecution {
-  feature("Scope 1") {
-    scenario("Test 1") {}
-    scenario("Test 2") {}
+  Feature("Scope 1") {
+    Scenario("Test 1") {}
+    Scenario("Test 2") {}
   }
-  feature("Scope 2") {
-    scenario("Test 3") { Thread.sleep(600) }
-    scenario("Test 4") {}
+  Feature("Scope 2") {
+    Scenario("Test 3") { Thread.sleep(600) }
+    Scenario("Test 4") {}
   }
   
   override protected def sortingTimeout: Span = Span(300, Millis)
@@ -269,13 +269,13 @@ class ExampleParallelTestExecutionTestTimeoutFeatureSpec extends FeatureSpec wit
 
 @DoNotDiscover
 class ExampleParallelTestExecutionTestTimeoutFixtureFeatureSpec extends fixture.FeatureSpec with TestTimeoutExpectedResults with ParallelTestExecution with StringFixture {
-  feature("Scope 1") {
-    scenario("Test 1") { fixture => }
-    scenario("Test 2") { fixture =>}
+  Feature("Scope 1") {
+    Scenario("Test 1") { fixture => }
+    Scenario("Test 2") { fixture =>}
   }
-  feature("Scope 2") {
-    scenario("Test 3") { fixture => Thread.sleep(600) }
-    scenario("Test 4") { fixture => }
+  Feature("Scope 2") {
+    Scenario("Test 3") { fixture => Thread.sleep(600) }
+    Scenario("Test 4") { fixture => }
   }
   
   override protected def sortingTimeout: Span = Span(300, Millis)

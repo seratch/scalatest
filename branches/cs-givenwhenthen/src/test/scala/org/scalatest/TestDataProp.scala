@@ -274,8 +274,8 @@ class ExampleTestDataFeatureSpec extends FeatureSpec with TestDataFixtureService
     testData = test
     super.withFixture(test)
   }
-  feature("Feature 1") {
-    scenario("Scenario 1", TestDataTag) {}
+  Feature("Feature 1") {
+    Scenario("Scenario 1", TestDataTag) {}
   }
 }
 
@@ -293,8 +293,8 @@ class ExampleTestDataFixtureFeatureSpec extends fixture.FeatureSpec with TestDat
     testData = test
     super.withFixture(test)
   }
-  feature("Feature 1") {
-    scenario("Scenario 1", TestDataTag) { s => }
+  Feature("Feature 1") {
+    Scenario("Scenario 1", TestDataTag) { s => }
   }
 }
 

@@ -259,25 +259,25 @@ class ExampleParallelTestExecutionSuiteTimeoutFeatureSpecPair extends SuiteTimeo
 
 @DoNotDiscover
 class ExampleParallelTestExecutionSuiteTimeoutFeatureSpec extends FeatureSpec with ParallelTestExecution {
-  feature("Scope 1") {
-    scenario("Test 1") {}
-    scenario("Test 2") {}
+  Feature("Scope 1") {
+    Scenario("Test 1") {}
+    Scenario("Test 2") {}
   }
-  feature("Scope 2") {
-    scenario("Test 3") {}
-    scenario("Test 4") { Thread.sleep(300) }
+  Feature("Scope 2") {
+    Scenario("Test 3") {}
+    Scenario("Test 4") { Thread.sleep(300) }
   }
 }
 
 @DoNotDiscover
 class ExampleParallelTestExecutionSuiteTimeoutFixtureFeatureSpec extends fixture.FeatureSpec with ParallelTestExecution with StringFixture {
-  feature("Fixture Scope 1") {
-    scenario("Fixture Test 1") { fixture => }
-    scenario("Fixture Test 2") { fixture =>}
+  Feature("Fixture Scope 1") {
+    Scenario("Fixture Test 1") { fixture => }
+    Scenario("Fixture Test 2") { fixture =>}
   }
-  feature("Fixture Scope 2") {
-    scenario("Fixture Test 3") { fixture => }
-    scenario("Fixture Test 4") { fixture => }
+  Feature("Fixture Scope 2") {
+    Scenario("Fixture Test 3") { fixture => }
+    Scenario("Fixture Test 4") { fixture => }
   }
 }
 

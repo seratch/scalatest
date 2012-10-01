@@ -12,11 +12,11 @@ class TVSet {
 
 class TVSetSpec extends FeatureSpec {
 
-  feature("TV power button") {
+  Feature("TV power button") {
 
-    scenario("User presses power button when TV is off") (pending)
+    Scenario("User presses power button when TV is off") (pending)
 
-    scenario("User presses power button when TV is on") {
+    Scenario("User presses power button when TV is on") {
       val tv = new TVSet
       tv.pressPowerButton()
       assert(tv.isOn)

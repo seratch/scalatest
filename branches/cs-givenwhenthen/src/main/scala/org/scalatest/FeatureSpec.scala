@@ -61,8 +61,8 @@ import Suite.autoTagClassAnnotations
  *   info("So I can watch TV when I want")
  *   info("And save energy when I'm not watching TV")
  * 
- *   feature("TV power button") {
- *     scenario("User presses power button when TV is off") {
+ *   Feature("TV power button") {
+ *     Scenario("User presses power button when TV is off") {
  * 
  *       Given("a TV set that is switched off")
  *       val tv = new TVSet
@@ -75,7 +75,7 @@ import Suite.autoTagClassAnnotations
  *       assert(tv.isOn)
  *     }
  *     
- *     scenario("User presses power button when TV is on") {
+ *     Scenario("User presses power button when TV is on") {
  * 
  *       Given("a TV set that is switched on")
  *       val tv = new TVSet
@@ -99,8 +99,8 @@ import Suite.autoTagClassAnnotations
  *
  * <p>
  * A <code>FeatureSpec</code> contains <em>feature clauses</em> and <em>scenarios</em>. You define a feature clause
- * with <code>feature</code>, and a scenario with <code>scenario</code>. Both
- * <code>feature</code> and <code>scenario</code> are methods, defined in
+ * with <code>Feature</code>, and a scenario with <code>Scenario</code>. Both
+ * <code>Feature</code> and <code>Scenario</code> are methods, defined in
  * <code>FeatureSpec</code>, which will be invoked
  * by the primary constructor of <code>StackFeatureSpec</code>. 
  * A feature clause describes a feature of the <em>subject</em> (class or other entity) you are specifying
@@ -111,7 +111,7 @@ import Suite.autoTagClassAnnotations
  * one scenario in which the feature may be used, and a block of code that tests that behavior.
  * You place the spec text between the parentheses, followed by the test code between curly
  * braces.  The test code will be wrapped up as a function passed as a by-name parameter to
- * <code>scenario</code>, which will register the test for later execution.
+ * <code>Scenario</code>, which will register the test for later execution.
  * </p>
  *
  * <p>
@@ -121,7 +121,7 @@ import Suite.autoTagClassAnnotations
  * </p>
  *
  * <p>
- * Scenarios can only be registered with the <code>scenario</code> method while the <code>FeatureSpec</code> is
+ * Scenarios can only be registered with the <code>Scenario</code> method while the <code>FeatureSpec</code> is
  * in its registration phase. Any attempt to register a scenario after the <code>FeatureSpec</code> has
  * entered its ready phase, <em>i.e.</em>, after <code>run</code> has been invoked on the <code>FeatureSpec</code>,
  * will be met with a thrown <code>TestRegistrationClosedException</code>. The recommended style
@@ -131,9 +131,9 @@ import Suite.autoTagClassAnnotations
  * </p>
  *
  * <p>
- * Each scenario represents one test. The name of the test is the spec text passed to the <code>scenario</code> method.
+ * Each scenario represents one test. The name of the test is the spec text passed to the <code>Scenario</code> method.
  * The feature name does not appear as part of the test name. In a <code>FeatureSpec</code>, therefore, you must take care
- * to ensure that each test has a unique name (in other words, that each <code>scenario</code> has unique spec text).
+ * to ensure that each test has a unique name (in other words, that each <code>Scenario</code> has unique spec text).
  * </p>
  *
  * <p>
@@ -213,8 +213,8 @@ import Suite.autoTagClassAnnotations
  * <p>
  * To support the common use case of temporarily disabling a test, with the
  * good intention of resurrecting the test at a later time, <code>FeatureSpec</code> provides registration
- * methods that start with <code>ignore</code> instead of <code>scenario</code>. For example, to temporarily
- * disable the test named <code>addition</code>, just change &#8220;<code>scenario</code>&#8221; into &#8220;<code>ignore</code>,&#8221; like this:
+ * methods that start with <code>ignore</code> instead of <code>Scenario</code>. For example, to temporarily
+ * disable the test named <code>addition</code>, just change &#8220;<code>Scenario</code>&#8221; into &#8220;<code>ignore</code>,&#8221; like this:
  * </p>
  *
  * <pre class="stHighlight">
@@ -232,7 +232,7 @@ import Suite.autoTagClassAnnotations
  * 
  * class TVSetSpec extends FeatureSpec {
  * 
- *   feature("TV power button") {
+ *   Feature("TV power button") {
  *     ignore("User presses power button when TV is off") {
  *       val tv = new TVSet
  *       assert(!tv.isOn)
@@ -240,7 +240,7 @@ import Suite.autoTagClassAnnotations
  *       assert(tv.isOn)
  *     }
  * 
- *     scenario("User presses power button when TV is on") {
+ *     Scenario("User presses power button when TV is on") {
  *       val tv = new TVSet
  *       tv.pressPowerButton()
  *       assert(tv.isOn)
@@ -332,11 +332,11 @@ import Suite.autoTagClassAnnotations
  * 
  * class TVSetSpec extends FeatureSpec {
  * 
- *   feature("TV power button") {
+ *   Feature("TV power button") {
  *
- *     scenario("User presses power button when TV is off") (pending)
+ *     Scenario("User presses power button when TV is off") (pending)
  *
- *     scenario("User presses power button when TV is on") {
+ *     Scenario("User presses power button when TV is on") {
  *       val tv = new TVSet
  *       tv.pressPowerButton()
  *       assert(tv.isOn)
@@ -413,15 +413,15 @@ import Suite.autoTagClassAnnotations
  *   info("So I can watch TV when I want")
  *   info("And save energy when I'm not watching TV")
  * 
- *   feature("TV power button") {
- *     scenario("User presses power button when TV is off") {
+ *   Feature("TV power button") {
+ *     Scenario("User presses power button when TV is off") {
  *       Given("a TV that is switched off")
  *       When("the power button is pressed")
  *       Then("the TV should switch on")
  *       pending
  *     }
  * 
- *     scenario("User presses power button when TV is on") {
+ *     Scenario("User presses power button when TV is on") {
  *       Given("a TV that is switched on")
  *       When("the power button is pressed")
  *       Then("the TV should switch off")
@@ -495,15 +495,15 @@ import Suite.autoTagClassAnnotations
  * 
  * class TVSetSpec extends FeatureSpec {
  * 
- *   feature("TV power button") {
- *     scenario("User presses power button when TV is off", SlowTest) {
+ *   Feature("TV power button") {
+ *     Scenario("User presses power button when TV is off", SlowTest) {
  *       val tv = new TVSet
  *       assert(!tv.isOn)
  *       tv.pressPowerButton()
  *       assert(tv.isOn)
  *     }
  * 
- *     scenario("User presses power button when TV is on", SlowTest, DbTest) {
+ *     Scenario("User presses power button when TV is on", SlowTest, DbTest) {
  *       val tv = new TVSet
  *       tv.pressPowerButton()
  *       assert(tv.isOn)
@@ -593,8 +593,8 @@ import Suite.autoTagClassAnnotations
  *       val buffer = new ListBuffer[String]
  *     }
  *   
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") {
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") {
  *       val f = fixture
  *       f.builder.append("encourage clear code!")
  *       assert(f.builder.toString === "ScalaTest is designed to encourage clear code!")
@@ -602,7 +602,7 @@ import Suite.autoTagClassAnnotations
  *       f.buffer += "sweet"
  *     }
  *   
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       val f = fixture
  *       f.builder.append("be easy to reason about!")
  *       assert(f.builder.toString === "ScalaTest is designed to be easy to reason about!")
@@ -653,9 +653,9 @@ import Suite.autoTagClassAnnotations
  *     val buffer = ListBuffer("ScalaTest", "is", "designed", "to")
  *   }
  * 
- *   feature("Simplicity") {
+ *   Feature("Simplicity") {
  *     // This test needs the StringBuilder fixture
- *     scenario("User needs to read test code written by others") {
+ *     Scenario("User needs to read test code written by others") {
  *       new Builder {
  *         builder.append("encourage clear code!")
  *         assert(builder.toString === "ScalaTest is designed to encourage clear code!")
@@ -663,7 +663,7 @@ import Suite.autoTagClassAnnotations
  *     }
  *     
  *     // This test needs the ListBuffer[String] fixture
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       new Buffer {
  *         buffer += ("be", "easy", "to", "reason", "about!")
  *         assert(buffer === List("ScalaTest", "is", "designed", "to", "be", "easy", "to", "reason", "about!"))
@@ -671,7 +671,7 @@ import Suite.autoTagClassAnnotations
  *     }
  * 
  *     // This test needs both the StringBuilder and ListBuffer
- *     scenario("User needs to write tests") {
+ *     Scenario("User needs to write tests") {
  *       new Builder with Buffer {
  *         builder.append("be easy to learn!")
  *         buffer += ("be", "easy", "to", "remember", "how", "to", "write!")
@@ -705,15 +705,15 @@ import Suite.autoTagClassAnnotations
  *   val builder = new StringBuilder("ScalaTest is designed to ")
  *   val buffer = new ListBuffer[String]
  * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") {
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") {
  *       builder.append("encourage clear code!")
  *       assert(builder.toString === "ScalaTest is designed to encourage clear code!")
  *       assert(buffer.isEmpty)
  *       buffer += "sweet"
  *     }
  * 
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       builder.append("be easy to reason about!")
  *       assert(builder.toString === "ScalaTest is designed to be easy to reason about!")
  *       assert(buffer.isEmpty)
@@ -802,11 +802,11 @@ import Suite.autoTagClassAnnotations
  *     }
  *   }
  * 
- *   scenario("This scenario should succeed") {
+ *   Scenario("This scenario should succeed") {
  *     assert(1 + 1 === 2)
  *   }
  * 
- *   scenario("This scenario should fail") {
+ *   Scenario("This scenario should fail") {
  *     assert(1 + 1 === 3)
  *   }
  * }
@@ -893,9 +893,9 @@ import Suite.autoTagClassAnnotations
  *     finally writer.close() // clean up the fixture
  *   }
  * 
- *   feature("Simplicity") {
+ *   Feature("Simplicity") {
  *     // This test needs the file fixture
- *     scenario("User needs to read test code written by others") {
+ *     Scenario("User needs to read test code written by others") {
  *       withFile { (file, writer) =&gt;
  *         writer.write("encourage clear code!")
  *         writer.flush()
@@ -903,14 +903,14 @@ import Suite.autoTagClassAnnotations
  *       }
  *     }
  *     // This test needs the database fixture
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       withDatabase { db =&gt;
  *         db.append("be easy to reason about!")
  *         assert(db.toString === "ScalaTest is designed to be easy to reason about!")
  *       }
  *     }
  *     // This test needs both the file and the database
- *     scenario("User needs to write tests") {
+ *     Scenario("User needs to write tests") {
  *       withDatabase { db =&gt;
  *         withFile { (file, writer) =&gt; // loan-fixture methods compose
  *           db.append("be easy to learn!")
@@ -992,14 +992,14 @@ import Suite.autoTagClassAnnotations
  *     finally writer.close() // clean up the fixture
  *   }
  * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") { f =&gt;
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") { f =&gt;
  *       f.writer.write("encourage clear code!")
  *       f.writer.flush()
  *       assert(f.file.length === 49)
  *     }
  * 
- *     scenario("User needs to understand what the tests are doing") { f =&gt;
+ *     Scenario("User needs to understand what the tests are doing") { f =&gt;
  *       f.writer.write("be easy to reason about!")
  *       f.writer.flush()
  *       assert(f.file.length === 52)
@@ -1046,15 +1046,15 @@ import Suite.autoTagClassAnnotations
  *     buffer.clear()
  *   }
  * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") {
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") {
  *       builder.append("encourage clear code!")
  *       assert(builder.toString === "ScalaTest is designed to encourage clear code!")
  *       assert(buffer.isEmpty)
  *       buffer += "sweet"
  *     }
  * 
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       builder.append("be easy to reason about!")
  *       assert(builder.toString === "ScalaTest is designed to be easy to reason about!")
  *       assert(buffer.isEmpty)
@@ -1120,15 +1120,15 @@ import Suite.autoTagClassAnnotations
  * 
  * class ExampleSpec extends FeatureSpec with Builder with Buffer {
  * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") {
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") {
  *       builder.append("encourage clear code!")
  *       assert(builder.toString === "ScalaTest is designed to encourage clear code!")
  *       assert(buffer.isEmpty)
  *       buffer += "clear"
  *     }
  * 
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       builder.append("be easy to reason about!")
  *       assert(builder.toString === "ScalaTest is designed to be easy to reason about!")
  *       assert(buffer.isEmpty)
@@ -1200,15 +1200,15 @@ import Suite.autoTagClassAnnotations
  * 
  * class ExampleSpec extends FeatureSpec with Builder with Buffer {
  * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") {
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") {
  *       builder.append("encourage clear code!")
  *       assert(builder.toString === "ScalaTest is designed to encourage clear code!")
  *       assert(buffer.isEmpty)
  *       buffer += "clear"
  *     }
  * 
- *     scenario("User needs to understand what the tests are doing") {
+ *     Scenario("User needs to understand what the tests are doing") {
  *       builder.append("be easy to reason about!")
  *       assert(builder.toString === "ScalaTest is designed to be easy to reason about!")
  *       assert(buffer.isEmpty)
@@ -1310,7 +1310,7 @@ import Suite.autoTagClassAnnotations
  * 
  *   def nonEmptyStack(createNonEmptyStack: =&gt; Stack[Int], lastItemAdded: Int) {
  * 
- *     scenario("empty is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
+ *     Scenario("empty is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
  *       Given("a non-empty stack")
  *       val stack = createNonEmptyStack
@@ -1320,7 +1320,7 @@ import Suite.autoTagClassAnnotations
  *       assert(!stack.empty)
  *     }
  * 
- *     scenario("peek is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
+ *     Scenario("peek is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
  *       Given("a non-empty stack")
  *       val stack = createNonEmptyStack
@@ -1334,7 +1334,7 @@ import Suite.autoTagClassAnnotations
  *       assert(stack.size === size)
  *     }
  * 
- *     scenario("pop is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
+ *     Scenario("pop is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
  *       Given("a non-empty stack")
  *       val stack = createNonEmptyStack
@@ -1351,7 +1351,7 @@ import Suite.autoTagClassAnnotations
  *   
  *   def nonFullStack(createNonFullStack: =&gt; Stack[Int]) {
  *       
- *     scenario("full is invoked on this non-full stack: " + createNonFullStack.toString) {
+ *     Scenario("full is invoked on this non-full stack: " + createNonFullStack.toString) {
  * 
  *       Given("a non-full stack")
  *       val stack = createNonFullStack
@@ -1361,7 +1361,7 @@ import Suite.autoTagClassAnnotations
  *       assert(!stack.full)
  *     }
  *       
- *     scenario("push is invoked on this non-full stack: " + createNonFullStack.toString) {
+ *     Scenario("push is invoked on this non-full stack: " + createNonFullStack.toString) {
  * 
  *       Given("a non-full stack")
  *       val stack = createNonFullStack
@@ -1438,9 +1438,9 @@ import Suite.autoTagClassAnnotations
  *  
  *   val lastValuePushed = 9
  *  
- *   feature("A Stack is pushed and popped") {
+ *   Feature("A Stack is pushed and popped") {
  *  
- *     scenario("empty is invoked on an empty stack") {
+ *     Scenario("empty is invoked on an empty stack") {
  * 
  *       Given("an empty stack")
  *       val stack = emptyStack
@@ -1450,7 +1450,7 @@ import Suite.autoTagClassAnnotations
  *       assert(stack.empty)
  *     }
  *  
- *     scenario("peek is invoked on an empty stack") {
+ *     Scenario("peek is invoked on an empty stack") {
  * 
  *       Given("an empty stack")
  *       val stack = emptyStack
@@ -1462,7 +1462,7 @@ import Suite.autoTagClassAnnotations
  *       }
  *     }
  *  
- *     scenario("pop is invoked on an empty stack") {
+ *     Scenario("pop is invoked on an empty stack") {
  * 
  *       Given("an empty stack")
  *       val stack = emptyStack
@@ -1480,7 +1480,7 @@ import Suite.autoTagClassAnnotations
  *     scenariosFor(nonEmptyStack(stackWithOneItemLessThanCapacity, lastValuePushed))
  *     scenariosFor(nonFullStack(stackWithOneItemLessThanCapacity))
  *  
- *     scenario("full is invoked on a full stack") {
+ *     Scenario("full is invoked on a full stack") {
  * 
  *       Given("an full stack")
  *       val stack = fullStack
@@ -1492,7 +1492,7 @@ import Suite.autoTagClassAnnotations
  *  
  *     scenariosFor(nonEmptyStack(fullStack, lastValuePushed))
  *  
- *     scenario("push is invoked on a full stack") {
+ *     Scenario("push is invoked on a full stack") {
  * 
  *       Given("an full stack")
  *       val stack = fullStack
@@ -1691,8 +1691,31 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
+  @deprecated("Please use Scenario(specText: String, testTags: Tag*)(testFun: => Unit) instead.")
   protected def scenario(specText: String, testTags: Tag*)(testFun: => Unit) {
     registerTest(Resources("scenario", specText.trim), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpec.scala", "scenario", 4, -2, None, None, None, testTags: _*)
+  }
+  
+  /**
+   * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
+   * An invocation of this method is called an &#8220;example.&#8221;
+   *
+   * This method will register the test for later execution via an invocation of one of the <code>execute</code>
+   * methods. The name of the test will be a concatenation of the text of all surrounding describers,
+   * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
+   * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
+   * this <code>FeatureSpec</code> instance.
+   *
+   * @param specText the specification text, which will be combined with the descText of any surrounding describers
+   * to form the test name
+   * @param testTags the optional list of tags for this test
+   * @param testFun the test function
+   * @throws DuplicateTestNameException if a test with the same name has been registered previously
+   * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
+   * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
+   */
+  protected def Scenario(specText: String, testTags: Tag*)(testFun: => Unit) {
+    registerTest(Resources("scenario", specText.trim), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpec.scala", "Scenario", 4, -2, None, None, None, testTags: _*)
   }
 
   /**
@@ -1723,12 +1746,27 @@ trait FeatureSpec extends Suite { thisSuite =>
    * (defined with <code>it</code>). This trait's implementation of this method will register the
    * description string and immediately invoke the passed function.
    */
+  @deprecated("Please use Feature(description: String)(fun: => Unit) instead.")
   protected def feature(description: String)(fun: => Unit) {
 
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun("FeatureSpec.scala", "feature"))
 
     registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", "FeatureSpec.scala", "feature", 4, -2, None)
+  }
+  
+  /**
+   * Describe a &#8220;subject&#8221; being specified and tested by the passed function value. The
+   * passed function value may contain more describers (defined with <code>describe</code>) and/or tests
+   * (defined with <code>it</code>). This trait's implementation of this method will register the
+   * description string and immediately invoke the passed function.
+   */
+  protected def Feature(description: String)(fun: => Unit) {
+
+    if (!currentBranchIsTrunk)
+      throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun("FeatureSpec.scala", "Feature"))
+
+    registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", "FeatureSpec.scala", "Feature", 4, -2, None)
   }
 
   /**
@@ -1852,9 +1890,9 @@ trait FeatureSpec extends Suite { thisSuite =>
    * import org.scalatest.FeatureSpec
    *
    * class StackSpec extends FeatureSpec {
-   *   feature("A Stack") {
-   *     scenario("(when not empty) must allow me to pop") {}
-   *     scenario("(when not full) must allow me to push") {}
+   *   Feature("A Stack") {
+   *     Scenario("(when not empty) must allow me to pop") {}
+   *     Scenario("(when not full) must allow me to push") {}
    *   }
    * }
    * </pre>

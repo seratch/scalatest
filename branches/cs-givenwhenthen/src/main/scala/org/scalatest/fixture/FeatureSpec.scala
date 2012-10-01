@@ -114,14 +114,14 @@ import org.scalatest.exceptions.NotAllowedException
  *     finally writer.close() // clean up the fixture
  *   }
  * 
- *   feature("Simplicity") {
- *     scenario("User needs to read test code written by others") { f =&gt;
+ *   Feature("Simplicity") {
+ *     Scenario("User needs to read test code written by others") { f =&gt;
  *       f.writer.write("encourage clear code!")
  *       f.writer.flush()
  *       assert(f.file.length === 49)
  *     }
  * 
- *     scenario("User needs to understand what the tests are doing") { f =&gt;
+ *     Scenario("User needs to understand what the tests are doing") { f =&gt;
  *       f.writer.write("be easy to reason about!")
  *       f.writer.flush()
  *       assert(f.file.length === 52)
@@ -191,19 +191,19 @@ import org.scalatest.exceptions.NotAllowedException
  *     db.append("ScalaTest is designed to ")
  *   }
  * 
- *   feature("Simplicity") {
+ *   Feature("Simplicity") {
  * 
- *     scenario("User needs to read test code written by others") { db =&gt;
+ *     Scenario("User needs to read test code written by others") { db =&gt;
  *       db.append("encourage clear code!")
  *       assert(db.toString === "ScalaTest is designed to encourage clear code!")
  *     }
  *     
- *     scenario("User needs to understand what the tests are doing") { db =&gt;
+ *     Scenario("User needs to understand what the tests are doing") { db =&gt;
  *       db.append("be easy to reason about!")
  *       assert(db.toString === "ScalaTest is designed to be easy to reason about!")
  *     }
  * 
- *     scenario("User needs to write tests") { () =&gt;
+ *     Scenario("User needs to write tests") { () =&gt;
  *       val buf = new StringBuffer
  *       buf.append("ScalaTest is designed to be ")
  *       buf.append("easy to learn!")
@@ -272,8 +272,31 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
+  @deprecated("Please use Scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) instead.")
   protected def scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
     registerTest(Resources("scenario", specText.trim), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 4, -2, None, None, None, testTags: _*)
+  }
+  
+  /**
+   * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
+   * An invocation of this method is called an &#8220;example.&#8221;
+   *
+   * This method will register the test for later execution via an invocation of one of the <code>execute</code>
+   * methods. The name of the test will be a concatenation of the text of all surrounding describers,
+   * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
+   * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
+   * this <code>FeatureSpec</code> instance.
+   *
+   * @param specText the specification text, which will be combined with the descText of any surrounding describers
+   * to form the test name
+   * @param testTags the optional list of tags for this test
+   * @param testFun the test function
+   * @throws DuplicateTestNameException if a test with the same name has been registered previously
+   * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
+   * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
+   */
+  protected def Scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
+    registerTest(Resources("scenario", specText.trim), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "Scenario", 4, -2, None, None, None, testTags: _*)
   }
 
   /**
@@ -304,12 +327,27 @@ trait FeatureSpec extends Suite { thisSuite =>
    * (defined with <code>it</code>). This trait's implementation of this method will register the
    * description string and immediately invoke the passed function.
    */
+  @deprecated("Please use Feature(description: String)(fun: => Unit) instead.")
   protected def feature(description: String)(fun: => Unit) {
 
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun(sourceFileName, "feature"))
 
     registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 4, -2, None)
+  }
+  
+  /**
+   * Describe a &#8220;subject&#8221; being specified and tested by the passed function value. The
+   * passed function value may contain more describers (defined with <code>describe</code>) and/or tests
+   * (defined with <code>it</code>). This trait's implementation of this method will register the
+   * description string and immediately invoke the passed function.
+   */
+  protected def Feature(description: String)(fun: => Unit) {
+
+    if (!currentBranchIsTrunk)
+      throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun(sourceFileName, "Feature"))
+
+    registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "Feature", 4, -2, None)
   }
 
   /**
@@ -471,7 +509,7 @@ trait FeatureSpec extends Suite { thisSuite =>
 
   // I need this implicit because the function is passed to scenario as the 2nd parameter list, and
   // I can't overload on that. I could if I took the ScenarioWord approach, but that has possibly a worse
-  // downside of people could just say scenario("...") and nothing else.
+  // downside of people could just say Scenario("...") and nothing else.
   /**
    * Implicitly converts a function that takes no parameters and results in <code>Any</code> to
    * a function from <code>FixtureParam</code> to <code>Any</code>, to enable no-arg tests to registered

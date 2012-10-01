@@ -13,9 +13,9 @@ class ExampleSpec extends FeatureSpec {
     val buffer = ListBuffer("ScalaTest", "is", "designed", "to")
   }
 
-  feature("Simplicity") {
+  Feature("Simplicity") {
     // This test needs the StringBuilder fixture
-    scenario("User needs to read test code written by others") {
+    Scenario("User needs to read test code written by others") {
       new Builder {
         builder.append("encourage clear code!")
         assert(builder.toString === "ScalaTest is designed to encourage clear code!")
@@ -23,7 +23,7 @@ class ExampleSpec extends FeatureSpec {
     }
     
     // This test needs the ListBuffer[String] fixture
-    scenario("User needs to understand what the tests are doing") {
+    Scenario("User needs to understand what the tests are doing") {
       new Buffer {
         buffer += ("be", "easy", "to", "reason", "about!")
         assert(buffer === List("ScalaTest", "is", "designed", "to", "be", "easy", "to", "reason", "about!"))
@@ -31,7 +31,7 @@ class ExampleSpec extends FeatureSpec {
     }
 
     // This test needs both the StringBuilder and ListBuffer
-    scenario("User needs to write tests") {
+    Scenario("User needs to write tests") {
       new Builder with Buffer {
         builder.append("be easy to learn!")
         buffer += ("be", "easy", "to", "remember", "how", "to", "write!")
