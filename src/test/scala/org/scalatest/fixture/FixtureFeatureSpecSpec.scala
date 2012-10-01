@@ -30,9 +30,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val a = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
-        scenario("should do that") { fixture =>
+        Scenario("should do that") { fixture =>
         }
-        scenario("should do this") { fixture =>
+        Scenario("should do this") { fixture =>
         }
       }
 
@@ -52,9 +52,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val c = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
-        scenario("should do this") { fixture =>
+        Scenario("should do this") { fixture =>
         }
-        scenario("should do that") { fixture =>
+        Scenario("should do that") { fixture =>
         }
       }
 
@@ -69,19 +69,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         new FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) {}
-          scenario("test this") { fixture =>
+          Scenario("test this") { fixture =>
           }
-          scenario("test this") { fixture =>
-          }
-        }
-      }
-      intercept[DuplicateTestNameException] {
-        new FixtureFeatureSpec {
-          type FixtureParam = String
-          def withFixture(test: OneArgTest) {}
-          scenario("test this") { fixture =>
-          }
-          ignore("test this") { fixture =>
+          Scenario("test this") { fixture =>
           }
         }
       }
@@ -89,7 +79,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         new FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) {}
-          ignore("test this") { fixture =>
+          Scenario("test this") { fixture =>
           }
           ignore("test this") { fixture =>
           }
@@ -101,7 +91,17 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
           def withFixture(test: OneArgTest) {}
           ignore("test this") { fixture =>
           }
-          scenario("test this") { fixture =>
+          ignore("test this") { fixture =>
+          }
+        }
+      }
+      intercept[DuplicateTestNameException] {
+        new FixtureFeatureSpec {
+          type FixtureParam = String
+          def withFixture(test: OneArgTest) {}
+          ignore("test this") { fixture =>
+          }
+          Scenario("test this") { fixture =>
           }
         }
       }
@@ -114,10 +114,10 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {
           test(hello)
         }
-        scenario("should do this") { fixture =>
+        Scenario("should do this") { fixture =>
           assert(fixture === hello)
         }
-        scenario("should do that") { fixture =>
+        Scenario("should do that") { fixture =>
           assert(fixture === hello)
         }
       }
@@ -131,14 +131,14 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         new FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) {}
-          scenario("hi", null) { fixture => }
+          Scenario("hi", null) { fixture => }
         }
       }
       val caught = intercept[NullPointerException] {
         new FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) {}
-          scenario("hi", mytags.SlowAsMolasses, null) { fixture => }
+          Scenario("hi", mytags.SlowAsMolasses, null) { fixture => }
         }
       }
       assert(caught.getMessage === "a test tag was null")
@@ -146,7 +146,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         new FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) {}
-          scenario("hi", mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) { fixture => }
+          Scenario("hi", mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) { fixture => }
         }
       }
       // ignore
@@ -179,7 +179,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
         ignore("test this") { fixture => }
-        scenario("test that") { fixture => }
+        Scenario("test that") { fixture => }
       }
       expectResult(Map("Scenario: test this" -> Set("org.scalatest.Ignore"))) {
         a.tags
@@ -188,7 +188,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val b = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
-        scenario("test this") { fixture => }
+        Scenario("test this") { fixture => }
         ignore("test that") { fixture => }
       }
       expectResult(Map("Scenario: test that" -> Set("org.scalatest.Ignore"))) {
@@ -208,7 +208,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val d = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
-        scenario("test this", mytags.SlowAsMolasses) { fixture => }
+        Scenario("test this", mytags.SlowAsMolasses) { fixture => }
         ignore("test that", mytags.SlowAsMolasses) { fixture => }
       }
       expectResult(Map("Scenario: test this" -> Set("org.scalatest.SlowAsMolasses"), "Scenario: test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
@@ -226,8 +226,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val f = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
-        scenario("test this", mytags.SlowAsMolasses, mytags.WeakAsAKitten) { fixture => }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => }
+        Scenario("test this", mytags.SlowAsMolasses, mytags.WeakAsAKitten) { fixture => }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => }
       }
       expectResult(Map("Scenario: test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "Scenario: test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         f.tags
@@ -239,8 +239,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       def withFixture(test: OneArgTest) { test("hi") }
       var theTestThisCalled = false
       var theTestThatCalled = false
-      scenario("this") { fixture => theTestThisCalled = true }
-      scenario("that") { fixture => theTestThatCalled = true }
+      Scenario("this") { fixture => theTestThisCalled = true }
+      Scenario("that") { fixture => theTestThatCalled = true }
     }
 
     it("should execute all tests when run is called with testName None") {
@@ -266,8 +266,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
-        scenario("test this") { fixture => theTestThisCalled = true }
-        scenario("test that") { fixture => theTestThatCalled = true }
+        Scenario("test this") { fixture => theTestThisCalled = true }
+        Scenario("test that") { fixture => theTestThatCalled = true }
       }
 
       val repA = new TestIgnoredTrackingReporter
@@ -282,7 +282,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         ignore("test this") { fixture => theTestThisCalled = true }
-        scenario("test that") { fixture => theTestThatCalled = true }
+        Scenario("test that") { fixture => theTestThatCalled = true }
       }
 
       val repB = new TestIgnoredTrackingReporter
@@ -298,7 +298,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
-        scenario("test this") { fixture => theTestThisCalled = true }
+        Scenario("test this") { fixture => theTestThisCalled = true }
         ignore("test that") { fixture => theTestThatCalled = true }
       }
 
@@ -339,7 +339,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         ignore("test this") { fixture => theTestThisCalled = true }
-        scenario("test that") { fixture => theTestThatCalled = true }
+        Scenario("test that") { fixture => theTestThatCalled = true }
       }
 
       val repE = new TestIgnoredTrackingReporter
@@ -357,8 +357,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
-        scenario("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
-        scenario("test that") { fixture => theTestThatCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
+        Scenario("test that") { fixture => theTestThatCalled = true }
       }
       val repA = new TestIgnoredTrackingReporter
       a.run(None, Args(repA))
@@ -372,8 +372,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
-        scenario("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
-        scenario("test that") { fixture => theTestThatCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
+        Scenario("test that") { fixture => theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
       b.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
@@ -387,8 +387,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
-        scenario("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
       c.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
@@ -403,7 +403,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         ignore("test this", mytags.SlowAsMolasses) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
       d.run(None, Args(repD, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
@@ -418,9 +418,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
-        scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
-        scenario("test the other") { fixture => theTestTheOtherCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test the other") { fixture => theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
       e.run(None, Args(repE, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
@@ -438,8 +438,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
         ignore("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
-        scenario("test the other") { fixture => theTestTheOtherCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test the other") { fixture => theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
       f.run(None, Args(repF, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
@@ -456,8 +456,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
-        scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
         ignore("test the other") { fixture => theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
@@ -475,9 +475,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
-        scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
-        scenario("test the other") { fixture => theTestTheOtherCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test the other") { fixture => theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
       h.run(None, Args(repH, Stopper.default, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker, Set.empty))
@@ -493,9 +493,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
-        scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
-        scenario("test the other") { fixture => theTestTheOtherCalled = true }
+        Scenario("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
+        Scenario("test the other") { fixture => theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
       i.run(None, Args(repI, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
@@ -513,7 +513,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         var theTestTheOtherCalled = false
         ignore("test this", mytags.SlowAsMolasses, mytags.FastAsLight) { fixture => theTestThisCalled = true }
         ignore("test that", mytags.SlowAsMolasses) { fixture => theTestThatCalled = true }
-        scenario("test the other") { fixture => theTestTheOtherCalled = true }
+        Scenario("test the other") { fixture => theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
       j.run(None, Args(repJ, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
@@ -546,8 +546,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val a = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) { test("hi") }
-        scenario("test this") { fixture => }
-        scenario("test that") { fixture => }
+        Scenario("test this") { fixture => }
+        Scenario("test that") { fixture => }
       }
       assert(a.expectedTestCount(Filter()) === 2)
 
@@ -555,15 +555,15 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         type FixtureParam = String
         def withFixture(test: OneArgTest) { test("hi") }
         ignore("test this") { fixture => }
-        scenario("test that") { fixture => }
+        Scenario("test that") { fixture => }
       }
       assert(b.expectedTestCount(Filter()) === 1)
 
       val c = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) { test("hi") }
-        scenario("test this", mytags.FastAsLight) { fixture => }
-        scenario("test that") { fixture => }
+        Scenario("test this", mytags.FastAsLight) { fixture => }
+        Scenario("test that") { fixture => }
       }
       assert(c.expectedTestCount(Filter(Some(Set("org.scalatest.FastAsLight")), Set())) === 1)
       assert(c.expectedTestCount(Filter(None, Set("org.scalatest.FastAsLight"))) === 1)
@@ -571,9 +571,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val d = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) { test("hi") }
-        scenario("test this", mytags.FastAsLight, mytags.SlowAsMolasses) { fixture => }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => }
-        scenario("test the other thing") { fixture => }
+        Scenario("test this", mytags.FastAsLight, mytags.SlowAsMolasses) { fixture => }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => }
+        Scenario("test the other thing") { fixture => }
       }
       assert(d.expectedTestCount(Filter(Some(Set("org.scalatest.FastAsLight")), Set())) === 1)
       assert(d.expectedTestCount(Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight"))) === 1)
@@ -583,8 +583,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
       val e = new FixtureFeatureSpec {
         type FixtureParam = String
         def withFixture(test: OneArgTest) { test("hi") }
-        scenario("test this", mytags.FastAsLight, mytags.SlowAsMolasses) { fixture => }
-        scenario("test that", mytags.SlowAsMolasses) { fixture => }
+        Scenario("test this", mytags.FastAsLight, mytags.SlowAsMolasses) { fixture => }
+        Scenario("test that", mytags.SlowAsMolasses) { fixture => }
         ignore("test the other thing") { fixture => }
       }
       assert(e.expectedTestCount(Filter(Some(Set("org.scalatest.FastAsLight")), Set())) === 1)
@@ -604,12 +604,12 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
           test(hello)
         }
 
-        scenario("should do this") (pending)
+        Scenario("should do this") (pending)
 
-        scenario("should do that") { fixture =>
+        Scenario("should do that") { fixture =>
           assert(fixture === hello)
         }
-        scenario("should do something else") { fixture =>
+        Scenario("should do something else") { fixture =>
           assert(fixture === hello)
           pending
         }
@@ -627,9 +627,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {
           test(hello)
         }
-        scenario("throws AssertionError") { s => throw new AssertionError }
-        scenario("throws plain old Error") { s => throw new Error }
-        scenario("throws Throwable") { s => throw new Throwable }
+        Scenario("throws AssertionError") { s => throw new AssertionError }
+        Scenario("throws plain old Error") { s => throw new Error }
+        Scenario("throws Throwable") { s => throw new Throwable }
       }
       val rep = new EventRecordingReporter
       a.run(None, Args(rep))
@@ -644,7 +644,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {
           test(hello)
         }
-        scenario("throws AssertionError") { s => throw new OutOfMemoryError }
+        Scenario("throws AssertionError") { s => throw new OutOfMemoryError }
       }
       intercept[OutOfMemoryError] {
         a.run(None, Args(SilentReporter))
@@ -713,12 +713,12 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
 
         var takesNoArgsInvoked = false
-        scenario("take no args") { () =>
+        Scenario("take no args") { () =>
           takesNoArgsInvoked = true
         }
 
         var takesAFixtureInvoked = false
-        scenario("takes a fixture") { s => takesAFixtureInvoked = true }
+        Scenario("takes a fixture") { s => takesAFixtureInvoked = true }
       }
 
       a.run(None, Args(SilentReporter))
@@ -735,12 +735,12 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
 
         var takesNoArgsInvoked = false
-        scenario("should take no args") { () =>
+        Scenario("should take no args") { () =>
           takesNoArgsInvoked = true; true
         }
 
         var takesAFixtureInvoked = false
-        scenario("should take a fixture") { s => takesAFixtureInvoked = true; true }
+        Scenario("should take a fixture") { s => takesAFixtureInvoked = true; true }
       }
 
       assert(!a.takesNoArgsInvoked)
@@ -781,7 +781,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {
           aOneArgTestWasPassed = true
         }
-        scenario("something") { () =>
+        Scenario("something") { () =>
           assert(1 + 1 === 2)
         }
       }
@@ -802,7 +802,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {
           aOneArgTestWasPassed = true
         }
-        scenario("something") { fixture =>
+        Scenario("something") { fixture =>
           assert(1 + 1 === 2)
         }
       }
@@ -821,7 +821,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {
           // Shouldn't be called, but just in case don't invoke a OneArgTest
         }
-        scenario("something") { () =>
+        Scenario("something") { () =>
           theNoArgTestWasInvoked = true
         }
       }
@@ -837,8 +837,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
-            feature("in the wrong place, at the wrong time") {
+          Scenario("should blow up") { fixture =>
+            Feature("in the wrong place, at the wrong time") {
             }
           }
         }
@@ -851,9 +851,9 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
-            feature("in the wrong place, at the wrong time") {
-              scenario("should never run") { fixture =>
+          Scenario("should blow up") { fixture =>
+            Feature("in the wrong place, at the wrong time") {
+              Scenario("should never run") { fixture =>
                 assert(1 === 1)
               }
             }
@@ -868,8 +868,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
-            scenario("should never run") { fixture =>
+          Scenario("should blow up") { fixture =>
+            Scenario("should never run") { fixture =>
               assert(1 === 1)
             }
           }
@@ -883,8 +883,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
-            scenario("should never run", mytags.SlowAsMolasses) { fixture =>
+          Scenario("should blow up") { fixture =>
+            Scenario("should never run", mytags.SlowAsMolasses) { fixture =>
               assert(1 === 1)
             }
           }
@@ -898,8 +898,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
-            feature("in the wrong place, at the wrong time") {
+          Scenario("should blow up") { fixture =>
+            Feature("in the wrong place, at the wrong time") {
               ignore("should never run") { fixture =>
                 assert(1 === 1)
               }
@@ -915,7 +915,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
+          Scenario("should blow up") { fixture =>
             ignore("should never run") { fixture =>
               assert(1 === 1)
             }
@@ -930,7 +930,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          scenario("should blow up") { fixture =>
+          Scenario("should blow up") { fixture =>
             ignore("should never run", mytags.SlowAsMolasses) { fixture =>
               assert(1 === 1)
             }
@@ -945,8 +945,8 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         class MySpec extends FixtureFeatureSpec {
           type FixtureParam = String
           def withFixture(test: OneArgTest) { test("hi") }
-          feature("should blow up") {
-            feature("should never run") {
+          Feature("should blow up") {
+            Feature("should never run") {
             }
           }
         }
@@ -967,7 +967,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         correctTestNameWasPassed = test.name == "Scenario: should do something"
         test("hi")
       }
-      scenario("should do something") { fixture => }
+      Scenario("should do something") { fixture => }
     }
     a.run(None, Args(SilentReporter))
     assert(a.correctTestNameWasPassed)
@@ -980,7 +980,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         correctConfigMapWasPassed = (test.configMap == Map("hi" -> 7))
         test("hi")
       }
-      scenario("should do something") { fixture => }
+      Scenario("should do something") { fixture => }
     }
     a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> 7), None, new Tracker(), Set.empty))
     assert(a.correctConfigMapWasPassed)

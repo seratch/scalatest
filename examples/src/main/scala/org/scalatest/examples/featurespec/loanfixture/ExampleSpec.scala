@@ -42,9 +42,9 @@ class ExampleSpec extends FeatureSpec {
     finally writer.close() // clean up the fixture
   }
 
-  feature("Simplicity") {
+  Feature("Simplicity") {
     // This test needs the file fixture
-    scenario("User needs to read test code written by others") {
+    Scenario("User needs to read test code written by others") {
       withFile { (file, writer) =>
         writer.write("encourage clear code!")
         writer.flush()
@@ -52,14 +52,14 @@ class ExampleSpec extends FeatureSpec {
       }
     }
     // This test needs the database fixture
-    scenario("User needs to understand what the tests are doing") {
+    Scenario("User needs to understand what the tests are doing") {
       withDatabase { db =>
         db.append("be easy to reason about!")
         assert(db.toString === "ScalaTest is designed to be easy to reason about!")
       }
     }
     // This test needs both the file and the database
-    scenario("User needs to write tests") {
+    Scenario("User needs to write tests") {
       withDatabase { db =>
         withFile { (file, writer) => // loan-fixture methods compose
           db.append("be easy to learn!")

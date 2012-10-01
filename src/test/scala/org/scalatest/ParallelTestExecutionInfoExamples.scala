@@ -258,13 +258,13 @@ class ExampleParallelTestExecutionInfoFixtureFunSpec extends fixture.FunSpec wit
 class ExampleParallelTestExecutionInfoFeatureSpec extends FeatureSpec with InfoExpectedResults with BeforeAndAfter with ParallelTestExecution {
   before { info("In Before") }
   after { info("In After") }
-  feature("Scope 1") {
-    scenario("Test 1") {}
-    scenario("Test 2") {}
+  Feature("Scope 1") {
+    Scenario("Test 1") {}
+    Scenario("Test 2") {}
   }
-  feature("Scope 2") {
-    scenario("Test 3") {}
-    scenario("Test 4") {}
+  Feature("Scope 2") {
+    Scenario("Test 3") {}
+    Scenario("Test 4") {}
   }
   
   def assertBeforeAfterInfo(events: List[Event]) {
@@ -296,13 +296,13 @@ class ExampleParallelTestExecutionInfoFeatureSpec extends FeatureSpec with InfoE
 class ExampleParallelTestExecutionInfoFixtureFeatureSpec extends fixture.FeatureSpec with InfoExpectedResults with BeforeAndAfter with ParallelTestExecution with StringFixture {
   before { info("In Before") }
   after { info("In After") }
-  feature("Scope 1") {
-    scenario("Test 1") { fixture => }
-    scenario("Test 2") { fixture =>}
+  Feature("Scope 1") {
+    Scenario("Test 1") { fixture => }
+    Scenario("Test 2") { fixture =>}
   }
-  feature("Scope 2") {
-    scenario("Test 3") { fixture => }
-    scenario("Test 4") { fixture =>}
+  Feature("Scope 2") {
+    Scenario("Test 3") { fixture => }
+    Scenario("Test 4") { fixture =>}
   }
   
   def assertBeforeAfterInfo(events: List[Event]) {

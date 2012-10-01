@@ -17,15 +17,15 @@ class TVSet {
 
 class TVSetSpec extends FeatureSpec {
 
-  feature("TV power button") {
-    scenario("User presses power button when TV is off", SlowTest) {
+  Feature("TV power button") {
+    Scenario("User presses power button when TV is off", SlowTest) {
       val tv = new TVSet
       assert(!tv.isOn)
       tv.pressPowerButton()
       assert(tv.isOn)
     }
 
-    scenario("User presses power button when TV is on", SlowTest, DbTest) {
+    Scenario("User presses power button when TV is on", SlowTest, DbTest) {
       val tv = new TVSet
       tv.pressPowerButton()
       assert(tv.isOn)

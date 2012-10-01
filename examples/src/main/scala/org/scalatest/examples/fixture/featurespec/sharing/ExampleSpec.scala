@@ -43,19 +43,19 @@ class ExampleSpec extends fixture.FeatureSpec with DbFixture {
     db.append("ScalaTest is designed to ")
   }
 
-  feature("Simplicity") {
+  Feature("Simplicity") {
 
-    scenario("User needs to read test code written by others") { db =>
+    Scenario("User needs to read test code written by others") { db =>
       db.append("encourage clear code!")
       assert(db.toString === "ScalaTest is designed to encourage clear code!")
     }
     
-    scenario("User needs to understand what the tests are doing") { db =>
+    Scenario("User needs to understand what the tests are doing") { db =>
       db.append("be easy to reason about!")
       assert(db.toString === "ScalaTest is designed to be easy to reason about!")
     }
 
-    scenario("User needs to write tests") { () =>
+    Scenario("User needs to write tests") { () =>
       val buf = new StringBuffer
       buf.append("ScalaTest is designed to be ")
       buf.append("easy to learn!")

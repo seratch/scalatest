@@ -5,8 +5,8 @@ import org.scalatest._
 
 class SetSpec extends FeatureSpec with GivenWhenThen {
   
-  feature("An element can be added to an empty mutable Set") {
-    scenario("When an element is added to an empty mutable Set") {
+  Feature("An element can be added to an empty mutable Set") {
+    Scenario("When an element is added to an empty mutable Set") {
       Given("an empty mutable Set")
       val set = mutable.Set.empty[String]
 
