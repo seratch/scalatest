@@ -504,6 +504,12 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     var (currentBranch, _, _, _, _) = oldBundle.unpack
     currentBranch == Trunk
   }
+  
+  def currentBranchIsEmpty: Boolean = {
+    val oldBundle = atomic.get
+    val (currentBranch, _, _, _, _) = oldBundle.unpack
+    currentBranch.subNodes.length == 0
+  }
 
   // Path traits need to register the message recording informer, so it can fire any info events later
   def registerTest(testText: String, testFun: T, testRegistrationClosedResourceName: String, sourceFileName: String, methodName: String, stackDepth: Int, adjustment: Int, duration: Option[Long], location: Option[Location], informer: Option[PathMessageRecordingInformer], testTags: Tag*): String = { // returns testName

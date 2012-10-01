@@ -524,5 +524,11 @@ trait FeatureSpec extends Suite { thisSuite =>
   final override val styleName: String = "org.scalatest.fixture.FeatureSpec"
     
   override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
+  
+  protected def Justification(messages: String*)(implicit info: Informer) {
+    if (!engine.currentBranchIsEmpty)
+      throw new NotAllowedException(Resources("justificationMustBeFirst"), getStackDepthFun("FeatureSpec.scala", "Justification"))
+    messages.foreach(info(_))
+  }
 }
 
