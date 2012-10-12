@@ -20,7 +20,9 @@ import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 import scala.annotation.tailrec
 import org.scalatest.time.Span
-import exceptions.{TestCanceledException, TestFailedException, TestPendingException, TimeoutField}
+import org.scalatest.exceptions.TestFailedException
+import org.scalatest.exceptions.TestPendingException
+import org.scalatest.exceptions.TimeoutField
 
 /**
  * Trait that facilitates testing with futures.
@@ -37,16 +39,17 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * </p>
  * 
  * <pre class="stHighlight">
- * assert(result.isReadyWithin(100 millis))
+ * assert(future.isReadyWithin(100 millis))
  * </pre>
  * 
  * <p>
- * 2. Invoking <code>futureValue</code>, to obtain a futures result within a specified or implicit time period,
+ * 2. Invoking <code>awaitResult</code>, to obtain a futures result within a specified or implicit time period,
  * like this:
  * </p>
  * 
  * <pre class="stHighlight">
- * assert(result.futureValue === 7)
+ * val result = future.awaitResult
+ * assert(result === 7)
  * </pre>
  * 
  * <p>
@@ -55,16 +58,14 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * </p>
  * 
  * <pre class="stHighlight">
- * whenReady(result) { s =&gt;
+ * whenReady(future) { s =&gt;
  *   s should be ("hello")
  * }
  * </pre>
- *
- * <p>
- * The <code>whenReady</code> construct periodically inspects the passed
- * future, until it is either ready or the configured timeout has been surpassed. If the future becomes
- * ready before the timeout, <code>whenReady</code> passes the future's value to the specified function.
- * </p>
+ * 
+the <code>whenReady</code> construct, which periodically queries the passed
+ * future, until it is ready or the configured timeout has been surpassed, and when ready, passes the future's
+ * value to the specified function.
  *
  * <p>
  * To make <code>whenReady</code> more broadly applicable, the type of future it accepts is a <code>FutureConcept[T]</code>,
@@ -85,18 +86,6 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * import java.util.concurrent._
  * 
  * val exec = Executors.newSingleThreadExecutor
- * val task = new Callable[String] { def call() = { Thread.sleep(50); "hi" } }
- * whenReady(exec.submit(task)) { s =&gt;
- *   s should be ("hi")
- * }
- * </pre>
- *
- * <p>
- * However, because the default timeout is 150 milliseconds, the following invocation of
- * <code>whenReady</code> would ultimately produce a <code>TestFailedException</code>:
- * </p>
- *
- * <pre class="stHighlight">
  * val task = new Callable[String] { def call() = { Thread.sleep(500); "hi" } }
  * whenReady(exec.submit(task)) { s =&gt;
  *   s should be ("hi")
@@ -104,8 +93,20 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * </pre>
  *
  * <p>
- * Assuming the default configuration parameters, a <code>timeout</code> of 150 milliseconds and an
- * <code>interval</code> of 15 milliseconds,
+ * However, because the default timeout is one second, the following invocation of
+ * <code>whenReady</code> would ultimately produce a <code>TestFailedException</code>:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * val task = new Callable[String] { def call() = { Thread.sleep(5000); "hi" } }
+ * whenReady(exec.submit(task)) { s =&gt;
+ *   s should be ("hi")
+ * }
+ * </pre>
+ *
+ * <p>
+ * Assuming the default configuration parameters, a <code>timeout</code> of 1 second and an
+ * <code>interval</code> of 10 milliseconds,
  * were passed implicitly to <code>whenReady</code>, the detail message of the thrown
  * <code>TestFailedException</code> would look like:
  * </p>
@@ -114,7 +115,7 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * <code>The future passed to whenReady was never ready, so whenReady timed out. Queried 95 times, sleeping 10 milliseconds between each query.</code>
  * </p>
  *
- * <a name="defaultPatience"></a><h2>Configuration of <code>whenReady</code></h2>
+ * <a name="retryConfig"></a><h2>Configuration of <code>whenReady</code></h2>
  *
  * <p>
  * The <code>whenReady</code> methods of this trait can be flexibly configured.
@@ -139,7 +140,7 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * timeout
  * </td>
  * <td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: center">
- * scaled(150 milliseconds)
+ * 1 second
  * </td>
  * <td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">
  * the maximum amount of time to allow unsuccessful queries before giving up and throwing <code>TestFailedException</code>
@@ -150,7 +151,7 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * interval
  * </td>
  * <td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: center">
- * scaled(15 milliseconds)
+ * 10 milliseconds
  * </td>
  * <td style="border-width: 1px; padding: 3px; border: 1px solid black; text-align: left">
  * the amount of time to sleep between each query
@@ -158,28 +159,21 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * </tr>
  * </table>
  *
- * <p>
- * The default values of both timeout and interval are passed to the <code>scaled</code> method, inherited
- * from <a href="ScaledTimeSpans.html"><code>ScaledTimeSpans</code></a>, so that the defaults can be scaled up
- * or down together with other scaled time spans. See the documentation for trait <a href="ScaledTimeSpans.html"><code>ScaledTimeSpans</code></a>
- * for more information.
- * </p>
- *
- * <p>
- * The <code>whenReady</code> methods of trait <code>Futures</code> each take an <code>PatienceConfig</code>
+* <p>
+ * The <code>whenReady</code> methods of trait <code>Futures</code> each take an <code>TimeoutConfig</code>
  * object as an implicit parameter. This object provides values for the two configuration parameters. Trait
- * <code>Futures</code> provides an implicit <code>val</code> named <code>defaultPatience</code> with each
+ * <code>Futures</code> provides an implicit <code>val</code> named <code>retryConfig</code> with each
  * configuration parameter set to its default value. 
  * If you want to set one or more configuration parameters to a different value for all invocations of
  * <code>whenReady</code> in a suite you can override this
  * val (or hide it, for example, if you are importing the members of the <code>Futures</code> companion object rather
  * than mixing in the trait). For example, if
  * you always want the default <code>timeout</code> to be 2 seconds and the default <code>interval</code> to be 5 milliseconds, you
- * can override <code>defaultPatience</code>, like this:
+ * can override <code>retryConfig</code>, like this:
  *
  * <pre class="stHighlight">
- * implicit override val defaultPatience =
- *   PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+ * implicit override val retryConfig =
+ *   TimeoutConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
  * </pre>
  *
  * <p>
@@ -187,14 +181,14 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  * </p>
  *
  * <pre class="stHighlight">
- * implicit val defaultPatience =
- *   PatienceConfig(timeout =  Span(2, Seconds), interval = Span(5, Millis))
+ * implicit val retryConfig =
+ *   TimeoutConfig(timeout =  Span(2, Seconds), interval = Span(5, Millis))
  * </pre>
  *
  * <p>
- * In addition to taking a <code>PatienceConfig</code> object as an implicit parameter, the <code>whenReady</code> methods of trait
- * <code>Futures</code> include overloaded forms that take one or two <code>PatienceConfigParam</code>
- * objects that you can use to override the values provided by the implicit <code>PatienceConfig</code> for a single <code>whenReady</code>
+ * In addition to taking a <code>TimeoutConfig</code> object as an implicit parameter, the <code>whenReady</code> methods of trait
+ * <code>Futures</code> include overloaded forms that take one or two <code>TimeoutConfigParam</code>
+ * objects that you can use to override the values provided by the implicit <code>TimeoutConfig</code> for a single <code>whenReady</code>
  * invocation. For example, if you want to set <code>timeout</code> to 5000 for just one particular <code>whenReady</code> invocation,
  * you can do so like this:
  * </p>
@@ -207,7 +201,7 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  *
  * <p>
  * This invocation of <code>eventually</code> will use 6000 for <code>timeout</code> and whatever value is specified by the 
- * implicitly passed <code>PatienceConfig</code> object for the <code>interval</code> configuration parameter.
+ * implicitly passed <code>TimeoutConfig</code> object for the <code>interval</code> configuration parameter.
  * If you want to set both configuration parameters in this way, just list them separated by commas:
  * </p>
  * 
@@ -235,22 +229,17 @@ import exceptions.{TestCanceledException, TestFailedException, TestPendingExcept
  *
  * @author Bill Venners
  */
-trait Futures extends PatienceConfiguration {
+private[scalatest] trait Futures extends TimeoutConfiguration {
 
   /**
    * Concept trait for futures, instances of which are passed to the <code>whenReady</code>
-   * methods of trait <a href="Futures.html"><code>Futures</code></a>.
-   *
-   * <p>
-   * See the documentation for trait <a href="Futures.html"><code>Futures</code></a> for the details on the syntax this trait
-   * provides for testing with futures.
-   * </p>
+   * methods of trait <code>Futures</code>.
    *
    * @author Bill Venners
    */
   trait FutureConcept[T] { thisFuture =>
 
-    /*
+    /**
      * Queries this future for its value.
      *
      * <p>
@@ -258,7 +247,7 @@ trait Futures extends PatienceConfiguration {
      * or a <code>T</code>.
      * </p>
      */
-    def eitherValue: Option[Either[Throwable, T]]
+    def value: Option[Either[Throwable, T]]
 
     /**
      * Indicates whether this future has expired (timed out).
@@ -280,20 +269,9 @@ trait Futures extends PatienceConfiguration {
      */
     def isCanceled: Boolean
 
-    /**
-     * Indicates whether this future is ready within the specified timeout.
-     *
-     * <p>
-     * If this future
-     * </p>
-     *
-     * @param timeout
-     * @param config
-     * @return
-     */
-    final def isReadyWithin(timeout: Span)(implicit config: PatienceConfig): Boolean = {
+    final def isReadyWithin(timeout: Span)(implicit config: TimeoutConfig): Boolean = {
       try {
-        futureValue(PatienceConfig(timeout, config.interval))
+        awaitResult(TimeoutConfig(timeout, config.interval))
         true
       }
       catch {
@@ -315,9 +293,9 @@ trait Futures extends PatienceConfiguration {
      * </p>
      *
      * <p>
-     * This method invokes the overloaded <code>futureValue</code> form with only one (implicit) argument
-     * list that contains only one argument, a <code>PatienceConfig</code>, passing a new
-     * <code>PatienceConfig</code> with the <code>Timeout</code> specified as <code>timeout</code> and
+     * This method invokes the overloaded <code>awaitResult</code> form with only one (implicit) argument
+     * list that contains only one argument, a <code>TimeoutConfig</code>, passing a new
+     * <code>TimeoutConfig</code> with the <code>Timeout</code> specified as <code>timeout</code> and
      * the <code>Interval</code> specified as <code>interval</code>.
      * </p>
      *
@@ -329,8 +307,39 @@ trait Futures extends PatienceConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    final def futureValue(timeout: Timeout, interval: Interval): T =
-      futureValue(PatienceConfig(timeout.value, interval.value))
+    final def awaitResult(timeout: Timeout, interval: Interval): T =
+      awaitResult(TimeoutConfig(timeout.value, interval.value))
+
+    /**
+     * Returns the result of this <code>FutureConcept</code>, once it is ready, or throws either the
+     * exception returned by the future (<em>i.e.</em>, <code>value</code> returned a <code>Left</code>)
+     * or <code>TestFailedException</code>.
+     *
+     * <p>
+     * The maximum amount of time to wait for the future to become ready before giving up and throwing
+     * <code>TestFailedException</code> is configured by the value contained in the passed
+     * <code>timeout</code> parameter.
+     * The interval to sleep between queries of the future (used only if the future is polled) is configured by the value contained in the passed
+     * <code>interval</code> parameter.
+     * </p>
+     *
+     * <p>
+     * This method invokes the overloaded <code>awaitResult</code> form with only one (implicit) argument
+     * list that contains only one argument, a <code>TimeoutConfig</code>, passing a new
+     * <code>TimeoutConfig</code> with the <code>Timeout</code> specified as <code>timeout</code> and
+     * the <code>Interval</code> specified as <code>interval</code>.
+     * </p>
+     *
+     * @param interval the <code>Interval</code> configuration parameter
+     * @param timeout the <code>Timeout</code> configuration parameter
+     * @return the result of the future once it is ready, if <code>value</code> is defined as a <code>Right</code>
+     * @throws Throwable if once ready, the <code>value</code> of this future is defined as a
+     *       <code>Left</code> (in this case, this method throws that same exception)
+     * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
+     *     the specified timeout has been exceeded
+     */
+    final def awaitResult(interval: Interval, timeout: Timeout): T =
+      awaitResult(TimeoutConfig(timeout.value, interval.value))
 
     /**
      * Returns the result of this <code>FutureConcept</code>, once it is ready, or throws either the
@@ -342,18 +351,18 @@ trait Futures extends PatienceConfiguration {
      * <code>TestFailedException</code> is configured by the value contained in the passed
      * <code>timeout</code> parameter.
      * The interval to sleep between queries of the future (used only if the future is polled) is configured by the <code>interval</code> field of
-     * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+     * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
      * </p>
      *
      * <p>
-     * This method invokes the overloaded <code>futureValue</code> form with only one (implicit) argument
-     * list that contains only one argument, a <code>PatienceConfig</code>, passing a new
-     * <code>PatienceConfig</code> with the <code>Timeout</code> specified as <code>timeout</code> and
+     * This method invokes the overloaded <code>awaitResult</code> form with only one (implicit) argument
+     * list that contains only one argument, a <code>TimeoutConfig</code>, passing a new
+     * <code>TimeoutConfig</code> with the <code>Timeout</code> specified as <code>timeout</code> and
      * the <code>Interval</code> specified as <code>config.interval</code>.
      * </p>
      *
      * @param timeout the <code>Timeout</code> configuration parameter
-     * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+     * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
      *          <code>interval</code> parameters that are unused by this method
      * @return the result of the future once it is ready, if <code>value</code> is defined as a <code>Right</code>
      * @throws Throwable if once ready, the <code>value</code> of this future is defined as a
@@ -361,8 +370,8 @@ trait Futures extends PatienceConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    final def futureValue(timeout: Timeout)(implicit config: PatienceConfig): T =
-      futureValue(PatienceConfig(timeout.value, config.interval))
+    final def awaitResult(timeout: Timeout)(implicit config: TimeoutConfig): T =
+      awaitResult(TimeoutConfig(timeout.value, config.interval))
 
     /**
      * Returns the result of this <code>FutureConcept</code>, once it is ready, or throws either the
@@ -372,20 +381,20 @@ trait Futures extends PatienceConfiguration {
      * <p>
      * The maximum amount of time to wait for the future to become ready before giving up and throwing
      * <code>TestFailedException</code> is configured by the <code>timeout</code> field of
-     * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+     * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
      * The interval to sleep between queries of the future (used only if the future is polled) is configured by the value contained in the passed
      * <code>interval</code> parameter.
      * </p>
      *
      * <p>
-     * This method invokes the overloaded <code>futureValue</code> form with only one (implicit) argument
-     * list that contains only one argument, a <code>PatienceConfig</code>, passing a new
-     * <code>PatienceConfig</code> with the <code>Interval</code> specified as <code>interval</code> and
+     * This method invokes the overloaded <code>awaitResult</code> form with only one (implicit) argument
+     * list that contains only one argument, a <code>TimeoutConfig</code>, passing a new
+     * <code>TimeoutConfig</code> with the <code>Interval</code> specified as <code>interval</code> and
      * the <code>Timeout</code> specified as <code>config.timeout</code>.
      * </p>
      *
      * @param interval the <code>Interval</code> configuration parameter
-     * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+     * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
      *          <code>interval</code> parameters that are unused by this method
      * @return the result of the future once it is ready, if <code>value</code> is defined as a <code>Right</code>
      * @throws Throwable if once ready, the <code>value</code> of this future is defined as a
@@ -393,8 +402,8 @@ trait Futures extends PatienceConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    final def futureValue(interval: Interval)(implicit config: PatienceConfig): T =
-      futureValue(PatienceConfig(config.timeout, interval.value))
+    final def awaitResult(interval: Interval)(implicit config: TimeoutConfig): T =
+      awaitResult(TimeoutConfig(config.timeout, interval.value))
 
     /**
      * Returns the result of this <code>FutureConcept</code>, once it is ready, or throws either the
@@ -412,12 +421,12 @@ trait Futures extends PatienceConfiguration {
      * <p>
      * The maximum amount of time to wait for the future to become ready before giving up and throwing
      * <code>TestFailedException</code> is configured by the <code>timeout</code> field of
-     * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+     * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
      * The interval to sleep between queries of the future (used only if the future is polled) is configured by the <code>interval</code> field of
-     * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+     * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
      * </p>
      *
-     * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+     * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
      *          <code>interval</code> parameters that are unused by this method
      * @return the result of the future once it is ready, if <code>value</code> is defined as a <code>Right</code>
      * @throws Throwable if once ready, the <code>value</code> of this future is defined as a
@@ -425,11 +434,11 @@ trait Futures extends PatienceConfiguration {
      * @throws TestFailedException if the future is cancelled, expires, or is still not ready after
      *     the specified timeout has been exceeded
      */
-    def futureValue(implicit config: PatienceConfig): T = {
+    def awaitResult(implicit config: TimeoutConfig): T = {
 
       val st = Thread.currentThread.getStackTrace
       val callerStackFrame = 
-        if (!st(2).getMethodName.contains("futureValue"))
+        if (!st(2).getMethodName.contains("awaitResult"))
          st(2)
         else
          st(3)
@@ -440,7 +449,7 @@ trait Futures extends PatienceConfiguration {
         else if (callerStackFrame.getFileName == "Futures.scala" && callerStackFrame.getMethodName == "isReadyWithin")
           "isReadyWithin"
         else
-          "futureValue"
+          "awaitResult"
           
       val adjustment =
         methodName match {
@@ -467,10 +476,9 @@ trait Futures extends PatienceConfiguration {
             None,
             getStackDepthFun("Futures.scala", methodName, adjustment)
           )
-        thisFuture.eitherValue match {
+        thisFuture.value match {
           case Some(Right(v)) => v
-          case Some(Left(tpe: TestPendingException)) => throw tpe
-          case Some(Left(tce: TestCanceledException)) => throw tce
+          case Some(Left(tpe: TestPendingException)) => throw tpe // TODO: In 2.0 add TestCanceledException here
           case Some(Left(e)) if anErrorThatShouldCauseAnAbort(e) => throw e
           case Some(Left(e)) =>
             throw new TestFailedException(
@@ -521,15 +529,42 @@ trait Futures extends PatienceConfiguration {
    * @param timeout the <code>Timeout</code> configuration parameter
    * @param interval the <code>Interval</code> configuration parameter
    * @param fun the function to which pass the future's value when it is ready
-   * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+   * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T], timeout: Timeout, interval: Interval)(fun: T => U)(implicit config: PatienceConfig): U = {
-    val result = future.futureValue(PatienceConfig(timeout.value, interval.value))
+  final def whenReady[T, U](future: FutureConcept[T], timeout: Timeout, interval: Interval)(fun: T => U)(implicit config: TimeoutConfig): U = {
+    val result = future.awaitResult(TimeoutConfig(timeout.value, interval.value))
     fun(result)
   }
-    // whenReady(future)(fun)(PatienceConfig(timeout.value, interval.value))
+    // whenReady(future)(fun)(TimeoutConfig(timeout.value, interval.value))
+
+  /**
+   * Queries the passed future repeatedly until it either is ready, or a configured maximum
+   * amount of time has passed, sleeping a configured interval between attempts; and when ready, passes the future's value
+   * to the passed function.
+   *
+   * <p>
+   * The maximum amount of time to tolerate unsuccessful queries before giving up and throwing
+   * <code>TestFailedException</code> is configured by the value contained in the passed
+   * <code>timeout</code> parameter.
+   * The interval to sleep between attempts is configured by the value contained in the passed
+   * <code>interval</code> parameter.
+   * </p>
+   *
+   * @param future the future to query
+   * @param interval the <code>Interval</code> configuration parameter
+   * @param timeout the <code>Timeout</code> configuration parameter
+   * @param fun the function to which pass the future's value when it is ready
+   * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
+   *          <code>interval</code> parameters that are unused by this method
+   * @return the result of invoking the <code>fun</code> parameter
+   */
+  final def whenReady[T, U](future: FutureConcept[T], interval: Interval, timeout: Timeout)(fun: T => U)(implicit config: TimeoutConfig): U = {
+    val result = future.awaitResult(TimeoutConfig(timeout.value, interval.value))
+    fun(result)
+  }
+    // whenReady(future)(fun)(TimeoutConfig(timeout.value, interval.value))
 
   /**
    * Queries the passed future repeatedly until it either is ready, or a configured maximum
@@ -541,21 +576,21 @@ trait Futures extends PatienceConfiguration {
    * <code>TestFailedException</code> is configured by the value contained in the passed
    * <code>timeout</code> parameter.
    * The interval to sleep between attempts is configured by the <code>interval</code> field of
-   * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+   * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
    * </p>
    *
    * @param future the future to query
    * @param timeout the <code>Timeout</code> configuration parameter
    * @param fun the function to which pass the future's value when it is ready
-   * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+   * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T], timeout: Timeout)(fun: T => U)(implicit config: PatienceConfig): U = {
-    val result = future.futureValue(PatienceConfig(timeout.value, config.interval))
+  final def whenReady[T, U](future: FutureConcept[T], timeout: Timeout)(fun: T => U)(implicit config: TimeoutConfig): U = {
+    val result = future.awaitResult(TimeoutConfig(timeout.value, config.interval))
     fun(result)
   }
-    // whenReady(future)(fun)(PatienceConfig(timeout.value, config.interval))
+    // whenReady(future)(fun)(TimeoutConfig(timeout.value, config.interval))
 
   /**
    * Queries the passed future repeatedly until it either is ready, or a configured maximum
@@ -564,7 +599,7 @@ trait Futures extends PatienceConfiguration {
    *
    * <p>
    * The maximum amount of time in milliseconds to tolerate unsuccessful attempts before giving up is configured by the <code>timeout</code> field of
-   * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+   * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
    * The interval to sleep between attempts is configured by the value contained in the passed
    * <code>interval</code> parameter.
    * </p>
@@ -572,15 +607,15 @@ trait Futures extends PatienceConfiguration {
    * @param future the future to query
    * @param interval the <code>Interval</code> configuration parameter
    * @param fun the function to which pass the future's value when it is ready
-   * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+   * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T], interval: Interval)(fun: T => U)(implicit config: PatienceConfig): U = {
-    val result = future.futureValue(PatienceConfig(config.timeout, interval.value))
+  final def whenReady[T, U](future: FutureConcept[T], interval: Interval)(fun: T => U)(implicit config: TimeoutConfig): U = {
+    val result = future.awaitResult(TimeoutConfig(config.timeout, interval.value))
     fun(result)
   }
-    // whenReady(future)(fun)(PatienceConfig(config.timeout, interval.value))
+    // whenReady(future)(fun)(TimeoutConfig(config.timeout, interval.value))
 
   /**
    * Queries the passed future repeatedly until it either is ready, or a configured maximum
@@ -589,21 +624,21 @@ trait Futures extends PatienceConfiguration {
    *
    * <p>
    * The maximum amount of time in milliseconds to tolerate unsuccessful attempts before giving up is configured by the <code>timeout</code> field of
-   * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+   * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
    * The interval to sleep between attempts is configured by the <code>interval</code> field of
-   * the <code>PatienceConfig</code> passed implicitly as the last parameter.
+   * the <code>TimeoutConfig</code> passed implicitly as the last parameter.
    * </p>
    *
    *
    * @param future the future to query
    * @param fun the function to which pass the future's value when it is ready
-   * @param config an <code>PatienceConfig</code> object containing <code>timeout</code> and
+   * @param config an <code>TimeoutConfig</code> object containing <code>timeout</code> and
    *          <code>interval</code> parameters that are unused by this method
    * @return the result of invoking the <code>fun</code> parameter
    */
-  final def whenReady[T, U](future: FutureConcept[T])(fun: T => U)(implicit config: PatienceConfig): U = {
+  final def whenReady[T, U](future: FutureConcept[T])(fun: T => U)(implicit config: TimeoutConfig): U = {
 
-      val result = future.futureValue(config)
+      val result = future.awaitResult(config)
       fun(result)
 /*    val startNanos = System.nanoTime
 

@@ -25,39 +25,39 @@ trait FeatureSpecStackBehaviors { this: FeatureSpec with GivenWhenThen =>
 
     scenario("empty is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
 
-      given("a non-empty stack")
+      Given("a non-empty stack")
       val stack = createNonEmptyStack
 
-      when("empty is invoked on the stack")
-      then("empty returns false")
+      When("empty is invoked on the stack")
+      Then("empty returns false")
       assert(!stack.empty)
     }
 
     scenario("peek is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
 
-      given("a non-empty stack")
+      Given("a non-empty stack")
       val stack = createNonEmptyStack
       val size = stack.size
 
-      when("peek is invoked on the stack")
-      then("peek returns the last item added")
+      When("peek is invoked on the stack")
+      Then("peek returns the last item added")
       assert(stack.peek === lastItemAdded)
 
-      and("the size of the stack is the same as before")
+      And("the size of the stack is the same as before")
       assert(stack.size === size)
     }
 
     scenario("pop is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
 
-      given("a non-empty stack")
+      Given("a non-empty stack")
       val stack = createNonEmptyStack
       val size = stack.size
 
-      when("pop is invoked on the stack")
-      then("pop returns the last item added")
+      When("pop is invoked on the stack")
+      Then("pop returns the last item added")
       assert(stack.pop === lastItemAdded)
 
-      and("the size of the stack one less than before")
+      And("the size of the stack one less than before")
       assert(stack.size === size - 1)
     }
   }
@@ -66,27 +66,27 @@ trait FeatureSpecStackBehaviors { this: FeatureSpec with GivenWhenThen =>
       
     scenario("full is invoked on this non-full stack: " + createNonFullStack.toString) {
 
-      given("a non-full stack")
+      Given("a non-full stack")
       val stack = createNonFullStack
 
-      when("full is invoked on the stack")
-      then("full returns false")
+      When("full is invoked on the stack")
+      Then("full returns false")
       assert(!stack.full)
     }
       
     scenario("push is invoked on this non-full stack: " + createNonFullStack.toString) {
 
-      given("a non-full stack")
+      Given("a non-full stack")
       val stack = createNonFullStack
       val size = stack.size
 
-      when("push is invoked on the stack")
+      When("push is invoked on the stack")
       stack.push(7)
 
-      then("the size of the stack is one greater than before")
+      Then("the size of the stack is one greater than before")
       assert(stack.size === size + 1)
 
-      and("the top of the stack contains the pushed value")
+      And("the top of the stack contains the pushed value")
       assert(stack.peek === 7)
     }
   }

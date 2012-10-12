@@ -23,20 +23,21 @@ import java.util.concurrent.{Future => FutureOfJava}
 import java.util.concurrent.TimeUnit
 import org.scalatest._
 import time._
-import exceptions.{TestCanceledException, TestFailedException, TestPendingException}
+import org.scalatest.exceptions.TestFailedException
+import org.scalatest.exceptions.TestPendingException
 
 class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Futures with SeveredStackTraces {
 
   implicit def convertJavaFuture[T](javaFuture: FutureOfJava[T]): FutureConcept[T] =
     new FutureConcept[T] {
-      def eitherValue: Option[Either[Throwable, T]] =
+      def value: Option[Either[Throwable, T]] =
         if (javaFuture.isDone())
           Some(Right(javaFuture.get))
         else
           None
       def isExpired: Boolean = false // Java Futures don't support the notion of a timeout
       def isCanceled: Boolean = javaFuture.isCancelled // Two ll's in Canceled. The verbosity of Java strikes again!
-      // This one doesn't override futureResult, so that I can test the polling code
+      // This one doesn't override awaitResult, so that I can test the polling code
     }
 
   describe("A FutureConcept") {
@@ -73,7 +74,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       it("should throw TFE with appropriate detail message if the future expires") {
         val expiredFuture =
           new FutureConcept[Int] {
-            def eitherValue = Some(Right(99))
+            def value = Some(Right(99))
             def isCanceled = false
             def isExpired = true
             def awaitAtMost(span: Span) = 99
@@ -81,7 +82,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         val caught = evaluating {
           expiredFuture.isReadyWithin(Span(1, Second))
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureExpired", "1", "15 milliseconds"))
+        caught.message.value should be (Resources("futureExpired", "1", "10 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 3)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -101,7 +102,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
 
         val vmeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new RuntimeException("oops")))
+            def value: Option[Either[Throwable, String]] = Some(Left(new RuntimeException("oops")))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new RuntimeException("oops")
@@ -120,7 +121,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
 
         val vmeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new VirtualMachineError {}))
+            def value: Option[Either[Throwable, String]] = Some(Left(new VirtualMachineError {}))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new VirtualMachineError {}
@@ -130,10 +131,11 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         }
       }
 
+      // Same thing here and in 2.0 need to add a test for TestCanceledException
       it("should allow TestPendingException, which does not normally cause a test to fail, through immediately when thrown") {
         val tpeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new TestPendingException))
+            def value: Option[Either[Throwable, String]] = Some(Left(new TestPendingException))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new TestPendingException
@@ -142,26 +144,13 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
           tpeFuture.isReadyWithin(Span(1, Millisecond))
         }
       }
-
-      it("should allow TestCanceledException, which does not normally cause a test to fail, through immediately when thrown") {
-        val tpeFuture =
-          new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new TestCanceledException(0)))
-            def isExpired: Boolean = false
-            def isCanceled: Boolean = false
-            def awaitAtMost(span: Span): String = throw new TestCanceledException(0)
-          }
-        intercept[TestCanceledException] {
-          tpeFuture.isReadyWithin(Span(1, Millisecond))
-        }
-      }
     }
 
-    describe("when using the futureValue method") {
+    describe("when using the awaitResult method") {
 
       it("should just return the result if the future completes normally") {
         val futureIsNow = new SuperFutureOfJava
-        futureIsNow.futureValue should equal ("hi")
+        futureIsNow.awaitResult should equal ("hi")
       }
 
       it("should throw TFE with appropriate detail message if the future is canceled") {
@@ -170,7 +159,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
             override def isCancelled = true
           }
         val caught = evaluating {
-          canceledFuture.futureValue
+          canceledFuture.awaitResult
         } should produce [TestFailedException]
         caught.message.value should be (Resources("futureWasCanceled", "1", "10 milliseconds"))
         withClue(caught.getStackTraceString) {
@@ -182,15 +171,15 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       it("should throw TFE with appropriate detail message if the future expires") {
         val expiredFuture =
           new FutureConcept[Int] {
-            def eitherValue = Some(Right(99))
+            def value = Some(Right(99))
             def isCanceled = false
             def isExpired = true
             def awaitAtMost(span: Span) = 99
           }
         val caught = evaluating {
-          expiredFuture.futureValue
+          expiredFuture.awaitResult
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureExpired", "1", "15 milliseconds"))
+        caught.message.value should be (Resources("futureExpired", "1", "10 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 3)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -206,10 +195,10 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
             }
           }
         val caught = evaluating {
-          neverReadyCountingFuture.futureValue
+          neverReadyCountingFuture.awaitResult
         } should produce [TestFailedException]
 
-        caught.message.value should be (Resources("wasNeverReady", count.toString, "15 milliseconds"))
+        caught.message.value should be (Resources("wasNeverReady", count.toString, "10 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 4)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -221,19 +210,25 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
 
       it("should provides correct stack depth") {
         val caught1 = evaluating {
-          neverReadyFuture.futureValue(timeout(Span(100, Millis)), interval(Span(1, Millisecond)))
+          neverReadyFuture.awaitResult(timeout(Span(100, Millis)), interval(Span(1, Millisecond)))
         } should produce [TestFailedException]
         caught1.failedCodeLineNumber.value should equal (thisLineNumber - 2)
         caught1.failedCodeFileName.value should be ("FuturesSpec.scala")
 
+        val caught2 = evaluating {
+          neverReadyFuture.awaitResult(interval(Span(1, Millisecond)), timeout(Span(100, Millis)))
+        } should produce [TestFailedException]
+        caught2.failedCodeLineNumber.value should equal (thisLineNumber - 2)
+        caught2.failedCodeFileName.value should be ("FuturesSpec.scala")
+
         val caught3 = evaluating {
-          neverReadyFuture.futureValue(timeout(Span(100, Millis)))
+          neverReadyFuture.awaitResult(timeout(Span(100, Millis)))
         } should produce [TestFailedException]
         caught3.failedCodeLineNumber.value should equal (thisLineNumber - 2)
         caught3.failedCodeFileName.value should be ("FuturesSpec.scala")
 
         val caught4 = evaluating {
-          neverReadyFuture.futureValue(interval(Span(1, Millisecond)))
+          neverReadyFuture.awaitResult(interval(Span(1, Millisecond)))
         } should produce [TestFailedException]
         caught4.failedCodeLineNumber.value should equal (thisLineNumber - 2)
         caught4.failedCodeFileName.value should be ("FuturesSpec.scala")
@@ -242,17 +237,17 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       it("should by default query a never-ready future for at least 1 second") {
         var startTime = System.currentTimeMillis
         evaluating {
-          neverReadyFuture.futureValue
+          neverReadyFuture.awaitResult
         } should produce [TestFailedException]
-        (System.currentTimeMillis - startTime).toInt should be >= (150)
+        (System.currentTimeMillis - startTime).toInt should be >= (1000)
       }
 
       it("should, if an alternate implicit Timeout is provided, query a never-ready by at least the specified timeout") {
-        implicit val patienceConfig = PatienceConfig(timeout = Span(1500, Millis))
+        implicit val timeoutConfig = TimeoutConfig(timeout = Span(1500, Millis))
 
         var startTime = System.currentTimeMillis
         evaluating {
-          neverReadyFuture.futureValue
+          neverReadyFuture.awaitResult
         } should produce [TestFailedException]
         (System.currentTimeMillis - startTime).toInt should be >= (1500)
       }
@@ -260,17 +255,27 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       it("should, if an alternate explicit timeout is provided, query a never-ready future by at least the specified timeout") {
         var startTime = System.currentTimeMillis
         evaluating {
-          neverReadyFuture.futureValue(timeout(Span(1250, Milliseconds)))
+          neverReadyFuture.awaitResult(timeout(Span(1250, Milliseconds)))
         } should produce [TestFailedException]
         (System.currentTimeMillis - startTime).toInt should be >= (1250)
       }
 
       it("should, if an alternate explicit timeout is provided along with an explicit interval, query a never-ready future by at least the specified timeout, even if a different implicit is provided") {
-        implicit val patienceConfig = PatienceConfig(timeout = Span(500, Millis), interval = Span(2, Millis))
+        implicit val timeoutConfig = TimeoutConfig(timeout = Span(500, Millis), interval = Span(2, Millis))
 
         var startTime = System.currentTimeMillis
         evaluating {
-          neverReadyFuture.futureValue(timeout(Span(1388, Millis)), interval(Span(1, Millisecond)))
+          neverReadyFuture.awaitResult(timeout(Span(1388, Millis)), interval(Span(1, Millisecond)))
+        } should produce [TestFailedException]
+        (System.currentTimeMillis - startTime).toInt should be >= (1388)
+      }
+
+      it("should, if an alternate explicit timeout is provided along with an explicit interval, query a never-ready future by at least the specified timeout, even if a different implicit is provided, with timeout specified second") {
+        implicit val timeoutConfig = TimeoutConfig(interval = Span(2, Millis), timeout = Span(500, Millis))
+
+        var startTime = System.currentTimeMillis
+        evaluating {
+          neverReadyFuture.awaitResult(interval(Span(1, Millisecond)), timeout(Span(1388, Millis)))
         } should produce [TestFailedException]
         (System.currentTimeMillis - startTime).toInt should be >= (1388)
       }
@@ -279,14 +284,14 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
 
         val vmeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new RuntimeException("oops")))
+            def value: Option[Either[Throwable, String]] = Some(Left(new RuntimeException("oops")))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new RuntimeException("oops")
           }
         val caught =
           intercept[TestFailedException] {
-            vmeFuture.futureValue
+            vmeFuture.awaitResult
           }
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 2)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
@@ -298,39 +303,27 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
 
         val vmeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new VirtualMachineError {}))
+            def value: Option[Either[Throwable, String]] = Some(Left(new VirtualMachineError {}))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new VirtualMachineError {}
           }
         intercept[VirtualMachineError] {
-          vmeFuture.futureValue
+          vmeFuture.awaitResult
         }
       }
 
+      // Same thing here and in 2.0 need to add a test for TestCanceledException
       it("should allow TestPendingException, which does not normally cause a test to fail, through immediately when thrown") {
         val tpeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new TestPendingException))
+            def value: Option[Either[Throwable, String]] = Some(Left(new TestPendingException))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new TestPendingException
           }
         intercept[TestPendingException] {
-          tpeFuture.futureValue
-        }
-      }
-
-      it("should allow TestCanceledException, which does not normally cause a test to fail, through immediately when thrown") {
-        val tpeFuture =
-          new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new TestCanceledException(0)))
-            def isExpired: Boolean = false
-            def isCanceled: Boolean = false
-            def awaitAtMost(span: Span): String = throw new TestCanceledException(0)
-          }
-        intercept[TestCanceledException] {
-          tpeFuture.futureValue
+          tpeFuture.awaitResult
         }
       }
     }
@@ -437,7 +430,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       it("should throw TFE with appropriate detail message if the future expires") {
         val expiredFuture =
           new FutureConcept[Int] {
-            def eitherValue = Some(Right(99))
+            def value = Some(Right(99))
             def isCanceled = false
             def isExpired = true
             def awaitAtMost(span: Span) = 99
@@ -447,7 +440,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
             s should equal (99)
           }
         } should produce [TestFailedException]
-        caught.message.value should be (Resources("futureExpired", "1", "15 milliseconds"))
+        caught.message.value should be (Resources("futureExpired", "1", "10 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 5)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -468,7 +461,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
           }
         } should produce [TestFailedException]
 
-        caught.message.value should be (Resources("wasNeverReady", count.toString, "15 milliseconds"))
+        caught.message.value should be (Resources("wasNeverReady", count.toString, "10 milliseconds"))
         caught.failedCodeLineNumber.value should equal (thisLineNumber - 6)
         caught.failedCodeFileName.value should be ("FuturesSpec.scala")
       }
@@ -484,6 +477,12 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         } should produce [TestFailedException]
         caught1.failedCodeLineNumber.value should equal (thisLineNumber - 2)
         caught1.failedCodeFileName.value should be ("FuturesSpec.scala")
+
+        val caught2 = evaluating {
+          whenReady(neverReadyFuture, interval(Span(1, Millisecond)), timeout(Span(100, Millis))) { s => s should equal ("hi")  }
+        } should produce [TestFailedException]
+        caught2.failedCodeLineNumber.value should equal (thisLineNumber - 2)
+        caught2.failedCodeFileName.value should be ("FuturesSpec.scala")
 
         val caught3 = evaluating {
          whenReady(neverReadyFuture, timeout(Span(100, Millis))) {  s => s should equal ("hi") }
@@ -505,11 +504,11 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
             s should equal ("hi")
           }
         } should produce [TestFailedException]
-        (System.currentTimeMillis - startTime).toInt should be >= (150)
+        (System.currentTimeMillis - startTime).toInt should be >= (1000)
       }
 
       it("should, if an alternate implicit Timeout is provided, query a never-ready by at least the specified timeout") {
-        implicit val patienceConfig = PatienceConfig(timeout = Span(1500, Millis))
+        implicit val timeoutConfig = TimeoutConfig(timeout = Span(1500, Millis))
 
         var startTime = System.currentTimeMillis
         evaluating {
@@ -531,7 +530,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       }
 
       it("should, if an alternate explicit timeout is provided along with an explicit interval, query a never-ready future by at least the specified timeout, even if a different implicit is provided") {
-        implicit val patienceConfig = PatienceConfig(timeout = Span(500, Millis), interval = Span(2, Millis))
+        implicit val timeoutConfig = TimeoutConfig(timeout = Span(500, Millis), interval = Span(2, Millis))
 
         var startTime = System.currentTimeMillis
         evaluating {
@@ -542,11 +541,23 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
         (System.currentTimeMillis - startTime).toInt should be >= (1388)
       }
 
+      it("should, if an alternate explicit timeout is provided along with an explicit interval, query a never-ready future by at least the specified timeout, even if a different implicit is provided, with timeout specified second") {
+        implicit val timeoutConfig = TimeoutConfig(interval = Span(2, Millis), timeout = Span(500, Millis))
+
+        var startTime = System.currentTimeMillis
+        evaluating {
+          whenReady(neverReadyFuture, interval(Span(1, Millisecond)), timeout(Span(1388, Millis))) { s =>
+            s should equal ("hi")
+          }
+        } should produce [TestFailedException]
+        (System.currentTimeMillis - startTime).toInt should be >= (1388)
+      }
+
       it("should wrap any exception that normally causes a test to fail to propagate back wrapped in a TFE") {
 
         val vmeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new RuntimeException("oops")))
+            def value: Option[Either[Throwable, String]] = Some(Left(new RuntimeException("oops")))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new RuntimeException("oops")
@@ -567,7 +578,7 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
 
         val vmeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new VirtualMachineError {}))
+            def value: Option[Either[Throwable, String]] = Some(Left(new VirtualMachineError {}))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new VirtualMachineError {}
@@ -583,26 +594,12 @@ class FuturesSpec extends FunSpec with ShouldMatchers with OptionValues with Fut
       it("should allow TestPendingException, which does not normally cause a test to fail, through immediately when thrown") {
         val tpeFuture =
           new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new TestPendingException))
+            def value: Option[Either[Throwable, String]] = Some(Left(new TestPendingException))
             def isExpired: Boolean = false
             def isCanceled: Boolean = false
             def awaitAtMost(span: Span): String = throw new TestPendingException
           }
         intercept[TestPendingException] {
-          whenReady(tpeFuture) { s =>
-            s should equal ("hi")
-          }
-        }
-      }
-      it("should allow TestCanceledException, which does not normally cause a test to fail, through immediately when thrown") {
-        val tpeFuture =
-          new FutureConcept[String] {
-            def eitherValue: Option[Either[Throwable, String]] = Some(Left(new TestCanceledException(0)))
-            def isExpired: Boolean = false
-            def isCanceled: Boolean = false
-            def awaitAtMost(span: Span): String = throw new TestCanceledException(0)
-          }
-        intercept[TestCanceledException] {
           whenReady(tpeFuture) { s =>
             s should equal ("hi")
           }
