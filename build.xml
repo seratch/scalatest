@@ -7,9 +7,9 @@
              classpathref="maven-ant-tasks.classpath" />
 
     <!-- set global properties for this build -->
-    <property name="scala.version" value="2.10.0-M7" />
-	<property name="for.scala" value="2.10.0-M7" />
-	<property name="release" value="1.9-2.10.0-M7-B1" />
+    <property name="scala.version" value="2.10.0-RC1" />
+	<property name="for.scala" value="2.10.0-RC1" />
+	<property name="release" value="1.8-2.10.0-RC1-B1" />
 
     <property name="scalasrc" value="src/main/scala" />
     <property name="javasrc" value="src/main/java" />
@@ -196,7 +196,7 @@
         <!-- Compile the Scala code from ${scalasrc} into ${classes}. Scalac will parse the referenced .java files. -->
         <!-- Compile the Scala code from ${build.generated.src} into ${classes}. Scalac will parse any referenced .java files. -->
         <!-- turn off deprecation warnings <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="yes" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" /> -->
-        <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="no" classpathref="build.class.path" addparams="-no-specialization" fork="false" jvmargs="${jvmargs}" />
+        <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="no" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
 
     	<!-- Compile the Java code from ${javasrc} into ${classes} -->
     	<javac srcdir="${javasrc}" destdir="${classes}" compiler="javac1.5" memoryMaximumSize="1500M" fork="true" classpathref="build.class.path" debug="yes">
@@ -221,10 +221,10 @@
     <target name="compile-tests" depends="compile-main">
 
         <!-- Compile the Scala code from ${scalasrc.test} into ${build.tests} -->
-        <scalac srcdir="${scalasrc.test}:${javasrc.test}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="no" addparams="-no-specialization" fork="false" jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC"/>
+        <scalac srcdir="${scalasrc.test}:${javasrc.test}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="no" addparams="-no-specialization" fork="true" jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC"/>
 
         <!-- Compile the Scala code from ${build.generated.tests} into ${classes}. Scalac will parse any referenced .java files. -->
-        <scalac srcdir="${build.generated.tests}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="no" addparams="-no-specialization" fork="false" jvmargs="${jvmargs}" />
+        <scalac srcdir="${build.generated.tests}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="no" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
 
         <!-- Compile the Java code from ${javasrc.test} into ${build.tests} -->
         <javac srcdir="${javasrc.test}" destdir="${build.tests}" compiler="javac1.5" memoryMaximumSize="2000M" fork="true" classpath="${classes}:${org.scala-lang:scala-library:jar}:${junit:junit:jar}" debug="yes" />
@@ -233,7 +233,7 @@
     <target name="compile-examples" depends="compile-main">
 
         <!-- Compile the Scala code from ${scalasrc.examples} into ${build.examples} -->
-        <scalac srcdir="${scalasrc.examples}:${javasrc.examples}" destdir="${build.examples}" target="jvm-1.5" classpathref="build.test.class.path" addparams="-no-specialization" deprecation="no" fork="false" jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC"/>
+        <scalac srcdir="${scalasrc.examples}:${javasrc.examples}" destdir="${build.examples}" target="jvm-1.5" classpathref="build.test.class.path" addparams="-no-specialization" deprecation="no" fork="true" jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC"/>
 
         <!-- Compile the Java code from ${examples} into ${build.examples} -->
         <javac srcdir="${javasrc.examples}" destdir="${build.examples}" compiler="javac1.5" classpath="${classes}:${org.easymock:easymock:jar}:${org.scala-lang:scala-library:jar}" debug="yes" />
