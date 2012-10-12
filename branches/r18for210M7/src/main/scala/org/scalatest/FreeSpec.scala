@@ -344,27 +344,27 @@ import Suite.anErrorThatShouldCauseAnAbort
  * 
  *     "should add correctly" in { 
  * 
- *       given("two integers")
+ *       Given("two integers")
  *       val x = 2
  *       val y = 3
  * 
- *       when("they are added")
+ *       When("they are added")
  *       val sum = x + y
  * 
- *       then("the result is the sum of the two numbers")
+ *       Then("the result is the sum of the two numbers")
  *       assert(sum === 5)
  *     }
  * 
  *     "should subtract correctly" in {
  * 
- *       given("two integers")
+ *       Given("two integers")
  *       val x = 7
  *       val y = 2
  * 
- *       when("one is subtracted from the other")
+ *       When("one is subtracted from the other")
  *       val diff = x - y
  * 
- *       then("the result is the difference of the two numbers")
+ *       Then("the result is the difference of the two numbers")
  *       assert(diff === 5)
  *     }
  *   }
@@ -480,9 +480,9 @@ import Suite.anErrorThatShouldCauseAnAbort
  * <pre class="stHighlight">
  *  "The Scala language" should {
  *     "add correctly" in { 
- *       given("two integers")
- *       when("they are added")
- *       then("the result is the sum of the two numbers")
+ *       Given("two integers")
+ *       When("they are added")
+ *       Then("the result is the sum of the two numbers")
  *       pending
  *     }
  *     // ...

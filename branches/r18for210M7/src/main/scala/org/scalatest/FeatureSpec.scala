@@ -44,34 +44,34 @@ import Suite.anErrorThatShouldCauseAnAbort
  * 
  *     scenario("pop is invoked on a non-empty stack") {
  * 
- *       given("a non-empty stack")
+ *       Given("a non-empty stack")
  *       val stack = new Stack[Int]
  *       stack.push(1)
  *       stack.push(2)
  *       val oldSize = stack.size
  * 
- *       when("when pop is invoked on the stack")
+ *       When("when pop is invoked on the stack")
  *       val result = stack.pop()
  * 
- *       then("the most recently pushed element should be returned")
+ *       Then("the most recently pushed element should be returned")
  *       assert(result === 2)
  * 
- *       and("the stack should have one less item than before")
+ *       And("the stack should have one less item than before")
  *       assert(stack.size === oldSize - 1)
  *     }
  * 
  *     scenario("pop is invoked on an empty stack") {
  * 
- *       given("an empty stack")
+ *       Given("an empty stack")
  *       val emptyStack = new Stack[String]
  * 
- *       when("when pop is invoked on the stack")
- *       then("NoSuchElementException should be thrown")
+ *       When("when pop is invoked on the stack")
+ *       Then("NoSuchElementException should be thrown")
  *       intercept[NoSuchElementException] {
  *         emptyStack.pop()
  *       }
  * 
- *       and("the stack should still be empty")
+ *       And("the stack should still be empty")
  *       assert(emptyStack.isEmpty)
  *     }
  *   }
@@ -265,27 +265,27 @@ import Suite.anErrorThatShouldCauseAnAbort
  *
  *     scenario("addition") {
  * 
- *       given("two integers")
+ *       Given("two integers")
  *       val x = 2
  *       val y = 3
  * 
- *       when("they are added")
+ *       When("they are added")
  *       val sum = x + y
  * 
- *       then("the result is the sum of the two numbers")
+ *       Then("the result is the sum of the two numbers")
  *       assert(sum === 5)
  *     }
  *
  *     scenario("subtraction") {
  * 
- *       given("two integers")
+ *       Given("two integers")
  *       val x = 7
  *       val y = 2
  * 
- *       when("one is subtracted from the other")
+ *       When("one is subtracted from the other")
  *       val diff = x - y
  * 
- *       then("the result is the difference of the two numbers")
+ *       Then("the result is the difference of the two numbers")
  *       assert(diff === 5)
  *     }
  *   }
@@ -403,9 +403,9 @@ import Suite.anErrorThatShouldCauseAnAbort
  *   feature("Integer arithmetic") {
  *&nbsp;
  *     scenario("addition") {
- *       given("two integers")
- *       when("they are added")
- *       then("the result is the sum of the two numbers")
+ *       Given("two integers")
+ *       When("they are added")
+ *       Then("the result is the sum of the two numbers")
  *       pending
  *     }
  *     // ...
@@ -1201,22 +1201,22 @@ import Suite.anErrorThatShouldCauseAnAbort
  * 
  *     scenario("empty is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
- *       given("a non-empty stack")
+ *       Given("a non-empty stack")
  *       val stack = createNonEmptyStack
  * 
- *       when("empty is invoked on the stack")
- *       then("empty returns false")
+ *       When("empty is invoked on the stack")
+ *       Then("empty returns false")
  *       assert(!stack.empty)
  *     }
  * 
  *     scenario("peek is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
- *       given("a non-empty stack")
+ *       Given("a non-empty stack")
  *       val stack = createNonEmptyStack
  *       val size = stack.size
  * 
- *       when("peek is invoked on the stack")
- *       then("peek returns the last item added")
+ *       When("peek is invoked on the stack")
+ *       Then("peek returns the last item added")
  *       assert(stack.peek === lastItemAdded)
  * 
  *       and("the size of the stack is the same as before")
@@ -1225,15 +1225,15 @@ import Suite.anErrorThatShouldCauseAnAbort
  * 
  *     scenario("pop is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
- *       given("a non-empty stack")
+ *       Given("a non-empty stack")
  *       val stack = createNonEmptyStack
  *       val size = stack.size
  * 
- *       when("pop is invoked on the stack")
- *       then("pop returns the last item added")
+ *       When("pop is invoked on the stack")
+ *       Then("pop returns the last item added")
  *       assert(stack.pop === lastItemAdded)
  * 
- *       and("the size of the stack one less than before")
+ *       And("the size of the stack one less than before")
  *       assert(stack.size === size - 1)
  *     }
  *   }
@@ -1242,27 +1242,27 @@ import Suite.anErrorThatShouldCauseAnAbort
  *       
  *     scenario("full is invoked on this non-full stack: " + createNonFullStack.toString) {
  * 
- *       given("a non-full stack")
+ *       Given("a non-full stack")
  *       val stack = createNonFullStack
  * 
- *       when("full is invoked on the stack")
- *       then("full returns false")
+ *       When("full is invoked on the stack")
+ *       Then("full returns false")
  *       assert(!stack.full)
  *     }
  *       
  *     scenario("push is invoked on this non-full stack: " + createNonFullStack.toString) {
  * 
- *       given("a non-full stack")
+ *       Given("a non-full stack")
  *       val stack = createNonFullStack
  *       val size = stack.size
  * 
- *       when("push is invoked on the stack")
+ *       When("push is invoked on the stack")
  *       stack.push(7)
  * 
- *       then("the size of the stack is one greater than before")
+ *       Then("the size of the stack is one greater than before")
  *       assert(stack.size === size + 1)
  * 
- *       and("the top of the stack contains the pushed value")
+ *       And("the top of the stack contains the pushed value")
  *       assert(stack.peek === 7)
  *     }
  *   }
@@ -1331,21 +1331,21 @@ import Suite.anErrorThatShouldCauseAnAbort
  *  
  *     scenario("empty is invoked on an empty stack") {
  * 
- *       given("an empty stack")
+ *       Given("an empty stack")
  *       val stack = emptyStack
  * 
- *       when("empty is invoked on the stack")
- *       then("empty returns true")
+ *       When("empty is invoked on the stack")
+ *       Then("empty returns true")
  *       assert(stack.empty)
  *     }
  *  
  *     scenario("peek is invoked on an empty stack") {
  * 
- *       given("an empty stack")
+ *       Given("an empty stack")
  *       val stack = emptyStack
  * 
- *       when("peek is invoked on the stack")
- *       then("peek throws IllegalStateException")
+ *       When("peek is invoked on the stack")
+ *       Then("peek throws IllegalStateException")
  *       intercept[IllegalStateException] {
  *         stack.peek
  *       }
@@ -1353,11 +1353,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  *  
  *     scenario("pop is invoked on an empty stack") {
  * 
- *       given("an empty stack")
+ *       Given("an empty stack")
  *       val stack = emptyStack
  * 
- *       when("pop is invoked on the stack")
- *       then("pop throws IllegalStateException")
+ *       When("pop is invoked on the stack")
+ *       Then("pop throws IllegalStateException")
  *       intercept[IllegalStateException] {
  *         emptyStack.pop
  *       }
@@ -1371,11 +1371,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  *  
  *     scenario("full is invoked on a full stack") {
  * 
- *       given("an full stack")
+ *       Given("an full stack")
  *       val stack = fullStack
  * 
- *       when("full is invoked on the stack")
- *       then("full returns true")
+ *       When("full is invoked on the stack")
+ *       Then("full returns true")
  *       assert(stack.full)
  *     }
  *  
@@ -1383,11 +1383,11 @@ import Suite.anErrorThatShouldCauseAnAbort
  *  
  *     scenario("push is invoked on a full stack") {
  * 
- *       given("an full stack")
+ *       Given("an full stack")
  *       val stack = fullStack
  * 
- *       when("push is invoked on the stack")
- *       then("push throws IllegalStateException")
+ *       When("push is invoked on the stack")
+ *       Then("push throws IllegalStateException")
  *       intercept[IllegalStateException] {
  *         stack.push(10)
  *       }

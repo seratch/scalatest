@@ -2786,9 +2786,9 @@ class ArghSpec extends Spec with GivenWhenThen {
             info("in Elephant")
             it("Factory") {
               info("in Factory (test)")
-              given("an empty Stack")
-              when("push is invoked")
-              then("it should have size 1")
+              Given("an empty Stack")
+              When("push is invoked")
+              Then("it should have size 1")
               and("pop should return the pushed value")
             }
           }
@@ -2840,8 +2840,8 @@ used for test events like succeeded/failed, etc.
     IndentedText(formattedText, testText, level)
   }
 
-  // The icon is not included for branch description text, but is included for things sent via info(), given(),
-  // when(), then(), etc. When it is included, reduce the level by 1, unless it is already 1 or 0.
+  // The icon is not included for branch description text, but is included for things sent via info(), Given(),
+  // When(), Then(), etc. When it is included, reduce the level by 1, unless it is already 1 or 0.
   def getIndentedTextForInfo(message: String, level: Int, includeIcon: Boolean, infoIsInsideATest: Boolean) = {
     val formattedText =
       if (includeIcon) {

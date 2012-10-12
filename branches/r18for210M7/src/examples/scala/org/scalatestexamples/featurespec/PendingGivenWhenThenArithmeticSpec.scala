@@ -25,17 +25,17 @@ class PendingGivenWhenThenArithmeticSpec extends FeatureSpec with GivenWhenThen 
 
     scenario("addition") {
 
-      given("two integers")
-      when("they are added")
-      then("the result is the sum of the two numbers")
+      Given("two integers")
+      When("they are added")
+      Then("the result is the sum of the two numbers")
       pending
     }
 
     scenario("subtraction") {
 
-      given("two integers")
-      when("one is subtracted from the other")
-      then("the result is the difference of the two numbers")
+      Given("two integers")
+      When("one is subtracted from the other")
+      Then("the result is the difference of the two numbers")
       pending
     }
   }
