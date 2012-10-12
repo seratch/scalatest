@@ -291,7 +291,7 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
  * You can pass the extra information to the <code>Informer</code> via one of its <code>apply</code> methods.
  * The <code>Informer</code> will then pass the information to the <code>Reporter</code> via an <code>InfoProvided</code> event.
  * Here's an example in which the <code>Informer</code> returned by <code>info</code> is used implicitly by the
- * <code>Given</code>, <code>When</code>, and <code>Then</code> methods of trait <code>GivenWhenThen</code>:
+ * <code>given</code>, <code>when</code>, and <code>then</code> methods of trait <code>GivenWhenThen</code>:
  * </p>
  *
  * <pre class="stHighlight">
@@ -304,16 +304,16 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
  *   
  *   object &#96;A mutable Set&#96; {
  *     def &#96;should allow an element to be added&#96; {
- *       Given("an empty mutable Set")
+ *       given("an empty mutable Set")
  *       val set = mutable.Set.empty[String]
  * 
- *       When("an element is added")
+ *       when("an element is added")
  *       set += "clarity"
  * 
- *       Then("the Set should have size 1")
+ *       then("the Set should have size 1")
  *       assert(set.size === 1)
  * 
- *       And("the Set should contain the added element")
+ *       and("the Set should contain the added element")
  *       assert(set.contains("clarity"))
  * 
  *       info("That's all folks!")
@@ -1376,21 +1376,17 @@ trait Spec extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     ensureScopesAndTestsRegistered()
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
+          def name = testName
           def apply() { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
       )
     }
@@ -1435,12 +1431,12 @@ trait Spec extends Suite { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     ensureScopesAndTestsRegistered()
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     ensureScopesAndTestsRegistered()
     runImpl(thisSuite, testName, args, super.run)
   }
@@ -1449,8 +1445,6 @@ trait Spec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.Spec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 
 private[scalatest] object Spec {

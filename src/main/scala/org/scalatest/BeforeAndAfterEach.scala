@@ -259,22 +259,26 @@ trait BeforeAndAfterEach extends SuiteMixin {
    * exception, this method will complete abruptly with the exception thrown by <code>afterEach</code>.
    * </p>
   */
-  abstract protected override def runTest(testName: String, args: Args): Status = {
+  abstract protected override def runTest(testName: String, args: Args) {
 
     var thrownException: Option[Throwable] = None
 
-    beforeEach(testDataFor(testName, args.configMap))
+    beforeEach(new TestData { 
+                      val name = testName
+                      val configMap = args.configMap 
+                   })
     try {
       super.runTest(testName, args)
     }
     catch {
-      case e: Exception => 
-        thrownException = Some(e)
-        FailedStatus
+      case e: Exception => thrownException = Some(e)
     }
     finally {
       try {
-        afterEach(testDataFor(testName, args.configMap)) // Make sure that afterEach is called even if runTest completes abruptly.
+        afterEach(new TestData { 
+                        val name = testName
+                        val configMap = args.configMap 
+                      }) // Make sure that afterEach is called even if runTest completes abruptly.
         thrownException match {
           case Some(e) => throw e
           case None =>

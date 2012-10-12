@@ -40,7 +40,7 @@ import DispatchReporter.propagateDispose
  * @throws NullPointerException if <code>reporters</code> is <code>null</code>.
  * @author Bill Venners
  */
-private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out: PrintStream) extends CatchReporter {
+private[scalatest] class DispatchReporter(val reporters: List[Reporter], out: PrintStream) extends Reporter {
 
   private case object Dispose
 
@@ -197,14 +197,8 @@ private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out
     latch.await()
   }
 
-  override def apply(event: Event) {
+  def apply(event: Event) {
     julia ! event
-  }
-  
-  def doApply(event: Event) {}
-  
-  def doDispose() {
-    dispatchDisposeAndWaitUntilDone()
   }
 }
 
@@ -217,6 +211,7 @@ private[scalatest] object DispatchReporter {
   def propagateDispose(reporter: Reporter) {
     reporter match {
       case dispatchReporter: DispatchReporter => dispatchReporter.dispatchDisposeAndWaitUntilDone()
+      case catchReporter: CatchReporter => catchReporter.catchDispose()
       case resourcefulReporter: ResourcefulReporter => resourcefulReporter.dispose()
       case _ =>
     }

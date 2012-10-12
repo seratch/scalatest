@@ -58,7 +58,7 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
    * @param testName If present (Some), then only the method with the supplied name is executed and groups will be ignored.
    * @param args the <code>Args</code> for this run
    */
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
 
     import args._
 
@@ -69,19 +69,15 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
       }
     val tagsToExclude = filter.tagsToExclude
 
-    val status = new ScalaTestStatefulStatus
-    runTestNG(reporter, tagsToInclude, tagsToExclude, tracker, status)
-
-    status.setCompleted()
-    status
+    runTestNG(reporter, tagsToInclude, tagsToExclude, tracker)
   }
 
   /**
    * Runs all tests in the xml suites.
    * @param   reporter   the reporter to be notified of test events (success, failure, etc)
    */
-  override private[testng] def runTestNG(reporter: Reporter, tracker: Tracker, status: ScalaTestStatefulStatus) {
-    runTestNG(reporter, Set[String](), Set[String](), tracker, status)
+  override private[testng] def runTestNG(reporter: Reporter, tracker: Tracker) {
+    runTestNG(reporter, Set[String](), Set[String](), tracker)
   }
 
   /**
@@ -94,16 +90,15 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
    * @param   reporter   the reporter to be notified of test events (success, failure, etc)
    * @param   groupsToInclude    contains the names of groups to run. only tests in these groups will be executed
    * @param   groupsToExclude    tests in groups in this Set will not be executed
-   * @param   status   Run status.
    */ 
   private[testng] def runTestNG(reporter: Reporter, groupsToInclude: Set[String], 
-      groupsToExclude: Set[String], tracker: Tracker, status: ScalaTestStatefulStatus) {
+      groupsToExclude: Set[String], tracker: Tracker) {
     
     val testng = new TestNG
     handleGroups(groupsToInclude, groupsToExclude, testng)
     addXmlSuitesToTestNG(testng)
     
-    run(testng, reporter, tracker, status)
+    run(testng, reporter, tracker)
   }
   
   /**

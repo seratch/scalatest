@@ -8,7 +8,7 @@ class ArgsSpec extends WordSpec with TableDrivenPropertyChecks with ShouldMatche
     "throw NullPointerExcepion when passed a null" in {
 
       val rep = SilentReporter
-      val stp = Stopper.default
+      val stp = new Stopper {}
       val flt = Filter()
       val cnf = Map.empty[String, Any]
       val dst = None
@@ -39,13 +39,12 @@ class ArgsSpec extends WordSpec with TableDrivenPropertyChecks with ShouldMatche
     "call the new run method" in {
       class MySuite extends Suite {
         var newRunGotCalled = false
-        override def run(testName: Option[String], args: Args): Status = {
+        override def run(testName: Option[String], args: Args) {
           newRunGotCalled = true
-          SucceededStatus
         }
       }
       val s = new MySuite
-      s.run(None, SilentReporter, Stopper.default, Filter(), Map.empty, None, new Tracker)
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map.empty, None, new Tracker)
       assert(s.newRunGotCalled)
     }
   }

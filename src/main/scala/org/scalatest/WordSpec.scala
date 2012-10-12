@@ -497,16 +497,16 @@ import Suite.autoTagClassAnnotations
  *   
  *   "A mutable Set" should {
  *     "allow an element to be added" in {
- *       Given("an empty mutable Set")
+ *       given("an empty mutable Set")
  *       val set = mutable.Set.empty[String]
  * 
- *       When("an element is added")
+ *       when("an element is added")
  *       set += "clarity"
  * 
- *       Then("the Set should have size 1")
+ *       then("the Set should have size 1")
  *       assert(set.size === 1)
  * 
- *       And("the Set should contain the added element")
+ *       and("the Set should contain the added element")
  *       assert(set.contains("clarity"))
  * 
  *       info("That's all folks!")
@@ -622,9 +622,9 @@ import Suite.autoTagClassAnnotations
  * <pre class="stHighlight">
  *  "The Scala language" should {
  *     "add correctly" in { 
- *       Given("two integers")
- *       When("they are added")
- *       Then("the result is the sum of the two numbers")
+ *       given("two integers")
+ *       when("they are added")
+ *       then("the result is the sum of the two numbers")
  *       pending
  *     }
  *     // ...
@@ -1970,7 +1970,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      */
     @deprecated("Please use \"which\" instead of \"that\".")
     def that(f: => Unit) {
-      registerBranch(string.trim + " that", None, "that", 4, -2, f _)
+      registerBranch(string + " that", None, "that", 4, -2, f _)
     }
 
     /**
@@ -1990,7 +1990,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def which(f: => Unit) {
-      registerBranch(string.trim + " which", None, "which", 4, -2, f _)
+      registerBranch(string + " which", None, "which", 4, -2, f _)
     }
 
     /**
@@ -1999,7 +1999,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      */
     @deprecated("Please use \"which\" instead of \"that\".")
     def that(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string.trim + " that " + resultOfAfterWordApplication.text.trim, None, "that", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string + " that " + resultOfAfterWordApplication.text, None, "that", 4, -2, resultOfAfterWordApplication.f)
     }
     
     /**
@@ -2021,7 +2021,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def which(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string.trim + " which " + resultOfAfterWordApplication.text.trim, None, "which", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string + " which " + resultOfAfterWordApplication.text, None, "which", 4, -2, resultOfAfterWordApplication.f)
     }
   }
 
@@ -2251,19 +2251,15 @@ one error found
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
+          def name = testName
           def apply() { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
       )
     }
@@ -2325,7 +2321,7 @@ one error found
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
@@ -2370,7 +2366,7 @@ one error found
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
 
     runImpl(thisSuite, testName, args, super.run)
   }
@@ -2398,6 +2394,4 @@ one error found
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.WordSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }

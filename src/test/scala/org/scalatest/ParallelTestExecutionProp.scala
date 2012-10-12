@@ -15,8 +15,6 @@ import org.scalatest.time.Seconds
 import org.scalatest.events.SuiteStarting
 import org.scalatest.events.SuiteCompleted
 import org.scalatest.time.Millis
-import java.io.PrintStream
-import java.io.ByteArrayOutputStream
 
 class ParallelTestExecutionProp extends FunSuite 
   with TableDrivenPropertyChecks with SharedHelpers  
@@ -27,26 +25,18 @@ class ParallelTestExecutionProp extends FunSuite
   with ParallelTestExecutionSuiteTimeoutExamples {
   
   class ControlledOrderDistributor extends Distributor {
-    val buf = ListBuffer.empty[(Suite, Args, ScalaTestStatefulStatus)]
-    def apply(suite: Suite, args: Args): Status = {
-      val status = new ScalaTestStatefulStatus
-      buf += ((suite, args, status))
-      status
+    val buf = ListBuffer.empty[(Suite, Args)]
+    def apply(suite: Suite, args: Args) {
+      buf += ((suite, args))
     }
     def executeInOrder() {
-      for ((suite, args, status) <- buf) {
-        val runStatus = suite.run(None, args)
-        if (!runStatus.succeeds())
-          status.setFailed()
-        status.setCompleted()
+      for ((suite, args) <- buf) {
+        suite.run(None, args)
       }
     }
     def executeInReverseOrder() {
-      for ((suite, args, status) <- buf.reverse) {
-        val runStatus = suite.run(None, args)
-        if (!runStatus.succeeds())
-          status.setFailed()
-        status.setCompleted()
+      for ((suite, args) <- buf.reverse) {
+        suite.run(None, args)
       }
     }
 
@@ -60,10 +50,8 @@ class ParallelTestExecutionProp extends FunSuite
       
       val buf = ListBuffer.empty[SuiteRunner]
       val execSvc: ExecutorService = Executors.newFixedThreadPool(2)
-      def apply(suite: Suite, args: Args): Status = {
-        val status = new ScalaTestStatefulStatus
-        buf += new SuiteRunner(suite, args, status)
-        status
+      def apply(suite: Suite, args: Args) {
+        buf += new SuiteRunner(suite, args)
       }
       def executeInOrder() {
         for (suiteRunner <- buf) {
@@ -109,7 +97,7 @@ class ParallelTestExecutionProp extends FunSuite
   def withConcurrentDistributor(suite1: Suite, suite2: Suite, timeout: Span, fun: ControlledOrderConcurrentDistributor => Unit) = {
     val recordingReporter = new EventRecordingReporter
     val outOfOrderConcurrentDistributor = new ControlledOrderConcurrentDistributor(2)
-    val suiteSortingReporter = new SuiteSortingReporter(recordingReporter, timeout, new PrintStream(new ByteArrayOutputStream))
+    val suiteSortingReporter = new SuiteSortingReporter(recordingReporter, timeout)
     
     val tracker = new Tracker()
     suiteSortingReporter(SuiteStarting(tracker.nextOrdinal, suite1.suiteName, suite1.suiteId, Some(suite1.getClass.getName), None))

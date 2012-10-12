@@ -183,7 +183,7 @@ trait BeforeAndAfter extends SuiteMixin { this: Suite =>
    * exception, this method will complete abruptly with the exception thrown by the function registered with <code>after</code>.
    * </p>
   */
-  abstract protected override def runTest(testName: String, args: Args): Status = {
+  abstract protected override def runTest(testName: String, args: Args) {
 
     var thrownException: Option[Throwable] = None
 
@@ -197,7 +197,6 @@ trait BeforeAndAfter extends SuiteMixin { this: Suite =>
     }
     catch {
       case e: Exception => thrownException = Some(e)
-      FailedStatus
     }
     finally {
       try {
@@ -227,7 +226,7 @@ trait BeforeAndAfter extends SuiteMixin { this: Suite =>
    * any invocation to <code>before</code> or <code>after</code> will complete abruptly
    * with a <code>NotAllowedException</code>.
    */
-  abstract override def run(testName: Option[String], args: Args): Status = {
+  abstract override def run(testName: Option[String], args: Args) {
     runHasBeenInvoked = true
     super.run(testName, args)
   }

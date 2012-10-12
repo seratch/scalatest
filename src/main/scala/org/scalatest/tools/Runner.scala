@@ -850,7 +850,7 @@ object Runner {
               dispatchReporter,
               suitesList,
               junitsList,
-              Stopper.default,
+              new Stopper {},
               tagsToInclude,
               tagsToExclude,
               configMap,
@@ -2093,7 +2093,7 @@ object Runner {
 
             val distributedSuiteSorter = 
               if (concurrentConfig.enableSuiteSortingReporter)
-                Some(new SuiteSortingReporter(dispatch, Span(testSortingReporterTimeout.millisPart + 1000, Millis), System.err))
+                Some(new SuiteSortingReporter(dispatch, Span(testSortingReporterTimeout.millisPart + 1000, Millis)))
               else
                 None
               
@@ -2138,8 +2138,7 @@ object Runner {
               val tagsToInclude = if (suiteConfig.requireSelectedTag) tagsToIncludeSet ++ Set(SELECTED_TAG) else tagsToIncludeSet
               val filter = Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExcludeSet, suiteConfig.excludeNestedSuites, suiteConfig.dynaTags)
               val runArgs = Args(dispatch, stopRequested, filter, configMap, None, tracker, chosenStyleSet)
-              val status = new ScalaTestStatefulStatus()
-              val suiteRunner = new SuiteRunner(suiteConfig.suite, runArgs, status)
+              val suiteRunner = new SuiteRunner(suiteConfig.suite, runArgs)
               suiteRunner.run()
             }
           }

@@ -273,7 +273,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerTest(Resources("scenario", specText.trim), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 4, -2, None, None, None, testTags: _*)
+    registerTest(Resources("scenario", specText), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 4, -2, None, None, None, testTags: _*)
   }
 
   /**
@@ -309,7 +309,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun(sourceFileName, "feature"))
 
-    registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 4, -2, None)
+    registerNestedBranch(Resources("feature", description), None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 4, -2, None)
   }
 
   /**
@@ -340,7 +340,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
 
     def invokeWithFixture(theTest: TestLeaf) {
@@ -408,7 +408,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    *
    * @throws NullPointerException if any of <code>testName</code> or <code>args</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, false, runTest)
   }
 
@@ -429,7 +429,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     runImpl(thisSuite, testName, args, super.run)
   }
 
@@ -484,7 +484,5 @@ trait FeatureSpec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.fixture.FeatureSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 

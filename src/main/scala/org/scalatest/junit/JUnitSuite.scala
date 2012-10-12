@@ -119,7 +119,7 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(args: Args): Status = {
+  override final protected def runNestedSuites(args: Args) {
 
     throw new UnsupportedOperationException
   }
@@ -142,7 +142,7 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    *
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTests(testName: Option[String], args: Args): Status = {
+  override protected final def runTests(testName: Option[String], args: Args) {
     throw new UnsupportedOperationException
   }
 
@@ -163,7 +163,7 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
    *
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTest(testName: String, args: Args): Status = {
+  override protected final def runTest(testName: String, args: Args) {
     throw new UnsupportedOperationException
   }
 
@@ -220,53 +220,27 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
   // Also autotag suite level annotation.
   override def tags: Map[String, Set[String]] = {
 
+    def getMethodForJUnitTestName(testName: String) =
+      getClass.getMethod(testName, new Array[Class[_]](0): _*)
+
+    def hasIgnoreTag(testName: String) = getMethodForJUnitTestName(testName).getAnnotation(classOf[org.junit.Ignore]) != null
+
     val elements =
       for (testName <- testNames; if hasIgnoreTag(testName))
         yield testName -> Set("org.scalatest.Ignore")
 
     autoTagClassAnnotations(Map() ++ elements, this)
   }
-  
-  private def getMethodForJUnitTestName(testName: String) =
-      getClass.getMethod(testName, new Array[Class[_]](0): _*)
 
-  private def hasIgnoreTag(testName: String) = getMethodForJUnitTestName(testName).getAnnotation(classOf[org.junit.Ignore]) != null
-  
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = {
-    val suiteTags = for { 
-      a <- this.getClass.getDeclaredAnnotations
-      annotationClass = a.annotationType
-      if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
-    } yield annotationClass.getName
-    val testTags: Set[String] = 
-      try {
-        if (hasIgnoreTag(testName))
-          Set("org.scalatest.Ignore")
-        else
-          Set.empty[String]
-      }
-      catch {
-        case e: IllegalArgumentException => Set.empty[String]
-      }
-    new TestData {
-      val configMap = theConfigMap 
-      val name = testName
-      val scopes = IndexedSeq.empty
-      val text = testName
-      val tags = Set.empty ++ suiteTags ++ testTags
-    }
-  }
-
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
 
     import args._
 
     theTracker = tracker
-    val status = new ScalaTestStatefulStatus
 
     if (!filter.tagsToInclude.isDefined) {
       val jUnitCore = new JUnitCore
-      jUnitCore.addListener(new MyRunListener(wrapReporterIfNecessary(reporter), configMap, tracker, status))
+      jUnitCore.addListener(new MyRunListener(reporter, configMap, tracker))
       val myClass = this.getClass
       testName match {
         case None => jUnitCore.run(myClass)
@@ -276,9 +250,6 @@ trait JUnitSuite extends Suite with AssertionsForJUnit { thisSuite =>
           jUnitCore.run(Request.method(myClass, tn))
       }
     }
-    
-    status.setCompleted()
-    status
   }
   
   /**

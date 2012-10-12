@@ -27,11 +27,11 @@ class BeforeAndAfterSuite extends FunSuite {
   class TheSuper extends Suite {
     var runTestWasCalled = false
     var runWasCalled = false
-    protected override def runTest(testName: String, args: Args): Status = {
+    protected override def runTest(testName: String, args: Args) {
       runTestWasCalled = true
       super.runTest(testName, args)
     }
-    override def run(testName: Option[String], args: Args): Status = {
+    override def run(testName: Option[String], args: Args) {
       runWasCalled = true
       super.run(testName, args)
     }
@@ -103,65 +103,65 @@ class BeforeAndAfterSuite extends FunSuite {
 
   test("super's runTest must be called") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.runTestWasCalled)
   }
   
   test("super's run must be called") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.runWasCalled)
   }
 
   test("beforeEach gets called before runTest") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.beforeEachCalledBeforeRunTest)
     assert(a.beforeEachConfigCalledBeforeRunTest)
   }
   
   test("afterEach gets called after runTest") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.afterEachCalledAfterRunTest)
     assert(a.afterEachConfigCalledAfterRunTest)
   }
 
   test("beforeAll gets called before run") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.beforeAllCalledBeforeExecute)
     assert(a.beforeAllConfigCalledBeforeExecute)
   }
   
   test("afterAll gets called after run") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.afterAllCalledAfterExecute)
     assert(a.afterAllConfigCalledAfterExecute)
   }
   
   test("beforeEach(config) gets the config passed to run") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.beforeEachConfigGotTheGreeting)
   }
 
   test("afterEach(config) gets the config passed to run") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.afterEachConfigGotTheGreeting)
   }
 
   test("beforeAll(config) gets the config passed to run") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.beforeAllConfigGotTheGreeting)
   }
 
   test("afterAll(config) gets the config passed to run") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker, Set.empty))
     assert(a.afterAllConfigGotTheGreeting)
   }
 
@@ -181,7 +181,7 @@ class BeforeAndAfterSuite extends FunSuite {
   test("If any call to super.runTest completes abruptly with an exception, runTest " +
     "will complete abruptly with the same exception, however, before doing so, it will invoke afterEach") {
     trait FunkySuite extends Suite {
-      protected override def runTest(testName: String, args: Args): Status = {
+      protected override def runTest(testName: String, args: Args) {
         throw new NumberFormatException
       }
     }
@@ -201,7 +201,7 @@ class BeforeAndAfterSuite extends FunSuite {
   test("If both super.runTest and afterEach complete abruptly with an exception, runTest " + 
     "will complete abruptly with the exception thrown by super.runTest.") {
     trait FunkySuite extends Suite {
-      protected override def runTest(testName: String, args: Args): Status = {
+      protected override def runTest(testName: String, args: Args) {
         throw new NumberFormatException
       }
     }
@@ -249,7 +249,7 @@ class BeforeAndAfterSuite extends FunSuite {
   test("If any call to super.run completes abruptly with an exception, run " +
     "will complete abruptly with the same exception, however, before doing so, it will invoke afterAll") {
     trait FunkySuite extends Suite {
-      override def run(testName: Option[String], args: Args): Status = {
+      override def run(testName: Option[String], args: Args) {
         throw new NumberFormatException
       }
     }
@@ -269,7 +269,7 @@ class BeforeAndAfterSuite extends FunSuite {
   test("If both super.run and afterAll complete abruptly with an exception, run " + 
     "will complete abruptly with the exception thrown by super.run.") {
     trait FunkySuite extends Suite {
-      override def run(testName: Option[String], args: Args): Status = {
+      override def run(testName: Option[String], args: Args) {
         throw new NumberFormatException
       }
     }

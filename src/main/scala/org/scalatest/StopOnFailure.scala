@@ -15,10 +15,8 @@
  */
 package org.scalatest
 
-private[scalatest] trait StopOnFailure extends SuiteMixin { thisSuite: Suite =>
-  
-  override abstract def run(testName: Option[String], args: Args): Status = {
-    super.run(testName, args.copy(reporter = new StopOnFailureReporter(args.reporter, args.stopper, System.err)))
-  }
-  
+private[scalatest] trait StopOnFailure extends SuiteMixin { this: Suite =>
+
+ // Needs to override runTest, and need to change Stopper to give
+ // it a requestStop() method.
 }

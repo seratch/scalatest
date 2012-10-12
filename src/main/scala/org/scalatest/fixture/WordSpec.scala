@@ -607,7 +607,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      */
     @deprecated("Please use \"which\" instead of \"that\".")
     def that(f: => Unit) {
-      registerBranch(string.trim + " that", None, "that", 4, -2, f _)
+      registerBranch(string + " that", None, "that", 4, -2, f _)
     }
     
     /**
@@ -627,7 +627,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def which(f: => Unit) {
-      registerBranch(string.trim + " which", None, "which", 4, -2, f _)
+      registerBranch(string + " which", None, "which", 4, -2, f _)
     }
 
     /**
@@ -636,7 +636,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      */
     @deprecated("Please use \"which\" instead of \"that\".")
     def that(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string.trim + " that " + resultOfAfterWordApplication.text.trim, None, "that", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string + " that " + resultOfAfterWordApplication.text, None, "that", 4, -2, resultOfAfterWordApplication.f)
     }
     
     /**
@@ -656,7 +656,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def which(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string.trim + " which " + resultOfAfterWordApplication.text.trim, None, "which", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string + " which " + resultOfAfterWordApplication.text, None, "which", 4, -2, resultOfAfterWordApplication.f)
     }
   }
 
@@ -868,7 +868,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
@@ -935,7 +935,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    *
    * @throws NullPointerException if any of <code>testName</code> or <code>args</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
@@ -955,7 +955,7 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     runImpl(thisSuite, testName, args, super.run)
   }
 
@@ -982,6 +982,4 @@ trait WordSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.fixture.WordSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }

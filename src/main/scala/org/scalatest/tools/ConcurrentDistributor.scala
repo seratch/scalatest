@@ -33,16 +33,14 @@ private[scalatest] class ConcurrentDistributor(args: Args, execSvc: ExecutorServ
     apply(suite, args.copy(tracker = tracker))
   }
  
-  def apply(suite: Suite, args: Args): Status = {
+  def apply(suite: Suite, args: Args) {
     if (suite == null)
       throw new NullPointerException("suite is null")
     if (args == null)
       throw new NullPointerException("args is null")
-    val status = new ScalaTestStatefulStatus
-    val suiteRunner = new SuiteRunner(suite, args, status)
+    val suiteRunner = new SuiteRunner(suite, args)
     val future: Future[_] = execSvc.submit(suiteRunner)
     futureQueue.put(future)
-    status
   }
 
   def poll() = None

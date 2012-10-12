@@ -64,7 +64,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
         "do something" in {}
       }
-      a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> 7), None, new Tracker(), Set.empty))
+      a.run(None, Args(SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker(), Set.empty))
       assert(a.correctConfigMapWasPassed)
     }
 
@@ -534,7 +534,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" in { theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      b.run(None, Args(repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
       assert(!repB.testIgnoredReceived)
       assert(b.theTestThisCalled)
       assert(!b.theTestThatCalled)
@@ -547,7 +547,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" taggedAs(mytags.SlowAsMolasses) in { theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      c.run(None, Args(repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
       assert(!repC.testIgnoredReceived)
       assert(c.theTestThisCalled)
       assert(c.theTestThatCalled)
@@ -560,7 +560,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" taggedAs(mytags.SlowAsMolasses) in { theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
+      d.run(None, Args(repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
       assert(repD.testIgnoredReceived)
       assert(!d.theTestThisCalled)
       assert(d.theTestThatCalled)
@@ -575,7 +575,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
-      e.run(None, Args(repE, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+      e.run(None, Args(repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
                 Map(), None, new Tracker, Set.empty))
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
@@ -592,7 +592,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
-      f.run(None, Args(repF, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+      f.run(None, Args(repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
                 Map(), None, new Tracker, Set.empty))
       assert(!repF.testIgnoredReceived)
       assert(!f.theTestThisCalled)
@@ -609,7 +609,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" ignore { theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
-      g.run(None, Args(repG, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+      g.run(None, Args(repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
                 Map(), None, new Tracker, Set.empty))
       assert(!repG.testIgnoredReceived)
       assert(!g.theTestThisCalled)
@@ -626,7 +626,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
-      h.run(None, Args(repH, Stopper.default, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker, Set.empty))
+      h.run(None, Args(repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker, Set.empty))
       assert(!repH.testIgnoredReceived)
       assert(!h.theTestThisCalled)
       assert(h.theTestThatCalled)
@@ -642,7 +642,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
-      i.run(None, Args(repI, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
+      i.run(None, Args(repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
       assert(!repI.testIgnoredReceived)
       assert(!i.theTestThisCalled)
       assert(!i.theTestThatCalled)
@@ -658,7 +658,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
-      j.run(None, Args(repJ, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
+      j.run(None, Args(repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
       assert(!repI.testIgnoredReceived)
       assert(!j.theTestThisCalled)
       assert(!j.theTestThatCalled)
@@ -674,7 +674,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" ignore { theTestTheOtherCalled = true }
       }
       val repK = new TestIgnoredTrackingReporter
-      k.run(None, Args(repK, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
+      k.run(None, Args(repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
       assert(repK.testIgnoredReceived)
       assert(!k.theTestThisCalled)
       assert(!k.theTestThatCalled)
@@ -865,67 +865,6 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val ts = rep.testSucceededEventsReceived
       assert(ts.size === 1)
       assert(ts.head.testName === "A Stack should chill out")
-    }
-    
-    it("should contains correct formatter for TestStarting, TestSucceeded, TestFailed, TestPending, TestCanceled and TestIgnored") {
-      class TestSpec extends WordSpec {
-        "a feature" should {
-          "succeeded here" in {}
-          "failed here" in { fail }
-          "pending here" in { pending }
-          "cancel here" in { cancel }
-          "ignore here" ignore {}
-        }
-      }
-      val rep = new EventRecordingReporter
-      val s = new TestSpec
-      s.run(None, Args(rep))
-      val testStartingList = rep.testStartingEventsReceived
-      assert(testStartingList.size === 4)
-      assert(testStartingList(0).formatter === Some(MotionToSuppress), "Expected testStartingList(0).formatter to be Some(MotionToSuppress), but got: " + testStartingList(0).formatter.getClass.getName)
-      assert(testStartingList(1).formatter === Some(MotionToSuppress), "Expected testStartingList(1).formatter to be Some(MotionToSuppress), but got: " + testStartingList(1).formatter.getClass.getName)
-      assert(testStartingList(2).formatter === Some(MotionToSuppress), "Expected testStartingList(2).formatter to be Some(MotionToSuppress), but got: " + testStartingList(2).formatter.getClass.getName)
-      assert(testStartingList(3).formatter === Some(MotionToSuppress), "Expected testStartingList(3).formatter to be Some(MotionToSuppress), but got: " + testStartingList(3).formatter.getClass.getName)
-      
-      val testSucceededList = rep.testSucceededEventsReceived
-      assert(testSucceededList.size === 1)
-      assert(testSucceededList(0).formatter.isDefined, "Expected testSucceededList(0).formatter to be defined, but it is not.")
-      assert(testSucceededList(0).formatter.get.isInstanceOf[IndentedText], "Expected testSucceededList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testSucceededFormatter = testSucceededList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testSucceededFormatter.formattedText === "- should succeeded here")
-      assert(testSucceededFormatter.rawText === "should succeeded here")
-      
-      val testFailedList = rep.testFailedEventsReceived
-      assert(testFailedList.size === 1)
-      assert(testFailedList(0).formatter.isDefined, "Expected testFailedList(0).formatter to be defined, but it is not.")
-      assert(testFailedList(0).formatter.get.isInstanceOf[IndentedText], "Expected testFailedList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testFailedFormatter = testFailedList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testFailedFormatter.formattedText === "- should failed here")
-      assert(testFailedFormatter.rawText === "should failed here")
-      
-      val testPendingList = rep.testPendingEventsReceived
-      assert(testPendingList.size === 1)
-      assert(testPendingList(0).formatter.isDefined, "Expected testPendingList(0).formatter to be defined, but it is not.")
-      assert(testPendingList(0).formatter.get.isInstanceOf[IndentedText], "Expected testPendingList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testPendingFormatter = testPendingList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testPendingFormatter.formattedText === "- should pending here")
-      assert(testPendingFormatter.rawText === "should pending here")
-      
-      val testCanceledList = rep.testCanceledEventsReceived
-      assert(testCanceledList.size === 1)
-      assert(testCanceledList(0).formatter.isDefined, "Expected testCanceledList(0).formatter to be defined, but it is not.")
-      assert(testCanceledList(0).formatter.get.isInstanceOf[IndentedText], "Expected testCanceledList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testCanceledFormatter = testCanceledList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testCanceledFormatter.formattedText === "- should cancel here")
-      assert(testCanceledFormatter.rawText === "should cancel here")
-      
-      val testIgnoredList = rep.testIgnoredEventsReceived
-      assert(testIgnoredList.size === 1)
-      assert(testIgnoredList(0).formatter.isDefined, "Expected testIgnoredList(0).formatter to be defined, but it is not.")
-      assert(testIgnoredList(0).formatter.get.isInstanceOf[IndentedText], "Expected testIgnoredList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testIgnoredFormatter = testIgnoredList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testIgnoredFormatter.formattedText === "- should ignore here")
-      assert(testIgnoredFormatter.rawText === "should ignore here")
     }
   }
   
