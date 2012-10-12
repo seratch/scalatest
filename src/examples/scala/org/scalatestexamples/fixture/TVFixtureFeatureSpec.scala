@@ -39,9 +39,9 @@ class TVFixtureFeatureSpec extends fixture.FeatureSpec
 
     scenario("The user presses number buttons and pauses") { fixture =>
 
-      given("the TV is on and tuned to a particular channel,")
-      when("the user enters a number and waits,")
-      then("the TV will change to that channel.")
+      Given("the TV is on and tuned to a particular channel,")
+      When("the user enters a number and waits,")
+      Then("the TV will change to that channel.")
 
       pending
     }

@@ -50,21 +50,21 @@ class StackFeatureSpec extends FeatureSpec with GivenWhenThen with FeatureSpecSt
  
     scenario("empty is invoked on an empty stack") {
 
-      given("an empty stack")
+      Given("an empty stack")
       val stack = emptyStack
 
-      when("empty is invoked on the stack")
-      then("empty returns true")
+      When("empty is invoked on the stack")
+      Then("empty returns true")
       assert(stack.empty)
     }
  
     scenario("peek is invoked on an empty stack") {
 
-      given("an empty stack")
+      Given("an empty stack")
       val stack = emptyStack
 
-      when("peek is invoked on the stack")
-      then("peek throws IllegalStateException")
+      When("peek is invoked on the stack")
+      Then("peek throws IllegalStateException")
       intercept[IllegalStateException] {
         stack.peek
       }
@@ -72,11 +72,11 @@ class StackFeatureSpec extends FeatureSpec with GivenWhenThen with FeatureSpecSt
  
     scenario("pop is invoked on an empty stack") {
 
-      given("an empty stack")
+      Given("an empty stack")
       val stack = emptyStack
 
-      when("pop is invoked on the stack")
-      then("pop throws IllegalStateException")
+      When("pop is invoked on the stack")
+      Then("pop throws IllegalStateException")
       intercept[IllegalStateException] {
         emptyStack.pop
       }
@@ -90,11 +90,11 @@ class StackFeatureSpec extends FeatureSpec with GivenWhenThen with FeatureSpecSt
  
     scenario("full is invoked on a full stack") {
 
-      given("an full stack")
+      Given("an full stack")
       val stack = fullStack
 
-      when("full is invoked on the stack")
-      then("full returns true")
+      When("full is invoked on the stack")
+      Then("full returns true")
       assert(stack.full)
     }
  
@@ -102,11 +102,11 @@ class StackFeatureSpec extends FeatureSpec with GivenWhenThen with FeatureSpecSt
  
     scenario("push is invoked on a full stack") {
 
-      given("an full stack")
+      Given("an full stack")
       val stack = fullStack
 
-      when("push is invoked on the stack")
-      then("push throws IllegalStateException")
+      When("push is invoked on the stack")
+      Then("push throws IllegalStateException")
       intercept[IllegalStateException] {
         stack.push(10)
       }

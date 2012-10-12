@@ -25,27 +25,27 @@ class GivenWhenThenArithmeticFeatureSpec extends FeatureSpec with GivenWhenThen 
 
     scenario("addition") {
 
-      given("two integers")
+      Given("two integers")
       val x = 2
       val y = 3
 
-      when("they are added")
+      When("they are added")
       val sum = x + y
 
-      then("the result is the sum of the two numbers")
+      Then("the result is the sum of the two numbers")
       assert(sum === 5)
     }
 
     scenario("subtraction") {
 
-      given("two integers")
+      Given("two integers")
       val x = 7
       val y = 2
 
-      when("one is subtracted from the other")
+      When("one is subtracted from the other")
       val diff = x - y
 
-      then("the result is the difference of the two numbers")
+      Then("the result is the difference of the two numbers")
       assert(diff === 5)
     }
   }
