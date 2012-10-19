@@ -33,7 +33,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 6))
             case None => fail("fail() didn't produce a file name and line number string: " + e.failedCodeFileNameAndLineNumberString, e)
           }
-        case e: Throwable =>
+        case e =>
           fail("fail() didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -48,7 +48,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 21))
             case None => fail("fail(\"some message\") didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("fail(\"some message\") didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -63,7 +63,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 36))
             case None => fail("fail(throwable) didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("fail(throwable) didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -78,7 +78,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 51))
             case None => fail("fail(\"some message\", throwable) didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("fail(\"some message\", throwable) didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -93,7 +93,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 66))
             case None => fail("assert(false) didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("assert(false) didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -108,7 +108,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 81))
             case None => fail("assert(false, \"some message\") didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("assert(false, \"some message\") didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -123,7 +123,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 96))
             case None => fail("assert(1 === 2) didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("assert(1 === 2) didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -138,38 +138,38 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 111))
             case None => fail("assert(1 === 2, \"some message\") didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("assert(1 === 2, \"some message\") didn't produce a JUnitTestFailedError", e)
       }
     }
 
-    it("should give the proper line on expectResult(1) { 2 }") {
+    it("should give the proper line on expect(1) { 2 }") {
       try {
-        expectResult(1) { 2 }
+        expect(1) { 2 }
       }
       catch {
         case e: JUnitTestFailedError =>
           e.failedCodeFileNameAndLineNumberString match {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 126))
-            case None => fail("expectResult(1) { 2 } didn't produce a file name and line number string", e)
+            case None => fail("expect(1) { 2 } didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
-          fail("expectResult(1) { 2 } didn't produce a JUnitTestFailedError", e)
+        case e =>
+          fail("expect(1) { 2 } didn't produce a JUnitTestFailedError", e)
       }
     }
 
-    it("should give the proper line on expectResult(1, \"some message\") { 2 }") {
+    it("should give the proper line on expect(1, \"some message\") { 2 }") {
       try {
-        expectResult(1, "some message") { 2 }
+        expect(1, "some message") { 2 }
       }
       catch {
         case e: JUnitTestFailedError =>
           e.failedCodeFileNameAndLineNumberString match {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 141))
-            case None => fail("expectResult(1, \"some message\") { 2 } didn't produce a file name and line number string", e)
+            case None => fail("expect(1, \"some message\") { 2 } didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
-          fail("expectResult(1, \"some message\") { 2 } didn't produce a JUnitTestFailedError", e)
+        case e =>
+          fail("expect(1, \"some message\") { 2 } didn't produce a JUnitTestFailedError", e)
       }
     }
 
@@ -183,7 +183,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 156))
             case None => fail("intercept[IllegalArgumentException] {} didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("intercept[IllegalArgumentException] {} didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -198,7 +198,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 171))
             case None => fail("intercept[IllegalArgumentException] { throw new RuntimeException } didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("intercept[IllegalArgumentException] { throw new RuntimeException } didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -216,7 +216,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
               }
             case None => fail("1 should be === 2 didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("1 should be === 2 didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -234,7 +234,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
               }
             case None => fail("evaluating {} should produce [IllegalArgumentException] didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("evaluating {} should produce [IllegalArgumentException] didn't produce a JUnitTestFailedError", e)
       }
     }
@@ -249,7 +249,7 @@ class JUnitTestFailedErrorSpec extends FunSpec with ShouldMatchersForJUnit {
             case Some(s) => s should equal ("JUnitTestFailedErrorSpec.scala:" + (baseLineNumber + 222))
             case None => fail("evaluating { throw new RuntimeException } should produce [IllegalArgumentException] didn't produce a file name and line number string", e)
           }
-        case e: Throwable =>
+        case e =>
           fail("evaluating { throw new RuntimeException } should produce [IllegalArgumentException] didn't produce a JUnitTestFailedError", e)
       }
     }

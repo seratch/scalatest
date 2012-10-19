@@ -29,8 +29,7 @@ import org.scalatest.events.TestStarting
 import org.scalatest.events.TestSucceeded
 import org.scalatest.events.TestFailed
 import org.scalatest.events.MotionToSuppress
-import Suite.getIndentedTextForTest
-import org.scalatest.events._
+import Suite.getIndentedText
 import exceptions._
 
 /**
@@ -237,11 +236,18 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    * in behavior would very likely not work.
    * </p>
    *
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(args: Args): Status = {
+  override final protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
+                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     throw new UnsupportedOperationException
   }
@@ -260,11 +266,17 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTests(testName: Option[String], args: Args): Status = {
+  override protected final def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                            configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     throw new UnsupportedOperationException
   }
 
@@ -281,24 +293,25 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    * </p>
    *
    * @param testName the name of one test to run.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTest(testName: String, args: Args): Status = {
+  override protected final def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+
         throw new UnsupportedOperationException
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
-
-    import args._
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper,
+      filter: Filter, configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     theTracker = tracker
-    val status = new ScalaTestStatefulStatus
 
     if (!filter.tagsToInclude.isDefined) {
       val testResult = new TestResult
-      testResult.addListener(new MyTestListener(wrapReporterIfNecessary(reporter), tracker, status))
+      testResult.addListener(new MyTestListener(reporter, tracker))
       testName match {
         case None => new TestSuite(this.getClass).run(testResult)
         case Some(tn) =>
@@ -308,27 +321,15 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
           run(testResult)
       }
     }
-    
-    status.setCompleted()
-    status
   }
   
   /**
    * Suite style name.
    */
   final override val styleName: String = "JUnit3Suite"
-    
-  final override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = 
-    new TestData {
-      val configMap = theConfigMap 
-      val name = testName
-      val scopes = IndexedSeq.empty
-      val text = testName
-      val tags = Set.empty[String]
-    }
 }
 
-private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, status: ScalaTestStatefulStatus) extends TestListener {
+private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker) extends TestListener {
 
   // TODO: worry about threading
   private val failedTestsSet = scala.collection.mutable.Set[Test]()
@@ -345,8 +346,6 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
     else
       throwable.getMessage
 
-  def getTopOfMethod(className: String, methodName: String) = Some(TopOfMethod(className, "public void " + className + "." + methodName + "()"))
-
   // The Test passed to these methods is an instance of the JUnit3Suite class, Calling
   // test.getClass.getName on it gets the fully qualified name of the class
   // test.asInstanceOf[TestCase].getName gives you the name of the test method, without any parens
@@ -355,8 +354,7 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
   def startTest(testCase: Test) {
     if (testCase == null)
       throw new NullPointerException("testCase was null")
-    val suiteName = getSuiteNameForTestCase(testCase)
-    report(TestStarting(tracker.nextOrdinal(), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Some(MotionToSuppress), getTopOfMethod(testCase.getClass.getName, testCase.asInstanceOf[TestCase].getName)))
+    report(TestStarting(tracker.nextOrdinal(), getSuiteNameForTestCase(testCase), Some(testCase.getClass.getName), testCase.toString, Some(MotionToSuppress), None))
   }
   
   def addError(testCase: Test, throwable: Throwable) {
@@ -366,8 +364,7 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
     if (throwable == null)
       throw new NullPointerException("throwable was null")
 
-    val formatter = getIndentedTextForTest(testCase.toString, 1, true)
-    val suiteName = getSuiteNameForTestCase(testCase)
+    val formatter = getIndentedText(testCase.toString, 1, true)
     val payload = 
       throwable match {
         case optPayload: PayloadField => 
@@ -375,7 +372,7 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
         case _ => 
           None
       }
-    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(throwable, false), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Vector.empty, Some(throwable), None, Some(formatter), Some(SeeStackDepthException), None, payload))
+    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(throwable, false), getSuiteNameForTestCase(testCase), Some(testCase.getClass.getName), testCase.toString, Some(throwable), None, Some(formatter), None, payload))
 
     failedTestsSet += testCase
   }
@@ -387,9 +384,9 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
     if (assertionFailedError == null)
       throw new NullPointerException("throwable was null")
 
-    val formatter = getIndentedTextForTest(testCase.toString, 1, true)
-    val suiteName = getSuiteNameForTestCase(testCase)
-    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(assertionFailedError, true), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Vector.empty, Some(assertionFailedError), None, Some(formatter), Some(SeeStackDepthException), None))
+    val formatter = getIndentedText(testCase.toString, 1, true)
+    
+    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(assertionFailedError, true), getSuiteNameForTestCase(testCase), Some(testCase.getClass.getName), testCase.toString, Some(assertionFailedError), None, Some(formatter), None))
 
     failedTestsSet += testCase
   }
@@ -401,13 +398,11 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
     if (!testHadFailed) {
       if (testCase == null)
         throw new NullPointerException("testCase was null")
-      val formatter = getIndentedTextForTest(testCase.toString, 1, true)
-      val suiteName = getSuiteNameForTestCase(testCase)
-      report(TestSucceeded(tracker.nextOrdinal(), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Vector.empty, None, Some(formatter), getTopOfMethod(testCase.getClass.getName, testCase.asInstanceOf[TestCase].getName)))
+      val formatter = getIndentedText(testCase.toString, 1, true)
+      report(TestSucceeded(tracker.nextOrdinal(), getSuiteNameForTestCase(testCase), Some(testCase.getClass.getName), testCase.toString, None, Some(formatter), None))
     }
     else {
       failedTestsSet -= testCase  
-      status.setFailed()
     }
   }
 
