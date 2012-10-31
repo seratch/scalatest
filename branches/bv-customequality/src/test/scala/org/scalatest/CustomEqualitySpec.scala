@@ -89,6 +89,11 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(joe2 === joe3) // These two should be different from above, because of the type class
       assert(joe3 === joe2)
     }
+
+    def `should compile if there's an implicit conversion from one type to the other` {
+      assert(1L === 1)
+      assert(1 === 1L)
+    }
   }
 /*
   These don't compile.

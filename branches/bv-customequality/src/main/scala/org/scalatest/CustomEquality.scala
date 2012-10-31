@@ -62,17 +62,25 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
       case _ =>
     }
   }
-  
+
   implicit def convertToEqualizer[T](o: T) = new Equalizer(o)
   implicit def convertToSeqEqualizer[T](o: Seq[T]) = new SeqEqualizer[T](o)
   implicit def convertToMapEqualizer[K, V](o: Map[K, V]) = new MapEqualizer[K, V](o)
   implicit def convertToSetEqualizer[T](o: Set[T]) = new SetEqualizer[T](o)
   
+  implicit def equalityTwo[A, B](implicit conv: B => A): Equality[A, B] =
+    new Equality[A, B] {
+      def areEqual(a: A, b: B): Boolean =
+        a == conv(b)
+    }
+
+/*
   implicit def equalityTwo[A, B](implicit ev: B <:< A): Equality[A, B] =
     new Equality[A, B] {
       def areEqual(a: A, b: B): Boolean =
         a == b
     }
+*/
 }
 
 object CustomEquality extends CustomEquality
