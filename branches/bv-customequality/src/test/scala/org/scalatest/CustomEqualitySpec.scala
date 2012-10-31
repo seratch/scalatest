@@ -91,10 +91,72 @@ class CustomEqualitySpec extends Spec with CustomEquality {
     }
 
     def `should compile if there's an implicit conversion from one type to the other` {
+
+      // Starting from Char
+      assert('A' === 65) // Char => Int
+      assert(65 === 'A')
+
+      assert('A' === 65L) // Char => Long
+      assert(65L === 'A')
+
+      assert('A' === 65.0F) // Char => Float
+      assert(65.0F === 'A')
+
+      assert('A' === 65.0) // Char => Double
+      assert(65.0 === 'A')
+
+      // Starting from Byte
+      assert(1.toByte === 1.toShort) // Byte => Short
+      assert(1.toShort === 1.toByte)
+
+      assert(1.toByte === 1) // Byte => Int
+      assert(1 === 1.toByte)
+
+      assert(1.toByte === 1L) // Byte => Long
+      assert(1L === 1.toByte)
+
+      assert(1.toByte === 1.0F) // Byte => Float
+      assert(1.0F === 1.toByte)
+
+      assert(1.toByte === 1.0) // Byte => Double
+      assert(1.0 === 1.toByte)
+
+      // Starting from Short
+      assert(1.toShort === 1) // Short => Int
+      assert(1 === 1.toShort)
+
+      assert(1.toShort === 1L) // Short => Long
+      assert(1L === 1.toShort)
+
+      assert(1.toShort === 1.0F) // Short => Float
+      assert(1.0F === 1.toShort)
+
+      assert(1.toShort === 1.0) // Short => Double
+      assert(1.0 === 1.toShort)
+
+      // Starting from Int
+      assert(1 === 1L) // Int => Long
       assert(1L === 1)
-      assert(1 === 1L)
+
+      assert(1 === 1.0F) // Int => Float
+      assert(1.0F === 1)
+
+      assert(1 === 1.0) // Int => Double
+      assert(1.0 === 1)
+
+      // Starting from Long
+      assert(1L === 1.0F) // Long => Float
+      assert(1.0F === 1L)
+
+      assert(1L === 1.0) // Long => Double
+      assert(1.0 === 1L)
+
+      // Starting from Float
+      assert(1.0F === 1.0) // Float => Double
+      assert(1.0 === 1.0F)
     }
   }
+
 /*
   These don't compile.
   assert("1" === 1)
