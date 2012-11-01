@@ -71,6 +71,41 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(IndexedSeq(1, 2, 3).asInstanceOf[Any] === Vector(1, 2, 3)) // non-Seq superclass on left
     }
 
+    def `should, for Seq's type parameter, compare subclasses with superclases on either side as well as the same type on either side` {
+      class Fruit { override def equals(o: Any) = o.isInstanceOf[Fruit] }
+      trait Crunchy
+      class Apple extends Fruit with Crunchy
+      class GrannySmith extends Apple
+      class Orange extends Fruit
+ 
+      val fruits: Seq[Fruit] = List(new GrannySmith, new GrannySmith)
+      val apples: Seq[Apple] = Vector(new GrannySmith, new GrannySmith)
+      val grannySmiths: Seq[GrannySmith] = Vector(new GrannySmith, new GrannySmith)
+      val crunchies: Seq[Crunchy] = List(new GrannySmith, new GrannySmith)
+      val oranges: Seq[Orange] = IndexedSeq(new Orange, new Orange)
+
+      assert(fruits === fruits)
+      assert(apples == fruits)
+      assert(fruits == apples)
+      assert(fruits == grannySmiths)
+      assert(grannySmiths === fruits)
+      // assert(fruits === crunchies)
+      // assert(crunchies === fruits)
+
+      assert(apples === apples)
+      assert(apples == grannySmiths)
+      assert(grannySmiths === apples)
+      assert(apples === crunchies)
+      assert(crunchies === apples)
+
+      assert(grannySmiths === grannySmiths)
+      assert(grannySmiths === crunchies)
+      assert(crunchies === grannySmiths)
+
+      // Should not compile
+      // assert(apples === oranges)
+    }
+
     def `should compare two Sets for equality` {
 
       assert(HashSet(1, 2, 3) === Set(1, 2, 3)) // superclass on right
