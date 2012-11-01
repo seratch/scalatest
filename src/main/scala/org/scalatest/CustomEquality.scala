@@ -38,6 +38,10 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
       if (equality.areEqual(left, right)) ExpectedEqualityResult()
       else UnexpectedEqualityResult(left + " did not equal " + right)
     }
+    def ===[T >: Seq[L]](right: T)(implicit equality: Equality[Seq[L], T]): EqualityResult[Seq[L], T] = {
+      if (equality.areEqual(left, right)) ExpectedEqualityResult()
+      else UnexpectedEqualityResult(left + " did not equal " + right)
+    }
   }
   
   class MapEqualizer[LK, LV](left: Map[LK, LV]) {
@@ -46,16 +50,26 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
       if (equality.areEqual(left, right)) ExpectedEqualityResult()
       else UnexpectedEqualityResult(left + " did not equal " + right)
     }
+    def ===[T >: Map[LK, LV]](right: T)(implicit equality: Equality[Map[LK, LV], T]): EqualityResult[Map[LK, LV], T] = {
+      if (equality.areEqual(left, right)) ExpectedEqualityResult()
+      else UnexpectedEqualityResult(left + " did not equal " + right)
+    }
   }
-  
+
+// Maybe narrow the type from T >: Set[_] to T >: Set[L]
+// Need the !== on all these guys too
   class SetEqualizer[L](left: Set[L]) {
     println("Created a SetEqualizer")
     def ===[R](right: Set[R])(implicit equality: Equality[Set[L], Set[R]]): EqualityResult[Set[L], Set[R]] = {
       if (equality.areEqual(left, right)) ExpectedEqualityResult()
       else UnexpectedEqualityResult(left + " did not equal " + right)
     }
+    def ===[T >: Set[L]](right: T)(implicit equality: Equality[Set[L], T]): EqualityResult[Set[L], T] = {
+      if (equality.areEqual(left, right)) ExpectedEqualityResult()
+      else UnexpectedEqualityResult(left + " did not equal " + right)
+    }
   }
-  
+
   def assert[L, R](eqRes: EqualityResult[L, R]) {
     eqRes match {
       case UnexpectedEqualityResult(msg) => throw new AssertionError(msg)
