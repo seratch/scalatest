@@ -78,19 +78,19 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       class GrannySmith extends Apple
       class Orange extends Fruit
  
-      val fruits: Seq[Fruit] = List(new GrannySmith, new GrannySmith)
-      val apples: Seq[Apple] = Vector(new GrannySmith, new GrannySmith)
+      val fruits: List[Fruit] = List(new GrannySmith, new GrannySmith)
+      val apples: Vector[Apple] = Vector(new GrannySmith, new GrannySmith)
       val grannySmiths: Seq[GrannySmith] = Vector(new GrannySmith, new GrannySmith)
-      val crunchies: Seq[Crunchy] = List(new GrannySmith, new GrannySmith)
-      val oranges: Seq[Orange] = IndexedSeq(new Orange, new Orange)
+      val crunchies: LinearSeq[Crunchy] = List(new GrannySmith, new GrannySmith)
+      val oranges: IndexedSeq[Orange] = IndexedSeq(new Orange, new Orange)
 
       assert(fruits === fruits)
       assert(apples == fruits)
       assert(fruits == apples)
       assert(fruits == grannySmiths)
       assert(grannySmiths === fruits)
-      // assert(fruits === crunchies)
-      // assert(crunchies === fruits)
+      // assert(fruits === crunchies) This does not compile as there is no direct subtype supertype relastionship
+      // assert(crunchies === fruits) An example where this === is too restrictive
 
       assert(apples === apples)
       assert(apples == grannySmiths)
