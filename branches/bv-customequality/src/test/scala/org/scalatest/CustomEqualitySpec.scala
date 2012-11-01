@@ -48,9 +48,9 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(List(1, 2, 3) === Vector(1, 2, 3)) // converse of above
       assert(List(1, 2, 3) === List(1, 2, 3)) // same type on both sides
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenSeq[Int]]) // non-Seq superclass on right
-      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Iterable[Int]]) // ???
+      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Iterable[Int]]) // ??? I think this should compile, but it does not
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenIterable[Int]])
-      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Traversable[Int]]) // ???
+      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Traversable[Int]]) // ??? I think this should compile, but it does not
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenTraversable[Int]])
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[TraversableOnce[Int]])
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]])
@@ -78,14 +78,14 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(BitSet(1, 2, 3) === HashSet(1, 2, 3)) // no inheritance relationship
       assert(HashSet(1, 2, 3) === BitSet(1, 2, 3)) // converse of above
       assert(Set(1, 2, 3) === Set(1, 2, 3)) // same type on both sides
-      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenSet[Int]]) // non-Set superclass on right // ???
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenSet[Int]]) // non-Set superclass on right
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[Iterable[Int]])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenIterable[Int]])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[Traversable[Int]])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenTraversable[Int]])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[TraversableOnce[Int]])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]])
-      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[(Int) ⇒ Boolean]) // ???
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[(Int) ⇒ Boolean])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[AnyRef])
       assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[Any])
       assert(Set(1, 2, 3).asInstanceOf[GenSet[Int]] === HashSet(1, 2, 3)) // non-Set superclass on left
@@ -107,9 +107,9 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(TreeMap(1 -> 1, 2 -> 2, 3 -> 3) === HashMap(1 -> 1, 2 -> 2, 3 -> 3)) // no inheritance relationship
       assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === TreeMap(1 -> 1, 2 -> 2, 3 -> 3)) // converse of above
       assert(Map(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3)) // same type on both sides
-      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[PartialFunction[Int, Int]]) // non-Map supertype on right // ???
-      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[(Int) ⇒ Int]) // ???
-      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenMap[Int, Int]]) // ???
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[PartialFunction[Int, Int]]) // non-Map supertype on right
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[(Int) ⇒ Int])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenMap[Int, Int]])
       assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Iterable[(Int, Int)]])
       assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenIterable[(Int, Int)]])
       assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Traversable[(Int, Int)]])
