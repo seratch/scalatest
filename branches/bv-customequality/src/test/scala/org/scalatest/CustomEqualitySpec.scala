@@ -15,6 +15,13 @@
  */
 package org.scalatest
 
+import scala.collection.GenSeq
+import scala.collection.GenMap
+import scala.collection.GenSet
+import scala.collection.GenIterable
+import scala.collection.GenTraversable
+import scala.collection.GenTraversableOnce
+
 class CustomEqualitySpec extends Spec with CustomEquality {
 
   import scala.collection.immutable._
@@ -40,6 +47,28 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(Vector(1, 2, 3) === List(1, 2, 3)) // no inheritance relationship
       assert(List(1, 2, 3) === Vector(1, 2, 3)) // converse of above
       assert(List(1, 2, 3) === List(1, 2, 3)) // same type on both sides
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenSeq[Int]]) // non-Seq superclass on right
+      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Iterable[Int]]) // ???
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenIterable[Int]])
+      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Traversable[Int]]) // ???
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenTraversable[Int]])
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[TraversableOnce[Int]])
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]])
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[PartialFunction[Int, Int]])
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[(Int) ⇒ Int])
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[AnyRef])
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Any])
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[GenSeq[Int]] === Vector(1, 2, 3)) // non-Seq superclass on left
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[Iterable[Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[GenIterable[Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[Traversable[Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[GenTraversable[Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[TraversableOnce[Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[PartialFunction[Int, Int]] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[(Int) ⇒ Int] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[AnyRef] === Vector(1, 2, 3))
+      assert(IndexedSeq(1, 2, 3).asInstanceOf[Any] === Vector(1, 2, 3)) // non-Seq superclass on left
     }
 
     def `should compare two Sets for equality` {
@@ -49,6 +78,26 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(BitSet(1, 2, 3) === HashSet(1, 2, 3)) // no inheritance relationship
       assert(HashSet(1, 2, 3) === BitSet(1, 2, 3)) // converse of above
       assert(Set(1, 2, 3) === Set(1, 2, 3)) // same type on both sides
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenSet[Int]]) // non-Set superclass on right // ???
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[Iterable[Int]])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenIterable[Int]])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[Traversable[Int]])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenTraversable[Int]])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[TraversableOnce[Int]])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[(Int) ⇒ Boolean]) // ???
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[AnyRef])
+      assert(HashSet(1, 2, 3) === Set(1, 2, 3).asInstanceOf[Any])
+      assert(Set(1, 2, 3).asInstanceOf[GenSet[Int]] === HashSet(1, 2, 3)) // non-Set superclass on left
+      assert(Set(1, 2, 3).asInstanceOf[Iterable[Int]] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[GenIterable[Int]] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[Traversable[Int]] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[GenTraversable[Int]] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[TraversableOnce[Int]] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[(Int) ⇒ Boolean] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[AnyRef] === HashSet(1, 2, 3))
+      assert(Set(1, 2, 3).asInstanceOf[Any] === HashSet(1, 2, 3))
     }
 
     def `should compare two Maps for equality` {
@@ -58,6 +107,28 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(TreeMap(1 -> 1, 2 -> 2, 3 -> 3) === HashMap(1 -> 1, 2 -> 2, 3 -> 3)) // no inheritance relationship
       assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === TreeMap(1 -> 1, 2 -> 2, 3 -> 3)) // converse of above
       assert(Map(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3)) // same type on both sides
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[PartialFunction[Int, Int]]) // non-Map supertype on right // ???
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[(Int) ⇒ Int]) // ???
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenMap[Int, Int]]) // ???
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Iterable[(Int, Int)]])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenIterable[(Int, Int)]])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Traversable[(Int, Int)]])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenTraversable[(Int, Int)]])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[TraversableOnce[(Int, Int)]])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenTraversableOnce[(Int, Int)]])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[AnyRef])
+      assert(HashMap(1 -> 1, 2 -> 2, 3 -> 3) === Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Any])
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[PartialFunction[Int, Int]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3)) // non-Map supertype on left
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[(Int) ⇒ Int] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenMap[Int, Int]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Iterable[(Int, Int)]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenIterable[(Int, Int)]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Traversable[(Int, Int)]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenTraversable[(Int, Int)]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[TraversableOnce[(Int, Int)]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[GenTraversableOnce[(Int, Int)]] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[AnyRef] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
+      assert(Map(1 -> 1, 2 -> 2, 3 -> 3).asInstanceOf[Any] === HashMap(1 -> 1, 2 -> 2, 3 -> 3))
     }
 
     def `should enable custom equality via a user-defined type class` {
