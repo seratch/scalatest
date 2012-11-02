@@ -22,7 +22,7 @@ import scala.collection.GenIterable
 import scala.collection.GenTraversable
 import scala.collection.GenTraversableOnce
 
-class CustomEqualitySpec extends Spec with CustomEquality {
+class StrictTripleEqualsSpec extends Spec with StrictTripleEquals {
 
   import scala.collection.immutable._
 

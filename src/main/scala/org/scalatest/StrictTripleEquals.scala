@@ -15,7 +15,7 @@
  */
 package org.scalatest
 
-trait CustomEquality extends TripleEquals with LowPriorityEqualityImplicits {
+trait StrictTripleEquals extends TripleEquals with LowPriorityEqualityImplicits {
 
 /*
   abstract class EqualityResult[A, B]
@@ -105,7 +105,7 @@ trait CustomEquality extends TripleEquals with LowPriorityEqualityImplicits {
 */
 }
 
-object CustomEquality extends CustomEquality
+object StrictTripleEquals extends StrictTripleEquals
 
 /*
 trait LenientEquality extends CustomEquality {
