@@ -22,7 +22,7 @@ import scala.collection.GenIterable
 import scala.collection.GenTraversable
 import scala.collection.GenTraversableOnce
 
-class CustomEqualitySpec extends Spec with CustomEquality {
+class TripleEqualsSpec extends Spec with TripleEquals {
 
   import scala.collection.immutable._
 
@@ -48,9 +48,9 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(List(1, 2, 3) === Vector(1, 2, 3)) // converse of above
       assert(List(1, 2, 3) === List(1, 2, 3)) // same type on both sides
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenSeq[Int]]) // non-Seq superclass on right
-      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Iterable[Int]]) // ??? I think this should compile, but it does not
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Iterable[Int]])
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenIterable[Int]])
-      // assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Traversable[Int]]) // ??? I think this should compile, but it does not
+      assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[Traversable[Int]])
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenTraversable[Int]])
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[TraversableOnce[Int]])
       assert(Vector(1, 2, 3) === IndexedSeq(1, 2, 3).asInstanceOf[GenTraversableOnce[Int]])
@@ -232,8 +232,8 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(fruits === apples)
       assert(fruits === grannySmiths)
       assert(grannySmiths === fruits)
-      // assert(fruits === crunchies) // This does not compile as there is no direct subtype supertype relastionship
-      // assert(crunchies === fruits) // An example where this === is too restrictive
+      assert(fruits === crunchies) // This does not compile as there is no direct subtype supertype relastionship
+      assert(crunchies === fruits) // An example where this === is too restrictive
 
       assert(apples === apples)
       assert(apples === grannySmiths)
@@ -245,8 +245,7 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(grannySmiths === crunchies)
       assert(crunchies === grannySmiths)
 
-      // Should not compile
-      // assert(apples === oranges)
+      assert(apples === oranges)
     }
 
     def `should, for Map's key type parameter, compare only the exact same type on either side` {
@@ -264,25 +263,24 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       val oranges: Map[Orange, Int] = Map(new Orange -> 1, new Orange -> 2)
 
       assert(fruits === fruits)
-      // assert(apples === fruits)
-      // assert(fruits === apples)
-      // assert(fruits === grannySmiths)
-      // assert(grannySmiths === fruits)
-      // assert(fruits === crunchies) // This does not compile as there is no direct subtype supertype relastionship
-      // assert(crunchies === fruits) // An example where this === is too restrictive
+      assert(apples === fruits)
+      assert(fruits === apples)
+      assert(fruits === grannySmiths)
+      assert(grannySmiths === fruits)
+      assert(fruits === crunchies) // This does not compile as there is no direct subtype supertype relastionship
+      assert(crunchies === fruits) // An example where this === is too restrictive
 
       assert(apples === apples)
-      // assert(apples === grannySmiths)
-      // assert(grannySmiths === apples)
-      // assert(apples === crunchies)
-      // assert(crunchies === apples)
+      assert(apples === grannySmiths)
+      assert(grannySmiths === apples)
+      assert(apples === crunchies)
+      assert(crunchies === apples)
 
       assert(grannySmiths === grannySmiths)
-      // assert(grannySmiths === crunchies)
-      // assert(crunchies === grannySmiths)
+      assert(grannySmiths === crunchies)
+      assert(crunchies === grannySmiths)
 
-      // Should not compile
-      // assert(apples === oranges)
+      assert(apples === oranges)
     }
 
     def `should enable custom equality via a user-defined type class` {
@@ -380,15 +378,24 @@ class CustomEqualitySpec extends Spec with CustomEquality {
       assert(1.0F === 1.0) // Float => Double
       assert(1.0 === 1.0F)
     }
-  }
 
-/*
-  These don't compile.
-  assert("1" === 1)
-  assert(List(1, 2, 3) === Map(1 -> 1, 2 -> 2, 3 -> 3))
-  assert(Map(1 -> 1, 2 -> 2, 3 -> 3) === List(1, 2, 3))
-  assert(Set(1, 2, 3) === List(1, 2, 3))
-  assert(List(1, 2, 3) === Set(1, 2, 3))
-*/
+    def `should work with arbritrary types` {
+      intercept[TestFailedException] {
+        assert("1" === 1)
+      }
+      intercept[TestFailedException] {
+        assert(List(1, 2, 3) === Map(1 -> 1, 2 -> 2, 3 -> 3))
+      }
+      intercept[TestFailedException] {
+        assert(Map(1 -> 1, 2 -> 2, 3 -> 3) === List(1, 2, 3))
+      }
+      intercept[TestFailedException] {
+        assert(Set(1, 2, 3) === List(1, 2, 3))
+      }
+      intercept[TestFailedException] {
+        assert(List(1, 2, 3) === Set(1, 2, 3))
+      }
+    }
+  }
 }
   

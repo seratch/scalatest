@@ -15,20 +15,7 @@
  */
 package org.scalatest
 
-trait LowPriorityEqualityImplicits {
-
-  implicit def aToBEquality[A, B](implicit conv: A => B): Equality[A, B] =
-    new Equality[A, B] {
-      def areEqual(a: A, b: B): Boolean =
-        conv(a) == b
-    }
-
-/*
-  implicit def equalityOne[A, B](implicit ev: A <:< B): Equality[A, B] =
-    new Equality[A, B] {
-      def areEqual(a: A, b: B): Boolean =
-        a == b
-    }
-*/
+abstract class Equality[A, B] {
+  def areEqual(a: A, b: B): Boolean
 }
-  
+

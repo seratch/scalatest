@@ -15,13 +15,15 @@
  */
 package org.scalatest
 
-trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImplicits {
+trait CustomEquality extends TripleEquals with LowPriorityEqualityImplicits {
 
+/*
   abstract class EqualityResult[A, B]
   case class UnexpectedEqualityResult[A, B](msg: String) extends EqualityResult[A, B]
   case class ExpectedEqualityResult[A, B] extends EqualityResult[A, B]
-  
-  class Equalizer[L](left: L) {
+*/
+
+  class YetAnotherEqualizer[L](left: L) {
     def ===[R](right: R)(implicit equality: Equality[L, R]): EqualityResult[L, R] = {
       if (equality.areEqual(left, right)) ExpectedEqualityResult()
       else UnexpectedEqualityResult(left + " did not equal " + right)
@@ -31,7 +33,7 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
       else UnexpectedEqualityResult(left + " did not equal " + right)
     }
   }
-  
+
   class SeqEqualizer[L](left: Seq[L]) {
     println("Created a SeqEqualizer")
     def ===[R](right: Seq[R])(implicit equality: Equality[Seq[L], Seq[R]]): EqualityResult[Seq[L], Seq[R]] = {
@@ -43,7 +45,7 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
       else UnexpectedEqualityResult(left + " did not equal " + right)
     }
   }
-  
+
   class MapEqualizer[LK, LV](left: Map[LK, LV]) {
     println("Created a MapEqualizer")
     def ===[RK, RV](right: Map[RK, RV])(implicit equality: Equality[Map[LK, LV], Map[RK, RV]]): EqualityResult[Map[LK, LV], Map[RK, RV]] = {
@@ -70,19 +72,25 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
     }
   }
 
+/*
   def assert[L, R](eqRes: EqualityResult[L, R]) {
     eqRes match {
       case UnexpectedEqualityResult(msg) => throw new AssertionError(msg)
       case _ =>
     }
   }
+*/
 
-  implicit def convertToEqualizer[T](o: T) = new Equalizer(o)
+  // Turn off the implicits from TripleEquals
+  override def convertToAnyEqualizer[T](o: T) = super.convertToAnyEqualizer(o)
+  override def anyEquality[A, B]: Equality[A, B] = super.anyEquality
+
+  implicit def convertToYetAnotherEqualizer[T](o: T) = new YetAnotherEqualizer(o)
   implicit def convertToSeqEqualizer[T](o: Seq[T]) = new SeqEqualizer[T](o)
   implicit def convertToMapEqualizer[K, V](o: Map[K, V]) = new MapEqualizer[K, V](o)
   implicit def convertToSetEqualizer[T](o: Set[T]) = new SetEqualizer[T](o)
-  
-  implicit def equalityTwo[A, B](implicit conv: B => A): Equality[A, B] =
+
+  implicit def bToAEquality[A, B](implicit conv: B => A): Equality[A, B] =
     new Equality[A, B] {
       def areEqual(a: A, b: B): Boolean =
         a == conv(b)
@@ -99,3 +107,18 @@ trait CustomEquality extends NonImplicitAssertions with LowPriorityEqualityImpli
 
 object CustomEquality extends CustomEquality
 
+/*
+trait LenientEquality extends CustomEquality {
+  override def equalityTwo[A, B](implicit conv: B => A): Equality[A, B] = super.equalityTwo(conv)
+  override def equalityOne[A, B](implicit conv: A => B): Equality[A, B] = super.equalityOne(conv)
+
+  implicit def anyEquality: Equality[Any, Any] =
+    new Equality[Any, Any] {
+      def areEqual(a: Any, b: Any): Boolean =
+        a == b
+    }
+
+}
+
+object LenientEquality extends LenientEquality
+*/
