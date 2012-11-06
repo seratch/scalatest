@@ -46,7 +46,10 @@ object GenMatchers {
     try {
       val lines = Source.fromFile(new File("project/Matchers.template")).getLines.toList
       for (line <- lines) {
-        matchersWriter.write(line)
+        if (!scalaVersion.startsWith("2.10") && line.toLowerCase.indexOf("parameterless") >= 0 && line.trim.startsWith("implicit def "))
+          matchersWriter.write("//" + line)
+        else
+          matchersWriter.write(line)
         matchersWriter.newLine()
       }
     }
@@ -61,7 +64,10 @@ object GenMatchers {
     try {
       val lines = Source.fromFile(new File("project/ShouldMatchers.template")).getLines.toList
       for (line <- lines) {
-        shouldMatchersWriter.write(line)
+        if (!scalaVersion.startsWith("2.10") && line.toLowerCase.indexOf("parameterless") >= 0 && line.trim.startsWith("implicit def "))
+          shouldMatchersWriter.write("//" + line)
+        else
+          shouldMatchersWriter.write(line)
         shouldMatchersWriter.newLine()
       }
     }
@@ -77,7 +83,10 @@ object GenMatchers {
       val lines = Source.fromFile(new File("project/ShouldMatchers.template")).getLines.toList
       for (line <- lines) {
         val mustLine = translateShouldToMust(line)
-        mustMatchersWriter.write(mustLine)
+        if (!scalaVersion.startsWith("2.10") && mustLine.toLowerCase.indexOf("parameterless") >= 0 && mustLine.trim.startsWith("implicit def "))
+          mustMatchersWriter.write("//" + mustLine)
+        else
+          mustMatchersWriter.write(mustLine)
         mustMatchersWriter.newLine()
       }
     }
@@ -137,11 +146,7 @@ object GenMatchers {
         "ShouldSameInstanceAsSpec.scala",
         "ShouldStartWithRegexSpec.scala",
         "ShouldStartWithSubstringSpec.scala",
-        "ShouldBeNullSpec.scala", 
-        "ShouldBeAnySpec.scala", 
-        "ShouldBeTripleEqualsSpec.scala", 
-        "ShouldFileBePropertyMatcherSpec.scala", 
-        "ShouldThrowSpec.scala"
+        "ShouldBeNullSpec.scala"
       )
 
     for (shouldFileName <- shouldFileNames) {

@@ -18,7 +18,6 @@ package org.scalatest
 import scala.collection.immutable.ListSet
 import Suite._
 import Spec.isTestMethod
-import Spec.equalIfRequiredCompactify
 import org.scalatest.events._
 import scala.reflect.NameTransformer._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -292,7 +291,7 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
  * You can pass the extra information to the <code>Informer</code> via one of its <code>apply</code> methods.
  * The <code>Informer</code> will then pass the information to the <code>Reporter</code> via an <code>InfoProvided</code> event.
  * Here's an example in which the <code>Informer</code> returned by <code>info</code> is used implicitly by the
- * <code>Given</code>, <code>When</code>, and <code>Then</code> methods of trait <code>GivenWhenThen</code>:
+ * <code>given</code>, <code>when</code>, and <code>then</code> methods of trait <code>GivenWhenThen</code>:
  * </p>
  *
  * <pre class="stHighlight">
@@ -305,16 +304,16 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
  *   
  *   object &#96;A mutable Set&#96; {
  *     def &#96;should allow an element to be added&#96; {
- *       Given("an empty mutable Set")
+ *       given("an empty mutable Set")
  *       val set = mutable.Set.empty[String]
  * 
- *       When("an element is added")
+ *       when("an element is added")
  *       set += "clarity"
  * 
- *       Then("the Set should have size 1")
+ *       then("the Set should have size 1")
  *       assert(set.size === 1)
  * 
- *       And("the Set should contain the added element")
+ *       and("the Set should contain the added element")
  *       assert(set.contains("clarity"))
  * 
  *       info("That's all folks!")
@@ -1239,10 +1238,7 @@ trait Spec extends Suite { thisSuite =>
           
         def isScopeMethod(o: AnyRef, m: Method): Boolean = {
           val scopeMethodName = getScopeClassName(o)+ m.getName + "$"
-
-          val returnTypeName = m.getReturnType.getName
-          
-          equalIfRequiredCompactify(scopeMethodName, returnTypeName)
+          scopeMethodName == m.getReturnType.getName
         }
         
         def getScopeDesc(m: Method): String = {
@@ -1380,21 +1376,17 @@ trait Spec extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     ensureScopesAndTestsRegistered()
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
+          def name = testName
           def apply() { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
       )
     }
@@ -1439,12 +1431,12 @@ trait Spec extends Suite { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     ensureScopesAndTestsRegistered()
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     ensureScopesAndTestsRegistered()
     runImpl(thisSuite, testName, args, super.run)
   }
@@ -1453,14 +1445,12 @@ trait Spec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.Spec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 
 private[scalatest] object Spec {
 
   def isTestMethod(m: Method): Boolean = {
-    
+
     val isInstanceMethod = !Modifier.isStatic(m.getModifiers())
 
     val hasNoParams = m.getParameterTypes.isEmpty
@@ -1469,44 +1459,11 @@ private[scalatest] object Spec {
     val includesEncodedSpace = m.getName.indexOf("$u0020") >= 0
     
     val isOuterMethod = m.getName.endsWith("$$outer")
-    
-    val isNestedMethod = m.getName.matches(".+\\$\\$.+\\$[1-9]+")
 
     //val isOuterMethod = m.getName.endsWith("$$$outer")
     // def maybe(b: Boolean) = if (b) "" else "!"
     // println("m.getName: " + m.getName + ": " + maybe(isInstanceMethod) + "isInstanceMethod, " + maybe(hasNoParams) + "hasNoParams, " + maybe(includesEncodedSpace) + "includesEncodedSpace")
-    isInstanceMethod && hasNoParams && includesEncodedSpace && !isOuterMethod && !isNestedMethod
-  }
-  
-  import java.security.MessageDigest
-  import scala.io.Codec
-  
-  // The following compactify code is written based on scala compiler source code at:-
-  // https://github.com/scala/scala/blob/master/src/reflect/scala/reflect/internal/StdNames.scala#L47
-  
-  private val compactifiedMarker = "$$$$"
-  
-  def equalIfRequiredCompactify(value: String, compactified: String): Boolean = {
-    if (compactified.matches(".+\\$\\$\\$\\$.+\\$\\$\\$\\$.+")) {
-      val firstDolarIdx = compactified.indexOf("$$$$")
-      val lastDolarIdx = compactified.lastIndexOf("$$$$")
-      val prefix = compactified.substring(0, firstDolarIdx)
-      val suffix = compactified.substring(lastDolarIdx + 4)
-      val lastIndexOfDot = value.lastIndexOf(".")
-      val toHash = 
-        if (lastIndexOfDot >= 0) 
-          value.substring(0, value.length - 1).substring(value.lastIndexOf(".") + 1)
-        else
-          value
-          
-      val bytes = Codec.toUTF8(toHash.toArray)
-      val md5 = MessageDigest.getInstance("MD5")
-      md5.update(bytes)
-      val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
-      (prefix + compactifiedMarker + md5chars + compactifiedMarker + suffix) == compactified
-    }
-    else
-      value == compactified
+    isInstanceMethod && hasNoParams && includesEncodedSpace && !isOuterMethod
   }
 }
 

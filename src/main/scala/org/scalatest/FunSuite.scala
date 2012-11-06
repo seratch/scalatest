@@ -201,16 +201,16 @@ import Suite.autoTagClassAnnotations
  *
  *   test("An element can be added to an empty mutable Set") {
  *
- *     Given("an empty mutable Set")
+ *     given("an empty mutable Set")
  *     val set = mutable.Set.empty[String]
  *
- *     When("an element is added")
+ *     when("an element is added")
  *     set += "clarity"
  *
- *     Then("the Set should have size 1")
+ *     then("the Set should have size 1")
  *     assert(set.size === 1)
  *
- *     And("the Set should contain the added element")
+ *     and("the Set should contain the added element")
  *     assert(set.contains("clarity"))
  *
  *     info("That's all folks!")
@@ -1453,19 +1453,15 @@ trait FunSuite extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
+          def name = testName
           def apply() { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
       )
     }
@@ -1500,11 +1496,11 @@ trait FunSuite extends Suite { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     runImpl(thisSuite, testName, args, super.run)
   }
 
@@ -1533,8 +1529,6 @@ trait FunSuite extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.FunSuite"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 
 private[scalatest] object FunSuite {

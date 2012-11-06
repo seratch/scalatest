@@ -33,33 +33,7 @@ object ScalatestBuild extends Build {
                               "org.scalatest.TestColonEscapeExampleJUnit3Suite", 
                               "org.scalatest.TestColonEscapeExamplePathFreeSpec", 
                               "org.scalatest.TestColonEscapeExampleJUnitSuite", 
-                              "org.scalatest.NotAccessibleSuite", 
-                              "org.scalatest.ExampleStopOnFailureFlatSpec", 
-                              "org.scalatest.ExampleStopOnFailureFixtureFunSuite", 
-                              "org.scalatest.ExampleStopOnFailureFixtureSuite", 
-                              "org.scalatest.ExampleStopOnFailureFixtureSpec", 
-                              "org.scalatest.ExampleTestDataFixtureSuite", 
-                              "org.scalatest.ExampleStopOnFailureJUnit3Suite", 
-                              "org.scalatest.ExampleBeforeAndAfterAllPropJUnit3Suite", 
-                              "org.scalatest.ExampleStopOnFailureTestNGSuite", 
-                              "org.scalatest.ExampleStopOnFailureFixtureFlatSpec", 
-                              "org.scalatest.ExampleStopOnFailureWordSpec", 
-                              "org.scalatest.ExampleStopOnFailureJUnitSuite", 
-                              "org.scalatest.ExampleStopOnFailureFunSuite", 
-                              "org.scalatest.ExampleStopOnFailureFixtureWordSpec", 
-                              "org.scalatest.ExampleStopOnFailureFunSpec",
-                              "org.scalatest.ExampleStopOnFailureFixtureFeatureSpec", 
-                              "org.scalatest.ExampleStopOnFailureFreeSpec", 
-                              "org.scalatest.ExampleStopOnFailureSpec", 
-                              "org.scalatest.ExampleStopOnFailureFixturePropSpec", 
-                              "org.scalatest.ExampleStopOnFailureFixtureFunSpec", 
-                              "org.scalatest.ExampleStopOnFailurePropSpec", 
-                              "org.scalatest.ExampleStopOnFailureFixtureFreeSpec", 
-                              "org.scalatest.ExampleStopOnFailureFeatureSpec", 
-                              "org.scalatest.ExampleBeforeAndAfterAllPropJUnitSuite", 
-                              "org.scalatest.ExampleStopOnFailureSuite", 
-                              "org.scalatest.fixture.NotAccessibleSpec", 
-                              "org.scalatest.NotAccessibleSpec")
+                              "org.scalatest.NotAccessibleSuite")
                               
    lazy val scalatest = Project("scalatest", file("."))
    .settings(
@@ -127,9 +101,7 @@ object ScalatestBuild extends Build {
      "net.sourceforge.cobertura" % "cobertura" % "1.9.1" % "test",
      "commons-io" % "commons-io" % "1.3.2" % "test", 
      "org.eclipse.jetty" % "jetty-server" % "8.0.1.v20110908" % "test", 
-     "org.eclipse.jetty" % "jetty-webapp" % "8.0.1.v20110908" % "test", 
-     "asm" % "asm" % "3.3.1", // TODO optional
-     "org.pegdown" % "pegdown" % "1.1.0" // TODO optional
+     "org.eclipse.jetty" % "jetty-webapp" % "8.0.1.v20110908" % "test"
   )
 
   def genFiles(name: String, generatorSource: String)(gen: (File, String) => Unit)(basedir: File, outDir: File): Seq[File] = {

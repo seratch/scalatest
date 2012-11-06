@@ -59,12 +59,11 @@ private[scalatest] class DiscoverySuite(path: String, accessibleSuites: Set[Stri
         }
       }
      // TODO: probably override run to just call runNestedSuites
-  override protected def runTests(testName: Option[String], args: Args): Status = {
+  override protected def runTests(testName: Option[String], args: Args) {
     if (testName == null)
       throw new NullPointerException("testName was null")
     if (args == null)
       throw new NullPointerException("args was null")
-    SucceededStatus
   }
 }
 

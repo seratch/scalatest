@@ -13,9 +13,7 @@ import org.scalatest.events.SuiteCompleted
 import org.scalatest.events.SuiteAborted
 import org.scalatest.events.SeeStackDepthException
 import org.scalatest.events.TopOfClass
-import org.scalatest._
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.CountDownLatch
+import org.scalatest.Reporter
 
 /**
  * Class that makes ScalaTest tests visible to sbt.
@@ -67,7 +65,7 @@ import java.util.concurrent.CountDownLatch
  * @author Josh Cough
  */
 class ScalaTestFramework extends Framework {
-  
+
   /**
    * Returns <code>"ScalaTest"</code>, the human readable name for this test framework.
    */
@@ -89,100 +87,6 @@ class ScalaTestFramework extends Framework {
         def isModule = false
       }
     )
-    
-  object RunConfig {
-    
-    private class SbtLogInfoReporter(loggers: Array[Logger], presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) 
-      extends StringReporter(presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, false) {
-    
-      protected def printPossiblyInColor(text: String, ansiColor: String) {
-          loggers.foreach { logger =>
-            logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
-          }
-      }
-
-      def dispose() = ()
-    }
-    
-    private var reporter: DispatchReporter = null
-    private var reporterConfigs: ReporterConfigurations = null
-    private var filter: Filter = null
-    private var configMap: Map[String, String] = null
-    
-    def getConfigurations(args: Array[String], loggers: Array[Logger], eventHandler: EventHandler, testLoader: ClassLoader) = 
-      synchronized {
-        if (reporterConfigs == null) {
-          // Why are we getting rid of empty strings? Were empty strings coming in from sbt? -bv 11/09/2011
-          val translator = new FriendlyParamsTranslator()
-          val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
-               suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
-          configMap = parsePropertiesArgsIntoMap(propertiesArgsList)
-          val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
-          val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
-          filter = org.scalatest.Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
-        
-          // If no reporters specified, just give them a default stdout reporter
-          reporterConfigs = Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
-        }
-        
-        object SbtReporterFactory extends ReporterFactory {
-          
-          override def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = {
-            if (configSetMinusNonFilterParams(configSet).isEmpty)
-              new SbtLogInfoReporter(
-                loggers, 
-                configSet.contains(PresentAllDurations),
-                !configSet.contains(PresentWithoutColor),
-                configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-                configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
-              )
-            else
-              new FilterReporter(
-                new SbtLogInfoReporter(
-                  loggers, 
-                  configSet.contains(PresentAllDurations),
-                  !configSet.contains(PresentWithoutColor),
-                  configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-                  configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
-                ),
-                configSet
-              )
-          }
-        }
-        
-        if (reporter == null || reporter.isDisposed)
-          reporter = SbtReporterFactory.getDispatchReporter(reporterConfigs, None, None, testLoader)
-        
-        (reporter, filter, configMap)
-      }
-    
-    private val atomicLatch = new AtomicReference(new CountDownLatch(0))
-  
-    def increaseLatch() {
-      synchronized {
-        val current = atomicLatch.get()
-        atomicLatch.set(new CountDownLatch((current.getCount() + 1).toInt))
-      }
-    }
-  
-    def decreaseLatch() {
-      synchronized {
-        val latch = atomicLatch.get
-        latch.countDown()
-        if (latch.getCount() == 0) {
-          reporter match {
-            case resourcefulRep: ResourcefulReporter => 
-              resourcefulRep.dispose()
-            case _ =>
-          }
-          reporter = null
-          reporterConfigs = null
-          filter = null
-          configMap = null
-        }
-      }
-    }
-  }
 
   /**
    * Returns an <code>org.scalatools.testing.Runner</code> that will load test classes via the passed <code>testLoader</code>
@@ -194,6 +98,20 @@ class ScalaTestFramework extends Framework {
 
   /**The test runner for ScalaTest suites. It is compiled in a second step after the rest of sbt.*/
   private[tools] class ScalaTestRunner(val testLoader: ClassLoader, val loggers: Array[Logger]) extends org.scalatools.testing.Runner2 {
+
+    import org.scalatest._
+    
+    private class SbtLogInfoReporter(presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) 
+      extends StringReporter(presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, false) {
+    
+      protected def printPossiblyInColor(text: String, ansiColor: String) {
+          loggers.foreach { logger =>
+            logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
+          }
+      }
+
+      def dispose() = ()
+    }
     
     /* 
       test-only FredSuite -- -A -B -C -d  all things to right of == come in as a separate string in the array
@@ -238,8 +156,42 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
       val suiteClass = Class.forName(testClassName, true, testLoader)
        //println("sbt args: " + args.toList)
       if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
-        val (reporter, filter, configMap) = RunConfig.getConfigurations(args, loggers, eventHandler, testLoader)
-        val report = new SbtReporter(eventHandler, Some(reporter))
+        // Why are we getting rid of empty strings? Were empty strings coming in from sbt? -bv 11/09/2011
+        val translator = new FriendlyParamsTranslator()
+        val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
+            suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
+        val configMap: Map[String, String] = parsePropertiesArgsIntoMap(propertiesArgsList)
+        val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
+        val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
+        val filter = org.scalatest.Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
+
+        object SbtReporterFactory extends ReporterFactory {
+          
+          override def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = {
+            if (configSetMinusNonFilterParams(configSet).isEmpty)
+              new SbtLogInfoReporter(
+                configSet.contains(PresentAllDurations),
+                !configSet.contains(PresentWithoutColor),
+                configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
+                configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+              )
+            else
+              new FilterReporter(
+                new SbtLogInfoReporter(
+                  configSet.contains(PresentAllDurations),
+                  !configSet.contains(PresentWithoutColor),
+                  configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
+                  configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
+                ),
+                configSet
+              )
+          }
+        }
+        
+        // If no reporters specified, just give them a default stdout reporter
+        val fullReporterConfigurations: ReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
+        val report = new SbtReporter(eventHandler, Some(SbtReporterFactory.getDispatchReporter(fullReporterConfigurations, None, None, testLoader)))
+        
         val tracker = new Tracker
         val suiteStartTime = System.currentTimeMillis
 
@@ -259,17 +211,16 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
 
         val formatter = formatterForSuiteStarting(suite)
 
-        RunConfig.increaseLatch()
-        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), formatter, Some(TopOfClass(suiteClass.getName))))
+        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), suite.decodedSuiteName, formatter, Some(TopOfClass(suiteClass.getName))))
 
         try {  // TODO: I had to pass Set.empty for chosen styles now. Fix this later.
-          suite.run(None, Args(report, Stopper.default, filter, configMap, None, tracker, Set.empty))
+          suite.run(None, Args(report, new Stopper {}, filter, configMap, None, tracker, Set.empty))
 
           val formatter = formatterForSuiteCompleted(suite)
 
           val duration = System.currentTimeMillis - suiteStartTime
 
-          report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), Some(duration), formatter, Some(TopOfClass(suiteClass.getName))))
+          report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), suite.decodedSuiteName, Some(duration), formatter, Some(TopOfClass(suiteClass.getName))))
 
         }
         catch {       
@@ -283,11 +234,11 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
             val formatter = formatterForSuiteAborted(suite, rawString)
 
             val duration = System.currentTimeMillis - suiteStartTime
-            report(SuiteAborted(tracker.nextOrdinal(), rawString, suite.suiteName, suite.suiteId, Some(suiteClass.getName), Some(e), Some(duration), formatter, Some(SeeStackDepthException)))
+            report(SuiteAborted(tracker.nextOrdinal(), rawString, suite.suiteName, suite.suiteId, Some(suiteClass.getName), suite.decodedSuiteName, Some(e), Some(duration), formatter, Some(SeeStackDepthException)))
           }
         }
         finally {
-          RunConfig.decreaseLatch()
+          report.dispose()
         }
       }
       else throw new IllegalArgumentException("Class is not an accessible org.scalatest.Suite: " + testClassName)

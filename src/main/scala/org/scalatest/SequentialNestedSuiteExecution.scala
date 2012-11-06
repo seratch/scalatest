@@ -33,7 +33,7 @@ trait SequentialNestedSuiteExecution extends SuiteMixin { this: Suite =>
    *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  abstract override protected def runNestedSuites(args: Args): Status = {
+  abstract override protected def runNestedSuites(args: Args) {
     if (args == null)
       throw new NullPointerException("args was null")
 

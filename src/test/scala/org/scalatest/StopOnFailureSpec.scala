@@ -16,6 +16,11 @@
 package org.scalatest
 
 class StopOnFailureSpec extends FlatSpec with SharedHelpers {
+  
+  class MyStopper extends Stopper {
+    var stopRequested = false
+    override def apply() = stopRequested
+  }
 
   "StopOnFailure" should "not invoke stop on the stopper if a test succeeds" in {
     class MySuite extends FunSuite with StopOnFailure {
@@ -23,7 +28,7 @@ class StopOnFailureSpec extends FlatSpec with SharedHelpers {
         assert(1 + 1 === 2)
       }
     }
-    val stopper = Stopper.default
+    val stopper = new MyStopper
     // (new MySuite).run(None, RunArgs(SilentReporter, stopper, Filter(), Map(), None, new Tracker(), Set.empty))
     (new MySuite).run(None, Args(SilentReporter, stopper))
     assert(!stopper.stopRequested)
@@ -35,7 +40,7 @@ class StopOnFailureSpec extends FlatSpec with SharedHelpers {
         assert(1 + 1 === 3)
       }
     }
-    val stopper = Stopper.default
+    val stopper = new MyStopper
     //(new MySuite).run(None, RunArgs(SilentReporter, stopper, Filter(), Map(), None, new Tracker(), Set.empty))
     (new MySuite).run(None, Args(SilentReporter, stopper))
     assert(stopper.stopRequested)

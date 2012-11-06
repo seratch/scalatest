@@ -1100,7 +1100,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  final protected override def runTest(testName: String, args: Args): Status = {
+  final protected override def runTest(testName: String, args: Args) {
 
     ensureTestResultsRegistered(thisSuite)
     
@@ -1172,7 +1172,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  final override def run(testName: Option[String], args: Args): Status = {
+  final override def run(testName: Option[String], args: Args) {
     // TODO enforce those throws specs
 
     ensureTestResultsRegistered(thisSuite)
@@ -1188,7 +1188,7 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * <a href="#sharedFixtures">Shared fixtures</a> section in the main documentation for this trait.
    * </p>
    */
-  final protected override def runTests(testName: Option[String], args: Args): Status = {
+  final protected override def runTests(testName: Option[String], args: Args) {
     throw new UnsupportedOperationException
   }
 
@@ -1214,7 +1214,8 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * <a href="#sharedFixtures">Shared fixtures</a> section in the main documentation for this trait.
    * </p>
    */
-  final protected override def runNestedSuites(args: Args): Status = SucceededStatus
+  final protected override def runNestedSuites(args: Args) {
+  }
 
   /**
    * Returns an empty list.
@@ -1244,10 +1245,5 @@ trait FreeSpec extends org.scalatest.Suite with OneInstancePerTest { thisSuite =
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.path.FreeSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = {
-    ensureTestResultsRegistered(thisSuite)
-    createTestDataFor(testName, theConfigMap, this)
-  }
 }
 

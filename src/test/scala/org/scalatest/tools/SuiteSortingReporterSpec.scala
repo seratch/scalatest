@@ -10,8 +10,6 @@ import org.scalatest.Args
 import org.scalatest.time.Span
 import org.scalatest.time.Second
 import org.scalatest.time.Seconds
-import java.io.PrintStream
-import java.io.ByteArrayOutputStream
 
 class SuiteSortingReporterSpec extends FunSpec with ShouldMatchers with EventHelpers {
 
@@ -190,7 +188,7 @@ class SuiteSortingReporterSpec extends FunSpec with ShouldMatchers with EventHel
 
       val recordingReporter = new EventRecordingReporter()
 
-      val ssr = new SuiteSortingReporter(recordingReporter, Span(5, Seconds), new PrintStream(new ByteArrayOutputStream))
+      val ssr = new SuiteSortingReporter(recordingReporter, Span(5, Seconds))
 
       runSuites(ssr, Some(ssr))
 
@@ -314,17 +312,17 @@ class SuiteSortingReporterSpec extends FunSpec with ShouldMatchers with EventHel
     
     it("should fire blocking suite's events when timeout, and just fire the missing event directly without waiting when received later.") {
       val recordingReporter = new EventRecordingReporter()
-      val dispatch = new SuiteSortingReporter(recordingReporter, Span(1, Second), new PrintStream(new ByteArrayOutputStream))
+      val dispatch = new SuiteSortingReporter(recordingReporter, Span(1, Second))
       
       val tracker = new Tracker()
       
-      dispatch(SuiteStarting(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name")))
-      dispatch(SuiteStarting(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name")))
-      dispatch(TestStarting(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name"), "Suite 2 Test", "Suite 2 Test"))
-      dispatch(SuiteCompleted(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name")))
-      dispatch(TestStarting(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name"), "Suite 1 Test", "Suite 1 Test"))
-      dispatch(TestSucceeded(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name"), "Suite 1 Test", "Suite 1 Test", Vector.empty))
-      dispatch(TestSucceeded(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name"), "Suite 2 Test", "Suite 2 Test", Vector.empty))
+      dispatch(SuiteStarting(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name"), None))
+      dispatch(SuiteStarting(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name"), None))
+      dispatch(TestStarting(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name"), None, "Suite 2 Test", "Suite 2 Test", None))
+      dispatch(SuiteCompleted(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name"), None))
+      dispatch(TestStarting(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name"), None, "Suite 1 Test", "Suite 1 Test", None))
+      dispatch(TestSucceeded(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name"), None, "Suite 1 Test", "Suite 1 Test", None, Vector.empty))
+      dispatch(TestSucceeded(tracker.nextOrdinal, "suite2", "suite2", Some("suite2 class name"), None, "Suite 2 Test", "Suite 2 Test", None, Vector.empty))
       
       Thread.sleep(1500) // Wait for the SuiteSortingReporter timeout, which is 1 second (set above)
       dispatch(SuiteCompleted(tracker.nextOrdinal, "suite1", "suite1", Some("suite1 class name"), None))

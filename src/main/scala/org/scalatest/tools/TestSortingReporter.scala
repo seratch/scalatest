@@ -8,10 +8,8 @@ import org.scalatest.time.Span
 import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
-import scala.annotation.tailrec
-import java.io.PrintStream
 
-private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter, sortingTimeout: Span, testCount: Int, suiteSorter: Option[DistributedSuiteSorter], val out: PrintStream) extends CatchReporter with DistributedTestSorter {
+private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter, sortingTimeout: Span, testCount: Int, suiteSorter: Option[DistributedSuiteSorter]) extends ResourcefulReporter with DistributedTestSorter {
 
   suiteSorter match {
     case Some(suiteSorter) => 
@@ -21,13 +19,11 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
   
   // Chee Seng: What's the UUID for?
   // Each test gets one slot, but other events such as an info from an after an also get a slot i think.
-  case class Slot(uuid: UUID, eventList: ListBuffer[Event], completed: Boolean, completedEvent: Boolean, ready: Boolean)
+  case class Slot(uuid: UUID, eventList: ListBuffer[Event], ready: Boolean)
   
   private val waitingBuffer = new ListBuffer[Slot]()
   private val slotMap = new collection.mutable.HashMap[String, Slot]()  // testName -> Slot
   @volatile private var completedTestCount = 0 // Called within synchronized. Don't need volatile and it wouldn't work anyway.
-  
-  checkCompletedTests()   // In case the suite does not comtain any test.
 
   // Passed slot will always be the head of waitingBuffer
   class TimeoutTask(val slot: Slot) extends TimerTask {
@@ -51,7 +47,7 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
     synchronized {
       if (slotMap.contains(testName))
         throw new IllegalArgumentException("The passed testname: " + testName + ", was already passed to distributedTests.")
-      val slot = Slot(UUID.randomUUID, new ListBuffer[Event](), false, false, false)
+      val slot = Slot(UUID.randomUUID, new ListBuffer[Event](), false)
       slotMap.put(testName, slot)
       waitingBuffer += slot
       // if it is the head, we should start the timer, because it is possible that this slot has no event coming later and it keeps blocking 
@@ -92,29 +88,17 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
       if (slotMap(testName).ready)
         throw new IllegalArgumentException("The passed testname: " + testName + ", has already completed.")
       val slot = slotMap(testName)
-      val newSlot = slot.copy(completed = true, ready = slot.completedEvent)
+      val newSlot = slot.copy(ready = true)
       val slotIdx = waitingBuffer.indexOf(slot)
       if (slotIdx >= 0)
         waitingBuffer.update(slotIdx, newSlot)
       slotMap.put(testName, newSlot)
       completedTestCount += 1
       fireReadyEvents()
-      
-      checkCompletedTests()
-    }
-  }
-  
-  private def checkCompletedTests() {
-    if (completedTestCount == testCount) {
-      suiteSorter match {
-        case Some(suiteSorter) => 
-          suiteSorter.completedTests(suiteId)
-        case None =>
-      }
     }
   }
 
-  def doApply(event: Event) {
+  override def apply(event: Event) {
     synchronized {
       event match {
         case testStarting: TestStarting => 
@@ -173,7 +157,7 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
   private def handleSuiteEvent(event: Event) {
     val listBuffer = new ListBuffer[Event]()
     listBuffer += event
-    val slot = Slot(UUID.randomUUID, listBuffer, true, true, true)  // Already ready already!
+    val slot = Slot(UUID.randomUUID, listBuffer, true)  // Already ready already!
     waitingBuffer += slot
     // This is outside a test. That's why he calls it a SuiteEvent.
     // If inside a test, it comes through the other apply.
@@ -185,59 +169,43 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
     slotMap.get(testName) match {
       case Some(slot) =>
         val slotIdx = waitingBuffer.indexOf(slot)
-        if (slotIdx >= 0) { // Normal path is just add it. Note not ready until completedTest call.
-          val newSlot = slot.copy(eventList = slot.eventList :+ event, completedEvent = true, ready = slot.completed)
-          waitingBuffer.update(slotIdx, newSlot)
-          slotMap.put(testName, newSlot)
-        }
+        if (slotIdx >= 0) 
+          slot.eventList += event // Normal path is just add it. Note not ready until completedTest call.
         else // could happen when timeout, just fire the test completed event.
           dispatch(event) // Yup. Might be not there anymore.
       case None => 
         dispatch(event)
     }
   }
-  
-  @tailrec
-  private def fireSlotEvents(slot: Slot) {
-    if (slot.eventList.length > 1) {
-      val head = slot.eventList.head
-      slot.eventList.remove(0)
-      dispatch(head)
-      fireSlotEvents(slot)
-    }
-    else if (slot.eventList.length == 1) {
-      val head = slot.eventList.head
-      slot.eventList.remove(0)
-      dispatch(head)
-    }
-  }
 
   // I see that slots are appended to the waitingBuffer, so first come first served here.
   // By the way, this must be called within synchronized only
-  @tailrec
-  private def fireReadyEvents() {
+  private def fireReadyEvents() { // Isn't there a better method than takeWhile?
+    val (ready, pending) = {
+      val ready = waitingBuffer.takeWhile(slot => slot.ready)
+      (ready, waitingBuffer.drop(ready.size))
+    }
+
     // Again, dispatching inside a synchronized.
-    if (waitingBuffer.size > 1) {
-      val head = waitingBuffer.head
-      if (head.ready) {
-        fireSlotEvents(head)
-        waitingBuffer.remove(0)
-        cancelTimeoutTask()
-        val newHead = waitingBuffer.head
-        if (newHead.ready)
-          fireReadyEvents()
-        else
-          scheduleTimeoutTask
+    ready.foreach { slot => slot.eventList.foreach(dispatch(_)) }
+    waitingBuffer.clear() // Seems better to drop ready.size?
+    waitingBuffer ++= pending
+    if (waitingBuffer.size > 0) 
+      scheduleTimeoutTask()
+    else {
+      timeoutTask match { // Waiting buffer is zero, so no timeout needed
+        case Some(task) => 
+          task.cancel()
+          timeoutTask = None
+        case None =>
       }
     }
-    else if (waitingBuffer.size == 1) {
-      val head = waitingBuffer.head
-      if (head.ready) {
-        fireSlotEvents(head)
-        waitingBuffer.remove(0)
-        cancelTimeoutTask()
+    if (completedTestCount == testCount)
+      suiteSorter match {
+        case Some(suiteSorter) => 
+          suiteSorter.completedTests(suiteId)
+        case None =>
       }
-    }
   }
 
   // Also happening inside synchronized block
@@ -256,16 +224,6 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
       }
   }
   
-  // Also happening inside synchronized block
-  private def cancelTimeoutTask() {
-    timeoutTask match { // Waiting buffer is zero, so no timeout needed
-      case Some(task) => 
-        task.cancel()
-        timeoutTask = None
-      case None =>
-    }
-  }
-  
   private def timeout() {
     synchronized {
       if (waitingBuffer.size > 0) {
@@ -279,7 +237,7 @@ private[scalatest] class TestSortingReporter(suiteId: String, dispatch: Reporter
     }
   }
   
-  def doDispose() = {
+  override def dispose() = {
     fireReadyEvents()
     propagateDispose(dispatch)
   }

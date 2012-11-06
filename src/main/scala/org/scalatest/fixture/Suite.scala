@@ -99,14 +99,11 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
      * }
      * </pre>
      */
-    def toNoArgTest(fixture: FixtureParam) = 
+    def toNoArgTest(fixture: FixtureParam) =
       new NoArgTest {
         val name = thisOneArgTest.name
-        val configMap = thisOneArgTest.configMap
+        def configMap = thisOneArgTest.configMap
         def apply() { thisOneArgTest(fixture) }
-        val scopes = thisOneArgTest.scopes
-        val text = thisOneArgTest.text
-        val tags = thisOneArgTest.tags
       }
   }
 
@@ -130,20 +127,12 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
     def apply(fixture: FixtureParam) {
       test(fixture)
     }
-    private val testData = testDataFor(name, configMap)
-    val scopes = testData.scopes
-    val text = testData.text
-    val tags = testData.tags
   }
 
   private[fixture] class FixturelessTestFunAndConfigMap(override val name: String, test: () => Any, override val configMap: Map[String, Any])
     extends NoArgTest {
 
     def apply() { test() }
-    private val testData = testDataFor(name, configMap)
-    val scopes = testData.scopes
-    val text = testData.text
-    val tags = testData.tags
   }
 
   // TODO: add documentation here, so people know they can pass an Informer as the second arg.
@@ -160,12 +149,12 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
     def isTestMethod(m: Method) = {
 
       // Factored out to share code with Suite.testNames
-      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags, isTestDataFor) = isTestMethodGoodies(m)
+      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags) = isTestMethodGoodies(m)
 
       // Also, will discover both
       // testNames(Object) and testNames(Object, Informer). Reason is if I didn't discover these
       // it would likely just be silently ignored, and that might waste users' time
-      isInstanceMethod && (firstFour == "test") && !isTestDataFor && ((hasNoParams && !isTestNames && !isTestTags) ||
+      isInstanceMethod && (firstFour == "test") && ((hasNoParams && !isTestNames && !isTestTags) ||
           takesInformer(m) || takesOneParamOfAnyType(m) || takesTwoParamsOfTypesAnyAndInformer(m))
     }
 
@@ -182,7 +171,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
     TreeSet[String]() ++ testNameArray
   }
 
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
@@ -194,7 +183,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
     val (stopRequested, report, method, testStartTime) =
       getSuiteRunTestGoodies(stopper, reporter, testName)
 
-    reportTestStarting(thisSuite, report, tracker, testName, testName, thisSuite.rerunner, Some(getTopOfMethod(testName)))
+    reportTestStarting(thisSuite, report, tracker, testName, testName, getDecodedName(testName), thisSuite.rerunner, Some(getTopOfMethod(testName)))
 
     val formatter = getEscapedIndentedTextForTest(testName, 1, true)
 
@@ -248,8 +237,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
       }
 
       val duration = System.currentTimeMillis - testStartTime
-      reportTestSucceeded(thisSuite, report, tracker, testName, testName, messageRecorderForThisTest.recordedEvents(false, false), duration, formatter, thisSuite.rerunner, Some(getTopOfMethod(method)))
-      SucceededStatus
+      reportTestSucceeded(thisSuite, report, tracker, testName, testName, getDecodedName(testName), messageRecorderForThisTest.recordedEvents(false, false), duration, formatter, thisSuite.rerunner, Some(getTopOfMethod(method)))
     }
     catch { 
       case ite: InvocationTargetException =>
@@ -258,25 +246,21 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
           case _: TestPendingException =>
             val duration = System.currentTimeMillis - testStartTime
             // testWasPending = true so info's printed out in the finally clause show up yellow
-            reportTestPending(thisSuite, report, tracker, testName, testName, messageRecorderForThisTest.recordedEvents(true, false), duration, formatter, Some(getTopOfMethod(method)))
-            SucceededStatus
+            reportTestPending(thisSuite, report, tracker, testName, testName, getDecodedName(testName), messageRecorderForThisTest.recordedEvents(true, false), duration, formatter, Some(getTopOfMethod(method)))
           case e: TestCanceledException =>
             val duration = System.currentTimeMillis - testStartTime
             val message = getMessageForException(e)
             val formatter = getEscapedIndentedTextForTest(testName, 1, true)
             // testWasCanceled = true so info's printed out in the finally clause show up yellow
-            report(TestCanceled(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), testName, testName, messageRecorderForThisTest.recordedEvents(false, true), Some(e), Some(duration), Some(formatter), Some(getTopOfMethod(method)), thisSuite.rerunner))
-            SucceededStatus
+            report(TestCanceled(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), thisSuite.decodedSuiteName, testName, testName, getDecodedName(testName), messageRecorderForThisTest.recordedEvents(false, true), Some(e), Some(duration), Some(formatter), Some(getTopOfMethod(method)), thisSuite.rerunner))
           case e if !anErrorThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
             handleFailedTest(t, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
-            FailedStatus
           case e => throw e
         }
       case e if !anErrorThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
         handleFailedTest(e, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
-        FailedStatus
       case e: Throwable => throw e
     }
   }

@@ -21,7 +21,6 @@ import Doc.stripMargin
 import Doc.trimMarkup
 import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
-import collection.mutable.ListBuffer
 
 /**
  * A <code>Doc</code> class that takes one XML node markup
@@ -124,11 +123,9 @@ println("&&&&&&&&&&&")
     reportMarkupProvided(thisDoc, reporter, tracker, None, trimMarkup(stripMargin(body.text)), 0, true, None, None)
   }
 */
-  override protected def runNestedSuites(args: Args): Status = {
+  override protected def runNestedSuites(args: Args) {
 
     import args._
-    
-    val statusBuffer = new ListBuffer[Status]()
 
     val (_, registeredSuites) = atomic.get.unpack
     snippets foreach {
@@ -136,10 +133,9 @@ println("&&&&&&&&&&&")
         reportMarkupProvided(thisDoc, reporter, tracker, None, trimMarkup(stripMargin(text)), 0, None, true)
       case IncludedSuite(suite) =>
         println("Send SuiteStarting ... ")  // TODO: Why is runTestedSuites even here?
-        statusBuffer += suite.run(None, args)
+        suite.run(None, args)
         println("Send SuiteCompleted or Aborted ...")
     }
-    new CompositeStatus(Set.empty ++ statusBuffer)
   }
 
   private[scalatest] def getSnippets(text: String): Vector[Snippet] = {

@@ -76,14 +76,14 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
    * @param args the <code>Args</code> for this run
    */
-  protected abstract override def runTests(testName: Option[String], args: Args): Status = {
+  protected abstract override def runTests(testName: Option[String], args: Args) {
     val newArgs =
       if (args.runTestInNewInstance)
         args // This is the test-specific instance
       else {
         args.distributor match {  // This is the initial instance
           case Some(distributor) =>
-            val testSortingReporter = new TestSortingReporter(suiteId, args.reporter, sortingTimeout, testNames.size, args.distributedSuiteSorter, System.err)
+            val testSortingReporter = new TestSortingReporter(suiteId, args.reporter, sortingTimeout, testNames.size, args.distributedSuiteSorter)
             args.copy(reporter = testSortingReporter, distributedTestSorter = Some(testSortingReporter))
           case None =>
             args
@@ -144,7 +144,7 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
    * @param testName the name of one test to execute.
    * @param args the <code>Args</code> for this run
    */
-  final protected abstract override def runTest(testName: String, args: Args): Status = {
+  final protected abstract override def runTest(testName: String, args: Args) {
 
     args.distributor match {
       case Some(distribute) =>
@@ -250,21 +250,17 @@ trait ParallelTestExecution extends OneInstancePerTest { this: Suite =>
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>Suite</code>.
    * @param args the <code>Args</code> for this run
    */
-  abstract override def run(testName: Option[String], args: Args): Status = {
+  abstract override def run(testName: Option[String], args: Args) {
     (testName, args.distributedTestSorter) match {
       case (Some(name), Some(sorter)) =>
-        super.run(testName, args.copy(reporter = createTestSpecificReporter(sorter, name)))
+        class TestSpecificReporter(testSorter: DistributedTestSorter, testName: String) extends Reporter {
+          def apply(event: Event) {
+            testSorter.apply(testName, event)
+          }
+        }
+        super.run(testName, args.copy(reporter = new TestSpecificReporter(sorter, name)))
       case _ =>
         super.run(testName, args)
     }
-  }
-  
-  private[scalatest] def createTestSpecificReporter(testSorter: DistributedTestSorter, testName: String): Reporter = {
-    class TestSpecificReporter(testSorter: DistributedTestSorter, testName: String) extends Reporter {
-      def apply(event: Event) {
-        testSorter.apply(testName, event)
-      }
-    }
-    new TestSpecificReporter(testSorter, testName)
   }
 }

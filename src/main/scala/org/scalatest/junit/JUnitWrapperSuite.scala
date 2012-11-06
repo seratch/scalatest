@@ -51,21 +51,17 @@ class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends Sui
   private var theTracker = new Tracker
   private val junitClass = Class.forName(junitClassName, false, loader)
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
 
     import args._
 
     theTracker = tracker
-    val status = new ScalaTestStatefulStatus
 
     val jUnitCore = new JUnitCore
 
-    jUnitCore.addListener(new MyRunListener(reporter, configMap, tracker, status))
+    jUnitCore.addListener(new MyRunListener(reporter, configMap, tracker))
 
     jUnitCore.run(junitClass)
-    
-    status.setCompleted()
-    status
   }
 
   override def expectedTestCount(filter: Filter): Int = {
@@ -156,7 +152,7 @@ class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends Sui
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(args: Args): Status = {
+  override final protected def runNestedSuites(args: Args) {
 
     throw new UnsupportedOperationException
   }
@@ -179,7 +175,7 @@ class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends Sui
    *
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTests(testName: Option[String], args: Args): Status = {
+  override protected final def runTests(testName: Option[String], args: Args) {
     throw new UnsupportedOperationException
   }
 
@@ -200,7 +196,7 @@ class JUnitWrapperSuite(junitClassName: String, loader: ClassLoader) extends Sui
    *
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTest(testName: String, args: Args): Status = {
+  override protected final def runTest(testName: String, args: Args) {
         throw new UnsupportedOperationException
   }
 }

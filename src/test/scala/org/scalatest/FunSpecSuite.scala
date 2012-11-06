@@ -142,7 +142,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("must start with proper words") != -1)
               reportHadCorrectTestName = true
             formatter match {
@@ -174,7 +174,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("must start with proper words") != -1)
               reportHadCorrectTestName = true
             formatter match {
@@ -258,7 +258,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
                   infoReportHadCorrectFormattedSpecText = true
               case _ =>
             }
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             // scopeOpened should be invoked before the this method
             assert(scopeOpenedHasBeenInvoked)
             theOtherMethodHasBeenInvoked = true
@@ -317,7 +317,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
                   infoReportHadCorrectFormattedSpecText = true
               case _ =>
             }
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             // scopeOpened should be invoked before the this method
             assert(scopeOpenedHasBeenInvoked)
             theOtherMethodHasBeenInvoked = true
@@ -453,7 +453,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
                 case _ =>
               }
             }
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             // scopeOpened should be invoked before the this method
             assert(scopeOpenedHasBeenInvokedTwice)
             theOtherMethodHasBeenInvoked = true
@@ -573,7 +573,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("it should start with proper words") != -1)
               reportHadCorrectTestName = true
             formatter match {
@@ -608,7 +608,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("must start with proper words") != -1)
               reportHadCorrectTestName = true
             formatter match {
@@ -643,7 +643,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("must start with proper words") != -1)
               reportHadCorrectTestName = true
             formatter match {
@@ -733,7 +733,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
                   infoReportHadCorrectFormattedSpecText = true
               case _ =>
             }
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             // scopeOpened should be invoked before the this method
             assert(scopeOpenedHasBeenInvoked)
             theOtherMethodHasBeenInvoked = true
@@ -798,14 +798,14 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
   test("Config map should make it through to runTest") {
     var foundMyGoodie = false
     class MySpec extends FunSpec with ShouldMatchers {
-      override def runTest(testName: String, args: Args): Status = {
+      override def runTest(testName: String, args: Args) {
         foundMyGoodie = args.configMap.contains("my goodie")
         super.runTest(testName, args)
       }
       it("it should find my goodie") {}
     }
     val a = new MySpec
-    a.run(None, Args(StubReporter, Stopper.default, Filter(), Map("my goodie" -> "hi"), None, new Tracker, Set.empty))
+    a.run(None, Args(StubReporter, new Stopper {}, Filter(), Map("my goodie" -> "hi"), None, new Tracker, Set.empty))
     assert(foundMyGoodie)  
   }
   
@@ -815,7 +815,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("A Stack (when working right) should push and pop properly") != -1) {
               testSucceededReportHadCorrectTestName = true
             }  
@@ -855,7 +855,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("this thing must start with proper words") != -1) {
               testSucceededReportHadCorrectTestName = true
             }  
@@ -876,7 +876,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("this thing must start with proper words") != -1) {
               testSucceededReportHadCorrectTestName = true
             }  
@@ -918,7 +918,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestStarting(_, _, _, _, testName, _, _, _, _, _, _, _) =>
+          case TestStarting(_, _, _, _, _, testName, _, _, _, _, _, _, _, _) =>
             if (testName == "A Stack needs to push and pop properly") {
               testSucceededReportHadCorrectTestName = true
             }
@@ -985,7 +985,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             formatter match {
               case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
                 if (rawText == "My spec text must have the proper words")
@@ -1012,7 +1012,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             formatter match {
               case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
                 if (rawText == "My short name must have the proper words")
@@ -1041,7 +1041,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
     class MyReporter extends Reporter {
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             formatter match {
               case Some(IndentedText(formattedText, rawText, indentationLevel)) =>
                 if (rawText == "My short name must have the proper words")
@@ -1215,7 +1215,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
 
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("it should be invoked") != -1) {
               testSucceededReportHadCorrectTestName = true
             }  
@@ -1243,7 +1243,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
 
       def apply(event: Event) {
         event match {
-          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
+          case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, decodedSuiteName, testName, testText, decodedTestName, testEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) =>
             if (testName.indexOf("A Stack should pop properly") != -1) {
               testSucceededReportHadCorrectTestName = true
             }  
@@ -1402,7 +1402,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
 
     val mySpec = new MySpec
     val myReporter = new TestDurationReporter
-    mySpec.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    mySpec.run(None, Args(myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
     assert(myReporter.testSucceededWasFiredAndHadADuration)
     assert(myReporter.testFailedWasFiredAndHadADuration)
   }
@@ -1415,14 +1415,14 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
 
     val mySuite = new MySpec
     val myReporter = new SuiteDurationReporter
-    mySuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    mySuite.run(None, Args(myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
     assert(myReporter.suiteCompletedWasFiredAndHadADuration)
   }
 
   test("suite durations are included in SuiteAborted events fired from Spec") {
 
     class SuiteThatAborts extends Suite {
-      override def run(testName: Option[String], args: Args): Status = {
+      override def run(testName: Option[String], args: Args) {
         throw new RuntimeException("Aborting for testing purposes")
       }
     }
@@ -1433,7 +1433,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
 
     val mySuite = new MySpec
     val myReporter = new SuiteDurationReporter
-    mySuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    mySuite.run(None, Args(myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
     assert(myReporter.suiteAbortedWasFiredAndHadADuration)
   }
 
@@ -1445,7 +1445,7 @@ class FunSpecSuite extends FunSuite with SharedHelpers {
 
     val mySuite = new MySpec
     val myReporter = new PendingReporter
-    mySuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    mySuite.run(None, Args(myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
     assert(myReporter.testPendingWasFired)
   }
 }

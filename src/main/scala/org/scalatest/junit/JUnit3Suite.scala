@@ -30,6 +30,7 @@ import org.scalatest.events.TestSucceeded
 import org.scalatest.events.TestFailed
 import org.scalatest.events.MotionToSuppress
 import Suite.getIndentedTextForTest
+import Suite.getDecodedName
 import org.scalatest.events._
 import exceptions._
 
@@ -241,7 +242,7 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    *
    * @throws UnsupportedOperationException always.
    */
-  override final protected def runNestedSuites(args: Args): Status = {
+  override final protected def runNestedSuites(args: Args) {
 
     throw new UnsupportedOperationException
   }
@@ -264,7 +265,7 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    *
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTests(testName: Option[String], args: Args): Status = {
+  override protected final def runTests(testName: Option[String], args: Args) {
     throw new UnsupportedOperationException
   }
 
@@ -285,20 +286,19 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
    *
    * @throws UnsupportedOperationException always.
    */
-  override protected final def runTest(testName: String, args: Args): Status = {
+  override protected final def runTest(testName: String, args: Args) {
         throw new UnsupportedOperationException
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
 
     import args._
 
     theTracker = tracker
-    val status = new ScalaTestStatefulStatus
 
     if (!filter.tagsToInclude.isDefined) {
       val testResult = new TestResult
-      testResult.addListener(new MyTestListener(wrapReporterIfNecessary(reporter), tracker, status))
+      testResult.addListener(new MyTestListener(reporter, tracker))
       testName match {
         case None => new TestSuite(this.getClass).run(testResult)
         case Some(tn) =>
@@ -308,27 +308,15 @@ class JUnit3Suite extends TestCase with Suite with AssertionsForJUnit {
           run(testResult)
       }
     }
-    
-    status.setCompleted()
-    status
   }
   
   /**
    * Suite style name.
    */
   final override val styleName: String = "JUnit3Suite"
-    
-  final override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = 
-    new TestData {
-      val configMap = theConfigMap 
-      val name = testName
-      val scopes = IndexedSeq.empty
-      val text = testName
-      val tags = Set.empty[String]
-    }
 }
 
-private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, status: ScalaTestStatefulStatus) extends TestListener {
+private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker) extends TestListener {
 
   // TODO: worry about threading
   private val failedTestsSet = scala.collection.mutable.Set[Test]()
@@ -356,7 +344,7 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
     if (testCase == null)
       throw new NullPointerException("testCase was null")
     val suiteName = getSuiteNameForTestCase(testCase)
-    report(TestStarting(tracker.nextOrdinal(), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Some(MotionToSuppress), getTopOfMethod(testCase.getClass.getName, testCase.asInstanceOf[TestCase].getName)))
+    report(TestStarting(tracker.nextOrdinal(), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), getDecodedName(suiteName), testCase.toString, testCase.toString, getDecodedName(testCase.toString), Some(MotionToSuppress), getTopOfMethod(testCase.getClass.getName, testCase.asInstanceOf[TestCase].getName)))
   }
   
   def addError(testCase: Test, throwable: Throwable) {
@@ -375,7 +363,7 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
         case _ => 
           None
       }
-    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(throwable, false), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Vector.empty, Some(throwable), None, Some(formatter), Some(SeeStackDepthException), None, payload))
+    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(throwable, false), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), getDecodedName(suiteName), testCase.toString, testCase.toString, getDecodedName(testCase.toString), Vector.empty, Some(throwable), None, Some(formatter), Some(SeeStackDepthException), None, payload))
 
     failedTestsSet += testCase
   }
@@ -389,7 +377,7 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
 
     val formatter = getIndentedTextForTest(testCase.toString, 1, true)
     val suiteName = getSuiteNameForTestCase(testCase)
-    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(assertionFailedError, true), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Vector.empty, Some(assertionFailedError), None, Some(formatter), Some(SeeStackDepthException), None))
+    report(TestFailed(tracker.nextOrdinal(), getMessageGivenThrowable(assertionFailedError, true), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), getDecodedName(suiteName), testCase.toString, testCase.toString, getDecodedName(testCase.toString), Vector.empty, Some(assertionFailedError), None, Some(formatter), Some(SeeStackDepthException), None))
 
     failedTestsSet += testCase
   }
@@ -403,11 +391,10 @@ private[scalatest] class MyTestListener(report: Reporter, tracker: Tracker, stat
         throw new NullPointerException("testCase was null")
       val formatter = getIndentedTextForTest(testCase.toString, 1, true)
       val suiteName = getSuiteNameForTestCase(testCase)
-      report(TestSucceeded(tracker.nextOrdinal(), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), testCase.toString, testCase.toString, Vector.empty, None, Some(formatter), getTopOfMethod(testCase.getClass.getName, testCase.asInstanceOf[TestCase].getName)))
+      report(TestSucceeded(tracker.nextOrdinal(), suiteName, testCase.getClass.getName, Some(testCase.getClass.getName), getDecodedName(suiteName), testCase.toString, testCase.toString, getDecodedName(testCase.toString), Vector.empty, None, Some(formatter), getTopOfMethod(testCase.getClass.getName, testCase.asInstanceOf[TestCase].getName)))
     }
     else {
       failedTestsSet -= testCase  
-      status.setFailed()
     }
   }
 

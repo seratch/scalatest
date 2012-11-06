@@ -20,16 +20,16 @@ class SetSuite extends PropSpec with TableDrivenPropertyChecks with GivenWhenThe
 
       info("----------------")
 
-      Given("an empty mutable " + set.getClass.getSimpleName)
+      given("an empty mutable " + set.getClass.getSimpleName)
       assert(set.isEmpty)
 
-      When("an element is added")
+      when("an element is added")
       set += 99
 
-      Then("the Set should have size 1")
+      then("the Set should have size 1")
       assert(set.size === 1)
 
-      And("the Set should contain the added element")
+      and("the Set should contain the added element")
       assert(set.contains(99))
     }
   }

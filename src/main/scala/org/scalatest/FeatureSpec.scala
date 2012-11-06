@@ -64,28 +64,28 @@ import Suite.autoTagClassAnnotations
  *   feature("TV power button") {
  *     scenario("User presses power button when TV is off") {
  * 
- *       Given("a TV set that is switched off")
+ *       given("a TV set that is switched off")
  *       val tv = new TVSet
  *       assert(!tv.isOn)
  * 
- *       When("the power button is pressed")
+ *       when("the power button is pressed")
  *       tv.pressPowerButton()
  * 
- *       Then("the TV should switch on")
+ *       then("the TV should switch on")
  *       assert(tv.isOn)
  *     }
  *     
  *     scenario("User presses power button when TV is on") {
  * 
- *       Given("a TV set that is switched on")
+ *       given("a TV set that is switched on")
  *       val tv = new TVSet
  *       tv.pressPowerButton()
  *       assert(tv.isOn)
  * 
- *       When("the power button is pressed")
+ *       when("the power button is pressed")
  *       tv.pressPowerButton()
  * 
- *       Then("the TV should switch off")
+ *       then("the TV should switch off")
  *       assert(!tv.isOn)
  *     }
  *   }
@@ -93,7 +93,7 @@ import Suite.autoTagClassAnnotations
  * </pre>
  *
  * <p>
- * Note: for more information on the calls to <code>Given</code>, <code>When</code>, and <code>Then</code>, see the documentation 
+ * Note: for more information on the calls to <code>given</code>, <code>when</code>, and <code>then</code>, see the documentation 
  * for <a href="GivenWhenThen.html">trait <code>GivenWhenThen</code></a> and the <a href="#informers"><code>Informers</code> section</a> below.
  * </p>
  *
@@ -415,16 +415,16 @@ import Suite.autoTagClassAnnotations
  * 
  *   feature("TV power button") {
  *     scenario("User presses power button when TV is off") {
- *       Given("a TV that is switched off")
- *       When("the power button is pressed")
- *       Then("the TV should switch on")
+ *       given("a TV that is switched off")
+ *       when("the power button is pressed")
+ *       then("the TV should switch on")
  *       pending
  *     }
  * 
  *     scenario("User presses power button when TV is on") {
- *       Given("a TV that is switched on")
- *       When("the power button is pressed")
- *       Then("the TV should switch off")
+ *       given("a TV that is switched on")
+ *       when("the power button is pressed")
+ *       then("the TV should switch off")
  *       pending
  *     }
  *   }
@@ -1312,39 +1312,39 @@ import Suite.autoTagClassAnnotations
  * 
  *     scenario("empty is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
- *       Given("a non-empty stack")
+ *       given("a non-empty stack")
  *       val stack = createNonEmptyStack
  * 
- *       When("empty is invoked on the stack")
- *       Then("empty returns false")
+ *       when("empty is invoked on the stack")
+ *       then("empty returns false")
  *       assert(!stack.empty)
  *     }
  * 
  *     scenario("peek is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
- *       Given("a non-empty stack")
+ *       given("a non-empty stack")
  *       val stack = createNonEmptyStack
  *       val size = stack.size
  * 
- *       When("peek is invoked on the stack")
- *       Then("peek returns the last item added")
+ *       when("peek is invoked on the stack")
+ *       then("peek returns the last item added")
  *       assert(stack.peek === lastItemAdded)
  * 
- *       And("the size of the stack is the same as before")
+ *       and("the size of the stack is the same as before")
  *       assert(stack.size === size)
  *     }
  * 
  *     scenario("pop is invoked on this non-empty stack: " + createNonEmptyStack.toString) {
  * 
- *       Given("a non-empty stack")
+ *       given("a non-empty stack")
  *       val stack = createNonEmptyStack
  *       val size = stack.size
  * 
- *       When("pop is invoked on the stack")
- *       Then("pop returns the last item added")
+ *       when("pop is invoked on the stack")
+ *       then("pop returns the last item added")
  *       assert(stack.pop === lastItemAdded)
  * 
- *       And("the size of the stack one less than before")
+ *       and("the size of the stack one less than before")
  *       assert(stack.size === size - 1)
  *     }
  *   }
@@ -1353,27 +1353,27 @@ import Suite.autoTagClassAnnotations
  *       
  *     scenario("full is invoked on this non-full stack: " + createNonFullStack.toString) {
  * 
- *       Given("a non-full stack")
+ *       given("a non-full stack")
  *       val stack = createNonFullStack
  * 
- *       When("full is invoked on the stack")
- *       Then("full returns false")
+ *       when("full is invoked on the stack")
+ *       then("full returns false")
  *       assert(!stack.full)
  *     }
  *       
  *     scenario("push is invoked on this non-full stack: " + createNonFullStack.toString) {
  * 
- *       Given("a non-full stack")
+ *       given("a non-full stack")
  *       val stack = createNonFullStack
  *       val size = stack.size
  * 
- *       When("push is invoked on the stack")
+ *       when("push is invoked on the stack")
  *       stack.push(7)
  * 
- *       Then("the size of the stack is one greater than before")
+ *       then("the size of the stack is one greater than before")
  *       assert(stack.size === size + 1)
  * 
- *       And("the top of the stack contains the pushed value")
+ *       and("the top of the stack contains the pushed value")
  *       assert(stack.peek === 7)
  *     }
  *   }
@@ -1442,21 +1442,21 @@ import Suite.autoTagClassAnnotations
  *  
  *     scenario("empty is invoked on an empty stack") {
  * 
- *       Given("an empty stack")
+ *       given("an empty stack")
  *       val stack = emptyStack
  * 
- *       When("empty is invoked on the stack")
- *       Then("empty returns true")
+ *       when("empty is invoked on the stack")
+ *       then("empty returns true")
  *       assert(stack.empty)
  *     }
  *  
  *     scenario("peek is invoked on an empty stack") {
  * 
- *       Given("an empty stack")
+ *       given("an empty stack")
  *       val stack = emptyStack
  * 
- *       When("peek is invoked on the stack")
- *       Then("peek throws IllegalStateException")
+ *       when("peek is invoked on the stack")
+ *       then("peek throws IllegalStateException")
  *       intercept[IllegalStateException] {
  *         stack.peek
  *       }
@@ -1464,11 +1464,11 @@ import Suite.autoTagClassAnnotations
  *  
  *     scenario("pop is invoked on an empty stack") {
  * 
- *       Given("an empty stack")
+ *       given("an empty stack")
  *       val stack = emptyStack
  * 
- *       When("pop is invoked on the stack")
- *       Then("pop throws IllegalStateException")
+ *       when("pop is invoked on the stack")
+ *       then("pop throws IllegalStateException")
  *       intercept[IllegalStateException] {
  *         emptyStack.pop
  *       }
@@ -1482,11 +1482,11 @@ import Suite.autoTagClassAnnotations
  *  
  *     scenario("full is invoked on a full stack") {
  * 
- *       Given("an full stack")
+ *       given("an full stack")
  *       val stack = fullStack
  * 
- *       When("full is invoked on the stack")
- *       Then("full returns true")
+ *       when("full is invoked on the stack")
+ *       then("full returns true")
  *       assert(stack.full)
  *     }
  *  
@@ -1494,11 +1494,11 @@ import Suite.autoTagClassAnnotations
  *  
  *     scenario("push is invoked on a full stack") {
  * 
- *       Given("an full stack")
+ *       given("an full stack")
  *       val stack = fullStack
  * 
- *       When("push is invoked on the stack")
- *       Then("push throws IllegalStateException")
+ *       when("push is invoked on the stack")
+ *       then("push throws IllegalStateException")
  *       intercept[IllegalStateException] {
  *         stack.push(10)
  *       }
@@ -1692,7 +1692,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(Resources("scenario", specText.trim), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpec.scala", "scenario", 4, -2, None, None, None, testTags: _*)
+    registerTest(Resources("scenario", specText), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpec.scala", "scenario", 4, -2, None, None, None, testTags: _*)
   }
 
   /**
@@ -1728,7 +1728,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun("FeatureSpec.scala", "feature"))
 
-    registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", "FeatureSpec.scala", "feature", 4, -2, None)
+    registerNestedBranch(Resources("feature", description), None, fun, "featureCannotAppearInsideAScenario", "FeatureSpec.scala", "feature", 4, -2, None)
   }
 
   /**
@@ -1759,19 +1759,15 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
+          def name = testName
           def apply() { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
       )
     }
@@ -1833,7 +1829,7 @@ trait FeatureSpec extends Suite { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, false, runTest)
   }
 
@@ -1875,7 +1871,7 @@ trait FeatureSpec extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     runImpl(thisSuite, testName, args, super.run)
   }
 
@@ -1904,6 +1900,4 @@ trait FeatureSpec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.FeatureSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }

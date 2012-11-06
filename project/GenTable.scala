@@ -921,11 +921,11 @@ val tableSuitePreamble = """
 
 import matchers.ShouldMatchers
 
-class TableSuite extends Spec with TableDrivenPropertyChecks {
+class TableSuite extends FunSuite with TableDrivenPropertyChecks with ShouldMatchers {
 """
 
 val tableSuiteTemplate = """
-  def `table for $n$ that succeeds` {
+  test("table for $n$ that succeeds") {
 
     val examples =
       Table(
@@ -933,10 +933,10 @@ val tableSuiteTemplate = """
 $columnsOfOnes$
       )
 
-    forAll (examples) { ($names$) => assert($sumOfArgs$ === ($n$)) }
+    forAll (examples) { ($names$) => $sumOfArgs$ should equal ($n$) }
   }
 
-  def `table for $n$, which succeeds even though DiscardedEvaluationException is thrown` {
+  test("table for $n$, which succeeds even though DiscardedEvaluationException is thrown") {
     val numbers =
       Table(
         ($argNames$),
@@ -947,12 +947,12 @@ $columnsOfOnes$
     forAll (numbers) { ($names$) =>
 
       whenever (a > 0) {
-        assert(a > 0)
+        a should be > 0
       }
     }
   }
 
-  def `table for $n$, which fails` {
+  test("table for $n$, which fails") {
 
     val examples =
       Table(
@@ -961,11 +961,11 @@ $columnsOfTwos$
       )
 
     intercept[TableDrivenPropertyCheckFailedException] {
-      forAll (examples) { ($names$) => assert($sumOfArgs$ === ($n$)) }
+      forAll (examples) { ($names$) => $sumOfArgs$ should equal ($n$) }
     }
   }
 
-  def `table for $n$ apply, length, and iterator methods work correctly` {
+  test("table for $n$ apply, length, and iterator methods work correctly") {
 
     val examples =
       Table(
@@ -974,18 +974,18 @@ $columnsOfIndexes$
       )
 
     for (i <- 0 to 9) {
-      assert(examples(i) === ($listOfIs$))
+      examples(i) should equal ($listOfIs$)
     }
 
-    assert(examples.length === (10))
+    examples.length should equal (10)
 
     var i = 0
     for (example <- examples.iterator) {
-      assert(example === ($listOfIs$))
+      example should equal ($listOfIs$)
       i += 1
     }
 
-    assert(examples.iterator.length === (10))
+    examples.iterator.length should equal (10)
   }
 """
 

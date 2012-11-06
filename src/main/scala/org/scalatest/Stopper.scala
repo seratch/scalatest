@@ -16,78 +16,58 @@
 package org.scalatest
 
 /**
- * Trait whose instances can accept a stop request and indicate whether a stop has already been requested.
- *
- * <p>
- * This is passed in
+ * Trait whose instances can indicate whether a stop has been requested. This is passed in
  * to the <code>run</code> method of <code>Suite</code>, so that running suites of tests can be
  * requested to stop early.
- * </p>
  *
  * @author Bill Venners
  */
 trait Stopper {
 
   /**
-   * <strong>This method has been deprecated and will be removed in a future version of ScalaTest. Please call
-   * the stopRequested method instead.</strong>
-   */
-  @deprecated 
-  def apply() = stopRequested
-
-  /**
-   * Indicates whether a stop has been requested.
-   *
-   * <p>
-   * Call this method
+   * Indicates whether a stop has been requested.  Call this method
    * to determine whether a running test should stop. The <code>run</code> method of any <code>Suite</code>, or
    * code invoked by <code>run</code>, should periodically check the
    * stop requested function. If <code>true</code>,
    * the <code>run</code> method should interrupt its work and simply return.
-   * </p>
-   *
-   * @return true if a stop has been requested
    */
-  def stopRequested: Boolean
-
-  /**
-   * Request that the current run stop.
-   *
-   * <p>
-   * Invoking this method is like pulling the stop-request chord in a streetcar. It requests a stop, but in no
-   * way forces a stop. The running suite of tests decides when and how (and if) to respond to a stop request.
-   * ScalaTest's style traits periodically check the <code>stopRequested</code> method of the passed <code>Stopper</code>,
-   * and if a stop has been requested, terminates gracefully.
-   * </p>
-   */
-  def requestStop()
+  def apply() = false
 }
 
 /**
- * Companion object to Stopper that holds a factory method that produces a new <code>Stopper</code> whose
- * <code>stopRequested</code> method returns false until after its <code>requestStop</code> has been
- * invoked.
+ * Companion object to Stopper that holds a deprecated implicit conversion.
  */
 object Stopper {
 
-  private class DefaultStopper extends Stopper {
-    @volatile private var stopWasRequested = false
-    def stopRequested: Boolean = stopWasRequested
-    def requestStop() {
-      stopWasRequested = true
-    }
-  }
-
-  /**
-   * Factory method that produces a new <code>Stopper</code> whose
-   * <code>stopRequested</code> method returns false until after its <code>requestStop</code> has been
-   * invoked.
+  /*
+   * Converts a <code>Stopper</code> to a function type that prior to the ScalaTest 1.5 release the
+   * <code>Stopper</code> extended.
    *
    * <p>
-   * The <code>Stopper</code> returned by this method can be safely used by multiple threads concurrently.
+   * Prior to ScalaTest 1.5, <code>Stopper</code> extended function type <code>() => Boolean</code>.
+   * This inheritance relationship was severed in 1.5 to make it possible to implement <code>Stopper</code>s in Java, a request by an IDE
+   * vendor to isolate their ScalaTest integration from binary incompatibility between different Scala/ScalaTest releases.
+   * To make a trait easily implementable in Java, it needs to have no concrete methods. <code>Stopper</code> itself does not declare
+   * any concrete methods, but <code>() => Boolean</code> does.
    * </p>
    *
-   * @return a new default stopper
+   * <p>
+   * This implicit conversion was added in ScalaTest 1.5 to avoid breaking any source code that was actually using
+   * <code>Stopper</code> as an <code>() => Boolean</code> function. It is unlikely anyone was actually doing that, but if you were
+   * and now get the deprecation warning, please email scalatest-users@googlegroups.com if you believe this implicit conversion should
+   * be retained. If no one steps forward with a compelling justification, it will be removed in a future version of ScalaTest.
+   * </p>
    */
-  def default: Stopper = new DefaultStopper
+  // @deprecated("See the documentation for Stopper.convertStopperToFunction for information")
+  // implicit def convertStopperToFunction(stopper: Stopper): () => Boolean =
+  //   () => stopper()
+
+  private val defaultStopper = new Stopper {}
+
+  /**
+   * TODO: Flesh out documentation.
+   *
+   * @return
+   */
+  def default: Stopper = defaultStopper
 }

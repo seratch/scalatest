@@ -226,16 +226,16 @@ import Suite.autoTagClassAnnotations
  * 
  *       info("----------------")
  * 
- *       Given("an empty mutable " + set.getClass.getSimpleName)
+ *       given("an empty mutable " + set.getClass.getSimpleName)
  *       assert(set.isEmpty)
  * 
- *       When("an element is added")
+ *       when("an element is added")
  *       set += 99
  * 
- *       Then("the Set should have size 1")
+ *       then("the Set should have size 1")
  *       assert(set.size === 1)
  * 
- *       And("the Set should contain the added element")
+ *       and("the Set should contain the added element")
  *       assert(set.contains(99))
  *     }
  *   }
@@ -689,19 +689,15 @@ trait PropSpec extends Suite { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
+          def name = testName
           def apply() { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
       )
     }
@@ -736,11 +732,11 @@ trait PropSpec extends Suite { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     runImpl(thisSuite, testName, args, super.run)
   }
 
@@ -769,6 +765,4 @@ trait PropSpec extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.PropSpec"
-  
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }

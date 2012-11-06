@@ -273,10 +273,7 @@ trait Spec extends Suite  { thisSuite =>
           
         def isScopeMethod(o: AnyRef, m: Method): Boolean = {
           val scopeMethodName = getScopeClassName(o)+ m.getName + "$"
-          
-          val returnTypeName = m.getReturnType.getName
-          
-          equalIfRequiredCompactify(scopeMethodName, returnTypeName)
+          scopeMethodName == m.getReturnType.getName
         }
         
         def getScopeDesc(m: Method): String = {
@@ -434,21 +431,17 @@ trait Spec extends Suite  { thisSuite =>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     ensureScopesAndTestsRegistered()
 
     def invokeWithFixture(theTest: TestLeaf) {
       val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new OneArgTest {
-          val name = testData.name
+          def name = testName
           def apply(fixture: FixtureParam) { theTest.testFun(fixture) }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def configMap = theConfigMap
         }
         //new TestFunAndConfigMap(testName, theTest.testFun, theConfigMap)
       )
@@ -519,7 +512,7 @@ trait Spec extends Suite  { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Spec</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     ensureScopesAndTestsRegistered()
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
@@ -557,7 +550,7 @@ trait Spec extends Suite  { thisSuite =>
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
     ensureScopesAndTestsRegistered()
     runImpl(thisSuite, testName, args, super.run)
   }
@@ -567,7 +560,6 @@ trait Spec extends Suite  { thisSuite =>
    */
   final override val styleName: String = "org.scalatest.fixture.Spec"
 
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 
 private[scalatest] object Spec {
@@ -583,42 +575,9 @@ private[scalatest] object Spec {
     val includesEncodedSpace = m.getName.indexOf("$u0020") >= 0
     
     val isOuterMethod = m.getName.endsWith("$$outer")
-    
-    val isNestedMethod = m.getName.matches(".+\\$\\$.+\\$[1-9]+")
 
     // def maybe(b: Boolean) = if (b) "" else "!"
     // println("m.getName: " + m.getName + ": " + maybe(isInstanceMethod) + "isInstanceMethod, " + maybe(hasNoParams) + "hasNoParams, " + maybe(includesEncodedSpace) + "includesEncodedSpace")
-    isInstanceMethod && hasNoParamOrFixtureParam && includesEncodedSpace && !isOuterMethod && !isNestedMethod
-  }
-  
-  import java.security.MessageDigest
-  import scala.io.Codec
-  
-  // The following compactify code is written based on scala compiler source code at:-
-  // https://github.com/scala/scala/blob/master/src/reflect/scala/reflect/internal/StdNames.scala#L47
-  
-  private val compactifiedMarker = "$$$$"
-  
-  def equalIfRequiredCompactify(value: String, compactified: String): Boolean = {
-    if (compactified.matches(".+\\$\\$\\$\\$.+\\$\\$\\$\\$.+")) {
-      val firstDolarIdx = compactified.indexOf("$$$$")
-      val lastDolarIdx = compactified.lastIndexOf("$$$$")
-      val prefix = compactified.substring(0, firstDolarIdx)
-      val suffix = compactified.substring(lastDolarIdx + 4)
-      val lastIndexOfDot = value.lastIndexOf(".")
-      val toHash = 
-        if (lastIndexOfDot >= 0) 
-          value.substring(0, value.length - 1).substring(value.lastIndexOf(".") + 1)
-        else
-          value
-          
-      val bytes = Codec.toUTF8(toHash.toArray)
-      val md5 = MessageDigest.getInstance("MD5")
-      md5.update(bytes)
-      val md5chars = (md5.digest() map (b => (b & 0xFF).toHexString)).mkString
-      (prefix + compactifiedMarker + md5chars + compactifiedMarker + suffix) == compactified
-    }
-    else
-      value == compactified
+    isInstanceMethod && hasNoParamOrFixtureParam && includesEncodedSpace && !isOuterMethod
   }
 }

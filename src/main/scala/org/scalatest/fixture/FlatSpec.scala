@@ -395,7 +395,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, tags, "in", new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + name, tags, "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -416,7 +416,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, tags, "in", testFun)
+      registerTestToRun(verb + " " + name, tags, "in", testFun)
     }
 
     /**
@@ -438,7 +438,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(verb.trim + " " + name.trim, tags, "is", unusedFixtureParam => testFun)
+      registerTestToRun(verb + " " + name, tags, "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -460,7 +460,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, tags, "ignore", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -483,7 +483,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", testFun)
+      registerTestToIgnore(verb + " " + name, tags, "ignore", testFun)
     }
   }
 
@@ -551,7 +551,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, List(), "in", new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + name, List(), "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -572,7 +572,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, List(), "in", testFun)
+      registerTestToRun(verb + " " + name, List(), "in", testFun)
     }
 
     /**
@@ -593,7 +593,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(verb.trim + " " + name.trim, List(), "is", unusedFixtureParam => testFun)
+      registerTestToRun(verb + " " + name, List(), "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -614,7 +614,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, List(), "ignore", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -635,7 +635,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", testFun)
+      registerTestToIgnore(verb + " " + name, List(), "ignore", testFun)
     }
 
     /**
@@ -888,7 +888,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, tags, "in", new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + name, tags, "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -909,7 +909,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, tags, "in", testFun)
+      registerTestToRun(verb + " " + name, tags, "in", testFun)
     }
 
     /**
@@ -931,7 +931,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(verb.trim + " " + name.trim, tags, "is", unusedFixtureParam => testFun)
+      registerTestToRun(verb + " " + name, tags, "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -953,7 +953,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, tags, "ignore", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -976,7 +976,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "ignore", testFun)
+      registerTestToIgnore(verb + " " + name, tags, "ignore", testFun)
     }
   }
 
@@ -1044,7 +1044,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, List(), "in", new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + name, List(), "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1065,7 +1065,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb.trim + " " + name.trim, List(), "in", testFun)
+      registerTestToRun(verb + " " + name, List(), "in", testFun)
     }
 
     /**
@@ -1086,7 +1086,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToRun(verb.trim + " " + name.trim, List(), "is", unusedFixtureParam => testFun)
+      registerTestToRun(verb + " " + name, List(), "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -1107,7 +1107,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, List(), "ignore", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1128,7 +1128,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "ignore", testFun)
+      registerTestToIgnore(verb + " " + name, List(), "ignore", testFun)
     }
 
     /**
@@ -1381,7 +1381,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "in", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, tags, "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1404,7 +1404,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "in", testFun)
+      registerTestToIgnore(verb + " " + name, tags, "in", testFun)
     }
 
     /**
@@ -1434,7 +1434,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToIgnore(verb.trim + " " + name.trim, tags, "is", unusedFixtureParam => testFun)
+      registerTestToIgnore(verb + " " + name, tags, "is", unusedFixtureParam => testFun)
     }
   }
 
@@ -1500,7 +1500,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "in", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + name, List(), "in", new NoArgTestWrapper(testFun))
     }
      
     /**
@@ -1522,7 +1522,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "in", testFun)
+      registerTestToIgnore(verb + " " + name, List(), "in", testFun)
     }
 
     /**
@@ -1551,7 +1551,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def is(testFun: => PendingNothing) {
-      registerTestToIgnore(verb.trim + " " + name.trim, List(), "is", unusedFixtureParam => testFun)
+      registerTestToIgnore(verb + " " + name, List(), "is", unusedFixtureParam => testFun)
     }
 
     /**
@@ -1737,7 +1737,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb.trim + " " + rest.trim, List(), "in", new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + rest, List(), "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1758,7 +1758,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + rest.trim, List(), "ignore", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + rest, List(), "ignore", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1779,7 +1779,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb.trim + " " + rest.trim, List(), "in", testFun)
+      registerTestToRun(verb + " " + rest, List(), "in", testFun)
     }
 
     /**
@@ -1800,7 +1800,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + rest.trim, List(), "ignore", testFun)
+      registerTestToIgnore(verb + " " + rest, List(), "ignore", testFun)
     }
   }
 
@@ -1875,7 +1875,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: () => Any) {
-      registerTestToRun(verb.trim + " " + rest.trim, tagsList, "in", new NoArgTestWrapper(testFun))
+      registerTestToRun(verb + " " + rest, tagsList, "in", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1898,7 +1898,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: () => Any) {
-      registerTestToIgnore(verb.trim + " " + rest.trim, tagsList, "ignore", new NoArgTestWrapper(testFun))
+      registerTestToIgnore(verb + " " + rest, tagsList, "ignore", new NoArgTestWrapper(testFun))
     }
 
     /**
@@ -1919,7 +1919,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
-      registerTestToRun(verb.trim + " " + rest.trim, tagsList, "in", testFun)
+      registerTestToRun(verb + " " + rest, tagsList, "in", testFun)
     }
 
     /**
@@ -1942,7 +1942,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
-      registerTestToIgnore(verb.trim + " " + rest.trim, tagsList, "ignore", testFun)
+      registerTestToIgnore(verb + " " + rest, tagsList, "ignore", testFun)
     }
   }
 
@@ -1981,7 +1981,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
       registerFlatBranch(subject, "describeCannotAppearInsideAnIt", sourceFileName, "apply", 5, 0)
       new ResultOfStringPassedToVerb(verb, rest) {
         def is(testFun: => PendingNothing) {
-          registerTestToRun(verb.trim + " " + rest.trim, List(), "is", unusedFixtureParam => testFun)
+          registerTestToRun(verb + " " + rest, List(), "is", unusedFixtureParam => testFun)
         }
         def taggedAs(firstTestTag: Tag, otherTestTags: Tag*) = {
           val tagList = firstTestTag :: otherTestTags.toList
@@ -1989,7 +1989,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
             // "A Stack" must "test this" taggedAs(mytags.SlowAsMolasses) is (pending)
             //                                                            ^
             def is(testFun: => PendingNothing) {
-              registerTestToRun(verb.trim + " " + rest.trim, tags, "is", new NoArgTestWrapper(testFun _))
+              registerTestToRun(verb + " " + rest, tags, "is", new NoArgTestWrapper(testFun _))
             }
           }
         }
@@ -2078,7 +2078,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, args: Args) {
 
     def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
@@ -2146,7 +2146,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
    *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
+  protected override def runTests(testName: Option[String], args: Args) {
     runTestsImpl(thisSuite, testName, args, info, true, runTest)
   }
 
@@ -2166,7 +2166,7 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], args: Args) {
    runImpl(thisSuite, testName, args, super.run)
   }
 
@@ -2193,6 +2193,4 @@ trait FlatSpec extends Suite with ShouldVerb with MustVerb with CanVerb { thisSu
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.fixture.FlatSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
