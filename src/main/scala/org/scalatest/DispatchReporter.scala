@@ -40,7 +40,7 @@ import DispatchReporter.propagateDispose
  * @throws NullPointerException if <code>reporters</code> is <code>null</code>.
  * @author Bill Venners
  */
-private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out: PrintStream) extends CatchReporter {
+private[scalatest] class DispatchReporter(val reporters: List[Reporter], out: PrintStream) extends Reporter {
 
   private case object Dispose
 
@@ -55,7 +55,6 @@ private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out
       var testsSucceededCount = 0
       var testsFailedCount = 0
       var testsIgnoredCount = 0
-      var testsCanceledCount = 0
       var testsPendingCount = 0
       var suitesCompletedCount = 0
       var suitesAbortedCount = 0
@@ -89,7 +88,6 @@ private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out
                 counter.testsFailedCount,
                 counter.testsIgnoredCount,
                 counter.testsPendingCount,
-                counter.testsCanceledCount,
                 counter.suitesCompletedCount,
                 counter.suitesAbortedCount
               )
@@ -117,36 +115,35 @@ private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out
                 case _: TestSucceeded => incrementCount(event, _.testsSucceededCount += 1); event
                 case _: TestFailed => incrementCount(event, _.testsFailedCount += 1); event
                 case _: TestIgnored => incrementCount(event, _.testsIgnoredCount += 1); event
-                case _: TestCanceled => incrementCount(event, _.testsCanceledCount += 1); event
                 case _: TestPending => incrementCount(event, _.testsPendingCount += 1); event
                 case _: SuiteCompleted => incrementCount(event, _.suitesCompletedCount += 1); event
                 case _: SuiteAborted => incrementCount(event, _.suitesAbortedCount += 1); event
 
-                case oldRunCompleted @ RunCompleted(ordinal, duration, summary, formatter, location, payload, threadName, timeStamp) =>
+                case oldRunCompleted @ RunCompleted(ordinal, duration, summary, formatter, payload, threadName, timeStamp) =>
                   updatedSummary(summary, ordinal) match {
                     case None => oldRunCompleted
                     case newSummary @ Some(_) =>
                       counterMap.remove(ordinal.runStamp)
                       // Update the RunCompleted so that it is the same except it has a new Some(Summary)
-                      RunCompleted(ordinal, duration, newSummary, formatter, location, payload, threadName, timeStamp)
+                      RunCompleted(ordinal, duration, newSummary, formatter, payload, threadName, timeStamp)
                   }
       
-                case oldRunStopped @ RunStopped(ordinal, duration, summary, formatter, location, payload, threadName, timeStamp) =>
+                case oldRunStopped @ RunStopped(ordinal, duration, summary, formatter, payload, threadName, timeStamp) =>
                   updatedSummary(summary, ordinal) match {
                     case None => oldRunStopped
                     case newSummary @ Some(_) =>
                       counterMap.remove(ordinal.runStamp)
                       // Update the RunStopped so that it is the same except it has a new Some(Summary)
-                      RunStopped(ordinal, duration, newSummary, formatter, location, payload, threadName, timeStamp)
+                      RunStopped(ordinal, duration, newSummary, formatter, payload, threadName, timeStamp)
                   }
                 
-                case oldRunAborted @ RunAborted(ordinal, message, throwable, duration, summary, formatter, location, payload, threadName, timeStamp) => 
+                case oldRunAborted @ RunAborted(ordinal, message, throwable, duration, summary, formatter, payload, threadName, timeStamp) => 
                   updatedSummary(summary, ordinal) match {
                     case None => oldRunAborted
                     case newSummary @ Some(_) =>
                       counterMap.remove(ordinal.runStamp)
                       // Update the RunAborted so that it is the same except it has a new Some(Summary)
-                      RunAborted(ordinal, message, throwable, duration, newSummary, formatter, location, payload, threadName, timeStamp)
+                      RunAborted(ordinal, message, throwable, duration, newSummary, formatter, payload, threadName, timeStamp)
                   }
                 
                 case _ => event
@@ -197,17 +194,9 @@ private[scalatest] class DispatchReporter(val reporters: List[Reporter], val out
     latch.await()
   }
 
-  override def apply(event: Event) {
+  def apply(event: Event) {
     julia ! event
   }
-  
-  def doApply(event: Event) {}
-  
-  def doDispose() {
-    dispatchDisposeAndWaitUntilDone()
-  }
-  
-  def isDisposed = latch.getCount == 0
 }
 
 // TODO: Not a real problem, but if a DispatchReporter ever got itself in
@@ -219,6 +208,7 @@ private[scalatest] object DispatchReporter {
   def propagateDispose(reporter: Reporter) {
     reporter match {
       case dispatchReporter: DispatchReporter => dispatchReporter.dispatchDisposeAndWaitUntilDone()
+      case catchReporter: CatchReporter => catchReporter.catchDispose()
       case resourcefulReporter: ResourcefulReporter => resourcefulReporter.dispose()
       case _ =>
     }

@@ -99,6 +99,18 @@ class FunSuiteSuite extends Suite with SharedHelpers {
   }
   
   def testThatInfoInsideATestMethodGetsOutTheDoor() {
+    class MyReporter extends Reporter {
+      var infoProvidedReceived = false
+      var lastEvent: InfoProvided = null
+      def apply(event: Event) {
+        event match {
+          case event: InfoProvided =>
+            infoProvidedReceived = true
+            lastEvent = event
+          case _ =>
+        }
+      }
+    }
     val msg = "hi there, dude"
     class MySuite extends FunSuite {
       test("test this") {
@@ -106,14 +118,10 @@ class FunSuiteSuite extends Suite with SharedHelpers {
       }
     }
     val a = new MySuite
-    val myRep = new EventRecordingReporter
-    a.run(None, Args(myRep))
-    val testSucceeded = myRep.testSucceededEventsReceived
-    assert(testSucceeded.size === 1)
-    val recordedEvents = testSucceeded(0).recordedEvents
-    assert(recordedEvents.size === 1)
-    val ip = recordedEvents(0).asInstanceOf[InfoProvided]
-    assert(ip.message === msg)
+    val myRep = new MyReporter
+    a.run(None, myRep, new Stopper {}, Filter(), Map(), None, new Tracker)
+    assert(myRep.infoProvidedReceived)
+    assert(myRep.lastEvent.message === msg)
   }
   
   def testThatInfoInTheConstructorGetsOutTheDoor() {
@@ -137,7 +145,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
     val a = new MySuite
     val myRep = new MyReporter
-    a.run(None, Args(myRep))
+    a.run(None, myRep, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(myRep.infoProvidedReceived)
     assert(myRep.lastEvent.message === msg)
   }
@@ -164,7 +172,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
     val a = new MySuite
     val myRep = new MyReporter
-    a.run(None,Args( myRep))
+    a.run(None, myRep, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(infoProvidedReceivedBeforeTest)
   }
 
@@ -190,7 +198,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
     val a = new MySuite
     val myRep = new MyReporter
-    a.run(None, Args(myRep))
+    a.run(None, myRep, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(infoProvidedReceivedAfterTest)
     assert(infoProvidedReceived)
   }
@@ -218,7 +226,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
 
     val a = new MySuite
-    a.run(None, Args(new MyReporter))
+    a.run(None, new MyReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(testFailedAsExpected)
   }
 
@@ -245,7 +253,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
 
     val a = new MySuite
-    a.run(None, Args(new MyReporter))
+    a.run(None, new MyReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(testFailedAsExpected)
   }
 
@@ -272,7 +280,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
 
     val a = new MySuite
-    a.run(None, Args(new MyReporter))
+    a.run(None, new MyReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(testFailedAsExpected)
   }
 
@@ -299,7 +307,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
     }
 
     val a = new MySuite
-    a.run(None, Args(new MyReporter))
+    a.run(None, new MyReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(testFailedAsExpected)
   }
 
@@ -312,7 +320,7 @@ class FunSuiteSuite extends Suite with SharedHelpers {
 
     val myFunSuite = new MyFunSuite
     val myReporter = new TestDurationReporter
-    myFunSuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    myFunSuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
     assert(myReporter.testSucceededWasFiredAndHadADuration)
     assert(myReporter.testFailedWasFiredAndHadADuration)
   }
@@ -320,30 +328,31 @@ class FunSuiteSuite extends Suite with SharedHelpers {
   def testThatSuiteDurationsAreIncludedInSuiteCompletedEventsFiredFromFunSuite() {
 
     class MyFunSuite extends FunSuite {
-      override def nestedSuites = Vector(new Suite {})
+      override def nestedSuites = List(new Suite {})
     }
 
     val myFunSuite = new MyFunSuite
     val myReporter = new SuiteDurationReporter
-    myFunSuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    myFunSuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
     assert(myReporter.suiteCompletedWasFiredAndHadADuration)
   }
 
   def testThatSuiteDurationsAreIncludedInSuiteAbortedEventsFiredFromFunSuite() {
 
     class SuiteThatAborts extends Suite {
-      override def run(testName: Option[String], args: Args): Status = {
+      override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+              config: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
         throw new RuntimeException("Aborting for testing purposes")
       }
     }
 
     class MyFunSuite extends FunSuite {
-      override def nestedSuites = Vector(new SuiteThatAborts {})
+      override def nestedSuites = List(new SuiteThatAborts {})
     }
 
     val myFunSuite = new MyFunSuite
     val myReporter = new SuiteDurationReporter
-    myFunSuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    myFunSuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
     assert(myReporter.suiteAbortedWasFiredAndHadADuration)
   }
 
@@ -355,9 +364,8 @@ class FunSuiteSuite extends Suite with SharedHelpers {
 
     val mySuite = new MyFunSuite
     val myReporter = new PendingReporter
-    mySuite.run(None, Args(myReporter, Stopper.default, Filter(), Map(), None, new Tracker(new Ordinal(99)), Set.empty))
+    mySuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
     assert(myReporter.testPendingWasFired)
   }
 }
 
-class `My Fun Suite` extends Suite {}
