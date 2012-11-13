@@ -12,8 +12,8 @@
 	<property name="for.scala" value="2.10.0-RC1" />
 -->
 
-    <property name="scala.version" value="2.9.0" />
-	<property name="for.scala" value="2.9.x" />
+    <property name="scala.version" value="2.10.0-RC2" />
+	<property name="for.scala" value="2.10.0-RC2" />
     <property name="release" value="2.0.M5" />
 
     <property name="scalasrc" value="src/main/scala" />
@@ -1018,5 +1018,86 @@
             </or>
         </condition>
     </target>
+	
+	
+    <target name="java-test" depends="compile,dist">
+      <property name="maven.repo" value="${user.home}/.m2/repository" />
+      <java classname="org.scalatest.tools.Runner" fork="true">
+        <arg value="-P"/>
+        <arg value="-R"/>
+        <arg value="target/tests"/>
+        <arg value="-g"/>
+        <arg value="-o"/>
+        <arg value="-m"/>
+      	<arg value="org.scalatest" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.fixture" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.concurrent" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.testng" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.junit" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.events" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.prop" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.tools" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.matchers" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.suiteprop" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.mock" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.path" />
+        <arg value="-m"/>
+        <arg value="org.scalatest.selenium" />
+        <jvmarg value="-XX:MaxPermSize=512m"/>
+        <classpath>
+          <pathelement location="target/dist/lib/scalatest.jar"/>
+          <pathelement location="${maven.repo}/org/scala-lang/scala-library/2.10.0-RC2/scala-library-2.10.0-RC2.jar"/>
+          <!--<pathelement location="${maven.repo}/org/scala-lang/scala-actors/2.10.0-RC2/scala-actors-2.10.0-RC2.jar"/>-->
+          <pathelement location="${maven.repo}/org/scalacheck/scalacheck_2.10.0-RC2/1.10.0/scalacheck_2.10.0-RC2-1.10.0.jar"/>
+          <pathelement location="${maven.repo}/org/scala-tools/testing/test-interface/0.5/test-interface-0.5.jar"/>
+          <pathelement location="${maven.repo}/org/testng/testng/6.3.1/testng-6.3.1.jar"/>
+          <pathelement location="${maven.repo}/org/hamcrest/hamcrest-core/1.1/hamcrest-core-1.1.jar"/>
+          <pathelement location="${maven.repo}/org/hamcrest/hamcrest-library/1.1/hamcrest-library-1.1.jar"/>
+          <pathelement location="${maven.repo}/org/jmock/jmock/2.5.1/jmock-2.5.1.jar"/>
+          <pathelement location="${maven.repo}/com/beust/jcommander/1.20/jcommander-1.20.jar"/>
+          <pathelement location="${maven.repo}/org/jmock/jmock-legacy/2.5.1/jmock-legacy-2.5.1.jar"/>
+          <pathelement location="${maven.repo}/junit/junit/4.10/junit-4.10.jar"/>
+          <pathelement location="${maven.repo}/cglib/cglib/2.2.2/cglib-2.2.2.jar"/>
+          <pathelement location="${maven.repo}/org/objenesis/objenesis/1.2/objenesis-1.2.jar"/>
+          <pathelement location="${maven.repo}/asm/asm/3.3.1/asm-3.3.1.jar"/>
+          <pathelement location="${maven.repo}/org/mockito/mockito-all/1.9.0/mockito-all-1.9.0.jar"/>
+          <pathelement location="${maven.repo}/org/apache/commons/commons-io/1.3.2/commons-io-1.3.2.jar"/>
+          <pathelement location="${maven.repo}/org/easymock/easymock/3.1/easymock-3.1.jar"/>
+          <pathelement location="${maven.repo}/org/eclipse/jetty/jetty-util/8.0.1.v20110908/jetty-util-8.0.1.v20110908.jar"/>
+          <pathelement location="${maven.repo}/org/eclipse/jetty/jetty-server/8.0.1.v20110908/jetty-server-8.0.1.v20110908.jar"/>
+          <pathelement location="${maven.repo}/javax/servlet/servlet-api/2.4/servlet-api-2.4.jar"/>
+          <pathelement location="${maven.repo}/org/eclipse/jetty/jetty-http/8.0.1.v20110908/jetty-http-8.0.1.v20110908.jar"/>
+          <pathelement location="${maven.repo}/org/eclipse/jetty/jetty-io/8.0.1.v20110908/jetty-io-8.0.1.v20110908.jar"/>
+          <pathelement location="${maven.repo}/org/seleniumhq/selenium/selenium-api/2.25.0/selenium-api-2.25.0.jar"/>
+          <pathelement location="${maven.repo}/org/seleniumhq/selenium/selenium-support/2.25.0/selenium-support-2.25.0.jar"/>
+          <pathelement location="${maven.repo}/com/google/guava/guava/12.0/guava-12.0.jar"/>
+          <pathelement location="${maven.repo}/org/seleniumhq/selenium/selenium-htmlunit-driver/2.25.0/selenium-htmlunit-driver-2.25.0.jar"/>
+          <pathelement location="${maven.repo}/net/sourceforge/htmlunit/htmlunit/2.9/htmlunit-2.9.jar"/>
+          <pathelement location="${maven.repo}/net/sourceforge/htmlunit/htmlunit-core-js/2.9/htmlunit-core-js-2.9.jar"/>
+          <pathelement location="${maven.repo}/commons-codec/commons-codec/1.4/commons-codec-1.4.jar"/>
+          <pathelement location="${maven.repo}/org/apache/httpcomponents/httpclient/4.1.2/httpclient-4.1.2.jar"/>
+          <pathelement location="${maven.repo}/org/w3c/css/sac/1.3/sac-1.3.jar"/>
+          <pathelement location="${maven.repo}/commons-logging/commons-logging-api/1.1/commons-logging-api-1.1.jar"/>
+          <pathelement location="${maven.repo}/commons-lang/commons-lang/2.6/commons-lang-2.6.jar"/>
+          <pathelement location="${maven.repo}/org/apache/httpcomponents/httpcore/4.1.2/httpcore-4.1.2.jar"/>
+          <pathelement location="${maven.repo}/org/apache/httpcomponents/httpmime/4.1.2/httpmime-4.1.2.jar"/>
+          <pathelement location="${maven.repo}/commons-collections/commons-collections/3.2.1/commons-collections-3.2.1.jar"/>
+          <pathelement location="${maven.repo}/net/sourceforge/cssparser/cssparser/0.9.5/cssparser-0.9.5.jar"/>
+          <pathelement location="${maven.repo}/xerces/xercesImpl/2.9.1/xercesImpl-2.9.1.jar"/>
+          <pathelement location="${maven.repo}/net/sourceforge/nekohtml/nekohtml/1.9.15/nekohtml-1.9.15.jar"/>
+          <pathelement location="${maven.repo}/xalan/xalan/2.7.1/xalan-2.7.1.jar"/>
+        </classpath>
+      </java>
+    </target>
 </project>
-
