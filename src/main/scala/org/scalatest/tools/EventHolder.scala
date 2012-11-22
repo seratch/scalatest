@@ -26,16 +26,16 @@ import EventHolder.suiteAndTestName
  * @author Bill Venners
  */
 private[tools] class EventHolder(val event: Event, val message: Option[String], val throwable: Option[Throwable],
-    val rerunner: Option[String], val summary: Option[Summary], val isRerun: Boolean) {
+    val rerunner: Option[Rerunner], val summary: Option[Summary], val isRerun: Boolean) {
 
   if (event == null || message == null || throwable == null || rerunner == null || summary == null)
     throw new NullPointerException()
  
   def this(event: Event, message: Option[String], throwable: Option[Throwable],
-      rerunner: Option[String]) = this(event, message, throwable, rerunner, None, false)
+      rerunner: Option[Rerunner]) = this(event, message, throwable, rerunner, None, false)
 
   def this(event: Event, message: Option[String], throwable: Option[Throwable],
-      rerunner: Option[String], summary: Option[Summary]) = this(event, message, throwable, rerunner, summary, false)
+      rerunner: Option[Rerunner], summary: Option[Summary]) = this(event, message, throwable, rerunner, summary, false)
 
   override def toString = {
     event.formatter match {
@@ -59,10 +59,7 @@ private[tools] class EventHolder(val event: Event, val message: Option[String], 
           case event: RunStopped => firstString
           case event: RunAborted => firstString
           case event: RunCompleted => firstString
-          case event: ScopeOpened => firstString + " - " + event.message
-          case event: ScopeClosed => firstString
           case event: InfoProvided => firstString + " - " + event.message
-          case event: MarkupProvided => firstString + " - " + event.text
           case event: SuiteStarting => firstAndSecondString(firstString, event.suiteName)
           case event: SuiteCompleted => firstAndSecondString(firstString, event.suiteName)
           case event: SuiteAborted => firstAndSecondString(firstString, event.suiteName)
@@ -71,7 +68,6 @@ private[tools] class EventHolder(val event: Event, val message: Option[String], 
           case event: TestIgnored => firstAndSecondString(firstString, suiteAndTestName(event.suiteName, event.testName))
           case event: TestSucceeded => firstAndSecondString(firstString, suiteAndTestName(event.suiteName, event.testName))
           case event: TestFailed => firstAndSecondString(firstString, suiteAndTestName(event.suiteName, event.testName))
-          case event: TestCanceled => firstAndSecondString(firstString, suiteAndTestName(event.suiteName, event.testName))
         }
     }
   }

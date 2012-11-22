@@ -84,7 +84,7 @@ import org.scalatest.fixture
  *
  * @author Bill Venners
  */
-trait ConductorFixture extends SuiteMixin with Conductors { this: fixture.Suite =>
+trait ConductorFixture extends AbstractSuite with Conductors { this: fixture.Suite =>
 
   /**
    * Defines type <code>Fixture</code> to be <code>Conductor</code>.

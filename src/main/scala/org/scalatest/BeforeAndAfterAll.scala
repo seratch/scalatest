@@ -17,20 +17,18 @@ package org.scalatest
 
 /**
  * Trait that can be mixed into suites that need methods invoked before and after executing the
- * suite.
- *
- * <p>
- * This trait allows code to be executed before and/or after all the tests and nested suites of a
- * suite are run. This trait overrides <code>run</code> and calls the
+ * suite. This trait allows code to be executed before and/or after all the tests and nested suites of a
+ * suite are run. This trait overrides <code>run</code> (the main <code>run</code> method that
+ * takes seven parameters, an optional test name, reporter, stopper, filter, configMap, optional distributor,
+ * and tracker) and calls the
  * <code>beforeAll</code> method, then calls <code>super.run</code>. After the <code>super.run</code>
  * invocation completes, whether it returns normally or completes abruptly with an exception,
  * this trait's <code>run</code> method will invoke <code>afterAll</code>.
- * </p>
  *
  * <p>
- * Trait <code>BeforeAndAfterAll</code> defines two overloaded variants each of <code>beforeAll</code>
+ * Trait <code>BeforeAndAfterAll</code> defines two overloaded variants  each of <code>beforeAll</code>
  * and <code>afterAll</code>, one that takes a <code>configMap</code> and another that takes no
- * arguments. This trait's implemention of the variant that takes the <code>configMap</code>
+ * arguments. This traits implemention of the variant that takes the <code>configMap</code>
  * simply invokes the variant that takes no parameters, which does nothing. Thus you can override
  * whichever variant you want. If you need something from the <code>configMap</code> before
  * all tests and nested suites are run, override <code>beforeAll(Map[String, Any])</code>. Otherwise,
@@ -38,73 +36,54 @@ package org.scalatest
  * </p>
  *
  * <p>
- * For example, the following <code>ExampleSpec</code> mixes in <code>BeforeAndAfterAll</code> and
+ * For example, the following <code>MasterSuite</code> mixes in <code>BeforeAndAfterAll</code> and
  * in <code>beforeAll</code>, creates and writes to a temp file, taking the name of the temp file
  * from the <code>configMap</code>. This same <code>configMap</code> is then passed to the <code>run</code>
- * methods of the nested suites, <code>OneSpec</code>, <code>TwoSpec</code>, <code>RedSpec</code>,
- * and <code>BlueSpec</code>, so those suites can access the filename and, therefore, the file's
+ * methods of the nested suites, <code>OneSuite</code>, <code>TwoSuite</code>, <code>RedSuite</code>,
+ * and <code>BlueSuite</code>, so those suites can access the filename and, therefore, the file's
  * contents. After all of the nested suites have executed, <code>afterAll</code> is invoked, which
- * again grabs the file name from the <code>configMap</code> and deletes the file. Each of these five
- * test classes extend trait <code>TempFileExistsSpec</code>, which defines a test that ensures the temp file exists.
- * (Note: if you're unfamiliar with the <code>withFixture(OneArgTest)</code> approach to shared fixtures, check out
- * the documentation for trait <a href="fixture/FlatSpec.html"><code>fixture.FlatSpec</code></a>.)
+ * again grabs the file name from the <code>configMap</code> and deletes the file:
  * </p>
  * 
  * <pre class="stHighlight">
- * package org.scalatest.examples.beforeandafterall
+ * import org.scalatest.SuperSuite
+ * import org.scalatest.BeforeAndAfterAll
+ * import java.io.FileReader
+ * import java.io.FileWriter
+ * import java.io.File
  *
- * import org.scalatest._
- * import java.io._
- * 
- * trait TempFileExistsSpec extends fixture.FlatSpec {
- * 
- *   type FixtureParam = File
- *   override def withFixture(test: OneArgTest) {
- *     val fileName = test.configMap("tempFileName").asInstanceOf[String]
- *     val file = new File(fileName)
- *     withFixture(test.toNoArgTest(file)) // loan the fixture to the test
- *   }
- * 
- *   "The temp file" should ("exist in " + suiteName) in { file =>
- *     assert(file.exists)
- *   }
- * }
- * 
- * class OneSpec extends TempFileExistsSpec
- * class TwoSpec extends TempFileExistsSpec
- * class RedSpec extends TempFileExistsSpec
- * class BlueSpec extends TempFileExistsSpec
- * 
- * class ExampleSpec extends Specs(
- *   new OneSpec,
- *   new TwoSpec,
- *   new RedSpec,
- *   new BlueSpec
- * ) with TempFileExistsSpec with BeforeAndAfterAll {
- * 
- *   private val tempFileName = "tempFileName"
- * 
+ * class MasterSuite extends Suite with BeforeAndAfterAll {
+ *
+ *   private val FileNameKeyInGoodies = "tempFileName"
+ *
  *   // Set up the temp file needed by the test, taking
  *   // a file name from the configMap
  *   override def beforeAll(configMap: Map[String, Any]) {
- * 
+ *
  *     require(
- *       configMap.isDefinedAt(tempFileName),
- *       "must place a temp file name in the configMap under the key: " + tempFileName
+ *       configMap.isDefinedAt(FileNameKeyInGoodies),
+ *       "must place a temp file name in the configMap under the key: " + FileNameKeyInGoodies
  *     )
- * 
- *     val fileName = configMap(tempFileName).asInstanceOf[String]
- * 
+ *
+ *     val fileName = configMap(tempFileName)
+ *
  *     val writer = new FileWriter(fileName)
- *     try writer.write("Hello, suite of tests!")
- *     finally writer.close()
+ *     try {
+ *       writer.write("Hello, suite of tests!")
+ *     }
+ *     finally {
+ *       writer.close()
+ *     }
  *   }
+ *
+ *   override def nestedSuites =
+ *     List(new OneSuite, new TwoSuite, new RedSuite, new BlueSuite)
  * 
  *   // Delete the temp file
  *   override def afterAll(configMap: Map[String, Any]) {
  *     // No need to require that configMap contains the key again because it won't get
- *     // here if it didn't contain the key in beforeAll
- *     val fileName = configMap("tempFileName").asInstanceOf[String]
+ *     // here if it didn't contain the key in beforeAll 
+ *     val fileName = configMap(tempFileName))
  *     val file = new File(fileName)
  *     file.delete()
  *   }
@@ -112,52 +91,31 @@ package org.scalatest
  * </pre>
  *
  * <p>
- * Running the above class in the interpreter will give an error if you don't supply a mapping for <code>"tempFileName"</code> in the config map:
+ * Because the <code>BeforeAndAfterAll</code> trait invokes <code>super.run</code> to run the suite, you may need to
+ * mix this trait in last to get the desired behavior. For example, this won't
+ * work, because <code>BeforeAndAfterAll</code> is "super" to </code>FunSuite</code>:
  * </p>
- *
- * <pre class="stREPL">
- * scala&gt; new ExampleSpec execute
- * <span class="stGreen">ExampleSpec:</span>
- * <span class="stRed">Exception encountered when invoking run on a suite. *** ABORTED ***
- *   java.lang.IllegalArgumentException: requirement failed: must place a temp file name in the configMap under the key: tempFileName
- *   ...
- * *** RUN ABORTED ***
- *   java.lang.IllegalArgumentException: requirement failed: must place a temp file name in the configMap under the key: tempFileName
- *   ...</span>
+ * <pre class="stHighlight">
+ * class MySuite extends BeforeAndAfterAll with FunSuite
+ * </pre>
+ * <p>
+ * You'd need to turn it around, so that <code>FunSuite</code> is "super" to <code>BeforeAndAfterAll</code>, like this:
+ * </p>
+ * <pre class="stHighlight">
+ * class MySuite extends FunSuite with BeforeAndAfterAll
  * </pre>
  *
- * <p>
- * If you do supply a mapping for <code>"tempFileName"</code> in the config map, you'll see that the temp file is available to all the tests:
- * </p>
- *
- * <pre class="stREPL">
- * scala&gt; new ExampleSpec execute (configMap = Map("tempFileName" -> "tmp.txt"))
- * <span class="stGreen">ExampleSpec:
- * OneSpec:
- * The temp file
- * - should exist in OneSpec
- * TwoSpec:
- * The temp file
- * - should exist in TwoSpec
- * RedSpec:
- * The temp file
- * - should exist in RedSpec
- * BlueSpec:
- * The temp file
- * - should exist in BlueSpec
- * The temp file
- * - should exist in ExampleSpec</span>
- * </pre>
- *
- * <p>
- * <strong>Note: As of 2.0.M5, this trait uses the newly added <code>Status</code> result of <code>Suite</code>'s "run" methods
- * to ensure that the code in <code>afterAll</code> is executed after
- * all the tests and nested suites are executed even if a <code>Distributor</code> is passed.</strong>
- * </p>
+ * <strong>Note: This trait does not currently ensure that the code in <code>afterAll</code> is executed after
+ * all the tests and nested suites are executed if a <code>Distributor</code> is passed. The
+ * plan is to do that eventually, but in the meantime, be aware that <code>afterAll</code> is
+ * guaranteed to be run after all the tests and nested suites only when they are run
+ * sequentially.</strong>
  *
  * @author Bill Venners
  */
-trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
+trait BeforeAndAfterAll  extends AbstractSuite {
+
+  this: Suite =>
 
   /**
    * Defines a method to be run before any of this suite's tests or nested suites are run.
@@ -245,29 +203,21 @@ trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
    * If <code>super.run</code> returns normally, but <code>afterAll</code> completes abruptly with an
    * exception, this method will complete abruptly with the same exception.
    * </p>
-   *
-   * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
-   *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when the test started by this method has completed, and whether or not it failed .
   */
-  abstract override def run(testName: Option[String], args: Args): Status = {
+  abstract override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                       configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     var thrownException: Option[Throwable] = None
 
-    beforeAll(args.configMap)
+    beforeAll(configMap)
     try {
-      val runStatus = super.run(testName, args)
-      runStatus.succeeds()
-      runStatus
+      super.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
     }
     catch {
-      case e: Exception => 
-        thrownException = Some(e)
-        FailedStatus
+      case e: Exception => thrownException = Some(e)
     }
     finally {
       try {
-        afterAll(args.configMap) // Make sure that afterAll is called even if run completes abruptly.
+        afterAll(configMap) // Make sure that afterAll is called even if run completes abruptly.
         thrownException match {
           case Some(e) => throw e
           case None =>
