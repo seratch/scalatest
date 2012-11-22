@@ -1,7 +1,6 @@
 package org.scalatest
 import org.scalatest.tools.SuiteRunner
 import java.util.concurrent.CountDownLatch
-import scala.collection.GenSet
 
 /**
  * The result status of running a test or a suite.
@@ -17,6 +16,9 @@ import scala.collection.GenSet
  * @author cheeseng
  */
 trait Status {
+  
+// TODO: Do we have tests that ensure that runTest and runTests succeeds method returns false if that test completes abruptly with say a VirtualMachineError
+// and the like? I.e., something that usually causes a SuiteAborted rather than a TestFailed.
 
   /**
    * Blocking call that waits until completion, then returns returns <code>true</code> if no tests failed and no suites aborted, else returns <code>false</code>.
@@ -54,7 +56,6 @@ trait Status {
 /**
  * Singleton status that represents an already completed run with no tests failed and no suites aborted.
  */
-@serializable
 object SucceededStatus extends Status {
 
   /**
@@ -80,7 +81,6 @@ object SucceededStatus extends Status {
 /**
  * Singleton status that represents an already completed run with at least one failed test or aborted suite.
  */
-@serializable
 object FailedStatus extends Status {
 
   /**
@@ -104,7 +104,6 @@ object FailedStatus extends Status {
 }
 
 // Used internally in ScalaTest
-@serializable
 private[scalatest] final class ScalaTestStatefulStatus extends Status {
   private val latch = new CountDownLatch(1)
   @volatile private var succeeded = true
@@ -121,8 +120,6 @@ private[scalatest] final class ScalaTestStatefulStatus extends Status {
   }
   
   def setFailed() {
-    if (isCompleted)
-      throw new IllegalStateException("status is already completed")
     succeeded = false
   }
   
@@ -145,7 +142,6 @@ private[scalatest] final class ScalaTestStatefulStatus extends Status {
  * Instances of this class are thread safe.
  * </p>
  */
-@serializable
 final class StatefulStatus extends Status {
   private val latch = new CountDownLatch(1)
   @volatile private var succeeded = true
@@ -175,6 +171,7 @@ final class StatefulStatus extends Status {
     latch.await()
   }
 
+// TODO: Need to write a test and ensure that this method throws IllegalStateException if it is called after setCompleted is called.
   /**
    * Sets the status to failed without changing the completion status.
    *
@@ -187,8 +184,6 @@ final class StatefulStatus extends Status {
    * @throws IllegalStateException if this method is invoked on this instance after <code>setCompleted</code> has been invoked on this instance.
    */
   def setFailed() {
-    if (isCompleted)
-      throw new IllegalStateException("status is already completed")
     succeeded = false
   }
 
@@ -200,16 +195,21 @@ final class StatefulStatus extends Status {
    * <p>
    */
   def setCompleted() {
+    // Note: count down latches ignore invocations of countDown after the count has already reached 0, so this can safely be invoked multiple times
+    // But TODO anyway, write a test that ensures that behavior
     latch.countDown()
   }
 }
+
+// TODO: Why is this a Seq? Should it be a Set instead? Moreover, should it be a GenSet so it can be run in parallel?
+// Reason is that if you toss a bunch of succeededstatus and a bunch of failedstatuses in there, it doesn't matter. One failed
+// status is enough.
 
 /**
  * Composite <code>Status</code> that aggregates its completion and failed states of set of other <code>Status</code>es passed to its constructor.
  *
  * @param status the <code>Status</code>es out of which this status is composed.
  */
-@serializable
 final class CompositeStatus(statuses: Set[Status]) extends Status {
   
   /**
