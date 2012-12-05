@@ -49,6 +49,8 @@
     <property name="example" value="${demo}/example" />
 
     <property name="jvmargs" value="-Xmx3000M -Xss10M"/>
+    <property name="mvn.deploy.plugin"
+              value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
 
   <!--
   <property name="build.compiler" value="jikes"/>
@@ -349,6 +351,11 @@
         <bnd classpath="${jar.contents}" sourcepath="${jar.contents}"
              eclipse="false" failok="false" exceptions="true" files="osgi.bnd"
              output="${dist}/lib/scalatest.jar" /> 
+
+        <!-- Create scalautils jar, including OSGi metadata -->
+        <bnd classpath="${jar.contents}" sourcepath="${jar.contents}"
+             eclipse="false" failok="false" exceptions="true"
+             files="scalautils-osgi.bnd" output="${dist}/lib/scalautils.jar" /> 
 
         <jar jarfile="${dist}/lib/scalatest-wbt.jar" basedir="${build.tests}" includes="org/scalatest/*.class" />
 
@@ -784,6 +791,60 @@
                 value="${release}"/>
 
       <antcall target="deploy-jars"/>
+      <antcall target="deploy-utils"/>
+    </target>
+
+    <target name="deploy-jar">
+      <artifact:pom id="pom" file="${deploy.pomfile}" />
+
+      <property name="snapshot.repository"
+                value="${pom.distributionManagement.snapshotRepository.url}" />
+      <property name="release.repository"
+                value="${pom.distributionManagement.repository.url}" />
+      <property name="snapshot.repository.id"
+                value="${pom.distributionManagement.snapshotRepository.id}" />
+      <property name="release.repository.id"
+                value="${pom.distributionManagement.repository.id}" />
+
+      <condition property="maven.repository.url" value="${snapshot.repository}"
+                 else="${release.repository}">
+        <contains string="${deploy.release}" substring="-SNAPSHOT"/>
+      </condition>
+
+      <condition property="repository.id" value="${snapshot.repository.id}"
+                 else="${release.repository.id}">
+        <contains string="${deploy.release}" substring="-SNAPSHOT"/>
+      </condition>
+
+      <artifact:mvn>
+        <arg value="${mvn.deploy.plugin}" />
+        <arg value="-Dfile=${deploy.file}" />
+        <arg value="-Dclassifier=${deploy.classifier}" />
+        <arg value="-Durl=${maven.repository.url}" />
+        <arg value="-DpomFile=${deploy.pomfile}" />
+        <arg value="-DrepositoryId=${repository.id}" />
+        <arg value="-DuniqueVersion=false" />
+        <arg value="-Pgpg" />
+      </artifact:mvn>
+    </target>
+
+    <target name="deploy-utils" depends="">
+      <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
+            overwrite="true">
+        <filterset>
+          <filter token="RELEASE" value="${release}" />
+          <filter token="SCALA_VERSION" value="${scala.version}" />
+        </filterset>
+      </copy>
+
+      <artifact:pom id="pom" file="${build}/pom.xml" />
+
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value=""/>
+        <param name="deploy.file"       value="${dist}/lib/scalautils.jar"/>
+        <param name="deploy.release"    value="${release}"/>
+      </antcall>
     </target>
 
     <!--
