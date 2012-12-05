@@ -1097,7 +1097,6 @@ class WebBrowserSpec extends JettySpec with ShouldMatchers with SpanSugar with W
       finally close()(driver)
     }
   
-/*
     ignore("should support wait method") {
       // This example is taken from http://seleniumhq.org/docs/03_webdriver.html
   
@@ -1123,7 +1122,6 @@ class WebBrowserSpec extends JettySpec with ShouldMatchers with SpanSugar with W
       // Should see: "cheese! - Google Search"
       pageTitle should be ("Cheese! - Google Search")
     }
-*/
  
     ignore("should be able to use ScalaTest's eventually in place of Selenium's wait") {
       import org.scalatest.concurrent.Eventually._

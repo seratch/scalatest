@@ -148,18 +148,18 @@ trait ClassicMatchers extends Assertions { matchers =>
 
   // TODO: Can probably rewrite this with a Thread.currentStackTrace or whatever the method is. No need
   // to create the temporary RuntimeException
-  private[scalatest] def newTestFailedException(message: String, optionalCause: Option[Throwable] = None, stackDepthAdjustment: Int = 0): Throwable = {
+  private[scalatest] def newTestFailedException(message: String, optionalCause: Option[Throwable] = None): Throwable = {
     val fileNames = List("Matchers.scala", "ShouldMatchers.scala", "MustMatchers.scala")
     val temp = new RuntimeException
     val stackDepth = temp.getStackTrace.takeWhile(stackTraceElement => fileNames.exists(_ == stackTraceElement.getFileName) || stackTraceElement.getMethodName == "newTestFailedException").length
     // if (stackDepth != 4) throw new OutOfMemoryError("stackDepth in Matchers.scala is: " + stackDepth)
     optionalCause match {
-      case Some(cause) => new TestFailedException(message, cause, stackDepth + stackDepthAdjustment)
-      case None => new TestFailedException(message, stackDepth + stackDepthAdjustment)
+      case Some(cause) => new TestFailedException(message, cause, stackDepth)
+      case None => new TestFailedException(message, stackDepth)
     }
   }
 
-  private[scalatest] def matchSymbolToPredicateMethod[S <: AnyRef](left: S, right: Symbol, hasArticle: Boolean, articleIsA: Boolean): MatchResult = {
+  private def matchSymbolToPredicateMethod[S <: AnyRef](left: S, right: Symbol, hasArticle: Boolean, articleIsA: Boolean): MatchResult = {
 
     // If 'empty passed, rightNoTick would be "empty"
     val propertyName = right.name
