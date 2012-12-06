@@ -959,91 +959,41 @@
     <target name="deploy-jars">
       <artifact:pom id="pom" file="${build}/pom.xml" />
 
-      <property name="snapshot.repository"
-                value="${pom.distributionManagement.snapshotRepository.url}" />
-      <property name="release.repository"
-                value="${pom.distributionManagement.repository.url}" />
-      <property name="snapshot.repository.id"
-                value="${pom.distributionManagement.snapshotRepository.id}" />
-      <property name="release.repository.id"
-                value="${pom.distributionManagement.repository.id}" />
-      <property name="mvn.deploy.plugin"
-                value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value=""/>
+        <param name="deploy.file"       value="${deploy.main}"/>
+      </antcall>
 
-      <condition property="maven.repository.url" value="${snapshot.repository}"
-                 else="${release.repository}">
-        <contains string="${deploy.release}" substring="-SNAPSHOT"/>
-      </condition>
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="tests"/>
+        <param name="deploy.file"       value="${deploy.tests}"/>
+      </antcall>
 
-      <condition property="repository.id" value="${snapshot.repository.id}"
-                 else="${release.repository.id}">
-        <contains string="${deploy.release}" substring="-SNAPSHOT"/>
-      </condition>
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="sources"/>
+        <param name="deploy.file"       value="${deploy.sources}"/>
+      </antcall>
 
-      <artifact:mvn>
-        <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.main}" />
-        <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${build}/pom.xml" />
-        <arg value="-DrepositoryId=${repository.id}" />
-        <arg value="-DuniqueVersion=false" />
-        <arg value="-Pgpg" />
-      </artifact:mvn>
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="test-sources"/>
+        <param name="deploy.file"       value="${deploy.test-sources}"/>
+      </antcall>
 
-      <artifact:mvn>
-        <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.tests}" />
-        <arg value="-Dclassifier=tests" />
-        <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${build}/pom.xml" />
-        <arg value="-DrepositoryId=${repository.id}" />
-        <arg value="-DuniqueVersion=false" />
-        <arg value="-Pgpg" />
-      </artifact:mvn>
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="scaladoc"/>
+        <param name="deploy.file"       value="${deploy.scaladoc}"/>
+      </antcall>
 
-      <artifact:mvn>
-        <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.sources}" />
-        <arg value="-Dclassifier=sources" />
-        <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${build}/pom.xml" />
-        <arg value="-DrepositoryId=${repository.id}" />
-        <arg value="-DuniqueVersion=false" />
-        <arg value="-Pgpg" />
-      </artifact:mvn>
-
-      <artifact:mvn>
-        <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.test-sources}" />
-        <arg value="-Dclassifier=test-sources" />
-        <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${build}/pom.xml" />
-        <arg value="-DrepositoryId=${repository.id}" />
-        <arg value="-DuniqueVersion=false" />
-        <arg value="-Pgpg" />
-      </artifact:mvn>
-
-      <artifact:mvn>
-        <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.scaladoc}" />
-        <arg value="-Dclassifier=scaladoc" />
-        <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${build}/pom.xml" />
-        <arg value="-DrepositoryId=${repository.id}" />
-        <arg value="-DuniqueVersion=false" />
-        <arg value="-Pgpg" />
-      </artifact:mvn>
-
-      <artifact:mvn>
-        <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.javadoc}" />
-        <arg value="-Dclassifier=javadoc" />
-        <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${build}/pom.xml" />
-        <arg value="-DrepositoryId=${repository.id}" />
-        <arg value="-DuniqueVersion=false" />
-        <arg value="-Pgpg" />
-      </artifact:mvn>
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="javadoc"/>
+        <param name="deploy.file"       value="${deploy.javadoc}"/>
+      </antcall>
     </target>
 
     <target name="test-junit">
