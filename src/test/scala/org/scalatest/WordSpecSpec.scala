@@ -39,7 +39,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           testWasInvoked = true
         }
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.withFixtureWasInvoked)
       assert(a.testWasInvoked)
     }
@@ -52,7 +52,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
         "do something" in {}
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.correctTestNameWasPassed)
     }
     it("should pass the correct config map in the NoArgTest passed to withFixture") {
@@ -64,7 +64,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
         "do something" in {}
       }
-      a.run(None, Args(SilentReporter, Stopper.default, Filter(), Map("hi" -> 7), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker())
       assert(a.correctConfigMapWasPassed)
     }
 
@@ -173,13 +173,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "it should test that" in {}
       }
 
-      expectResult(List("it should test this", "it should test that")) {
+      expect(List("it should test this", "it should test that")) {
         a.testNames.iterator.toList
       }
 
       val b = new WordSpec {}
 
-      expectResult(List[String]()) {
+      expect(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -188,7 +188,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "it should test this" in {}
       }
 
-      expectResult(List("it should test that", "it should test this")) {
+      expect(List("it should test that", "it should test this")) {
         c.testNames.iterator.toList
       }
 
@@ -199,7 +199,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
 
-      expectResult(List("A Tester should test that", "A Tester should test this")) {
+      expect(List("A Tester should test that", "A Tester should test this")) {
         d.testNames.iterator.toList
       }
 
@@ -210,7 +210,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
 
-      expectResult(List("A Tester should test this", "A Tester should test that")) {
+      expect(List("A Tester should test this", "A Tester should test that")) {
         e.testNames.iterator.toList
       }
     }
@@ -254,11 +254,11 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       // In a Spec, any InfoProvided's fired during the test should be cached and sent out after the test has
       // suceeded or failed. This makes the report look nicer, because the info is tucked under the "specifier'
       // text for that test.
-      it("should, when the info appears in the code of a successful test, report the info in the TestSucceeded") {
+      it("should, when the info appears in the code of a successful test, report the info after the TestSucceeded") {
         val spec = new InfoInsideTestSpec
-        val (testStartingIndex, testSucceededIndex) =
-          getIndexesForTestInformerEventOrderTests(spec, spec.testName, spec.msg)
-        assert(testStartingIndex < testSucceededIndex)
+        val (infoProvidedIndex, testStartingIndex, testSucceededIndex) =
+          getIndexesForInformerEventOrderTests(spec, spec.testName, spec.msg)
+        assert(testSucceededIndex < infoProvidedIndex)
       }
       class InfoBeforeTestSpec extends WordSpec {
         val msg = "hi there, dude"
@@ -297,7 +297,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
         val spec = new MySpec
         val myRep = new EventRecordingReporter
-        spec.run(None, Args(myRep))
+        spec.run(None, myRep, new Stopper {}, Filter(), Map(), None, new Tracker)
         intercept[IllegalStateException] {
           spec.callInfo()
         }
@@ -309,7 +309,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
       it("should send an InfoProvided with an IndentedText formatter with level 2 when called within a test") {
         val spec = new InfoInsideTestSpec
-        val indentedText = getIndentedTextFromTestInfoProvided(spec)
+        val indentedText = getIndentedTextFromInfoProvided(spec)
         assert(indentedText === IndentedText("  + " + spec.msg, spec.msg, 1))
       }
     }
@@ -355,7 +355,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" ignore {}
         "test that" is (pending)
       }
-      expectResult(Map("test this" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
         a.tags
       }
 
@@ -363,7 +363,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" is (pending)
         "test that" ignore {}
       }
-      expectResult(Map("test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
         b.tags
       }
 
@@ -371,7 +371,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" ignore {}
         "test that" ignore {}
       }
-      expectResult(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
         c.tags
       }
 
@@ -379,7 +379,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" taggedAs(mytags.SlowAsMolasses) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) ignore {}
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
         d.tags
       }
 
@@ -387,7 +387,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" is (pending)
         "test that" is (pending)
       }
-      expectResult(Map()) {
+      expect(Map()) {
         e.tags
       }
 
@@ -395,7 +395,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) in  {}
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         f.tags
       }
 
@@ -403,7 +403,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) in  {}
       }
-      expectResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         g.tags
       }
     }
@@ -418,7 +418,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
     it("should execute all tests when run is called with testName None") {
 
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(b.theTestThisCalled)
       assert(b.theTestThatCalled)
     }
@@ -426,7 +426,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
     it("should execute one test when run is called with a defined testName") {
 
       val a = new TestWasCalledSuite
-      a.run(Some("run this"), Args(SilentReporter))
+      a.run(Some("run this"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(a.theTestThisCalled)
       assert(!a.theTestThatCalled)
     }
@@ -441,7 +441,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
 
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -454,7 +454,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
 
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB))
+      b.run(None, repB, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repB.testIgnoredReceived)
       assert(repB.lastEvent.isDefined)
       assert(repB.lastEvent.get.testName endsWith "test this")
@@ -469,7 +469,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
 
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repC))
+      c.run(None, repC, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repC.testIgnoredReceived)
       assert(repC.lastEvent.isDefined)
       assert(repC.lastEvent.get.testName endsWith "test that", repC.lastEvent.get.testName)
@@ -486,7 +486,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
 
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD))
+      d.run(None, repD, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(repD.lastEvent.isDefined)
       assert(repD.lastEvent.get.testName endsWith "test that") // last because should be in order of appearance
@@ -505,7 +505,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
 
       val repE = new TestIgnoredTrackingReporter
-      e.run(Some("test this"), Args(repE))
+      e.run(Some("test this"), repE, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(!e.theTestThatCalled)
@@ -521,7 +521,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" in { theTestThatCalled = true }
       }
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -534,7 +534,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" in { theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      b.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repB.testIgnoredReceived)
       assert(b.theTestThisCalled)
       assert(!b.theTestThatCalled)
@@ -547,7 +547,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" taggedAs(mytags.SlowAsMolasses) in { theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker, Set.empty))
+      c.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repC.testIgnoredReceived)
       assert(c.theTestThisCalled)
       assert(c.theTestThatCalled)
@@ -560,7 +560,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test that" taggedAs(mytags.SlowAsMolasses) in { theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
+      d.run(None, repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(!d.theTestThisCalled)
       assert(d.theTestThatCalled)
@@ -575,8 +575,8 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
-      e.run(None, Args(repE, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                Map(), None, new Tracker, Set.empty))
+      e.run(None, repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(e.theTestThatCalled)
@@ -592,8 +592,8 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
-      f.run(None, Args(repF, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                Map(), None, new Tracker, Set.empty))
+      f.run(None, repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repF.testIgnoredReceived)
       assert(!f.theTestThisCalled)
       assert(f.theTestThatCalled)
@@ -609,8 +609,8 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" ignore { theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
-      g.run(None, Args(repG, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                Map(), None, new Tracker, Set.empty))
+      g.run(None, repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repG.testIgnoredReceived)
       assert(!g.theTestThisCalled)
       assert(g.theTestThatCalled)
@@ -626,7 +626,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
-      h.run(None, Args(repH, Stopper.default, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker, Set.empty))
+      h.run(None, repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker)
       assert(!repH.testIgnoredReceived)
       assert(!h.theTestThisCalled)
       assert(h.theTestThatCalled)
@@ -642,7 +642,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
-      i.run(None, Args(repI, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
+      i.run(None, repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!i.theTestThisCalled)
       assert(!i.theTestThatCalled)
@@ -658,7 +658,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" in { theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
-      j.run(None, Args(repJ, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker, Set.empty))
+      j.run(None, repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!j.theTestThisCalled)
       assert(!j.theTestThatCalled)
@@ -674,7 +674,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         "test the other" ignore { theTestTheOtherCalled = true }
       }
       val repK = new TestIgnoredTrackingReporter
-      k.run(None, Args(repK, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker, Set.empty))
+      k.run(None, repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repK.testIgnoredReceived)
       assert(!k.theTestThisCalled)
       assert(!k.theTestThatCalled)
@@ -739,7 +739,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
@@ -753,7 +753,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }
@@ -765,41 +765,27 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
       intercept[OutOfMemoryError] {
-        a.run(None, Args(SilentReporter))
+        a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-/*
     it("should send InfoProvided events with aboutAPendingTest set to true for info " +
             "calls made from a test that is pending") {
       val a = new WordSpec with GivenWhenThen {
         "A WordSpec" should {
           "do something" in {
-            given("two integers")
-            when("one is subracted from the other")
-            then("the result is the difference between the two numbers")
+            Given("two integers")
+            When("one is subracted from the other")
+            Then("the result is the difference between the two numbers")
             pending
           }
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testPending = rep.testPendingEventsReceived
-      assert(testPending.size === 1)
-      val recordedEvents = testPending(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && ip.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 4)
+      for (event <- ip) {
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -807,35 +793,21 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val a = new WordSpec with GivenWhenThen {
         "A WordSpec" should {
           "do something" in {
-            given("two integers")
-            when("one is subracted from the other")
-            then("the result is the difference between the two numbers")
+            Given("two integers")
+            When("one is subracted from the other")
+            Then("the result is the difference between the two numbers")
             assert(1 + 1 === 2)
           }
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testSucceeded = rep.testSucceededEventsReceived
-      assert(testSucceeded.size === 1)
-      val recordedEvents = testSucceeded(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && !ip.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 4)
+      for (event <- ip) {
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
-*/
     it("should not put parentheses around should clauses that follow when") {
       val a = new WordSpec {
         "A Stack" when {
@@ -847,7 +819,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ts = rep.testSucceededEventsReceived
       assert(ts.size === 1)
       assert(ts.head.testName === "A Stack when empty should chill out")
@@ -861,71 +833,10 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val ts = rep.testSucceededEventsReceived
       assert(ts.size === 1)
       assert(ts.head.testName === "A Stack should chill out")
-    }
-    
-    it("should contains correct formatter for TestStarting, TestSucceeded, TestFailed, TestPending, TestCanceled and TestIgnored") {
-      class TestSpec extends WordSpec {
-        "a feature" should {
-          "succeeded here" in {}
-          "failed here" in { fail }
-          "pending here" in { pending }
-          "cancel here" in { cancel }
-          "ignore here" ignore {}
-        }
-      }
-      val rep = new EventRecordingReporter
-      val s = new TestSpec
-      s.run(None, Args(rep))
-      val testStartingList = rep.testStartingEventsReceived
-      assert(testStartingList.size === 4)
-      assert(testStartingList(0).formatter === Some(MotionToSuppress), "Expected testStartingList(0).formatter to be Some(MotionToSuppress), but got: " + testStartingList(0).formatter.getClass.getName)
-      assert(testStartingList(1).formatter === Some(MotionToSuppress), "Expected testStartingList(1).formatter to be Some(MotionToSuppress), but got: " + testStartingList(1).formatter.getClass.getName)
-      assert(testStartingList(2).formatter === Some(MotionToSuppress), "Expected testStartingList(2).formatter to be Some(MotionToSuppress), but got: " + testStartingList(2).formatter.getClass.getName)
-      assert(testStartingList(3).formatter === Some(MotionToSuppress), "Expected testStartingList(3).formatter to be Some(MotionToSuppress), but got: " + testStartingList(3).formatter.getClass.getName)
-      
-      val testSucceededList = rep.testSucceededEventsReceived
-      assert(testSucceededList.size === 1)
-      assert(testSucceededList(0).formatter.isDefined, "Expected testSucceededList(0).formatter to be defined, but it is not.")
-      assert(testSucceededList(0).formatter.get.isInstanceOf[IndentedText], "Expected testSucceededList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testSucceededFormatter = testSucceededList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testSucceededFormatter.formattedText === "- should succeeded here")
-      assert(testSucceededFormatter.rawText === "should succeeded here")
-      
-      val testFailedList = rep.testFailedEventsReceived
-      assert(testFailedList.size === 1)
-      assert(testFailedList(0).formatter.isDefined, "Expected testFailedList(0).formatter to be defined, but it is not.")
-      assert(testFailedList(0).formatter.get.isInstanceOf[IndentedText], "Expected testFailedList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testFailedFormatter = testFailedList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testFailedFormatter.formattedText === "- should failed here")
-      assert(testFailedFormatter.rawText === "should failed here")
-      
-      val testPendingList = rep.testPendingEventsReceived
-      assert(testPendingList.size === 1)
-      assert(testPendingList(0).formatter.isDefined, "Expected testPendingList(0).formatter to be defined, but it is not.")
-      assert(testPendingList(0).formatter.get.isInstanceOf[IndentedText], "Expected testPendingList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testPendingFormatter = testPendingList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testPendingFormatter.formattedText === "- should pending here")
-      assert(testPendingFormatter.rawText === "should pending here")
-      
-      val testCanceledList = rep.testCanceledEventsReceived
-      assert(testCanceledList.size === 1)
-      assert(testCanceledList(0).formatter.isDefined, "Expected testCanceledList(0).formatter to be defined, but it is not.")
-      assert(testCanceledList(0).formatter.get.isInstanceOf[IndentedText], "Expected testCanceledList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testCanceledFormatter = testCanceledList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testCanceledFormatter.formattedText === "- should cancel here")
-      assert(testCanceledFormatter.rawText === "should cancel here")
-      
-      val testIgnoredList = rep.testIgnoredEventsReceived
-      assert(testIgnoredList.size === 1)
-      assert(testIgnoredList(0).formatter.isDefined, "Expected testIgnoredList(0).formatter to be defined, but it is not.")
-      assert(testIgnoredList(0).formatter.get.isInstanceOf[IndentedText], "Expected testIgnoredList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testIgnoredFormatter = testIgnoredList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testIgnoredFormatter.formattedText === "- should ignore here")
-      assert(testIgnoredFormatter.rawText === "should ignore here")
     }
   }
   
@@ -941,7 +852,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
       val rep = new EventRecordingReporter
       val s1 = new TestSpec
-      s1.run(None, Args(rep))
+      s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(rep.testFailedEventsReceived.size === 1)
       assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "WordSpecSpec.scala")
       assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 9)
@@ -970,7 +881,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       }
       val rep = new EventRecordingReporter
       val s = new TestSpec
-      s.run(None, Args(rep))
+      s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(s.registrationClosedThrown == true)
       val testFailedEvents = rep.testFailedEventsReceived
       assert(testFailedEvents.size === 1)

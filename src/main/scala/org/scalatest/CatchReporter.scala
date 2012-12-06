@@ -27,13 +27,15 @@ import DispatchReporter.propagateDispose
  *
  * @author Bill Venners
  */
-private[scalatest] trait CatchReporter extends ResourcefulReporter {
+private[scalatest] class CatchReporter(reporter: Reporter, out: PrintStream) extends Reporter {
 
-  val out: PrintStream
-  
+  private val report = reporter
+
+  def this(reporter: Reporter) = this(reporter, System.err)
+
   def apply(event: Event) {
     try {
-      doApply(event)
+      report(event)
     }
     catch {
       case e: Exception => 
@@ -43,9 +45,9 @@ private[scalatest] trait CatchReporter extends ResourcefulReporter {
     }
   }
 
-  def dispose() {
+  def catchDispose() {
     try {
-      doDispose()
+      propagateDispose(reporter)
     }
     catch {
       case e: Exception =>
@@ -53,23 +55,5 @@ private[scalatest] trait CatchReporter extends ResourcefulReporter {
         out.println(stringToPrint)
         e.printStackTrace(out)
     }
-  }
-  
-  protected def doApply(event: Event)
-  protected def doDispose()
-}
-
-private[scalatest] class WrapperCatchReporter(reporter: Reporter, val out: PrintStream) extends CatchReporter {
-  
-  def this(reporter: Reporter) = this(reporter, System.err)
-  
-  private val report = reporter
-  
-  def doApply(event: Event) {
-    report(event)
-  }
-  
-  def doDispose() {
-    propagateDispose(reporter)
   }
 }

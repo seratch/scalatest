@@ -18,7 +18,6 @@ package org.scalatest.junit
 
 import org.scalatest._
 import org.junit.runner.notification.RunNotifier
-import org.junit.runner.notification.Failure
 import org.junit.runner.Description
 
 /*
@@ -54,7 +53,7 @@ import org.junit.runner.Description
  * @author Jon-Anders Teigen
  * @author Colin Howe
  */
-final class JUnitRunner(suiteClass: java.lang.Class[_ <: Suite]) extends org.junit.runner.Runner {
+final class JUnitRunner(suiteClass: java.lang.Class[Suite]) extends org.junit.runner.Runner {
 
   private val canInstantiate = Suite.checkForPublicNoArgConstructor(suiteClass)
   require(canInstantiate, "Must pass an org.scalatest.Suite with a public no-arg constructor")
@@ -92,16 +91,7 @@ final class JUnitRunner(suiteClass: java.lang.Class[_ <: Suite]) extends org.jun
    * this suite of tests
    */
   def run(notifier: RunNotifier) {
-    try {
-      // TODO: What should this Tracker be?
-      suiteToRun.run(None, Args(new RunNotifierReporter(notifier),
-                                Stopper.default, Filter(), Map(), None,
-                                new Tracker, Set.empty))
-    }
-    catch {
-      case e: Exception =>
-        notifier.fireTestFailure(new Failure(getDescription, e))
-    }
+    suiteToRun.run(None, new RunNotifierReporter(notifier), new Stopper {}, Filter(), Map(), None, new Tracker) // TODO: What should this Tracker be?
   }
 
   /**
