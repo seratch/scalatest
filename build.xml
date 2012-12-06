@@ -7,14 +7,14 @@
              classpathref="maven-ant-tasks.classpath" />
 
     <!-- set global properties for this build -->
-<!--
     <property name="scala.version" value="2.10.0-RC3" />
 	<property name="for.scala" value="2.10.0-RC3" />
--->
 
+<!--
     <property name="scala.version" value="2.9.0" />
 	<property name="for.scala" value="2.9.x" />
-    <property name="release" value="2.0.M6-SNAP3" />
+-->
+    <property name="release" value="2.0.M5-B1" />
 
     <property name="scalasrc" value="src/main/scala" />
     <property name="javasrc" value="src/main/java" />
@@ -262,7 +262,6 @@
         	   <filter token="SCALAVERSION" value="${for.scala}" />
         	</filterset>
         </copy>
-        <copy file="${resources}/org/scalautils/ScalaUtilsBundle.properties" todir="${jar.contents}/org/scalautils" />
         <copy todir="${jar.contents}/images">
             <fileset dir="${images}" />
         </copy>
@@ -389,7 +388,6 @@
                 <filter token="SCALAVERSION" value="${for.scala}" />
             </filterset>
         </copy>
-        <copy file="${resources}/org/scalautils/ScalaUtilsBundle.properties" todir="${jar.contents}/org/scalautils" />
         <copy todir="${jar.contents}/images">
             <fileset dir="${images}" />
         </copy>
@@ -409,7 +407,6 @@
             <reporter type="stdout" config="D"/>
         	<reporter type="html" directory="target/html" config="D" />
             <membersonly package="org.scalatest" />
-            <membersonly package="org.scalautils" />
             <membersonly package="org.scalatest.fixture" />
             <membersonly package="org.scalatest.concurrent" />
             <membersonly package="org.scalatest.testng" />

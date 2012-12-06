@@ -180,7 +180,7 @@ sealed abstract class Event extends Ordered[Event] with java.io.Serializable {
       nameInfoOption match {
         case Some(nameInfo) => 
           <suiteName>{ nameInfo.suiteName }</suiteName>
-          <suiteId>{ nameInfo.suiteId }</suiteId>
+          <suiteId>{ nameInfo.suiteID }</suiteId>
           <suiteClassName>{ stringOption(nameInfo.suiteClassName) }</suiteClassName>
           <testName>{ stringOption(nameInfo.testName) }</testName>
         case None => 
@@ -754,7 +754,6 @@ final case class TestPending (
  *
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
- * @param message a localized message suitable for presenting to the user
  * @param suiteName a localized name identifying the suite containing the test that was canceled, suitable for presenting to the user
  * @param suiteId a string ID for the suite containing the test that is starting, intended to be unique across all suites in a run
  * @param suiteClassName an optional fully qualifed <code>Suite</code> class name containing the test that was canceled
@@ -1518,7 +1517,7 @@ final case class RunAborted (
  * </p>
  *
  * <pre class="stHighlight">
- * report(InfoProvided(ordinal, message, Some(NameInfo(suiteName, suiteId, Some(thisSuite.getClass.getName), Some(testName)))))
+ * report(InfoProvided(ordinal, message, Some(NameInfo(suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
  * </pre>
  *
  * <p>
@@ -1601,7 +1600,7 @@ final case class InfoProvided (
  * </p>
  *
  * <pre class="stHighlight">
- * report(MarkupProvided(ordinal, text, Some(NameInfo(suiteName, suiteId, Some(thisSuite.getClass.getName), Some(testName)))))
+ * report(MarkupProvided(ordinal, text, Some(NameInfo(suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
  * </pre>
  *
  * <p>
@@ -1679,7 +1678,7 @@ final case class MarkupProvided (
  * </p>
  *
  * <pre class="stHighlight">
- * report(ScopeOpened(ordinal, message, Some(NameInfo(suiteName, suiteId, Some(thisSuite.getClass.getName), Some(testName)))))
+ * report(ScopeOpened(ordinal, message, Some(NameInfo(suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
  * </pre>
  *
  * <p>
@@ -1755,7 +1754,7 @@ final case class ScopeOpened (
  * </p>
  *
  * <pre class="stHighlight">
- * report(ScopeClosed(ordinal, message, Some(NameInfo(suiteName, suiteId, Some(thisSuite.getClass.getName), Some(testName)))))
+ * report(ScopeClosed(ordinal, message, Some(NameInfo(suiteName, Some(thisSuite.getClass.getName), Some(testName)))))
  * </pre>
  *
  * <p>

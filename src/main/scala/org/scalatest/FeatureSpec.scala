@@ -15,6 +15,7 @@
  */
 package org.scalatest
 
+import NodeFamily._
 import scala.collection.immutable.ListSet
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 import java.util.concurrent.atomic.AtomicReference
