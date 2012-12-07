@@ -338,6 +338,36 @@
       </concat>
     </target>
 
+    <target name="docutils" depends="compile-main">
+      <delete dir="${build}/utilsdoc" />
+      <mkdir  dir="${build}/utilsdoc" />
+
+      <delete dir="${build}/docsrc" />
+      <mkdir  dir="${build}/docsrc" />
+
+      <copy todir="${build}/docsrc">
+        <fileset dir="src/main/scala" includes="org/scalautils/**"/>
+      </copy>
+
+      <replaceregexp match="@Finders(.*)" replace="">
+        <fileset dir="target/docsrc">
+          <include name="**/*.scala" />
+        </fileset>
+      </replaceregexp>
+
+      <scaladoc addparams="-no-specialization"
+                srcdir="target/docsrc"
+                destdir="target/utilsdoc"
+                classpathref="lib.path"
+                doctitle="ScalaUtils ${release}">
+        <include name="**/*.scala" />
+      </scaladoc>
+
+      <concat destfile="${doc}/lib/template.css" force="yes">
+        <filelist dir="${html}" files="template.css, addl.css"/>
+      </concat>
+    </target>
+
      <!-- Put everything in ${jar.contents} into the scalatest.jar file -->
     <target name="dist" depends="compile">
         <!-- Create the distribution directory -->
@@ -745,6 +775,11 @@
         <fileset dir="src/examples/java"/>
         <fileset dir="${build.generated.src}"/>
       </jar>
+
+      <jar jarfile="${build}/scalautils-sources.jar">
+        <fileset dir="src/main/scala"     includes="org/scalautils/**"/>
+        <fileset dir="src/main/resources" includes="org/scalautils/**"/>
+      </jar>
     </target>
 
     <target name="jartestsrc">
@@ -753,6 +788,13 @@
         <fileset dir="src/test/java"/>
         <fileset dir="${build.generated.tests}"/>
       </jar>
+    </target>
+
+    <target name="jardoc" depends="doc,docutils">
+      <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
+      <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
+      <jar jarfile="${build}/scalautils-scaladoc.jar"
+           basedir="target/utilsdoc"/>
     </target>
 
     <!--
@@ -770,11 +812,7 @@
       -   </servers>
       - 
       -->
-     <target name="deploy" depends="jar,jartests,jarsrc,jartestsrc,doc">
-
-      <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
-      <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
-
+    <target name="deploy" depends="jar,jartests,jarsrc,jartestsrc,jardoc">
       <property name="deploy.main"
                 value="${dist}/lib/scalatest.jar"/>
       <property name="deploy.tests" 
@@ -828,7 +866,15 @@
       </artifact:mvn>
     </target>
 
-    <target name="deploy-utils" depends="">
+    <!--
+      - This gets called from the deploy task using antcall.  It can
+      - be run standalone, but needs dependencies jar, jardoc, and
+      - jarsrc to be called first.  It doesn't use the depends attribute
+      - for them because they would get run twice.  (<antcall> causes the
+      - target to be run in a new project that doesn't know about dependencies
+      - already run.)
+      -->
+    <target name="deploy-utils">
       <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
             overwrite="true">
         <filterset>
@@ -840,10 +886,24 @@
       <artifact:pom id="pom" file="${build}/pom.xml" />
 
       <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
+        <param name="deploy.pomfile"  value="${build}/pom.xml"/>
         <param name="deploy.classifier" value=""/>
-        <param name="deploy.file"       value="${dist}/lib/scalautils.jar"/>
-        <param name="deploy.release"    value="${release}"/>
+        <param name="deploy.file"     value="${dist}/lib/scalautils.jar"/>
+        <param name="deploy.release"  value="${release}"/>
+      </antcall>
+
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"  value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="scaladoc"/>
+        <param name="deploy.file"     value="${build}/scalautils-scaladoc.jar"/>
+        <param name="deploy.release"  value="${release}"/>
+      </antcall>
+
+      <antcall target="deploy-jar">
+        <param name="deploy.pomfile"  value="${build}/pom.xml"/>
+        <param name="deploy.classifier" value="sources"/>
+        <param name="deploy.file"     value="${build}/scalautils-sources.jar"/>
+        <param name="deploy.release"  value="${release}"/>
       </antcall>
     </target>
 
