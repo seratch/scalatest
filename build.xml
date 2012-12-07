@@ -885,25 +885,34 @@
 
       <artifact:pom id="pom" file="${build}/pom.xml" />
 
+      <property name="deploy.pomfile"
+                value="${build}/pom.xml"/>
+      <property name="deploy.main"
+                value="${dist}/lib/scalautils.jar"/>
+      <property name="deploy.sources" 
+                value="${build}/scalautils-sources.jar"/>
+      <property name="deploy.scaladoc" 
+                value="${build}/scalautils-scaladoc.jar"/>
+      <property name="deploy.release"
+                value="${release}"/>
+
+      <antcall target="deploy-utils-jars"/>
+    </target>
+
+    <target name="deploy-utils-jars">
       <antcall target="deploy-jar">
-        <param name="deploy.pomfile"  value="${build}/pom.xml"/>
         <param name="deploy.classifier" value=""/>
-        <param name="deploy.file"     value="${dist}/lib/scalautils.jar"/>
-        <param name="deploy.release"  value="${release}"/>
+        <param name="deploy.file"       value="${deploy.main}"/>
       </antcall>
 
       <antcall target="deploy-jar">
-        <param name="deploy.pomfile"  value="${build}/pom.xml"/>
         <param name="deploy.classifier" value="scaladoc"/>
-        <param name="deploy.file"     value="${build}/scalautils-scaladoc.jar"/>
-        <param name="deploy.release"  value="${release}"/>
+        <param name="deploy.file"       value="${deploy.scaladoc}"/>
       </antcall>
 
       <antcall target="deploy-jar">
-        <param name="deploy.pomfile"  value="${build}/pom.xml"/>
         <param name="deploy.classifier" value="sources"/>
-        <param name="deploy.file"     value="${build}/scalautils-sources.jar"/>
-        <param name="deploy.release"  value="${release}"/>
+        <param name="deploy.file"       value="${deploy.sources}"/>
       </antcall>
     </target>
 
@@ -931,6 +940,7 @@
       -->
     <target name="redeploy"
           description="redeploy a release using a different scala version tag">
+
       <fail message="Missing old.scala.version definition."
             unless="old.scala.version" />
       <fail message="Missing new.scala.version definition." 
@@ -938,6 +948,11 @@
       <fail message="Missing scalatest.version definition." 
             unless="scalatest.version"  />
 
+      <antcall target="redeploy-scalatest"/>
+      <antcall target="redeploy-utils"/>
+    </target>
+
+    <target name="redeploy-scalatest">
       <artifact:dependencies filesetId="old.scala.fileset"
                              versionsId="dependency.versions">
         <dependency groupId="org.scalatest"
@@ -1002,6 +1017,58 @@
                 value="${scalatest.version}"/>
 
       <antcall target="deploy-jars"/>
+    </target>
+
+    <target name="redeploy-utils">
+      <artifact:dependencies filesetId="old.scala.fileset"
+                             versionsId="dependency.versions">
+        <dependency groupId="org.scalautils"
+                    artifactId="scalautils_${old.scala.version}"
+                    version="${scalatest.version}" />
+        <dependency groupId="org.scalautils"
+                    artifactId="scalautils_${old.scala.version}"
+                    version="${scalatest.version}"
+                    classifier="sources"/>
+        <dependency groupId="org.scalautils"
+                    artifactId="scalautils_${old.scala.version}"
+                    version="${scalatest.version}"
+                    classifier="scaladoc"/>
+      </artifact:dependencies>
+
+      <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
+            overwrite="true">
+        <filterset>
+          <filter token="RELEASE" value="${scalatest.version}" />
+          <filter token="SCALA_VERSION" value="${new.scala.version}" />
+        </filterset>
+      </copy>
+
+      <delete dir="target/redeploy" />
+      <mkdir dir="target/redeploy" />
+      <copy todir="target/redeploy" verbose="true">
+        <fileset refid="old.scala.fileset" />
+        <mapper classpathref="maven-ant-tasks.classpath"
+                classname="org.apache.maven.artifact.ant.VersionMapper"
+                from="${scalatest.version}" to="flatten" />
+      </copy>
+
+      <move todir="target/redeploy" verbose="true">
+        <fileset dir="target/redeploy" includes="scalautils_*.jar"/>
+        <globmapper from="scalautils_${old.scala.version}*" to="scalautils*"/>
+      </move>
+
+      <property name="deploy.pomfile"
+                value="${build}/pom.xml"/>
+      <property name="deploy.main"
+                value="target/redeploy/scalautils.jar"/>
+      <property name="deploy.sources" 
+                value="target/redeploy/scalautils-sources.jar"/>
+      <property name="deploy.scaladoc" 
+                value="target/redeploy/scalautils-scaladoc.jar"/>
+      <property name="deploy.release"
+                value="${scalatest.version}"/>
+
+      <antcall target="deploy-utils-jars"/>
     </target>
 
     <!--
