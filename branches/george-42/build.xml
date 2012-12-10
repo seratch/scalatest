@@ -766,6 +766,7 @@
 
     <target name="jar" depends="dist"></target>
 
+    <!-- creates jars of scalatest and scalautils source files -->
     <target name="jarsrc">
       <jar jarfile="${build}/scalatest-sources.jar">
         <fileset dir="src/main/scala"/>
@@ -782,6 +783,7 @@
       </jar>
     </target>
 
+    <!-- creates jar of scalatest test source files -->
     <target name="jartestsrc">
       <jar jarfile="${build}/scalatest-test-sources.jar">
         <fileset dir="src/test/scala"/>
@@ -790,6 +792,10 @@
       </jar>
     </target>
 
+    <!--
+      - Creates jars of scaladoc and javadoc files for scalatest and
+      - scalautils.
+      -->
     <target name="jardoc" depends="doc,docutils">
       <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
       <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
@@ -798,14 +804,21 @@
     </target>
 
     <!--
-      - Deploy to remote repository.
+      - Deploys jars to remote repository.  Deploys both scalatest and
+      - scalautils jars.
       -
-      - Requires username and password for repository to be defined in your
+      - Requires username and password for repositories to be defined in your
       - ~/.m2/settings.xml file, e.g.:
       -
       -   <servers>
       -     <server>
-      -       <id>scala-tools.org</id>
+      -       <id>sonatype-nexus-staging</id>
+      -       <username>username</username>
+      -       <password>password</password>
+      -     </server>
+      -
+      -     <server>
+      -       <id>sonatype-nexus-snapshots</id>
       -       <username>username</username>
       -       <password>password</password>
       -     </server>
@@ -832,6 +845,13 @@
       <antcall target="deploy-utils"/>
     </target>
 
+    <!--
+      - Deploys a single jar based on properties:
+      -   deploy.pomfile
+      -   deploy.release
+      -   deploy.file
+      -   deploy.classifier
+      -->
     <target name="deploy-jar">
       <artifact:pom id="pom" file="${deploy.pomfile}" />
 
@@ -867,12 +887,16 @@
     </target>
 
     <!--
-      - This gets called from the deploy task using antcall.  It can
-      - be run standalone, but needs dependencies jar, jardoc, and
-      - jarsrc to be called first.  It doesn't use the depends attribute
-      - for them because they would get run twice.  (<antcall> causes the
-      - target to be run in a new project that doesn't know about dependencies
-      - already run.)
+      - Deploys scalautils jars.
+      -
+      - The deploy-utils target depends on jar, jardoc, and jarsrc
+      - being run previously, either on the command line or by the
+      - task that calls deploy-utils using antcall.
+      -
+      - (It doesn't use the depends attribute since it is intended to
+      - be run using <antcall>, which causes it to run in its own project.
+      - If it had its own depends attribute those prereqs would get run
+      - even if they had already been run in the calling project.)
       -->
     <target name="deploy-utils">
       <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
@@ -882,8 +906,6 @@
           <filter token="SCALA_VERSION" value="${scala.version}" />
         </filterset>
       </copy>
-
-      <artifact:pom id="pom" file="${build}/pom.xml" />
 
       <property name="deploy.pomfile"
                 value="${build}/pom.xml"/>
@@ -899,6 +921,12 @@
       <antcall target="deploy-utils-jars"/>
     </target>
 
+    <!--
+      - Deploys scalautils jars identified by properties:
+      -  deploy.main
+      -  deploy.scaladoc
+      -  deploy.sources
+      -->
     <target name="deploy-utils-jars">
       <antcall target="deploy-jar">
         <param name="deploy.classifier" value=""/>
