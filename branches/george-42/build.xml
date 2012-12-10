@@ -357,7 +357,7 @@
 
       <scaladoc addparams="-no-specialization"
                 srcdir="target/docsrc"
-                destdir="target/utilsdoc"
+                destdir="${build}/utilsdoc"
                 classpathref="lib.path"
                 doctitle="ScalaUtils ${release}">
         <include name="**/*.scala" />
@@ -797,10 +797,21 @@
       - scalautils.
       -->
     <target name="jardoc" depends="doc,docutils">
+      <mkdir dir="${build}/dummydoc" />
+
+      <echo file="${build}/dummydoc/index.html">
+         We don't have any java in this project to document, but
+         Sonatype requires a javadoc jar so we just jar this text file.
+
+         Move along, move along.  Nothing to see here.
+      </echo>
+
       <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
       <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
       <jar jarfile="${build}/scalautils-scaladoc.jar"
-           basedir="target/utilsdoc"/>
+           basedir="${build}/utilsdoc"/>
+      <jar jarfile="${build}/scalautils-javadoc.jar"
+           basedir="${build}/dummydoc"/>
     </target>
 
     <!--
@@ -907,24 +918,29 @@
         </filterset>
       </copy>
 
-      <property name="deploy.pomfile"
-                value="${build}/pom.xml"/>
-      <property name="deploy.main"
-                value="${dist}/lib/scalautils.jar"/>
-      <property name="deploy.sources" 
-                value="${build}/scalautils-sources.jar"/>
-      <property name="deploy.scaladoc" 
-                value="${build}/scalautils-scaladoc.jar"/>
-      <property name="deploy.release"
-                value="${release}"/>
+      <antcall target="deploy-utils-jars">
+        <param name="deploy.pomfile"
+               value="${build}/pom.xml"/>
+        <param name="deploy.main"
+               value="${dist}/lib/scalautils.jar"/>
+        <param name="deploy.sources" 
+               value="${build}/scalautils-sources.jar"/>
+        <param name="deploy.scaladoc" 
+               value="${build}/scalautils-scaladoc.jar"/>
+        <param name="deploy.javadoc" 
+               value="${build}/scalautils-javadoc.jar"/>
+        <param name="deploy.release"
+               value="${release}"/>
+      </antcall>
 
-      <antcall target="deploy-utils-jars"/>
     </target>
 
     <!--
       - Deploys scalautils jars identified by properties:
+      -  deploy.pomfile
       -  deploy.main
       -  deploy.scaladoc
+      -  deploy.javadoc
       -  deploy.sources
       -->
     <target name="deploy-utils-jars">
@@ -936,6 +952,11 @@
       <antcall target="deploy-jar">
         <param name="deploy.classifier" value="scaladoc"/>
         <param name="deploy.file"       value="${deploy.scaladoc}"/>
+      </antcall>
+
+      <antcall target="deploy-jar">
+        <param name="deploy.classifier" value="javadoc"/>
+        <param name="deploy.file"       value="${deploy.javadoc}"/>
       </antcall>
 
       <antcall target="deploy-jar">
@@ -1061,6 +1082,10 @@
                     artifactId="scalautils_${old.scala.version}"
                     version="${scalatest.version}"
                     classifier="scaladoc"/>
+        <dependency groupId="org.scalautils"
+                    artifactId="scalautils_${old.scala.version}"
+                    version="${scalatest.version}"
+                    classifier="javadoc"/>
       </artifact:dependencies>
 
       <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
@@ -1085,18 +1110,21 @@
         <globmapper from="scalautils_${old.scala.version}*" to="scalautils*"/>
       </move>
 
-      <property name="deploy.pomfile"
-                value="${build}/pom.xml"/>
-      <property name="deploy.main"
-                value="target/redeploy/scalautils.jar"/>
-      <property name="deploy.sources" 
-                value="target/redeploy/scalautils-sources.jar"/>
-      <property name="deploy.scaladoc" 
-                value="target/redeploy/scalautils-scaladoc.jar"/>
-      <property name="deploy.release"
-                value="${scalatest.version}"/>
+      <antcall target="deploy-utils-jars">
+        <param name="deploy.pomfile"
+               value="${build}/pom.xml"/>
+        <param name="deploy.main"
+               value="target/redeploy/scalautils.jar"/>
+        <param name="deploy.sources" 
+               value="target/redeploy/scalautils-sources.jar"/>
+        <param name="deploy.scaladoc" 
+               value="target/redeploy/scalautils-scaladoc.jar"/>
+        <param name="deploy.javadoc" 
+               value="target/redeploy/scalautils-javadoc.jar"/>
+        <param name="deploy.release"
+               value="${scalatest.version}"/>
+      </antcall>
 
-      <antcall target="deploy-utils-jars"/>
     </target>
 
     <!--
