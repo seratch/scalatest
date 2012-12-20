@@ -18,12 +18,8 @@ package org.scalatest.matchers
 import org.scalatest._
 import scala.reflect.Manifest
 import org.scalatest.verb.ShouldVerb
-import scala.collection.GenTraversable
-import scala.collection.GenSeq
-import scala.collection.GenMap
+import scala.collection.Traversable
 import Assertions.areEqualComparingArraysStructurally
-import org.scalautils.TripleEqualsInvocation
-import org.scalautils.EqualityConstraint
 
 /**
  * Trait that provides a domain specific language (DSL) for expressing assertions in tests
@@ -79,7 +75,7 @@ import org.scalautils.EqualityConstraint
  * </pre>
  * 
  * <p>
- * Size is similar:
+ *Size is similar:
  * </p>
  * 
  * <pre class="stHighlight">
@@ -87,14 +83,12 @@ import org.scalautils.EqualityConstraint
  * </pre>
  * 
  * <p>
- * The <code>length</code> syntax can be used with <code>String</code>, <code>Array</code>, any <code>scala.collection.GenSeq</code>,
- * any <code>java.util.List</code>, and any type <code>T</code> for which an implicit <code>Length[T]</code> type class is 
- * available in scope.
- * Similarly, the <code>size</code> syntax can be used with <code>Array</code>, any <code>scala.collection.GenTraversable</code>,
- * any <code>java.util.List</code>, and any type <code>T</code> for which an implicit <code>Size[T]</code> type class is 
- * available in scope. You can enable the <code>length</code> or <code>size</code> syntax for your own arbitrary types, therefore,
- * by defining <a href="ClassicMatchers$Length.html"><code>Length</code></a> or <a href="ClassicMatchers$Size.html"><code>Size</code></a> type
- * classes for those types.
+ * The <code>length</code> syntax can be used with any object that has a field or method named <code>length</code>
+ * or a method named <code>getLength</code>.   Similarly, the <code>size</code> syntax can be used with any
+ * object that has a field or method named <code>size</code> or a method named <code>getSize</code>.
+ * The type of a <code>length</code> or <code>size</code> field, or return type of a method, must be either <code>Int</code>
+ * or <code>Long</code>. Any such method must take no parameters. (The Scala compiler will ensure at compile time that
+ * the object on which <code>should</code> is being invoked has the appropriate structure.)
  * </p>
  * 
  * <h2>Checking strings</h2>
@@ -914,8 +908,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *        ^
      * </pre>
      */
-    def should(rightMatcherX1: Matcher[T]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX1)
+    def should(rightMatcher: Matcher[T]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -927,26 +921,128 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(notWord: NotWord) = new ResultOfNotWord[T](left, false)
+  }
 
-    /* * Turns out all the tests compile without this one
+  // I think the type hasn't been converted yet here. It is just a pass-through. It finally gets
+  // converted in ResultOfHaveWordForLengthWrapper, at which point the actual implicit conversions
+  // from String, Array, and the structural types get applied.
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on <code>AnyRef</code> objects that can be implicitly converted to type <code>LengthWrapper</code>.
+   * Trait <code>ShouldMatchers</code> includes implicit conversions from several types, including many structural types, to <code>LengthWrapper</code>.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class LengthShouldWrapper[A <: AnyRef <% LengthWrapper](left: A) {
+
+    /**
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * () should === (()) // In 2.10, will work with AnyVals. TODO: Also, Need to ensure Char works
+     * objectWithLength should equal (3)
+     *                  ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[A]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should have length (3)
      *        ^
      * </pre>
      */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[T, U]) {
-      // if ((left == inv.right) != inv.expectingEqual)
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
+    def should(haveWord: HaveWord): ResultOfHaveWordForLengthWrapper[A] =
+      new ResultOfHaveWordForLengthWrapper(left, true)
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not have length (3)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForLengthWrapper[A] =
+      new ResultOfNotWordForLengthWrapper(left, false)
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should be theSameInstanceAs anotherObject
+     *        ^
+     * </pre>
+     */
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[A] = new ResultOfBeWordForAnyRef[A](left, true)
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on <code>AnyRef</code> objects that can be implicitly converted to type <code>SizeWrapper</code>.
+   * Trait <code>ShouldMatchers</code> includes implicit conversions from several types, including many structural types, to <code>SizeWrapper</code>.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class SizeShouldWrapper[A <: AnyRef <% SizeWrapper](left: A) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * objectWithSize should equal (3)
+     *                ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[A]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not have size (3)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForSizeWrapper[A] =
+      new ResultOfNotWordForSizeWrapper(left, false)
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should have size (3)
+     *        ^
+     * </pre>
+     */
+    def should(haveWord: HaveWord): ResultOfHaveWordForSizeWrapper[A] =
+      new ResultOfHaveWordForSizeWrapper(left, true)
+
+    // TODO I just added this. Didn't do a test for it.
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should be theSameInstanceAs anotherObject
+     *        ^
+     * </pre>
+     */
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[A] = new ResultOfBeWordForAnyRef[A](left, true)
   }
 
   /**
@@ -994,8 +1090,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *        ^
      * </pre>
      */
-    def should(rightMatcherX2: Matcher[String]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX2)
+    def should(rightMatcher: Matcher[String]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1079,26 +1175,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForString = {
       new ResultOfNotWordForString(left, false)
     }
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * s should === ("hi") 
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[String, U]) {
-      // if ((left == inv.right) != inv.expectingEqual)
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
   }
 
   /**
@@ -1112,7 +1188,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    *
    * @author Bill Venners
    */
-  final class NumericShouldWrapper[T : Numeric](left: T) {
+  final class DoubleShouldWrapper(left: Double) {
 
     /**
      * This method enables syntax such as the following:
@@ -1122,8 +1198,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *        ^
      * </pre>
      */
-    def should(rightMatcherX3: Matcher[T]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX3)
+    def should(rightMatcher: Matcher[Double]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1134,39 +1210,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *        ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForNumeric[T] = {
-      new ResultOfNotWordForNumeric[T](left, false)
-    }
-    
-    def shouldBe(right: T) {
-      if (left != right) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
-    }
-    
-    def shouldBe(beMatcher: BeMatcher[T]) {
-      beMatcher.apply(left).matches
-    }
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (3)
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[T, U]) {
-      // if ((left == inv.right) != inv.expectingEqual)
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
+    def should(notWord: NotWord): ResultOfNotWordForDouble = {
+      new ResultOfNotWordForDouble(left, false)
     }
   }
 
@@ -1176,12 +1221,202 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    *
    * <p>
    * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
-   * be invoked on objects of type <code>scala.collection.GenMap[K, V]</code>.
+   * be invoked on <code>Float</code>s.
    * </p>
    *
    * @author Bill Venners
    */
-  final class MapShouldWrapper[K, V](left: scala.collection.GenMap[K, V]) {
+  final class FloatShouldWrapper(left: Float) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * aFloat should equal (3.3f)
+     *       ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[Float]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not equal (8.8f)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForFloat = {
+      new ResultOfNotWordForFloat(left, false)
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on <code>Long</code>s.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class LongShouldWrapper(left: Long) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * aLong should equal (3L)
+     *      ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[Long]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not equal (88L)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForLong = {
+      new ResultOfNotWordForLong(left, false)
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on <code>Int</code>s.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class IntShouldWrapper(left: Int) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * anInt should equal (3)
+     *      ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[Int]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not equal (8)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForInt = {
+      new ResultOfNotWordForInt(left, false)
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on <code>Short</code>s.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class ShortShouldWrapper(left: Short) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * aShort should equal (3.toShort)
+     *        ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[Short]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not equal (8.toShort)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForShort = {
+      new ResultOfNotWordForShort(left, false)
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on <code>Byte</code>s.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class ByteShouldWrapper(left: Byte) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * aByte should equal (3.toByte)
+     *       ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[Byte]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should not equal (8.toByte)
+     *        ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForByte = {
+      new ResultOfNotWordForByte(left, false)
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on objects of type <code>scala.collection.Map[K, V]</code>.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class MapShouldWrapper[K, V](left: scala.collection.Map[K, V]) {
 
     /**
      * This method enables syntax such as the following:
@@ -1191,8 +1426,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *     ^
      * </pre>
      */
-    def should(rightMatcherX4: Matcher[scala.collection.GenMap[K, V]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX4)
+    def should(rightMatcher: Matcher[scala.collection.Map[K, V]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1203,7 +1438,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *     ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[scala.collection.GenMap[K, V]] = new ResultOfBeWordForAnyRef(left, true)
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[scala.collection.Map[K, V]] = new ResultOfBeWordForAnyRef(left, true)
 
     /**
      * This method enables syntax such as the following:
@@ -1240,26 +1475,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForMap[K, V] = {
       new ResultOfNotWordForMap(left, false)
     }
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (Map("I" -&gt; 1, "II" -&gt; 2))
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[GenMap[K, V], U]) {
-      // if ((left == inv.right) != inv.expectingEqual)
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
   }
 
   /**
@@ -1283,8 +1498,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *        ^
      * </pre>
      */
-    def should(rightMatcherX5: Matcher[T]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX5)
+    def should(rightMatcher: Matcher[T]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1307,96 +1522,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(beWord: BeWord): ResultOfBeWordForAnyRef[T] = new ResultOfBeWordForAnyRef(left, true)
-    
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should have length (3)
-     *        ^
-     * result should have size (3)
-     *        ^
-     * </pre>
-     */
-    def should(haveWord: HaveWord)(implicit ev: Extent[T]): ResultOfHaveWordForExtent[T] =
-      new ResultOfHaveWordForExtent(left, true)
-
-    def shouldBe = new ResultOfBeWordForAnyRef(left, true)
-    
-    def shouldBe(right: AnyRef) {
-      
-      def shouldBeEqual(right: AnyRef): Boolean = {
-        if (right.isInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]) {
-          // need to put in if because NoSuchMethodError when pattern match ResultOfAWordToBePropertyMatcherApplication
-          val app = right.asInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]
-          app.bePropertyMatcher.apply(left).matches
-        }
-        else if (right.isInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]) {
-          val app = right.asInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]
-          app.bePropertyMatcher.apply(left).matches
-        }
-        else {
-          val beWord = new BeWord
-          right match {
-            case rightSymbol: ResultOfAWordToSymbolApplication => 
-              beWord.a[AnyRef](rightSymbol.symbol)(left).matches
-            case rightSymbol: ResultOfAnWordToSymbolApplication => 
-              beWord.an[AnyRef](rightSymbol.symbol)(left).matches
-            case beMatcher: BeMatcher[AnyRef] => 
-              beMatcher.apply(left).matches
-            case bePropertyMatcher: BePropertyMatcher[AnyRef] => 
-              bePropertyMatcher.apply(left).matches
-            case _ => 
-              left == right
-          }
-        }
-      }
-      
-      if (!shouldBeEqual(right)) {
-        val (resourceName, leftee, rightee) = 
-          if (right.isInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]) {
-            val app = right.asInstanceOf[ResultOfAWordToBePropertyMatcherApplication[AnyRef]]
-            val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, UnquotedString(app.bePropertyMatcher.apply(left).propertyName))
-            ("wasNotA", leftee, rightee)
-          }
-          else if (right.isInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]) {
-            val app = right.asInstanceOf[ResultOfAnWordToBePropertyMatcherApplication[AnyRef]]
-            val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, UnquotedString(app.bePropertyMatcher.apply(left).propertyName))
-            ("wasNotAn", leftee, rightee)
-          }
-          else {
-            right match {
-              case bePropertyMatcher: BePropertyMatcher[AnyRef] => 
-                val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, UnquotedString(bePropertyMatcher.apply(left).propertyName))
-                ("wasNot", leftee, rightee)
-              case _ => 
-                val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-                ("wasNotEqualTo", leftee, rightee)
-            }
-          }
-        throw newTestFailedException(FailureMessages(resourceName, leftee, rightee))
-      }
-    }
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (new Person("Abe", "Lincoln"))
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[T, U]) {
-      // if ((left == inv.right) != inv.expectingEqual)
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
   }
 
   /**
@@ -1410,7 +1535,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    *
    * @author Bill Venners
    */
-  final class TraversableShouldWrapper[T](left: GenTraversable[T]) {
+  final class TraversableShouldWrapper[T](left: Traversable[T]) {
 
     /**
      * This method enables syntax such as the following:
@@ -1420,8 +1545,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *             ^
      * </pre>
      */
-    def should(rightMatcherX6: Matcher[GenTraversable[T]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX6)
+    def should(rightMatcher: Matcher[Traversable[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1443,7 +1568,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *             ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[GenTraversable[T]] = new ResultOfBeWordForAnyRef(left, true)
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[Traversable[T]] = new ResultOfBeWordForAnyRef(left, true)
 
     /**
      * This method enables syntax such as the following:
@@ -1453,28 +1578,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *             ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForTraversable[T, GenTraversable[T]] =
+    def should(notWord: NotWord): ResultOfNotWordForTraversable[T, Traversable[T]] =
       new ResultOfNotWordForTraversable(left, false)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (Set(1, 2, 3))
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[GenTraversable[T], U]) {
-      // if ((left == inv.right) != inv.expectingEqual)
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
   }
 
   /**
@@ -1498,8 +1603,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *                ^
      * </pre>
      */
-    def should(rightMatcherX7: Matcher[java.util.Collection[T]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX7)
+    def should(rightMatcher: Matcher[java.util.Collection[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1533,25 +1638,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForJavaCollection[T, java.util.Collection[T]] =
       new ResultOfNotWordForJavaCollection(left, false)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (jSet)
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[java.util.Collection[T], U]) {
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
   }
 
   /**
@@ -1575,8 +1661,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *         ^
      * </pre>
      */
-    def should(rightMatcherX8: Matcher[java.util.Map[K, V]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX8)
+    def should(rightMatcher: Matcher[java.util.Map[K, V]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1624,25 +1710,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(beWord: BeWord): ResultOfBeWordForAnyRef[java.util.Map[K, V]] = new ResultOfBeWordForAnyRef(left, true)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (javaMap)
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[java.util.Map[K, V], U]) {
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
   }
 
   /**
@@ -1651,12 +1718,12 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    *
    * <p>
    * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
-   * be invoked on objects of type <code>GenSeq[T]</code>.
+   * be invoked on objects of type <code>scala.Seq[T]</code>.
    * </p>
    *
    * @author Bill Venners
    */
-  final class SeqShouldWrapper[T](left: GenSeq[T]) {
+  final class SeqShouldWrapper[T](left: Seq[T]) {
  
     /**
      * This method enables syntax such as the following:
@@ -1666,8 +1733,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *     ^
      * </pre>
      */
-    def should(rightMatcherX9: Matcher[GenSeq[T]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX9)
+    def should(rightMatcher: Matcher[Seq[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1681,6 +1748,10 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(haveWord: HaveWord): ResultOfHaveWordForSeq[T] =
       new ResultOfHaveWordForSeq(left, true)
 
+/* TODO: This is what I think it should be. But it was the AnyRef one, or maybe even not that.
+    def should(notWord: NotWord): ResultOfNotWordForSeq[T, List[T]] =
+      new ResultOfNotWordForSeq(left, false)
+*/
     /**
      * This method enables syntax such as the following:
      *
@@ -1689,10 +1760,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *     ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForSeq[T, GenSeq[T]] =
-      new ResultOfNotWordForSeq(left, false)
-    // def should(notWord: NotWord): ResultOfNotWordForAnyRef[GenSeq[T]] =
-      // new ResultOfNotWordForAnyRef(left, false)
+    def should(notWord: NotWord): ResultOfNotWordForAnyRef[Seq[T]] =
+      new ResultOfNotWordForAnyRef(left, false)
 
     /**
      * This method enables syntax such as the following:
@@ -1702,26 +1771,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *     ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[GenSeq[T]] = new ResultOfBeWordForAnyRef(left, true)
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (List(1, 2, 3))
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[GenSeq[T], U]) {
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[Seq[T]] = new ResultOfBeWordForAnyRef(left, true)
   }
 
   /**
@@ -1745,8 +1795,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *       ^
      * </pre>
      */
-    def should(rightMatcherX10: Matcher[Array[T]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX10)
+    def should(rightMatcher: Matcher[Array[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1771,35 +1821,67 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForArray[T] =
       new ResultOfNotWordForArray(left, false)
-    
-    def shouldBe(right: Array[T]) {
-      if (!left.deep.equals(right.deep)) {
-        val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
-        throw newTestFailedException(FailureMessages("wasNotEqualTo", leftee, rightee))
-      }
+  }
+  // Note, no should(beWord) is needed here because a different implicit conversion will be used
+  // on "array shoudl be ..." because this one doesn't solve the type error.
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * <p>
+   * This class is used in conjunction with an implicit conversion to enable <code>should</code> methods to
+   * be invoked on objects of type <code>scala.List[T]</code>.
+   * </p>
+   *
+   * @author Bill Venners
+   */
+  final class ListShouldWrapper[T](left: List[T]) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * list should equal (List(1, 2, 3))
+     *      ^
+     * </pre>
+     */
+    def should(rightMatcher: Matcher[List[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * result should === (Array(1, 2, 3))
-     *        ^
+     * list should be theSameInstanceAs anotherObject
+     *      ^
      * </pre>
      */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[Array[T], U]) {
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
-    }
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[List[T]] = new ResultOfBeWordForAnyRef(left, true)
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * list should have length (3)
+     *      ^
+     * </pre>
+     */
+    def should(haveWord: HaveWord): ResultOfHaveWordForSeq[T] =
+      new ResultOfHaveWordForSeq(left, true)
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * list should not have length (3)
+     *      ^
+     * </pre>
+     */
+    def should(notWord: NotWord): ResultOfNotWordForSeq[T, List[T]] =
+      new ResultOfNotWordForSeq(left, false)
   }
-  // Note, no should(beWord) is needed here because a different implicit conversion will be used
-  // on "array shoudl be ..." because this one doesn't solve the type error.
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -1822,8 +1904,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      *          ^
      * </pre>
      */
-    def should(rightMatcherX12: Matcher[java.util.List[T]]) {
-      ShouldMethodHelper.shouldMatcher(left, rightMatcherX12)
+    def should(rightMatcher: Matcher[java.util.List[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcher)
     }
 
     /**
@@ -1848,25 +1930,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(notWord: NotWord): ResultOfNotWordForJavaList[T, java.util.List[T]] = {
       new ResultOfNotWordForJavaList(left, false)
-    }
-
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * result should === (jList)
-     *        ^
-     * </pre>
-     */
-    def should[U](inv: TripleEqualsInvocation[U])(implicit constraint: EqualityConstraint[java.util.List[T], U]) {
-      if ((constraint.areEqual(left, inv.right)) != inv.expectingEqual)
-        throw newTestFailedException(
-          FailureMessages(
-           if (inv.expectingEqual) "didNotEqual" else "equaled",
-            left,
-            inv.right
-          )
-        )
     }
   }
 
@@ -1935,37 +1998,37 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * Implicitly converts an object of type <code>scala.Double</code> to a <code>DoubleShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToNumericShouldWrapperForDouble(o: Double): NumericShouldWrapper[Double] = new NumericShouldWrapper[Double](o)
+  implicit def convertToDoubleShouldWrapper(o: Double): DoubleShouldWrapper = new DoubleShouldWrapper(o)
 
   /**
-   * Implicitly converts an object of type <code>scala.Float</code> to a <code>NumericShouldWrapper[Float]</code>,
+   * Implicitly converts an object of type <code>scala.Float</code> to a <code>FloatShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToNumericShouldWrapperForFloat(o: Float): NumericShouldWrapper[Float] = new NumericShouldWrapper[Float](o)
+  implicit def convertToFloatShouldWrapper(o: Float): FloatShouldWrapper = new FloatShouldWrapper(o)
 
   /**
-   * Implicitly converts an object of type <code>scala.Long</code> to a <code>NumericShouldWrapper[Long]</code>,
+   * Implicitly converts an object of type <code>scala.Long</code> to a <code>LongShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToNumericShouldWrapperForLong(o: Long): NumericShouldWrapper[Long] = new NumericShouldWrapper[Long](o)
+  implicit def convertToLongShouldWrapper(o: Long): LongShouldWrapper = new LongShouldWrapper(o)
 
   /**
-   * Implicitly converts an object of type <code>scala.Int</code> to a <code>NumericShouldWrapper[Int]</code>,
+   * Implicitly converts an object of type <code>scala.Int</code> to a <code>IntShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToNumericShouldWrapperForInt(o: Int): NumericShouldWrapper[Int] = new NumericShouldWrapper[Int](o)
+  implicit def convertToIntShouldWrapper(o: Int): IntShouldWrapper = new IntShouldWrapper(o)
 
   /**
-   * Implicitly converts an object of type <code>scala.Short</code> to a <code>NumericShouldWrapper[Short]</code>,
+   * Implicitly converts an object of type <code>scala.Short</code> to a <code>ShortShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToNumericShouldWrapperForShort(o: Short): NumericShouldWrapper[Short] = new NumericShouldWrapper[Short](o)
+  implicit def convertToShortShouldWrapper(o: Short): ShortShouldWrapper = new ShortShouldWrapper(o)
 
   /**
-   * Implicitly converts an object of type <code>scala.Byte</code> to a <code>NumericShouldWrapper[Byte]</code>,
+   * Implicitly converts an object of type <code>scala.Byte</code> to a <code>ByteShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToByteShouldWrapper(o: Byte): NumericShouldWrapper[Byte] = new NumericShouldWrapper[Byte](o)
+  implicit def convertToByteShouldWrapper(o: Byte): ByteShouldWrapper = new ByteShouldWrapper(o)
 
   /**
    * Implicitly converts a <code>scala.AnyRef</code> of type <code>T</code> to an <code>AnyRefShouldWrapper[T]</code>,
@@ -1977,13 +2040,13 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * Implicitly converts an object of type <code>scala.Collection[T]</code> to a <code>CollectionShouldWrapper</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToTraversableShouldWrapper[T](o: GenTraversable[T]): TraversableShouldWrapper[T] = new TraversableShouldWrapper[T](o)
+  implicit def convertToTraversableShouldWrapper[T](o: Traversable[T]): TraversableShouldWrapper[T] = new TraversableShouldWrapper[T](o)
 
   /**
-   * Implicitly converts an object of type <code>GenSeq[T]</code> to a <code>SeqShouldWrapper[T]</code>,
+   * Implicitly converts an object of type <code>scala.Seq[T]</code> to a <code>SeqShouldWrapper[T]</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToSeqShouldWrapper[T](o: GenSeq[T]): SeqShouldWrapper[T] = new SeqShouldWrapper[T](o)
+  implicit def convertToSeqShouldWrapper[T](o: Seq[T]): SeqShouldWrapper[T] = new SeqShouldWrapper[T](o)
 
   /**
    * Implicitly converts an object of type <code>scala.Array[T]</code> to a <code>ArrayShouldWrapper[T]</code>,
@@ -1992,10 +2055,16 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
   implicit def convertToArrayShouldWrapper[T](o: Array[T]): ArrayShouldWrapper[T] = new ArrayShouldWrapper[T](o)
 
   /**
-   * Implicitly converts an object of type <code>scala.collection.GenMap[K, V]</code> to a <code>MapShouldWrapper[K, V]</code>,
+   * Implicitly converts an object of type <code>scala.List[T]</code> to a <code>ListShouldWrapper[T]</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
-  implicit def convertToMapShouldWrapper[K, V](o: scala.collection.GenMap[K, V]): MapShouldWrapper[K, V] = new MapShouldWrapper[K, V](o)
+  implicit def convertToListShouldWrapper[T](o: List[T]): ListShouldWrapper[T] = new ListShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an object of type <code>scala.collection.Map[K, V]</code> to a <code>MapShouldWrapper[K, V]</code>,
+   * to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertToMapShouldWrapper[K, V](o: scala.collection.Map[K, V]): MapShouldWrapper[K, V] = new MapShouldWrapper[K, V](o)
 
   /**
    * Implicitly converts an object of type <code>java.lang.String</code> to a <code>StringShouldWrapper</code>,
@@ -2016,12 +2085,231 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    */
   implicit def convertToJavaListShouldWrapper[T](o: java.util.List[T]): JavaListShouldWrapper[T] = new JavaListShouldWrapper[T](o)
 
+
   /**
    * Implicitly converts an object of type <code>java.util.Map[K, V]</code> to a <code>JavaMapShouldWrapper[K, V]</code>,
    * to enable <code>should</code> methods to be invokable on that object.
    */
   implicit def convertToJavaMapShouldWrapper[K, V](o: java.util.Map[K, V]): JavaMapShouldWrapper[K, V] = new JavaMapShouldWrapper[K, V](o)
+
+  // Implicitly just used to trigger the addition of the should method. The LengthShouldWrapper
+  // doesn't actually convert them, just passes it through. The conversion that happens here is to LengthShouldWrapper,
+  // and later, inside ResultOfHaveWordForLengthWrapper, the implicit conversion from T to LengthWrapper takes place. So
+  // weirdly enough, here strings are treated structurally for the implicit that adds the should, but later they are
+  // treated nominally by the implicit conversion from plain old String to StringLengthWrapper. So when length is
+  // ultimately invoked up in ResultOfHaveWordForLengthWrapper, it is done directly, not with reflection. That's my
+  // theory anyway.
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetLengthMethodToLengthShouldWrapper[T <: AnyRef { def getLength(): Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /** 
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def getLength: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> <code>val</code> of type <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetLengthFieldToLengthShouldWrapper[T <: AnyRef { val getLength: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> <code>val</code> of type <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntLengthFieldToLengthShouldWrapper[T <: AnyRef { val length: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntLengthMethodToLengthShouldWrapper[T <: AnyRef { def length(): Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntParameterlessLengthMethodToLengthShouldWrapper[T <: AnyRef { def length: Int}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetLengthMethodToLengthShouldWrapper[T <: AnyRef { def getLength(): Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def getLength: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getLength</code> <code>val</code> of type <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetLengthFieldToLengthShouldWrapper[T <: AnyRef { val getLength: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> <code>val</code> of type <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongLengthFieldToLengthShouldWrapper[T <: AnyRef { val length: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongLengthMethodToLengthShouldWrapper[T <: AnyRef { def length(): Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>length</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongLengthParameterlessMethodToLengthShouldWrapper[T <: AnyRef { def length: Long}](o: T): LengthShouldWrapper[T] = new LengthShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetSizeMethodToSizeShouldWrapper[T <: AnyRef { def getSize(): Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def getSize: Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> <code>val</code> of type <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntGetSizeFieldToSizeShouldWrapper[T <: AnyRef { val getSize: Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> <code>val</code> of type <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntSizeFieldToSizeShouldWrapper[T <: AnyRef { val size: Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntSizeMethodToSizeShouldWrapper[T <: AnyRef { def size(): Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> parameterless method that results in <code>Int</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasIntSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def size: Int}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetSizeMethodToSizeShouldWrapper[T <: AnyRef { def getSize(): Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def getSize: Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>getSize</code> <code>val</code> of type <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongGetSizeFieldToSizeShouldWrapper[T <: AnyRef { val getSize: Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> <code>val</code> type <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongSizeFieldToSizeShouldWrapper[T <: AnyRef { val size: Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongSizeMethodToSizeShouldWrapper[T <: AnyRef { def size(): Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
+
+  /**
+   * Implicitly converts an <code>AnyRef</code> of type <code>T</code> whose structure includes
+   * a <code>size</code> parameterless method that results in <code>Long</code>
+   * to a <code>SizeShouldWrapper[T]</code>, to enable <code>should</code> methods to be invokable on that object.
+   */
+  implicit def convertHasLongSizeParameterlessMethodToSizeShouldWrapper[T <: AnyRef { def size: Long}](o: T): SizeShouldWrapper[T] = new SizeShouldWrapper[T](o)
 }
+/*
+When Scala must chose between an implicit with a structural type and one with a nominal one,
+the nominal one wins.
+
+scala> set.size
+res0: Int = 3
+
+scala> class SetWrapper(payload: Set[Int]) { def prove() { println("SetWrapper") }}
+defined class SetWrapper
+
+scala> class SizeWrapper(payload: { def size: Int }) { def prove() { println("SizeWrapper") }}
+defined class SizeWrapper
+
+scala> new SizeWrapper(set)
+res1: SizeWrapper = SizeWrapper@39ce9b
+
+scala> res1.prove
+SizeWrapper
+
+scala> new SetWrapper(set)
+res3: SetWrapper = SetWrapper@9fc9fe
+
+scala> res3.prove
+SetWrapper
+
+scala> implicit def convertToSetWrapper(setParam: Set[Int]): SetWrapper = new SetWrapper(setParam)
+convertToSetWrapper: (Set[Int])SetWrapper
+
+scala> implicit def convertToSizeWrapper(setParam: { def size: Int }): SizeWrapper = new SizeWrapper(setParam)
+convertToSizeWrapper: (AnyRef{def size: Int})SizeWrapper
+
+scala> convertToSetWrapper(set)
+res5: SetWrapper = SetWrapper@598095
+
+scala> convertToSizeWrapper(set)
+res6: SizeWrapper = SizeWrapper@660ff1
+
+scala> set.prove
+SetWrapper
+ */
 /*
 leave this explanation in. It is a useful reminder.
 THIS DOESN'T WORK BECAUSE...
@@ -2088,7 +2376,7 @@ LATER: Well, I'm wondering if now that I've removed the be method in ShouldMetho
  * 
  * scala> 1 should equal (2)
  * org.scalatest.TestFailedException: 1 did not equal 2
- * 	at org.scalatest.matchers.Helper$.newTestFailedException(Matchers.template:40)
+ * 	at org.scalatest.matchers.Helper$.newTestFailedException(Matchers.scala:40)
  * 	at org.scalatest.matchers.ShouldMatchers$ShouldMethodHelper$.shouldMatcher(ShouldMatchers.scala:826)
  * 	at org.scalatest.matchers.ShouldMatchers$IntShouldWrapper.should(ShouldMatchers.scala:1123)
  * 	at .<init>(<console>:9)
@@ -2099,7 +2387,7 @@ LATER: Well, I'm wondering if now that I've removed the be method in ShouldMetho
  * 
  * scala> 7 should (be >= (3) and not be <= (7))
  * org.scalatest.TestFailedException: 7 was greater than or equal to 3, but 7 was less than or equal to 7
- * 	at org.scalatest.matchers.Helper$.newTestFailedException(Matchers.template:40)
+ * 	at org.scalatest.matchers.Helper$.newTestFailedException(Matchers.scala:40)
  * 	at org.scalatest.matchers.ShouldMatchers$ShouldMethodHelper$.shouldMatcher(ShouldMatchers.scala:826)
  * 	at org.scalatest.matchers.ShouldMatchers$IntShouldWrapper.should(ShouldMatchers.scala:1123)
  * 	at .<init>(...
