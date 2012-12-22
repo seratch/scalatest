@@ -166,7 +166,7 @@ trait BeforeAndAfterEach extends SuiteMixin {
    * </p>
    */
   @deprecated("Please use beforeEach(TestData) instead.")
-  protected def beforeEach(configMap: ConfigMap) {
+  protected def beforeEach(configMap: Map[String, Any]) {
     beforeEach()
   }
   
@@ -215,7 +215,7 @@ trait BeforeAndAfterEach extends SuiteMixin {
    * </p>
    */
   @deprecated("Please use afterEach(TestData) instead.")
-  protected def afterEach(configMap: ConfigMap) {
+  protected def afterEach(configMap: Map[String, Any]) {
     afterEach()
   }
   

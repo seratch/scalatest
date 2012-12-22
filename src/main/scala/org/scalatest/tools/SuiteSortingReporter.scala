@@ -67,21 +67,21 @@ private[scalatest] class SuiteSortingReporter(dispatch: Reporter, sortingTimeout
         case infoProvided: InfoProvided =>
           infoProvided.nameInfo match {
             case Some(nameInfo) =>
-              handleTestEvents(nameInfo.suiteId, infoProvided)
+              handleTestEvents(nameInfo.suiteID, infoProvided)
             case None => // Under what condition will reach here?
               dispatch(infoProvided)
           }
         case markupProvided: MarkupProvided =>
           markupProvided.nameInfo match {
             case Some(nameInfo) =>
-              handleTestEvents(nameInfo.suiteId, markupProvided)
+              handleTestEvents(nameInfo.suiteID, markupProvided)
             case None => // Under what condition will reach here?
               dispatch(markupProvided)
           }
         case scopeOpened: ScopeOpened =>
-          handleTestEvents(scopeOpened.nameInfo.suiteId, scopeOpened)
+          handleTestEvents(scopeOpened.nameInfo.suiteID, scopeOpened)
         case scopeClosed: ScopeClosed =>
-          handleTestEvents(scopeClosed.nameInfo.suiteId, scopeClosed)
+          handleTestEvents(scopeClosed.nameInfo.suiteID, scopeClosed)
         case _ =>
           dispatch(event)  // Just dispatch it if got unexpected event.
       }

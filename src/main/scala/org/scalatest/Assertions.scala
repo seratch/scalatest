@@ -18,7 +18,6 @@ package org.scalatest
 import exceptions.TestCanceledException
 import scala.reflect.Manifest
 import Assertions.areEqualComparingArraysStructurally
-import org.scalautils.LegacyTripleEquals
 
 /**
  * Trait that contains ScalaTest's basic assertion methods.
@@ -279,9 +278,9 @@ import org.scalautils.LegacyTripleEquals
  *
  * @author Bill Venners
  */
-trait Assertions extends LegacyTripleEquals {
+trait Assertions {
 
-  /* *
+  /**
    * Class used via an implicit conversion to enable any two objects to be compared with
    * <code>===</code> in assertions in tests. For example:
    *
@@ -336,7 +335,6 @@ trait Assertions extends LegacyTripleEquals {
    *
    * @author Bill Venners
    */
-/*
   final class Equalizer(left: Any) {
 
     /**
@@ -374,7 +372,6 @@ trait Assertions extends LegacyTripleEquals {
       }
 */
   }
-*/
 
   /**
    * Assert that a boolean condition is true.
@@ -598,7 +595,7 @@ trait Assertions extends LegacyTripleEquals {
 */
   
 
-  /* *
+  /**
    * Implicit conversion from <code>Any</code> to <code>Equalizer</code>, used to enable
    * assertions with <code>===</code> comparisons.
    *
@@ -629,7 +626,7 @@ trait Assertions extends LegacyTripleEquals {
    * @param left the object whose type to convert to <code>Equalizer</code>.
    * @throws NullPointerException if <code>left</code> is <code>null</code>.
    */
-  // implicit def convertToEqualizer(left: Any) = new Equalizer(left)
+  implicit def convertToEqualizer(left: Any) = new Equalizer(left)
 
   /*
    * Intercept and return an instance of the passed exception class (or an instance of a subclass of the

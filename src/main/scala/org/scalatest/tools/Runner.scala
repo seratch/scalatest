@@ -757,7 +757,7 @@ object Runner {
     val suitesList: List[SuiteParam] = parseSuiteArgsIntoSuiteParam(suiteArgsList, "-s")
     val junitsList: List[String] = parseSuiteArgsIntoNameStrings(junitArgsList, "-j")
     val runpathList: List[String] = parseRunpathArgIntoList(runpathArgsList)
-    val propertiesMap: ConfigMap = parsePropertiesArgsIntoMap(propertiesArgsList)
+    val propertiesMap: Map[String, Object] = parsePropertiesArgsIntoMap(propertiesArgsList)
     val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
     val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
     val concurrent: Boolean = !concurrentList.isEmpty
@@ -796,7 +796,7 @@ object Runner {
     
     if (propertiesMap.isDefinedAt("org.scalatest.ChosenStyles"))
       throw new IllegalArgumentException("Property name 'org.scalatest.ChosenStyles' is used by ScalaTest, please choose other property name.")
-    val configMap: ConfigMap = 
+    val configMap = 
       if (chosenStyleSet.isEmpty)
         propertiesMap
       else
@@ -1833,7 +1833,7 @@ object Runner {
     matcher.matches() || (token(token.length - 1) != '\\')
   }
 
-  private[scalatest] def parsePropertiesArgsIntoMap(args: List[String]): ConfigMap = {
+  private[scalatest] def parsePropertiesArgsIntoMap(args: List[String]) = {
 
     if (args == null)
       throw new NullPointerException("args was null")
@@ -1861,7 +1861,7 @@ object Runner {
       (key, value)
     }
 
-    new ConfigMap(Map(tuples: _*))
+    scala.collection.immutable.Map() ++ tuples
   }
 
   // For debugging.
@@ -1906,7 +1906,7 @@ object Runner {
     stopRequested: Stopper,
     tagsToIncludeSet: Set[String], 
     tagsToExcludeSet: Set[String], 
-    configMap: ConfigMap,
+    configMap: Map[String, Object],
     concurrent: Boolean,
     membersOnlyList: List[String],
     wildcardList: List[String],

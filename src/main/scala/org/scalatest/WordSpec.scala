@@ -17,6 +17,7 @@ package org.scalatest
 
 import verb.{CanVerb, ResultOfAfterWordApplication, ShouldVerb, BehaveWord,
   MustVerb, StringVerbBlockRegistration}
+import NodeFamily._
 import scala.collection.immutable.ListSet
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import java.util.concurrent.atomic.AtomicReference
@@ -2401,5 +2402,5 @@ one error found
    */
   final override val styleName: String = "org.scalatest.WordSpec"
     
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = createTestDataFor(testName, theConfigMap, this)
+  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
