@@ -141,7 +141,7 @@ import Helper.accessProperty
  *
  * @author Bill Venners
  */
-trait Matchers extends Assertions { matchers =>
+trait ClassicMatchers extends Assertions { matchers =>
 
   // TODO: Can probably rewrite this with a Thread.currentStackTrace or whatever the method is. No need
   // to create the temporary RuntimeException
@@ -7092,4 +7092,10 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
   def produce[T](implicit manifest: Manifest[T]): ResultOfProduceInvocation[T] =
     new ResultOfProduceInvocation(manifest.erasure.asInstanceOf[Class[T]])
 }
+
+/*
+<strong>The name Matchers has been deprecated and will be used in a different way in a future version of ScalaTest. Please use <code>ClassicMatchers</code> instead.</strong>
+*/
+@deprecated("The name Matchers has been deprecated and will be used in a different way in a future version of ScalaTest. Please use ClassicMatchers instead.")
+trait Matchers extends ClassicMatchers
 
