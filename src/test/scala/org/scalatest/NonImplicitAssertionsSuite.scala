@@ -15,7 +15,6 @@
  */
 package org.scalatest
 
-import org.scalautils._
 /* Uncomment after remove type aliases in org.scalatest package object
 import org.scalatest.exceptions.TestFailedException
 */
@@ -29,30 +28,4 @@ class NonImplicitAssertionsSuite extends FunSuite with NonImplicitAssertions {
       }
     expectResult("Expected 2, but got 3") { thrown.getMessage }
   }
-  test("TypeCheckedLegacyTripleEquals should work still if mixed in after NonImplicitAssertions") {
-    class MySpec extends Spec with NonImplicitAssertions with TypeCheckedLegacyTripleEquals {
-      assert(1 === 1)
-    }
-  }
-  test("ConversionCheckedLegacyTripleEquals should work still if mixed in after NonImplicitAssertions") {
-    class MySpec extends Spec with NonImplicitAssertions with ConversionCheckedLegacyTripleEquals {
-      assert(1 === 1)
-    }
-  }
-  test("TripleEquals should work still if mixed in after NonImplicitAssertions") {
-    class MySpec extends Spec with NonImplicitAssertions with TripleEquals {
-      assert(1 === 1)
-    }
-  }
-  test("TypeCheckedTripleEquals should work still if mixed in after NonImplicitAssertions") {
-    class MySpec extends Spec with NonImplicitAssertions with TypeCheckedTripleEquals {
-      assert(1 === 1)
-    }
-  }
-  test("ConversionCheckedTripleEquals should work still if mixed in after NonImplicitAssertions") {
-    class MySpec extends Spec with NonImplicitAssertions with ConversionCheckedTripleEquals {
-      assert(1 === 1)
-    }
-  }
 }
-

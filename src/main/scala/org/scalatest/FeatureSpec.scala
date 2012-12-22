@@ -15,6 +15,7 @@
  */
 package org.scalatest
 
+import NodeFamily._
 import scala.collection.immutable.ListSet
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 import java.util.concurrent.atomic.AtomicReference
@@ -1906,5 +1907,5 @@ trait FeatureSpec extends Suite { thisSuite =>
    */
   final override val styleName: String = "org.scalatest.FeatureSpec"
     
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = createTestDataFor(testName, theConfigMap, this)
+  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
