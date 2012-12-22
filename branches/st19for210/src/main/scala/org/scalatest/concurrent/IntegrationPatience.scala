@@ -66,5 +66,5 @@ trait IntegrationPatience extends AbstractPatienceConfiguration { this: Patience
   /**
    * Implicit <code>PatienceConfig</code> value providing default configuration values suitable for integration testing.
    */
-  implicit val patienceConfig: PatienceConfig = defaultPatienceConfig
+  implicit abstract override val patienceConfig: PatienceConfig = defaultPatienceConfig
 }
