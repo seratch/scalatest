@@ -25,13 +25,14 @@ class BeforeNAfterSuite extends FunSuite {
   class TheSuper extends Suite {
     var runTestWasCalled = false
     var runWasCalled = false
-    protected override def runTest(testName: String, args: Args): Status = {
+    protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, properties: Map[String, Any], tracker: Tracker) {
       runTestWasCalled = true
-      super.runTest(testName, args)
+      super.runTest(testName, reporter, stopper, properties, tracker)
     }
-    override def run(testName: Option[String], args: Args): Status = {
+    override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                         properties: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
       runWasCalled = true
-      super.run(testName, args)
+      super.run(testName, reporter, stopper, filter, properties, distributor, tracker)
     }
   }
   
@@ -53,25 +54,25 @@ class BeforeNAfterSuite extends FunSuite {
 
   test("super's runTest must be called") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker)
     assert(a.runTestWasCalled)
   }
 
   test("super's run must be called") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker)
     assert(a.runWasCalled)
   }
 
   test("before gets called before runTest") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker)
     assert(a.beforeCalledBeforeRunTest)
   }
 
   test("after gets called after runTest") {
     val a = new MySuite
-    a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> "there"), None, new Tracker, Set.empty))
+    a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> "there"), None, new Tracker)
     assert(a.afterCalledAfterRunTest)
   }
 
@@ -84,14 +85,14 @@ class BeforeNAfterSuite extends FunSuite {
     }
     intercept[NumberFormatException] {
       val a = new MySuite
-      a.run(Some("july"), Args(StubReporter))
+      a.run(Some("july"), StubReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     }
   }
   
   test("If any call to super.runTest completes abruptly with an exception, runTest " +
     "will complete abruptly with the same exception, however, before doing so, it will invoke after") {
     trait FunkySuite extends Suite {
-      protected override def runTest(testName: String, args: Args): Status = {
+      protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, properties: Map[String, Any], tracker: Tracker) {
         throw new NumberFormatException
       }
     }
@@ -103,7 +104,7 @@ class BeforeNAfterSuite extends FunSuite {
     }
     val a = new MySuite
     intercept[NumberFormatException] {
-      a.run(Some("july"), Args(StubReporter))
+      a.run(Some("july"), StubReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     }
     assert(a.afterCalled)
   }
@@ -111,7 +112,7 @@ class BeforeNAfterSuite extends FunSuite {
   test("If both super.runTest and after complete abruptly with an exception, runTest " + 
     "will complete abruptly with the exception thrown by super.runTest.") {
     trait FunkySuite extends Suite {
-      protected override def runTest(testName: String, args: Args): Status = {
+      protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, properties: Map[String, Any], tracker: Tracker) {
         throw new NumberFormatException
       }
     }
@@ -124,7 +125,7 @@ class BeforeNAfterSuite extends FunSuite {
     }
     val a = new MySuite
     intercept[NumberFormatException] {
-      a.run(Some("july"), Args(StubReporter))
+      a.run(Some("july"), StubReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     }
     assert(a.afterCalled)
   }
@@ -138,7 +139,7 @@ class BeforeNAfterSuite extends FunSuite {
     }
     intercept[NumberFormatException] {
       val a = new MySuite
-      a.run(Some("testJuly"), Args(StubReporter))
+      a.run(Some("testJuly"), StubReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     }
   }
  
@@ -178,12 +179,12 @@ class BeforeNAfterSuite extends FunSuite {
         }
         catch {
           case _: NotAllowedException => notAllowedExceptionThrown = true
-          case e => throw e
+          case e: Throwable => throw e
         }
       }
     }
     val a = new MySuite
-    a.run(None, Args(StubReporter))
+    a.run(None, StubReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(a.notAllowedExceptionThrown)
   }
 
@@ -222,12 +223,12 @@ class BeforeNAfterSuite extends FunSuite {
         }
         catch {
           case _: NotAllowedException => notAllowedExceptionThrown = true
-          case e => throw e
+          case e: Throwable => throw e
         }
       }
     }
     val a = new MySuite
-    a.run(None, Args(StubReporter))
+    a.run(None, StubReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     assert(a.notAllowedExceptionThrown)
   }
 }

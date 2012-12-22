@@ -16,8 +16,6 @@
 package org.scalatest
 
 import org.scalatest.events.TestStarting
-import org.scalatest.events.InfoProvided
-import org.scalatest.events.MarkupProvided
 /* Uncomment once remove deprecated type aliases in org.scalatest
 import org.scalatest.exceptions.DuplicateTestNameException
 import org.scalatest.exceptions.NotAllowedException
@@ -35,13 +33,13 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test that") {}
       }
 
-      expectResult(List("Scenario: test this", "Scenario: test that")) {
+      expect(List("Scenario: test this", "Scenario: test that")) {
         a.testNames.iterator.toList
       }
 
       val b = new FeatureSpec {}
 
-      expectResult(List[String]()) {
+      expect(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -50,7 +48,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test this") {}
       }
 
-      expectResult(List("Scenario: test that", "Scenario: test this")) {
+      expect(List("Scenario: test that", "Scenario: test this")) {
         c.testNames.iterator.toList
       }
     }
@@ -94,7 +92,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
       val suite = new MySuite
       val reporter = new EventRecordingReporter
-      suite.run(None, Args(reporter))
+      suite.run(None, reporter, new Stopper {}, Filter(), Map(), None, new Tracker)
 
       val indexedList = reporter.eventsReceived
 
@@ -150,7 +148,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
     it("should execute all tests when run is called with testName None") {
 
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(b.theTestThisCalled)
       assert(b.theTestThatCalled)
     }
@@ -158,7 +156,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
     it("should execute one test when run is called with a defined testName") {
 
       val a = new TestWasCalledSuite
-      a.run(Some("Scenario: this"), Args(SilentReporter))
+      a.run(Some("Scenario: this"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(a.theTestThisCalled)
       assert(!a.theTestThatCalled)
     }
@@ -173,7 +171,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
 
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -186,7 +184,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
 
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB))
+      b.run(None, repB, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repB.testIgnoredReceived)
       assert(repB.lastEvent.isDefined)
       assert(repB.lastEvent.get.testName endsWith "test this")
@@ -201,7 +199,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
 
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repC))
+      c.run(None, repC, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repC.testIgnoredReceived)
       assert(repC.lastEvent.isDefined)
       assert(repC.lastEvent.get.testName endsWith "test that", repC.lastEvent.get.testName)
@@ -218,7 +216,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
 
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD))
+      d.run(None, repD, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(repD.lastEvent.isDefined)
       assert(repD.lastEvent.get.testName endsWith "test that") // last because should be in order of appearance
@@ -237,7 +235,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
 
       val repE = new TestIgnoredTrackingReporter
-      e.run(Some("Scenario: test this"), Args(repE))
+      e.run(Some("Scenario: test this"), repE, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(!e.theTestThatCalled)
@@ -253,7 +251,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test that") { theTestThatCalled = true }
       }
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -266,7 +264,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test that") { theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      b.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repB.testIgnoredReceived)
       assert(b.theTestThisCalled)
       assert(!b.theTestThatCalled)
@@ -279,7 +277,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test that", mytags.SlowAsMolasses) { theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      c.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repC.testIgnoredReceived)
       assert(c.theTestThisCalled)
       assert(c.theTestThatCalled)
@@ -292,7 +290,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test that", mytags.SlowAsMolasses) { theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), ConfigMap.empty, None, new Tracker, Set.empty))
+      d.run(None, repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(!d.theTestThisCalled)
       assert(d.theTestThatCalled)
@@ -307,8 +305,8 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test the other") { theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
-      e.run(None, Args(repE, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      e.run(None, repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(e.theTestThatCalled)
@@ -324,8 +322,8 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test the other") { theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
-      f.run(None, Args(repF, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      f.run(None, repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repF.testIgnoredReceived)
       assert(!f.theTestThisCalled)
       assert(f.theTestThatCalled)
@@ -341,8 +339,8 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         ignore("test the other") { theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
-      g.run(None, Args(repG, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      g.run(None, repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repG.testIgnoredReceived)
       assert(!g.theTestThisCalled)
       assert(g.theTestThatCalled)
@@ -358,7 +356,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test the other") { theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
-      h.run(None, Args(repH, Stopper.default, Filter(None, Set("org.scalatest.FastAsLight")), ConfigMap.empty, None, new Tracker, Set.empty))
+      h.run(None, repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker)
       assert(!repH.testIgnoredReceived)
       assert(!h.theTestThisCalled)
       assert(h.theTestThatCalled)
@@ -374,7 +372,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test the other") { theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
-      i.run(None, Args(repI, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      i.run(None, repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!i.theTestThisCalled)
       assert(!i.theTestThatCalled)
@@ -390,7 +388,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test the other") { theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
-      j.run(None, Args(repJ, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      j.run(None, repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!j.theTestThisCalled)
       assert(!j.theTestThatCalled)
@@ -406,7 +404,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         ignore("test the other") { theTestTheOtherCalled = true }
       }
       val repK = new TestIgnoredTrackingReporter
-      k.run(None, Args(repK, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), ConfigMap.empty, None, new Tracker, Set.empty))
+      k.run(None, repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repK.testIgnoredReceived)
       assert(!k.theTestThisCalled)
       assert(!k.theTestThatCalled)
@@ -466,7 +464,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
       val suite = new MySuite
       val reporter = new EventRecordingReporter
-      suite.run(None, Args(reporter))
+      suite.run(None, reporter, new Stopper {}, Filter(), Map(), None, new Tracker)
 
       val infoList = reporter.infoProvidedEventsReceived
 
@@ -488,7 +486,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
@@ -500,7 +498,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("throws Throwable") { throw new Throwable }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }
@@ -510,143 +508,45 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("throws AssertionError") { throw new OutOfMemoryError }
       }
       intercept[OutOfMemoryError] {
-        a.run(None, Args(SilentReporter))
+        a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-/*
-    it("should send InfoProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for info " +
+    it("should send InfoProvided events with aboutAPendingTest set to true for info " +
             "calls made from a test that is pending") {
       val a = new FeatureSpec with GivenWhenThen {
         scenario("should do something else") {
-          given("two integers")
-          when("one is subracted from the other")
-          then("the result is the difference between the two numbers")
+          Given("two integers")
+          When("one is subracted from the other")
+          Then("the result is the difference between the two numbers")
           pending
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testPending = rep.testPendingEventsReceived
-      assert(testPending.size === 1)
-      val recordedEvents = testPending(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && ip.aboutAPendingTest.get)
-        assert(ip.aboutACanceledTest.isDefined && !ip.aboutACanceledTest.get)
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 3)
+      for (event <- ip) {
+        assert(event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest and aboutACanceledTest set to false for info " +
-            "calls made from a test that is not pending or canceled") {
+    it("should send InfoProvided events with aboutAPendingTest set to false for info " +
+            "calls made from a test that is not pending") {
       val a = new FeatureSpec with GivenWhenThen {
         scenario("should do something else") {
-          given("two integers")
-          when("one is subracted from the other")
-          then("the result is the difference between the two numbers")
+          Given("two integers")
+          When("one is subracted from the other")
+          Then("the result is the difference between the two numbers")
           assert(1 + 1 === 2)
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testSucceeded = rep.testSucceededEventsReceived
-      assert(testSucceeded.size === 1)
-      val recordedEvents = testSucceeded(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && !ip.aboutAPendingTest.get)
-        assert(ip.aboutACanceledTest.isDefined && !ip.aboutACanceledTest.get)
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 3)
+      for (event <- ip) {
+        assert(event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
-    it("should send InfoProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for info " +
-            "calls made from a test that is canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          given("two integers")
-          when("one is subracted from the other")
-          then("the result is the difference between the two numbers")
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testCanceled = rep.testCanceledEventsReceived
-      assert(testCanceled.size === 1)
-      val recordedEvents = testCanceled(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && !ip.aboutAPendingTest.get)
-        assert(ip.aboutACanceledTest.isDefined && ip.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest set to true and aboutACanceledTest set to false for markup " +
-            "calls made from a test that is pending") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          pending
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testPending = rep.testPendingEventsReceived
-      assert(testPending.size === 1)
-      val recordedEvents = testPending(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val mp = event.asInstanceOf[MarkupProvided]
-        assert(mp.aboutAPendingTest.isDefined && mp.aboutAPendingTest.get)
-        assert(mp.aboutACanceledTest.isDefined && !mp.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest and aboutACanceledTest set to false for markup " +
-            "calls made from a test that is not pending or canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          assert(1 + 1 === 2)
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testSucceeded = rep.testSucceededEventsReceived
-      assert(testSucceeded.size === 1)
-      val recordedEvents = testSucceeded(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val mp = event.asInstanceOf[MarkupProvided]
-        assert(mp.aboutAPendingTest.isDefined && !mp.aboutAPendingTest.get)
-        assert(mp.aboutACanceledTest.isDefined && !mp.aboutACanceledTest.get)
-      }
-    }
-    it("should send MarkupProvided events with aboutAPendingTest set to false and aboutACanceledTest set to true for markup " +
-            "calls made from a test that is canceled") {
-      val a = new FeatureSpec with GivenWhenThen {
-        scenario("should do something else") {
-          markup("two strings")
-          markup("walked into")
-          markup("a bar")
-          cancel()
-        }
-      }
-      val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testCanceled = rep.testCanceledEventsReceived
-      assert(testCanceled.size === 1)
-      val recordedEvents = testCanceled(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val mp = event.asInstanceOf[MarkupProvided]
-        assert(mp.aboutAPendingTest.isDefined && !mp.aboutAPendingTest.get)
-        assert(mp.aboutACanceledTest.isDefined && mp.aboutACanceledTest.get)
-      }
-    }
-*/
     it("should invoke withFixture from runTest") {
       val a = new FeatureSpec {
         var withFixtureWasInvoked = false
@@ -659,7 +559,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
           testWasInvoked = true
         }
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.withFixtureWasInvoked)
       assert(a.testWasInvoked)
     }
@@ -672,19 +572,19 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         }
         scenario("should do something") {}
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.correctTestNameWasPassed)
     }
     it("should pass the correct config map in the NoArgTest passed to withFixture") {
       val a = new FeatureSpec {
         var correctConfigMapWasPassed = false
         override def withFixture(test: NoArgTest) {
-          correctConfigMapWasPassed = (test.configMap == ConfigMap("hi" -> 7))
+          correctConfigMapWasPassed = (test.configMap == Map("hi" -> 7))
           super.withFixture(test)
         }
         scenario("should do something") {}
       }
-      a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> 7), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker())
       assert(a.correctConfigMapWasPassed)
     }
     describe("(when a nesting rule has been violated)") {
@@ -800,36 +700,6 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
       }
     }
     
-    class ExamplePrefixSpec extends FeatureSpec {
-      feature("A Feature") {
-        scenario("A Scenario") {
-          
-        }
-      }
-    }
-    
-    it("should prefix feature text with 'Feature: '") {
-      val rep = new EventRecordingReporter
-      (new ExamplePrefixSpec).run(None, Args(rep))
-      val scopeOpened = rep.scopeOpenedEventsReceived
-      assert(scopeOpened.size === 1)
-      assert(scopeOpened(0).message === "Feature: A Feature")
-      val scopeClosed = rep.scopeClosedEventsReceived
-      assert(scopeClosed.size === 1)
-      assert(scopeClosed(0).message === "Feature: A Feature")
-    }
-    
-    it("should prefix scenario text with 'Scenario: '") {
-      val rep = new EventRecordingReporter
-      (new ExamplePrefixSpec).run(None, Args(rep))
-      val testStarting = rep.testStartingEventsReceived
-      assert(testStarting.size === 1)
-      assert(testStarting(0).testText === "Scenario: A Scenario")
-      val testSucceeded = rep.testSucceededEventsReceived
-      assert(testSucceeded.size === 1)
-      assert(testSucceeded(0).testText === "Scenario: A Scenario")
-    }
-    
     describe("when failure happens") {
       
       it("should fire TestFailed event with correct stack depth info when test failed") {
@@ -845,7 +715,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         }
         val rep = new EventRecordingReporter
         val s1 = new TestSpec
-        s1.run(None, Args(rep))
+        s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
         assert(rep.testFailedEventsReceived.size === 2)
         assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FeatureSpecSpec.scala")
         assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 13)
@@ -894,7 +764,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         }
         val rep = new EventRecordingReporter
         val s = new TestSpec
-        s.run(None, Args(rep))
+        s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
         assert(s.registrationClosedThrown == true)
         val testFailedEvents = rep.testFailedEventsReceived
         assert(testFailedEvents.size === 1)
