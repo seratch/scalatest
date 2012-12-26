@@ -882,7 +882,7 @@ import org.scalautils.EqualityConstraint
  * forget a set of needed parentheses.
  * </p>
  */
-trait ShouldMatchers extends Matchers with ShouldVerb {
+trait ShouldMatchers extends Matchers with ShouldVerb with LoneElement {
 
   private object ShouldMethodHelper {
     def shouldMatcher[T](left: T, rightMatcher: Matcher[T]) {
@@ -1475,6 +1475,28 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
           )
         )
     }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * xs.loneElement should be > 9
+     *    ^
+     * </pre>
+     */
+    def loneElement: T = {
+      if (left.size == 1)
+        left.head
+      else
+        throw newTestFailedException(
+          FailureMessages(
+            "notLoneElement",
+            left,
+            left.size), 
+          None, 
+          1
+        )
+    }
   }
 
   /**
@@ -2021,6 +2043,11 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
    * to enable <code>should</code> methods to be invokable on that object.
    */
   implicit def convertToJavaMapShouldWrapper[K, V](o: java.util.Map[K, V]): JavaMapShouldWrapper[K, V] = new JavaMapShouldWrapper[K, V](o)
+  
+  /**
+   * Turn off implicit conversion of LoneElement, so that if user accidentally mixin LoneElement it does conflict with convertToTraversableShouldWrapper
+   */
+  override def convertLoneElementTraversableToLoneElementTraversableWrapper[T](xs: GenTraversable[T]): LoneElementTraversableWrapper[T] = new LoneElementTraversableWrapper[T](xs)
 }
 /*
 leave this explanation in. It is a useful reminder.
