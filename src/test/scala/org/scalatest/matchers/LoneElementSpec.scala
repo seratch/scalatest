@@ -4,7 +4,7 @@ import org.scalatest._
 
 class LoneElementSpec extends Spec with SharedHelpers {
 
-  object `when use with ShouldMatchers` extends ShouldMatchers {
+  object `when used with ShouldMatchers` extends ShouldMatchers {
     
     def `should work with xs.loneElement and passed when xs only contains one element and the one element passed the check` {
       List(10).loneElement should be > 9
@@ -40,7 +40,7 @@ class LoneElementSpec extends Spec with SharedHelpers {
     }
   }
   
-  object `when use with LoneElement trait` extends LoneElement {
+  object `when used with LoneElement trait` extends LoneElement {
     def `should work with xs.loneElement and passed when xs only contains one element and the one element passed the check` {
       assert(List(10).loneElement > 9)
     }
@@ -75,7 +75,7 @@ class LoneElementSpec extends Spec with SharedHelpers {
     }
   }
   
-  object `when use with both ShouldMatchers and LoneElement together` extends ShouldMatchers with LoneElement {
+  object `when used with both ShouldMatchers and LoneElement together` extends ShouldMatchers with LoneElement {
     
     def `should work with xs.loneElement and passed when should syntax is used and xs only contains one element and the one element passed the check` {
       List(10).loneElement should be > 9

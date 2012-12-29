@@ -12,38 +12,38 @@ import matchers.ShouldMatchers.TraversableShouldWrapper
  */
 trait LoneElement {
 
+  final class LoneElementTraversableWrapper[T](xs: GenTraversable[T]) {
+      /**
+       * This method enables syntax such as the following:
+       *
+       * <pre class="stHighlight">
+       * xs.loneElement should be &gt; 9
+       *    ^
+       * </pre>
+       */
+      def loneElement: T = {
+        if (xs.size == 1)
+          xs.head
+        else
+          throw new exceptions.TestFailedException(
+            Some(FailureMessages(
+                   "notLoneElement",
+                   xs,
+                   xs.size)), 
+            None, 
+            1
+          )
+      }
+  }
+
   /**
    * This implicit conversion method enables ScalaTest matchers expressions like the following:
    *
    * <pre class="stHighlight">
-   * xs.loneElement should be > 9
+   * xs.loneElement should be &gt; 9
    *    ^
    * </pre>
    */
-  implicit def convertLoneElementTraversableToLoneElementTraversableWrapper[T](xs: GenTraversable[T]): LoneElementTraversableWrapper[T] = new LoneElementTraversableWrapper[T](xs)
-  
+  implicit def convertToTraversableLoneElementWrapper[T](xs: GenTraversable[T]): LoneElementTraversableWrapper[T] = new LoneElementTraversableWrapper[T](xs)
 }
 
-final class LoneElementTraversableWrapper[T](xs: GenTraversable[T]) {
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * xs.loneElement should be > 9
-     *    ^
-     * </pre>
-     */
-    def loneElement: T = {
-      if (xs.size == 1)
-        xs.head
-      else
-        throw new exceptions.TestFailedException(
-          Some(FailureMessages(
-                 "notLoneElement",
-                 xs,
-                 xs.size)), 
-          None, 
-          1
-        )
-    }
-  }
