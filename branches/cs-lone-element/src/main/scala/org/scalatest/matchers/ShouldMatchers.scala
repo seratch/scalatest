@@ -2047,7 +2047,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb with LoneElement {
   /**
    * Turn off implicit conversion of LoneElement, so that if user accidentally mixin LoneElement it does conflict with convertToTraversableShouldWrapper
    */
-  override def convertLoneElementTraversableToLoneElementTraversableWrapper[T](xs: GenTraversable[T]): LoneElementTraversableWrapper[T] = new LoneElementTraversableWrapper[T](xs)
+  override def convertToTraversableLoneElementWrapper[T](xs: GenTraversable[T]): LoneElementTraversableWrapper[T] = new LoneElementTraversableWrapper[T](xs)
 }
 /*
 leave this explanation in. It is a useful reminder.
