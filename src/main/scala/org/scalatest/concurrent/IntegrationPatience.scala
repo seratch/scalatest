@@ -48,6 +48,10 @@ import org.scalatest.time.{Millis, Seconds, Span}
  * }
  * </pre>
  *
+ * @param timeout the maximum amount of time to retry before giving up and throwing
+ *   <code>TestFailedException</code>.
+ * @param interval the amount of time to sleep between each attempt
+ *
  * @author Bill Venners
  * @author Chua Chee Seng
  */

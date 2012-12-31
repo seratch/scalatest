@@ -25,12 +25,6 @@ import Helper.transformOperatorChars
 import scala.collection.Traversable
 import Assertions.areEqualComparingArraysStructurally
 import org.scalatest.exceptions.TestFailedException
-import scala.collection.GenTraversable
-import scala.collection.GenSeq
-import scala.collection.GenMap
-import org.scalautils.Tolerance
-import org.scalautils.Interval
-import org.scalautils.TripleEqualsInvocation
 
 // TODO: drop generic support for be as an equality comparison, in favor of specific ones.
 // TODO: mention on JUnit and TestNG docs that you can now mix in ShouldMatchers or MustMatchers
@@ -147,22 +141,22 @@ import Helper.accessProperty
  *
  * @author Bill Venners
  */
-trait ClassicMatchers extends Assertions with Tolerance { matchers =>
+trait ClassicMatchers extends Assertions { matchers =>
 
   // TODO: Can probably rewrite this with a Thread.currentStackTrace or whatever the method is. No need
   // to create the temporary RuntimeException
-  private[scalatest] def newTestFailedException(message: String, optionalCause: Option[Throwable] = None, stackDepthAdjustment: Int = 0): Throwable = {
+  private[scalatest] def newTestFailedException(message: String, optionalCause: Option[Throwable] = None): Throwable = {
     val fileNames = List("Matchers.scala", "ShouldMatchers.scala", "MustMatchers.scala")
     val temp = new RuntimeException
     val stackDepth = temp.getStackTrace.takeWhile(stackTraceElement => fileNames.exists(_ == stackTraceElement.getFileName) || stackTraceElement.getMethodName == "newTestFailedException").length
     // if (stackDepth != 4) throw new OutOfMemoryError("stackDepth in Matchers.scala is: " + stackDepth)
     optionalCause match {
-      case Some(cause) => new TestFailedException(message, cause, stackDepth + stackDepthAdjustment)
-      case None => new TestFailedException(message, stackDepth + stackDepthAdjustment)
+      case Some(cause) => new TestFailedException(message, cause, stackDepth)
+      case None => new TestFailedException(message, stackDepth)
     }
   }
 
-  private[scalatest] def matchSymbolToPredicateMethod[S <: AnyRef](left: S, right: Symbol, hasArticle: Boolean, articleIsA: Boolean): MatchResult = {
+  private def matchSymbolToPredicateMethod[S <: AnyRef](left: S, right: Symbol, hasArticle: Boolean, articleIsA: Boolean): MatchResult = {
 
     // If 'empty passed, rightNoTick would be "empty"
     val propertyName = right.name
@@ -322,7 +316,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                     ^
        * </pre>
        */
-      def apply[U](expectedElement: U): Matcher[T with GenTraversable[U]] = matchersWrapper.and(matchers.contain(expectedElement))
+      def apply[U](expectedElement: U): Matcher[T with Traversable[U]] = matchersWrapper.and(matchers.contain(expectedElement))
       // def element[T](expectedElement: T) = matchersWrapper.and(matchers.contain.apply(expectedElement))
 
       /**
@@ -333,7 +327,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                     ^
        * </pre>
        */
-      def key[U](expectedElement: U): Matcher[T with scala.collection.GenMap[U, Any]] = matchersWrapper.and(matchers.contain.key(expectedElement))
+      def key[U](expectedElement: U): Matcher[T with scala.collection.Map[U, Any]] = matchersWrapper.and(matchers.contain.key(expectedElement))
 
       /**
        * This method enables the following syntax:
@@ -343,7 +337,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                   ^
        * </pre>
        */
-      def value[U](expectedValue: U): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] = matchersWrapper.and(matchers.contain.value(expectedValue))
+      def value[U](expectedValue: U): Matcher[T with scala.collection.Map[K, U] forSome { type K }] = matchersWrapper.and(matchers.contain.value(expectedValue))
     }
 
     /**
@@ -706,8 +700,8 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                  ^
        * </pre>
        */
-      def be(tripleEqualsInvocation: TripleEqualsInvocation[_]): Matcher[T] =
-        matchersWrapper.and(matchers.not.be(tripleEqualsInvocation))
+      def be(resultOfTripleEqualsApplication: ResultOfTripleEqualsApplication): Matcher[T] =
+        matchersWrapper.and(matchers.not.be(resultOfTripleEqualsApplication))
 
       /**
        * This method enables the following syntax:
@@ -790,14 +784,64 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
       def be(resultOfTheSameInstanceAsApplication: ResultOfTheSameInstanceAsApplication): Matcher[T with AnyRef] = matchersWrapper.and(matchers.not.be(resultOfTheSameInstanceAsApplication))
 
       /**
-       * This method enables the following syntax, for the "primitive" numeric types:
+       * This method enables the following syntax:
        *
        * <pre class="stHighlight">
        * sevenDotOh should (not be (17.0 plusOrMinus 0.2) and not be (17.0 plusOrMinus 0.2))
        *                                                          ^
        * </pre>
        */
-      def be[U](interval: Interval[U]): Matcher[T with U] = matchersWrapper.and(matchers.not.be(interval))
+      def be(doubleTolerance: DoubleTolerance): Matcher[T with Double] = matchersWrapper.and(matchers.not.be(doubleTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenDotOhFloat should (not be (17.0f plusOrMinus 0.2f) and not be (17.0f plusOrMinus 0.2f))
+       *                                                                 ^
+       * </pre>
+       */
+      def be(floatTolerance: FloatTolerance): Matcher[T with Float] = matchersWrapper.and(matchers.not.be(floatTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenLong should (not be (17L plusOrMinus 2L) and not be (17L plusOrMinus 2L))
+       *                                                       ^
+       * </pre>
+       */
+      def be(longTolerance: LongTolerance): Matcher[T with Long] = matchersWrapper.and(matchers.not.be(longTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenInt should (not be (17 plusOrMinus 2) and not be (17 plusOrMinus 2))
+       *                                                    ^
+       * </pre>
+       */
+      def be(intTolerance: IntTolerance): Matcher[T with Int] = matchersWrapper.and(matchers.not.be(intTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenShort should (not be (17.toShort plusOrMinus 2.toShort) and not be (17.toShort plusOrMinus 2.toShort))
+       *                                                                      ^
+       * </pre>
+       */
+      def be(shortTolerance: ShortTolerance): Matcher[T with Short] = matchersWrapper.and(matchers.not.be(shortTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenByte should ((not be (19.toByte plusOrMinus 2.toByte)) and (not be (19.toByte plusOrMinus 2.toByte)))
+       *                                                                      ^
+       * </pre>
+       */
+      def be(byteTolerance: ByteTolerance): Matcher[T with Byte] = matchersWrapper.and(matchers.not.be(byteTolerance))
 
       /**
        * This method enables the following syntax:
@@ -884,7 +928,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                     ^
        * </pre>
        */
-      def contain[U](expectedElement: U): Matcher[T with GenTraversable[U]] =
+      def contain[U](expectedElement: U): Matcher[T with Traversable[U]] =
         matchersWrapper.and(matchers.not.contain(expectedElement))
 
       /**
@@ -895,7 +939,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                      ^
        * </pre>
        */
-      def contain[U](resultOfKeyWordApplication: ResultOfKeyWordApplication[U]): Matcher[T with scala.collection.GenMap[U, Any]] =
+      def contain[U](resultOfKeyWordApplication: ResultOfKeyWordApplication[U]): Matcher[T with scala.collection.Map[U, Any]] =
         matchersWrapper.and(matchers.not.contain(resultOfKeyWordApplication))
 
       /**
@@ -906,7 +950,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                   ^
        * </pre>
        */
-      def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] =
+      def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.Map[K, U] forSome { type K }] =
         matchersWrapper.and(matchers.not.contain(resultOfValueWordApplication))
     }
 
@@ -1023,7 +1067,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                            ^
        * </pre>
        */
-      def apply[U](expectedElement: U): Matcher[T with GenTraversable[U]] = matchersWrapper.or(matchers.contain(expectedElement))
+      def apply[U](expectedElement: U): Matcher[T with Traversable[U]] = matchersWrapper.or(matchers.contain(expectedElement))
       // def element[T](expectedElement: T) = matchersWrapper.or(matchers.contain.apply(expectedElement))
 
       /**
@@ -1034,7 +1078,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                    ^
        * </pre>
        */
-      def key[U](expectedKey: U): Matcher[T with scala.collection.GenMap[U, Any]] = matchersWrapper.or(matchers.contain.key(expectedKey))
+      def key[U](expectedKey: U): Matcher[T with scala.collection.Map[U, Any]] = matchersWrapper.or(matchers.contain.key(expectedKey))
 
       /**
        * This method enables the following syntax:
@@ -1044,7 +1088,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                  ^
        * </pre>
        */
-      def value[U](expectedValue: U): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] = matchersWrapper.or(matchers.contain.value(expectedValue))
+      def value[U](expectedValue: U): Matcher[T with scala.collection.Map[K, U] forSome { type K }] = matchersWrapper.or(matchers.contain.value(expectedValue))
     }
 
     /**
@@ -1407,8 +1451,8 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                 ^
        * </pre>
        */
-      def be(tripleEqualsInvocation: TripleEqualsInvocation[_]): Matcher[T] =
-        matchersWrapper.or(matchers.not.be(tripleEqualsInvocation))
+      def be(resultOfTripleEqualsApplication: ResultOfTripleEqualsApplication): Matcher[T] =
+        matchersWrapper.or(matchers.not.be(resultOfTripleEqualsApplication))
 
       /**
        * This method enables the following syntax:
@@ -1491,14 +1535,64 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
       def be(resultOfTheSameInstanceAsApplication: ResultOfTheSameInstanceAsApplication): Matcher[T with AnyRef] = matchersWrapper.or(matchers.not.be(resultOfTheSameInstanceAsApplication))
 
       /**
-       * This method enables the following syntax for the "primitive" numeric types:
+       * This method enables the following syntax:
        *
        * <pre class="stHighlight">
        * sevenDotOh should (not be (17.0 plusOrMinus 0.2) or not be (17.0 plusOrMinus 0.2))
        *                                                         ^
        * </pre>
        */
-      def be[U](interval: Interval[U]): Matcher[T with U] = matchersWrapper.or(matchers.not.be(interval))
+      def be(doubleTolerance: DoubleTolerance): Matcher[T with Double] = matchersWrapper.or(matchers.not.be(doubleTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenDotOhFloat should (not be (17.0f plusOrMinus 0.2f) or not be (17.0f plusOrMinus 0.2f))
+       *                                                                ^
+       * </pre>
+       */
+      def be(floatTolerance: FloatTolerance): Matcher[T with Float] = matchersWrapper.or(matchers.not.be(floatTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenLong should (not be (17L plusOrMinus 2L) or not be (17L plusOrMinus 2L))
+       *                                                      ^
+       * </pre>
+       */
+      def be(longTolerance: LongTolerance): Matcher[T with Long] = matchersWrapper.or(matchers.not.be(longTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenInt should (not be (17 plusOrMinus 2) or not be (17 plusOrMinus 2))
+       *                                                   ^
+       * </pre>
+       */
+      def be(intTolerance: IntTolerance): Matcher[T with Int] = matchersWrapper.or(matchers.not.be(intTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenShort should (not be (17.toShort plusOrMinus 2.toShort) or not be (17.toShort plusOrMinus 2.toShort))
+       *                                                                     ^
+       * </pre>
+       */
+      def be(shortTolerance: ShortTolerance): Matcher[T with Short] = matchersWrapper.or(matchers.not.be(shortTolerance))
+
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * sevenByte should ((not be (19.toByte plusOrMinus 2.toByte)) or (not be (19.toByte plusOrMinus 2.toByte)))
+       *                                                                     ^
+       * </pre>
+       */
+      def be(byteTolerance: ByteTolerance): Matcher[T with Byte] = matchersWrapper.or(matchers.not.be(byteTolerance))
 
       /**
        * This method enables the following syntax:
@@ -1585,7 +1679,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                            ^
        * </pre>
        */
-      def contain[U](expectedElement: U): Matcher[T with GenTraversable[U]] =
+      def contain[U](expectedElement: U): Matcher[T with Traversable[U]] =
         matchersWrapper.or(matchers.not.contain(expectedElement))
 
       /**
@@ -1596,7 +1690,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                    ^
        * </pre>
        */
-      def contain[U](resultOfKeyWordApplication: ResultOfKeyWordApplication[U]): Matcher[T with scala.collection.GenMap[U, Any]] =
+      def contain[U](resultOfKeyWordApplication: ResultOfKeyWordApplication[U]): Matcher[T with scala.collection.Map[U, Any]] =
         matchersWrapper.or(matchers.not.contain(resultOfKeyWordApplication))
 
       /**
@@ -1607,7 +1701,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        *                                                                  ^
        * </pre>
        */
-      def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] =
+      def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.Map[K, U] forSome { type K }] =
         matchersWrapper.or(matchers.not.contain(resultOfValueWordApplication))
     }
 
@@ -1648,7 +1742,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
    *
    * @author Bill Venners
    */
-  final class ResultOfContainWordForMap[K, V](left: scala.collection.GenMap[K, V], shouldBeTrue: Boolean) {
+  final class ResultOfContainWordForMap[K, V](left: scala.collection.Map[K, V], shouldBeTrue: Boolean) {
 
     /**
      * This method enables the following syntax:
@@ -1659,7 +1753,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
      * </pre>
      */
     def key(expectedKey: K) {
-      if (left.exists(_._1 == expectedKey) != shouldBeTrue)
+      if (left.contains(expectedKey) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainKey" else "containedKey",
@@ -1678,7 +1772,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
      */
     def value(expectedValue: V) {
       // if (left.values.contains(expectedValue) != shouldBeTrue) CHANGING FOR 2.8.0 RC1
-      if (left.exists(expectedValue == _._2) != shouldBeTrue)
+      if (left.values.exists(expectedValue == _) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainValue" else "containedValue",
@@ -1740,10 +1834,10 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
    * javaColl should contain ("two")
    * </pre>
    *
-   * The <code>(contain ("two"))</code> expression will result in a <code>Matcher[GenTraversable[String]]</code>. This
+   * The <code>(contain ("two"))</code> expression will result in a <code>Matcher[Traversable[String]]</code>. This
    * implicit conversion method will convert that matcher to a <code>Matcher[java.util.Collection[String]]</code>.
    */
-  implicit def convertTraversableMatcherToJavaCollectionMatcher[T](traversableMatcher: Matcher[GenTraversable[T]]): Matcher[java.util.Collection[T]] =
+  implicit def convertTraversableMatcherToJavaCollectionMatcher[T](traversableMatcher: Matcher[Traversable[T]]): Matcher[java.util.Collection[T]] =
     new Matcher[java.util.Collection[T]] {
       def apply(left: java.util.Collection[T]): MatchResult = {
         val traversable = new Traversable[T] {
@@ -1765,10 +1859,10 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
    * Array(1, 2) should (not contain (3) and not contain (2))
    * </pre>
    *
-   * The <code>(not contain ("two"))</code> expression will result in a <code>Matcher[GenTraversable[String]]</code>. This
+   * The <code>(not contain ("two"))</code> expression will result in a <code>Matcher[Traversable[String]]</code>. This
    * implicit conversion method will convert that matcher to a <code>Matcher[Array[String]]</code>.
   */
-  implicit def convertTraversableMatcherToArrayMatcher[T](traversableMatcher: Matcher[GenTraversable[T]]): Matcher[Array[T]] =
+  implicit def convertTraversableMatcherToArrayMatcher[T](traversableMatcher: Matcher[Traversable[T]]): Matcher[Array[T]] =
     new Matcher[Array[T]] {
       def apply(left: Array[T]): MatchResult = {
         val traversable = new Traversable[T] {
@@ -1794,10 +1888,10 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
    * javaMap should (contain key ("two"))
    * </pre>
    *
-   * The <code>(contain key ("two"))</code> expression will result in a <code>Matcher[scala.collection.GenMap[String, Any]]</code>. This
+   * The <code>(contain key ("two"))</code> expression will result in a <code>Matcher[scala.collection.Map[String, Any]]</code>. This
    * implicit conversion method will convert that matcher to a <code>Matcher[java.util.Map[String, Any]]</code>.
    */
-  implicit def convertMapMatcherToJavaMapMatcher[K, V](mapMatcher: Matcher[scala.collection.GenMap[K, V]]): Matcher[java.util.Map[K, V]] =
+  implicit def convertMapMatcherToJavaMapMatcher[K, V](mapMatcher: Matcher[scala.collection.Map[K, V]]): Matcher[java.util.Map[K, V]] =
     new Matcher[java.util.Map[K, V]] {
       def apply(left: java.util.Map[K, V]): MatchResult = {
         // Even though the java map is mutable I just wrap it it to a plain old Scala map, because
@@ -1854,9 +1948,9 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
      *                             ^
      * </pre>
      */
-    def apply[T](expectedElement: T): Matcher[GenTraversable[T]] =
-      new Matcher[GenTraversable[T]] {
-        def apply(left: GenTraversable[T]): MatchResult =
+    def apply[T](expectedElement: T): Matcher[Traversable[T]] =
+      new Matcher[Traversable[T]] {
+        def apply(left: Traversable[T]): MatchResult =
           MatchResult(
             left.exists(_ == expectedElement), 
             FailureMessages("didNotContainExpectedElement", left, expectedElement),
@@ -1868,7 +1962,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
     // This key method is called when "contain" is used in a logical expression, such as:
     // map should { contain key 1 and equal (Map(1 -> "Howdy")) }. It results in a matcher
     // that remembers the key value. By making the value type Any, it causes overloaded shoulds
-    // to work, because for example a Matcher[GenMap[Int, Any]] is a subtype of Matcher[GenMap[Int, String]],
+    // to work, because for example a Matcher[Map[Int, Any]] is a subtype of Matcher[Map[Int, String]],
     // given Map is covariant in its V (the value type stored in the map) parameter and Matcher is
     // contravariant in its lone type parameter. Thus, the type of the Matcher resulting from contain key 1
     // is a subtype of the map type that has a known value type parameter because its that of the map
@@ -1891,11 +1985,11 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
      * This will enable the matcher returned by this method to be used against any <code>Map</code> that has
      * the inferred key type.
      */
-    def key[K](expectedKey: K): Matcher[scala.collection.GenMap[K, Any]] =
-      new Matcher[scala.collection.GenMap[K, Any]] {
-        def apply(left: scala.collection.GenMap[K, Any]): MatchResult =
+    def key[K](expectedKey: K): Matcher[scala.collection.Map[K, Any]] =
+      new Matcher[scala.collection.Map[K, Any]] {
+        def apply(left: scala.collection.Map[K, Any]): MatchResult =
           MatchResult(
-            left.exists(_._1 == expectedKey),
+            left.contains(expectedKey),
             FailureMessages("didNotContainKey", left, expectedKey),
             FailureMessages("containedKey", left, expectedKey)
           )
@@ -1929,12 +2023,12 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
      * the inferred value type.
      *
      */
-    def value[V](expectedValue: V): Matcher[scala.collection.GenMap[K, V] forSome { type K }] =
-      new Matcher[scala.collection.GenMap[K, V] forSome { type K }] {
-        def apply(left: scala.collection.GenMap[K, V] forSome { type K }): MatchResult =
+    def value[V](expectedValue: V): Matcher[scala.collection.Map[K, V] forSome { type K }] =
+      new Matcher[scala.collection.Map[K, V] forSome { type K }] {
+        def apply(left: scala.collection.Map[K, V] forSome { type K }): MatchResult =
           MatchResult(
             // left.values.contains(expectedValue), CHANGING FOR 2.8.0 RC1
-            left.exists(expectedValue == _._2),
+            left.values.exists(expectedValue == _),
             FailureMessages("didNotContainValue", left, expectedValue),
             FailureMessages("containedValue", left, expectedValue)
           )
@@ -2167,148 +2261,277 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
 // perfectly valid Scala way to get a JavaBean property Java method in the bytecodes.
 
   /**
-   * Sealed supertrait for <code>Length</code> and <code>Size</code> type classes.
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
    *
    * <p>
-   * This sealed trait has two subclasses, <code>Length[T]</code> and <code>Size[T]</code>.
-   * Objects of type T for which an implicit <code>Length[T]</code> is available can be used
-   * with the <code>should have length</code> syntax.
-   * Similarly, objects of type T for which an implicit <code>Size[T]</code> is available can be used
-   * with the <code>should have size</code> syntax.
-   * By creating an appropriate type class, therefore, you can enable the size and length checking syntax with arbitrary objects.
-   * As an example, consider <code>java.net.DatagramPacket</code>, which has a <code>getLength</code> method. By default, this
-   * can't be used with ScalaTest's <code>have length</code> syntax. 
+   * Subclasses of this abstract class are used as the result of implicit conversions from the various structural types that
+   * are considered to represent length: <code>length</code> or <code>getLength</code> methods or fields that return <code>Int</code>
+   * or <code>Long</code>. This enables the <code>have length (7)</code> syntax to be used with any object that has a length.
+   * The implicit conversion methods that result in this type are:
    * </p>
    *
-   * <pre>
-   * scala> import java.net.DatagramPacket
-   * import java.net.DatagramPacket
-   * 
-   * scala> import org.scalatest.matchers.ShouldMatchers._
-   * import org.scalatest.matchers.ShouldMatchers._
-   *
-   * scala> val dp = new DatagramPacket(Array(0x0, 0x1, 0x2, 0x3), 4)
-   * dp: java.net.DatagramPacket = java.net.DatagramPacket@54906181
-   * 
-   * scala> dp.getLength
-   * res0: Int = 4
-   *
-   * scala> dp should have length 4
-   * <console>:13: error: could not find implicit value for parameter ev: org.scalatest.matchers.ShouldMatchers.Extent[java.net.DatagramPacket]
-   *          dp should have length 4
-   *             ^
-   *
-   * scala> implicit val lengthOfDatagramPacket =
-   *     |   new Length[DatagramPacket] {
-   *     |     def extentOf(dp: DatagramPacket): Long = dp.getLength
-   *     |   }
-   * lengthOfDatagramPacket: java.lang.Object with org.scalatest.matchers.ShouldMatchers.Length[java.net.DatagramPacket] = $anon$1@550c6b37
-   *
-   * scala> dp should have length 4
-   *
-   * scala> dp should have length 3
-   * org.scalatest.exceptions.TestFailedException:  java.net.DatagramPacket@54906181 had length 4, not length 3
-   * </pre>
+   * <ul>
+   * <li><code>convertLengthFieldToIntLengthWrapper</code></li>
+   * <li><code>convertLengthMethodToIntLengthWrapper</code></li>
+   * <li><code>convertGetLengthFieldToIntLengthWrapper</code></li>
+   * <li><code>convertGetLengthMethodToIntLengthWrapper</code></li>
+   * <li><code>convertLengthFieldToLongLengthWrapper</code></li>
+   * <li><code>convertLengthFieldToLongLengthWrapper</code></li>
+   * <li><code>convertGetLengthFieldToLongLengthWrapper</code></li>
+   * <li><code>convertGetLengthMethodToLongLengthWrapper</code></li>
+   * </ul>
    *
    * @author Bill Venners
    */
-  sealed trait Extent[T] {
-    def extentOf(o: T): Long
+  abstract class LengthWrapper {
+    def length: Long
   }
 
   /**
-   * Supertrait for <code>Length</code> type classes.
-   *
-   * <p>
-   * Trait <code>Length</code> is a type class trait for objects that can be queried for length.
-   * Objects of type T for which an implicit <code>Length[T]</code> is available can be used
-   * with the <code>should have length</code> syntax.
-   * In other words, this trait enables you to use the length checking
-   * syntax with arbitrary objects. As an example, consider
-   * <code>java.net.DatagramPacket</code>, which has a <code>getLength</code> method. By default, this
-   * can't be used with ScalaTest's <code>have length</code> syntax. 
-   * </p>
-   *
-   * <pre>
-   * scala> import java.net.DatagramPacket
-   * import java.net.DatagramPacket
-   * 
-   * scala> import org.scalatest.matchers.ShouldMatchers._
-   * import org.scalatest.matchers.ShouldMatchers._
-   *
-   * scala> val dp = new DatagramPacket(Array(0x0, 0x1, 0x2, 0x3), 4)
-   * dp: java.net.DatagramPacket = java.net.DatagramPacket@54906181
-   * 
-   * scala> dp.getLength
-   * res0: Int = 4
-   *
-   * scala> dp should have length 4
-   * <console>:13: error: could not find implicit value for parameter ev: org.scalatest.matchers.ShouldMatchers.Extent[java.net.DatagramPacket]
-   *          dp should have length 4
-   *             ^
-   *
-   * scala> implicit val lengthOfDatagramPacket =
-   *     |   new Length[DatagramPacket] {
-   *     |     def extentOf(dp: DatagramPacket): Long = dp.getLength
-   *     |   }
-   * lengthOfDatagramPacket: java.lang.Object with org.scalatest.matchers.ShouldMatchers.Length[java.net.DatagramPacket] = $anon$1@550c6b37
-   *
-   * scala> dp should have length 4
-   *
-   * scala> dp should have length 3
-   * org.scalatest.exceptions.TestFailedException:  java.net.DatagramPacket@54906181 had length 4, not length 3
-   * </pre>
-   *
-   * @author Bill Venners
+   * This implicit conversion method converts an object with a <code>length</code> field of type <code>Int</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
    */
-  trait Length[T] extends Extent[T]
+  implicit def convertLengthFieldToIntLengthWrapper(o: { val length: Int }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.length
+    }
 
   /**
-   * Supertrait for <code>Size</code> type classes.
+   * This implicit conversion method converts an object with a <code>length</code> method of type <code>Int</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertLengthMethodToIntLengthWrapper(o: { def length(): Int }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.length()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>length</code> method of type <code>Int</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertLengthParameterlessMethodToIntLengthWrapper(o: { def length: Int }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.length
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getLength</code> field of type <code>Int</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertGetLengthFieldToIntLengthWrapper(o: { val getLength: Int }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.getLength
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getLength</code> method of type <code>Int</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertGetLengthMethodToIntLengthWrapper(o: { def getLength(): Int }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.getLength()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>getLength</code> method of type <code>Int</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertGetLengthParameterlessMethodToIntLengthWrapper(o: { def getLength: Int }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.getLength
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>length</code> field of type <code>Long</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertLengthFieldToLongLengthWrapper(o: { val length: Long }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.length
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>length</code> method of type <code>Long</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertLengthMethodToLongLengthWrapper(o: { def length(): Long }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.length()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>length</code> method of type <code>Long</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertLengthParameterlessMethodToLongLengthWrapper(o: { def length: Long }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.length
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getLength</code> field of type <code>Long</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertGetLengthFieldToLongLengthWrapper(o: { val getLength: Long }): LengthWrapper =
+    new LengthWrapper {
+      def length = o.getLength
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getLength</code> method of type <code>Long</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertGetLengthMethodToLongLengthWrapper(o: { def getLength(): Long }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.getLength()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>getLength</code> method of type <code>Long</code> to a
+   * <code>LengthWrapper</code>, to enable that object to be used with the <code>have length (7)</code> syntax.
+   */
+  implicit def convertGetLengthParameterlessMethodToLongLengthWrapper(o: { def getLength: Long }): LengthWrapper =
+    new LengthWrapper {
+      def length: Long = o.getLength
+    }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
    *
    * <p>
-   * Trait <code>Size</code> is a type class trait for objects that can be queried for size.
-   * Objects of type T for which an implicit <code>Size[T]</code> is available can be used
-   * with the <code>should have size</code> syntax.
-   * In other words, this trait enables you to use the size checking
-   * syntax with arbitrary objects. As an example, consider
-   * <code>java.net.DatagramPacket</code>, which has a <code>getLength</code> method. By default, this
-   * can't be used with ScalaTest's <code>have length</code> syntax. 
+   * Subclasses of this abstract class are used as the result of implicit conversions from the various structural types that
+   * are considered to represent size: <code>size</code> or <code>getSize</code> methods or fields that return <code>Int</code>
+   * or <code>Long</code>. This enables the <code>have size (7)</code> syntax to be used with any object that has a size.
+   * The implicit conversion methods that result in this type are:
    * </p>
    *
-   * <pre>
-   * scala> import java.awt.image.DataBufferByte
-   * import java.awt.image.DataBufferByte
-   * 
-   * scala> import org.scalatest.matchers.ShouldMatchers._
-   * import org.scalatest.matchers.ShouldMatchers._
-   *
-   * scala> val db = new DataBufferByte(4)
-   * db: java.awt.image.DataBufferByte = java.awt.image.DataBufferByte@33d5e94f
-   * 
-   * scala> db.getSize
-   * res0: Int = 4
-   *
-   * scala> db should have size 4
-   * <console>:17: error: could not find implicit value for parameter ev: org.scalatest.matchers.ShouldMatchers.Extent[java.awt.image.DataBufferByte]
-   *               db should have size 4
-   *                  ^
-   * scala> implicit val sizeOfDataBufferByte =
-   *      |   new Size[DataBufferByte] {
-   *      |     def extentOf(db: DataBufferByte): Long = db.getSize
-   *      |   }
-   * sizeOfDataBufferByte: java.lang.Object with org.scalatest.matchers.ShouldMatchers.Size[java.awt.image.DataBufferByte] = $anon$1@4c69bdf8
-   *
-   * scala> db should have size 4
-   *
-   * scala> db should have size 3
-   * org.scalatest.exceptions.TestFailedException:  java.awt.image.DataBufferByte@33d5e94f had size 4, not size 3
-   * </pre>
+   * <ul>
+   * <li><code>convertSizeFieldToIntSizeWrapper</code></li>
+   * <li><code>convertSizeMethodToIntSizeWrapper</code></li>
+   * <li><code>convertGetSizeFieldToIntSizeWrapper</code></li>
+   * <li><code>convertGetSizeMethodToIntSizeWrapper</code></li>
+   * <li><code>convertSizeFieldToLongSizeWrapper</code></li>
+   * <li><code>convertSizeFieldToLongSizeWrapper</code></li>
+   * <li><code>convertGetSizeFieldToLongSizeWrapper</code></li>
+   * <li><code>convertGetSizeMethodToLongSizeWrapper</code></li>
+   * </ul>
    *
    * @author Bill Venners
    */
-  trait Size[T] extends Extent[T]
+  abstract class SizeWrapper {
+    def size: Long
+  }
 
+  /**
+   * This implicit conversion method converts an object with a <code>size</code> field of type <code>Int</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertSizeFieldToIntSizeWrapper(o: { val size: Int }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.size
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>size</code> method of type <code>Int</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertSizeMethodToIntSizeWrapper(o: { def size(): Int }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.size()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>size</code> method of type <code>Int</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertSizeParameterlessMethodToIntSizeWrapper(o: { def size: Int }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.size
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getSize</code> field of type <code>Int</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertGetSizeFieldToIntSizeWrapper(o: { val getSize: Int }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.getSize
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getSize</code> method of type <code>Int</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertGetSizeMethodToIntSizeWrapper(o: { def getSize(): Int }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.getSize()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>getSize</code> method of type <code>Int</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertGetSizeParameterlessMethodToIntSizeWrapper(o: { def getSize: Int }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.getSize
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>size</code> field of type <code>Long</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertSizeFieldToLongSizeWrapper(o: { val size: Long }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.size
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>size</code> method of type <code>Long</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertSizeMethodToLongSizeWrapper(o: { def size(): Long }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.size()
+    }
+
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>size</code> method of type <code>Long</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertSizeParameterlessMethodToLongSizeWrapper(o: { def size: Long }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.size
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getSize</code> field of type <code>Long</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertGetSizeFieldToLongSizeWrapper(o: { val getSize: Long }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.getSize
+    }
+
+  /**
+   * This implicit conversion method converts an object with a <code>getSize</code> method of type <code>Long</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertGetSizeMethodToLongSizeWrapper(o: { def getSize(): Long }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.getSize()
+    }
+ 
+  /**
+   * This implicit conversion method converts an object with a parameterless <code>getSize</code> method of type <code>Long</code> to a
+   * <code>SizeWrapper</code>, to enable that object to be used with the <code>have size (7)</code> syntax.
+   */
+  implicit def convertGetSizeParameterlessMethodToLongSizeWrapper(o: { def getSize: Long }): SizeWrapper =
+    new SizeWrapper {
+      def size: Long = o.getSize
+    }
+ 
   // This guy is generally done through an implicit conversion from a symbol. It takes that symbol, and 
   // then represents an object with an apply method. So it gives an apply method to symbols.
   // book should have ('author ("Gibson"))
@@ -2482,7 +2705,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
                 FailureMessages("didNotHaveExpectedLength", left, expectedLength),
                 FailureMessages("hadExpectedLength", left, expectedLength)
               )
-            case leftSeq: GenSeq[_] =>
+            case leftSeq: Seq[_] =>
               MatchResult(
                 leftSeq.length == expectedLength, 
                 FailureMessages("didNotHaveExpectedLength", left, expectedLength),
@@ -2544,7 +2767,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
                 FailureMessages("didNotHaveExpectedSize", left, expectedSize),
                 FailureMessages("hadExpectedSize", left, expectedSize)
               )
-            case leftTrav: GenTraversable[_] =>
+            case leftTrav: Traversable[_] =>
               MatchResult(
                 leftTrav.size == expectedSize, 
                 FailureMessages("didNotHaveExpectedSize", left, expectedSize),
@@ -2674,7 +2897,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
    *
    * @author Bill Venners
    */
-  sealed class ResultOfHaveWordForTraversable[T](left: GenTraversable[T], shouldBeTrue: Boolean) {
+  sealed class ResultOfHaveWordForTraversable[T](left: Traversable[T], shouldBeTrue: Boolean) {
 
     /**
      * This method enables the following syntax:
@@ -2755,7 +2978,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
    *
    * @author Bill Venners
    */
-  final class ResultOfHaveWordForSeq[T](left: GenSeq[T], shouldBeTrue: Boolean) extends ResultOfHaveWordForTraversable[T](left, shouldBeTrue) {
+  final class ResultOfHaveWordForSeq[T](left: Seq[T], shouldBeTrue: Boolean) extends ResultOfHaveWordForTraversable[T](left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -2827,7 +3050,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  sealed class ResultOfNotWordForTraversable[E, T <: GenTraversable[E]](left: T, shouldBeTrue: Boolean)
+  sealed class ResultOfNotWordForTraversable[E, T <: Traversable[E]](left: T, shouldBeTrue: Boolean)
       extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
 
     /**
@@ -2931,8 +3154,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForMap[K, V](left: scala.collection.GenMap[K, V], shouldBeTrue: Boolean)
-      extends ResultOfNotWordForTraversable[(K, V), scala.collection.GenMap[K, V]](left, shouldBeTrue) {
+  final class ResultOfNotWordForMap[K, V](left: scala.collection.Map[K, V], shouldBeTrue: Boolean)
+      extends ResultOfNotWordForTraversable[(K, V), scala.collection.Map[K, V]](left, shouldBeTrue) {
 
 
     /**
@@ -2945,7 +3168,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def contain(resultOfKeyWordApplication: ResultOfKeyWordApplication[K]) {
       val right = resultOfKeyWordApplication.expectedKey
-      if ((left.exists(_._1 == right)) != shouldBeTrue) {
+      if ((left.contains(right)) != shouldBeTrue) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainKey" else "containedKey",
@@ -2966,7 +3189,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def contain(resultOfValueWordApplication: ResultOfValueWordApplication[V]) {
       val right = resultOfValueWordApplication.expectedValue
-      if ((left.exists(_._2 == right)) != shouldBeTrue) {
+      if ((left.values.exists(_ == right)) != shouldBeTrue) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainValue" else "containedValue",
@@ -3036,7 +3259,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForSeq[E, T <: GenSeq[E]](left: T, shouldBeTrue: Boolean)
+  final class ResultOfNotWordForSeq[E, T <: Seq[E]](left: T, shouldBeTrue: Boolean)
       extends ResultOfNotWordForTraversable[E, T](left, shouldBeTrue) {
 
     /**
@@ -3443,8 +3666,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                   ^
      * </pre>
      */
-    def be(comparison: TripleEqualsInvocation[_]) {
-      if ((left == comparison.right) != shouldBeTrue) {
+    def be(comparison: ResultOfTripleEqualsApplication) {
+      if (comparison(left) != shouldBeTrue) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "wasNotEqualTo" else "wasEqualTo",
@@ -3900,8 +4123,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForNumeric[T : Numeric](left: T, shouldBeTrue: Boolean)
-      extends ResultOfNotWord[T](left, shouldBeTrue) {
+  final class ResultOfNotWordForDouble(left: Double, shouldBeTrue: Boolean)
+      extends ResultOfNotWord[Double](left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax: 
@@ -3911,15 +4134,175 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                       ^
      * </pre>
      */
-    def be(interval: Interval[T]) {
-      // if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
-      if (interval.isWithin(left) != shouldBeTrue) {
+    def be(doubleTolerance: DoubleTolerance) {
+      import doubleTolerance._
+      if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "wasNotPlusOrMinus" else "wasPlusOrMinus",
             left,
-            interval.right,
-            interval.tolerance
+            right,
+            tolerance
+          )
+        )
+      }
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfNotWordForFloat(left: Float, shouldBeTrue: Boolean)
+      extends ResultOfNotWord[Float](left, shouldBeTrue) {
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhFloat should not be (6.5f plusOrMinus 0.2f)
+     *                            ^
+     * </pre>
+     */
+    def be(floatTolerance: FloatTolerance) {
+      import floatTolerance._
+      if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "wasNotPlusOrMinus" else "wasPlusOrMinus",
+            left,
+            right,
+            tolerance
+          )
+        )
+      }
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfNotWordForLong(left: Long, shouldBeTrue: Boolean)
+      extends ResultOfNotWord[Long](left, shouldBeTrue) {
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhLong should not be (4L plusOrMinus 2L)
+     *                           ^
+     * </pre>
+     */
+    def be(longTolerance: LongTolerance) {
+      import longTolerance._
+      if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "wasNotPlusOrMinus" else "wasPlusOrMinus",
+            left,
+            right,
+            tolerance
+          )
+        )
+      }
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfNotWordForInt(left: Int, shouldBeTrue: Boolean)
+      extends ResultOfNotWord[Int](left, shouldBeTrue) {
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhInt should not be (4 plusOrMinus 2)
+     *                          ^
+     * </pre>
+     */
+    def be(intTolerance: IntTolerance) {
+      import intTolerance._
+      if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "wasNotPlusOrMinus" else "wasPlusOrMinus",
+            left,
+            right,
+            tolerance
+          )
+        )
+      }
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfNotWordForShort(left: Short, shouldBeTrue: Boolean)
+      extends ResultOfNotWord[Short](left, shouldBeTrue) {
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhShort should not be (4.toShort plusOrMinus 2.toShort)
+     *                            ^
+     * </pre>
+     */
+    def be(shortTolerance: ShortTolerance) {
+      import shortTolerance._
+      if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "wasNotPlusOrMinus" else "wasPlusOrMinus",
+            left,
+            right,
+            tolerance
+          )
+        )
+      }
+    }
+  }
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfNotWordForByte(left: Byte, shouldBeTrue: Boolean)
+      extends ResultOfNotWord[Byte](left, shouldBeTrue) {
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhByte should not be (4.toByte plusOrMinus 2.toByte)
+     *                            ^
+     * </pre>
+     */
+    def be(byteTolerance: ByteTolerance) {
+      import byteTolerance._
+      if ((left <= right + tolerance && left >= right - tolerance) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "wasNotPlusOrMinus" else "wasPlusOrMinus",
+            left,
+            right,
+            tolerance
           )
         )
       }
@@ -4538,21 +4921,121 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
 
     /**
-     * This method enables the following syntax for the "primitive" numeric types: 
+     * This method enables the following syntax: 
      *
      * <pre class="stHighlight">
      * sevenDotOh should be (7.1 plusOrMinus 0.2)
      *                      ^
      * </pre>
      */
-    def apply[U](interval: Interval[U]): Matcher[U] =
-      new Matcher[U] {
-        def apply(left: U): MatchResult = {
+    def apply(doubleTolerance: DoubleTolerance): Matcher[Double] =
+      new Matcher[Double] {
+        def apply(left: Double): MatchResult = {
+          import doubleTolerance._
           MatchResult(
-            interval.isWithin(left),
-            // left <= right + tolerance && left >= right - tolerance,
-            FailureMessages("wasNotPlusOrMinus", left, interval.right, interval.tolerance),
-            FailureMessages("wasPlusOrMinus", left, interval.right, interval.tolerance)
+            left <= right + tolerance && left >= right - tolerance,
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhFloat should be (7.1f plusOrMinus 0.2f)
+     *                           ^
+     * </pre>
+     */
+    def apply(floatTolerance: FloatTolerance): Matcher[Float] =
+      new Matcher[Float] {
+        def apply(left: Float): MatchResult = {
+          import floatTolerance._
+          MatchResult(
+            left <= right + tolerance && left >= right - tolerance,
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenLong should be (7L plusOrMinus 2L)
+     *                     ^
+     * </pre>
+     */
+    def apply(longTolerance: LongTolerance): Matcher[Long] =
+      new Matcher[Long] {
+        def apply(left: Long): MatchResult = {
+          import longTolerance._
+          MatchResult(
+            left <= right + tolerance && left >= right - tolerance,
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenInt should be (7 plusOrMinus 2)
+     *                     ^
+     * </pre>
+     */
+    def apply(intTolerance: IntTolerance): Matcher[Int] =
+      new Matcher[Int] {
+        def apply(left: Int): MatchResult = {
+          import intTolerance._
+          MatchResult(
+            left <= right + tolerance && left >= right - tolerance,
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenShort should be (7.toShort plusOrMinus 2.toShort)
+     *                     ^
+     * </pre>
+     */
+    def apply(shortTolerance: ShortTolerance): Matcher[Short] =
+      new Matcher[Short] {
+        def apply(left: Short): MatchResult = {
+          import shortTolerance._
+          MatchResult(
+            left <= right + tolerance && left >= right - tolerance,
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenByte should be (7.toByte plusOrMinus 2.toByte)
+     *                     ^
+     * </pre>
+     */
+    def apply(byteTolerance: ByteTolerance): Matcher[Byte] =
+      new Matcher[Byte] {
+        def apply(left: Byte): MatchResult = {
+          import byteTolerance._
+          MatchResult(
+            left <= right + tolerance && left >= right - tolerance,
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance)
           )
         }
       }
@@ -4938,13 +5421,13 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                 ^
      * </pre>
      */
-    def be(tripleEqualsInvocation: TripleEqualsInvocation[_]): Matcher[Any] = {
+    def be(resultOfTripleEqualsApplication: ResultOfTripleEqualsApplication): Matcher[Any] = {
       new Matcher[Any] {
         def apply(left: Any): MatchResult =
           MatchResult(
-            !(left == tripleEqualsInvocation.right),
-            FailureMessages("wasEqualTo", left, tripleEqualsInvocation.right),
-            FailureMessages("wasNotEqualTo", left, tripleEqualsInvocation.right)
+            !resultOfTripleEqualsApplication(left),
+            FailureMessages("wasEqualTo", left, resultOfTripleEqualsApplication.right),
+            FailureMessages("wasNotEqualTo", left, resultOfTripleEqualsApplication.right)
           )
       }
     }
@@ -5098,21 +5581,126 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
 
     /**
-     * This method enables the following syntax for the "primitive" numeric types: 
+     * This method enables the following syntax: 
      *
      * <pre class="stHighlight">
      * sevenDotOh should ((not be (17.1 plusOrMinus 0.2)) and (not be (27.1 plusOrMinus 0.2)))
      *                         ^
      * </pre>
      */
-    def be[U](interval: Interval[U]): Matcher[U] = {
-      new Matcher[U] {
-        def apply(left: U): MatchResult = {
+    def be(doubleTolerance: DoubleTolerance): Matcher[Double] = {
+      import doubleTolerance._
+      new Matcher[Double] {
+        def apply(left: Double): MatchResult = {
           MatchResult(
-            // !(left <= right + tolerance && left >= right - tolerance),
-            !(interval.isWithin(left)),
-            FailureMessages("wasPlusOrMinus", left, interval.right, interval.tolerance),
-            FailureMessages("wasNotPlusOrMinus", left, interval.right, interval.tolerance)
+            !(left <= right + tolerance && left >= right - tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+    }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenDotOhFloat should ((not be (17.1f plusOrMinus 0.2f)) and (not be (27.1f plusOrMinus 0.2f)))
+     *                         ^
+     * </pre>
+     */
+    def be(floatTolerance: FloatTolerance): Matcher[Float] = {
+      import floatTolerance._
+      new Matcher[Float] {
+        def apply(left: Float): MatchResult = {
+          MatchResult(
+            !(left <= right + tolerance && left >= right - tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+    }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenLong should ((not be (19L plusOrMinus 2L)) and (not be (29L plusOrMinus 2L)))
+     *                        ^
+     * </pre>
+     */
+    def be(longTolerance: LongTolerance): Matcher[Long] = {
+      import longTolerance._
+      new Matcher[Long] {
+        def apply(left: Long): MatchResult = {
+          MatchResult(
+            !(left <= right + tolerance && left >= right - tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+    }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenInt should ((not be (19 plusOrMinus 2)) and (not be (29 plusOrMinus 2)))
+     *                       ^
+     * </pre>
+     */
+    def be(intTolerance: IntTolerance): Matcher[Int] = {
+      import intTolerance._
+      new Matcher[Int] {
+        def apply(left: Int): MatchResult = {
+          MatchResult(
+            !(left <= right + tolerance && left >= right - tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+    }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenShort should ((not be (19.toShort plusOrMinus 2.toShort)) and (not be (29.toShort plusOrMinus 2.toShort)))
+     *                         ^
+     * </pre>
+     */
+    def be(shortTolerance: ShortTolerance): Matcher[Short] = {
+      import shortTolerance._
+      new Matcher[Short] {
+        def apply(left: Short): MatchResult = {
+          MatchResult(
+            !(left <= right + tolerance && left >= right - tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance)
+          )
+        }
+      }
+    }
+
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * sevenByte should ((not be (19.toByte plusOrMinus 2.toByte)) and (not be (29.toByte plusOrMinus 2.toByte)))
+     *                        ^
+     * </pre>
+     */
+    def be(byteTolerance: ByteTolerance): Matcher[Byte] = {
+      import byteTolerance._
+      new Matcher[Byte] {
+        def apply(left: Byte): MatchResult = {
+          MatchResult(
+            !(left <= right + tolerance && left >= right - tolerance),
+            FailureMessages("wasPlusOrMinus", left, right, tolerance),
+            FailureMessages("wasNotPlusOrMinus", left, right, tolerance)
           )
         }
       }
@@ -5305,9 +5893,9 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                         ^
      * </pre>
      */
-    def contain[T](expectedElement: T): Matcher[GenTraversable[T]] = {
-      new Matcher[GenTraversable[T]] {
-        def apply(left: GenTraversable[T]): MatchResult = {
+    def contain[T](expectedElement: T): Matcher[Traversable[T]] = {
+      new Matcher[Traversable[T]] {
+        def apply(left: Traversable[T]): MatchResult = {
           MatchResult(
             !(left.exists(_ == expectedElement)),
             FailureMessages("containedExpectedElement", left, expectedElement),
@@ -5325,12 +5913,12 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                                         ^
      * </pre>
      */
-    def contain[K](resultOfKeyWordApplication: ResultOfKeyWordApplication[K]): Matcher[scala.collection.GenMap[K, Any]] = {
+    def contain[K](resultOfKeyWordApplication: ResultOfKeyWordApplication[K]): Matcher[scala.collection.Map[K, Any]] = {
       val expectedKey = resultOfKeyWordApplication.expectedKey
-      new Matcher[scala.collection.GenMap[K, Any]] {
-        def apply(left: scala.collection.GenMap[K, Any]): MatchResult = {
+      new Matcher[scala.collection.Map[K, Any]] {
+        def apply(left: scala.collection.Map[K, Any]): MatchResult = {
           MatchResult(
-            !(left.exists(_._1 == expectedKey)),
+            !(left.contains(expectedKey)),
             FailureMessages("containedKey", left, expectedKey),
             FailureMessages("didNotContainKey", left, expectedKey)
           )
@@ -5346,12 +5934,12 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                                         ^
      * </pre>
      */
-    def contain[K, V](resultOfValueWordApplication: ResultOfValueWordApplication[V]): Matcher[scala.collection.GenMap[K, V] forSome { type K }] = {
+    def contain[K, V](resultOfValueWordApplication: ResultOfValueWordApplication[V]): Matcher[scala.collection.Map[K, V] forSome { type K }] = {
       val expectedValue = resultOfValueWordApplication.expectedValue
-      new Matcher[scala.collection.GenMap[K, V] forSome { type K }] {
-        def apply(left: scala.collection.GenMap[K, V] forSome { type K }): MatchResult = {
+      new Matcher[scala.collection.Map[K, V] forSome { type K }] {
+        def apply(left: scala.collection.Map[K, V] forSome { type K }): MatchResult = {
           MatchResult(
-            !(left.exists(_._2 == expectedValue)),
+            !(left.values.exists(_ == expectedValue)),
             FailureMessages("containedValue", left, expectedValue),
             FailureMessages("didNotContainValue", left, expectedValue)
           )
@@ -5880,7 +6468,229 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForSize[A <: AnyRef : Size](left: A, shouldBeTrue: Boolean)
+  final case class DoubleTolerance(right: Double, tolerance: Double)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class DoublePlusOrMinusWrapper(right: Double) {
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * sevenDotOh should be (17.0 plusOrMinus 0.2)
+     *                            ^
+     * </pre>
+     */
+    def plusOrMinus(tolerance: Double): DoubleTolerance = {
+      if (tolerance <= 0.0)
+        throw newTestFailedException(Resources("negativeOrZeroRange", tolerance.toString))
+      DoubleTolerance(right, tolerance)
+    }
+  }
+
+  /**
+   * Implicitly converts an object of type <code>Double</code> to a <code>DoublePlusOrMinusWrapper</code>,
+   * to enable a <code>plusOrMinus</code> method to be invokable on that object.
+   */
+  implicit def convertDoubleToPlusOrMinusWrapper(right: Double): DoublePlusOrMinusWrapper = new DoublePlusOrMinusWrapper(right)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final case class FloatTolerance(right: Float, tolerance: Float)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class FloatPlusOrMinusWrapper(right: Float) {
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * sevenDotOh should be (17.0f plusOrMinus 0.2f)
+     *                             ^
+     * </pre>
+     */
+    def plusOrMinus(tolerance: Float): FloatTolerance = {
+      if (tolerance <= 0.0f)
+        throw newTestFailedException(Resources("negativeOrZeroRange", tolerance.toString))
+      FloatTolerance(right, tolerance)
+    }
+  }
+
+  /**
+   * Implicitly converts an object of type <code>Float</code> to a <code>FloatPlusOrMinusWrapper</code>,
+   * to enable a <code>plusOrMinus</code> method to be invokable on that object.
+   */
+  implicit def convertFloatToPlusOrMinusWrapper(right: Float): FloatPlusOrMinusWrapper = new FloatPlusOrMinusWrapper(right)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final case class LongTolerance(right: Long, tolerance: Long)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class LongPlusOrMinusWrapper(right: Long) {
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * seven should be (17L plusOrMinus 2)
+     *                      ^
+     * </pre>
+     */
+    def plusOrMinus(tolerance: Long): LongTolerance = {
+      if (tolerance <= 0L)
+        throw newTestFailedException(Resources("negativeOrZeroRange", tolerance.toString))
+      LongTolerance(right, tolerance)
+    }
+  }
+
+  /**
+   * Implicitly converts an object of type <code>Long</code> to a <code>LongPlusOrMinusWrapper</code>,
+   * to enable a <code>plusOrMinus</code> method to be invokable on that object.
+   */
+  implicit def convertLongToPlusOrMinusWrapper(right: Long): LongPlusOrMinusWrapper = new LongPlusOrMinusWrapper(right)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final case class IntTolerance(right: Int, tolerance: Int)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class IntPlusOrMinusWrapper(right: Int) {
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * seven should be (17 plusOrMinus 2)
+     *                     ^
+     * </pre>
+     */
+    def plusOrMinus(tolerance: Int): IntTolerance = {
+      if (tolerance <= 0)
+        throw newTestFailedException(Resources("negativeOrZeroRange", tolerance.toString))
+      IntTolerance(right, tolerance)
+    }
+  }
+
+  /**
+   * Implicitly converts an object of type <code>Int</code> to a <code>IntPlusOrMinusWrapper</code>,
+   * to enable a <code>plusOrMinus</code> method to be invokable on that object.
+   */
+  implicit def convertIntToPlusOrMinusWrapper(right: Int): IntPlusOrMinusWrapper = new IntPlusOrMinusWrapper(right)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final case class ShortTolerance(right: Short, tolerance: Short)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ShortPlusOrMinusWrapper(right: Short) {
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * seven should be (17.toShort plusOrMinus 2.toShort)
+     *                             ^
+     * </pre>
+     */
+    def plusOrMinus(tolerance: Short): ShortTolerance = {
+      if (tolerance <= 0)
+        throw newTestFailedException(Resources("negativeOrZeroRange", tolerance.toString))
+      ShortTolerance(right, tolerance)
+    }
+  }
+
+  /**
+   * Implicitly converts an object of type <code>Short</code> to a <code>ShortPlusOrMinusWrapper</code>,
+   * to enable a <code>plusOrMinus</code> method to be invokable on that object.
+   */
+  implicit def convertShortToPlusOrMinusWrapper(right: Short): ShortPlusOrMinusWrapper = new ShortPlusOrMinusWrapper(right)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final case class ByteTolerance(right: Byte, tolerance: Byte)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class BytePlusOrMinusWrapper(right: Byte) {
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * seven should be (17.toByte plusOrMinus 2.toByte)
+     *                            ^
+     * </pre>
+     */
+    def plusOrMinus(tolerance: Byte): ByteTolerance = {
+      if (tolerance <= 0)
+        throw newTestFailedException(Resources("negativeOrZeroRange", tolerance.toString))
+      ByteTolerance(right, tolerance)
+    }
+  }
+
+  /**
+   * Implicitly converts an object of type <code>Byte</code> to a <code>BytePlusOrMinusWrapper</code>,
+   * to enable a <code>plusOrMinus</code> method to be invokable on that object.
+   */
+  implicit def convertByteToPlusOrMinusWrapper(right: Byte): BytePlusOrMinusWrapper = new BytePlusOrMinusWrapper(right)
+
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfNotWordForSizeWrapper[A <: AnyRef <% SizeWrapper](left: A, shouldBeTrue: Boolean)
       extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
 
 /*  I just added this whole thing in here for completeness when doing SizeShouldWrapper. Write some tests to prove it is needed.
@@ -5906,7 +6716,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForLength[A <: AnyRef : Length](left: A, shouldBeTrue: Boolean)
+  final class ResultOfNotWordForLengthWrapper[A <: AnyRef <% LengthWrapper](left: A, shouldBeTrue: Boolean)
       extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
 
 /* TODO What's going on? Why can I drop this and still get a compile
@@ -5932,125 +6742,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfHaveWordForExtent[A : Extent](left: A, shouldBeTrue: Boolean) {
-
-    /**
-     * This method enables the following syntax:
-     *
-     * <pre class="stHighlight">
-     * obj should have length (2)
-     *                      ^
-     * </pre>
-     *
-     * <p>
-     * This method is ultimately invoked for objects that have a <code>length</code> property structure
-     * of type <code>Int</code>,
-     * but is of a type that is not handled by implicit conversions from nominal types such as
-     * <code>scala.Seq</code>, <code>java.lang.String</code>, and <code>java.util.List</code>.
-     * </p>
-     */
-    def length(expectedLength: Int)(implicit len: Length[A]) {
-      // val len = implicitly[Length[A]]
-      // if ((len.extentOf(left.asInstanceOf[A]) == expectedLength) != shouldBeTrue)
-      if ((len.extentOf(left) == expectedLength) != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) "didNotHaveExpectedLength" else "hadExpectedLength",
-            left,
-            expectedLength)
-        )
-    }
-
-    /**
-     * This method enables the following syntax:
-     *
-     * <pre class="stHighlight">
-     * obj should have length (2L)
-     *                      ^
-     * </pre>
-     *
-     * <p>
-     * This method is ultimately invoked for objects that have a <code>length</code> property structure
-     * of type <code>Long</code>,
-     * but is of a type that is not handled by implicit conversions from nominal types such as
-     * <code>scala.Seq</code>, <code>java.lang.String</code>, and <code>java.util.List</code>.
-     * </p>
-     */
-    def length(expectedLength: Long)(implicit len: Length[A]) {
-      // val len = implicitly[Length[A]]
-      // if ((len.extentOf(left.asInstanceOf[A]) == expectedLength) != shouldBeTrue)
-      if ((len.extentOf(left) == expectedLength) != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) "didNotHaveExpectedLength" else "hadExpectedLength",
-            left,
-            expectedLength)
-        )
-    }
-
-    /**
-     * This method enables the following syntax:
-     *
-     * <pre class="stHighlight">
-     * obj should have size (2)
-     *                 ^
-     * </pre>
-     *
-     * <p>
-     * This method is ultimately invoked for objects that have a <code>size</code> property structure
-     * of type <code>Int</code>,
-     * but is of a type that is not handled by implicit conversions from nominal types such as
-     * <code>Traversable</code> and <code>java.util.Collection</code>.
-     * </p>
-     */
-    def size(expectedSize: Int)(implicit sz: Size[A]) {
-      // val sz = implicitly[Size[T]]
-      // if ((sz.extentOf(left.asInstanceOf[T]) == expectedSize) != shouldBeTrue)
-      if ((sz.extentOf(left) == expectedSize) != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) "didNotHaveExpectedSize" else "hadExpectedSize",
-            left,
-            expectedSize)
-        )
-    }
-
-    /**
-     * This method enables the following syntax:
-     *
-     * <pre class="stHighlight">
-     * obj should have size (2L)
-     *                 ^
-     * </pre>
-     *
-     * <p>
-     * This method is ultimately invoked for objects that have a <code>size</code> property structure
-     * of type <code>Long</code>,
-     * but is of a type that is not handled by implicit conversions from nominal types such as
-     * <code>Traversable</code> and <code>java.util.Collection</code>.
-     * </p>
-     */
-    def size(expectedSize: Long)(implicit sz: Size[A]) {
-      // val sz = implicitly[Size[T]]
-      // if ((sz.extentOf(left.asInstanceOf[T]) == expectedSize) != shouldBeTrue)
-      if ((sz.extentOf(left) == expectedSize) != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) "didNotHaveExpectedSize" else "hadExpectedSize",
-            left,
-            expectedSize)
-        )
-    }
-  }
-
-/*
-  /**
-   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
-   * the matchers DSL.
-   *
-   * @author Bill Venners
-   */
-  final class ResultOfHaveWordForLength[A : Length](left: A, shouldBeTrue: Boolean) {
+  final class ResultOfHaveWordForLengthWrapper[A <% LengthWrapper](left: A, shouldBeTrue: Boolean) {
 
     /**
      * This method enables the following syntax:
@@ -6068,8 +6760,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </p>
      */
     def length(expectedLength: Int) {
-      val len = implicitly[Length[A]]
-      if ((len.extentOf(left) == expectedLength) != shouldBeTrue)
+      if ((left.length == expectedLength) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotHaveExpectedLength" else "hadExpectedLength",
@@ -6094,8 +6785,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </p>
      */
     def length(expectedLength: Long) {
-      val len = implicitly[Length[A]]
-      if ((len.extentOf(left) == expectedLength) != shouldBeTrue)
+      if ((left.length == expectedLength) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotHaveExpectedLength" else "hadExpectedLength",
@@ -6111,7 +6801,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfHaveWordForSize[A : Size](left: A, shouldBeTrue: Boolean) {
+  final class ResultOfHaveWordForSizeWrapper[A <% SizeWrapper](left: A, shouldBeTrue: Boolean) {
 
     /**
      * This method enables the following syntax:
@@ -6129,8 +6819,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </p>
      */
     def size(expectedSize: Int) {
-      val sz = implicitly[Size[A]]
-      if ((sz.extentOf(left) == expectedSize) != shouldBeTrue)
+      if ((left.size == expectedSize) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotHaveExpectedSize" else "hadExpectedSize",
@@ -6155,8 +6844,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </p>
      */
     def size(expectedSize: Long) {
-      val sz = implicitly[Size[A]]
-      if ((sz.extentOf(left) == expectedSize) != shouldBeTrue)
+      if ((left.size == expectedSize) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotHaveExpectedSize" else "hadExpectedSize",
@@ -6165,7 +6853,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         )
     }
   }
-*/
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -6289,7 +6976,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-/* TODEL
   final class ResultOfTripleEqualsApplication(val right: Any) {
 
     /**
@@ -6312,7 +6998,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def apply(left: Any): Boolean = left == right
   }
-*/
 
   /**
    * This method enables the following syntax: 
@@ -6366,10 +7051,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *                   ^
    * </pre>
    */
-/* TODEL
   def === (right: Any): ResultOfTripleEqualsApplication =
     new ResultOfTripleEqualsApplication(right)
-*/
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -6408,27 +7091,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def produce[T](implicit manifest: Manifest[T]): ResultOfProduceInvocation[T] =
     new ResultOfProduceInvocation(manifest.erasure.asInstanceOf[Class[T]])
-
-  // For safe keeping
-  private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
-
-  private class Canonicalizer(node: scala.xml.Node) {
-
-    def toCanonical: scala.xml.Node = {
-      node match {
-        case elem: scala.xml.Elem =>
-          val canonicalizedChildren =
-            for (child <- node.child if !child.toString.trim.isEmpty) yield {
-              child match {
-                case elem: scala.xml.Elem => elem.toCanonical
-                case other => other
-              }
-            }
-          new scala.xml.Elem(elem.prefix, elem.label, elem.attributes, elem.scope, canonicalizedChildren: _*)
-        case other => other
-      }
-    }
-  }
 }
 
 /*
