@@ -14,7 +14,7 @@
   </properties>
 	
   <groupId>org.scalatest</groupId>
-  <artifactId>scalatest_2.10</artifactId>
+  <artifactId>scalatest_@SCALA_VERSION@</artifactId>
   <version>@RELEASE@</version>
   <packaging>jar</packaging>
 
@@ -67,18 +67,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-actors</artifactId>
-      <version>@SCALA_VERSION@</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-      <version>@SCALA_VERSION@</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.scala-tools.testing</groupId>
       <artifactId>test-interface</artifactId>
       <version>0.5</version>
@@ -94,7 +82,7 @@
 
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10</artifactId>
+      <artifactId>scalacheck_@SCALA_VERSION@</artifactId>
       <version>1.10.0</version>
       <optional>true</optional>
     </dependency>
