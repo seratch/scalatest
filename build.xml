@@ -9,12 +9,7 @@
     <!-- set global properties for this build -->
     <property name="scala.version" value="2.10.0" />
 	<property name="for.scala" value="2.10.0" />
-
-<!--
-    <property name="scala.version" value="2.9.0" />
-	<property name="for.scala" value="2.9.x" />
--->
-    <property name="release" value="2.0.M6-SNAP4" />
+	<property name="release" value="1.9.1" />
 
     <property name="scalasrc" value="src/main/scala" />
     <property name="javasrc" value="src/main/java" />
@@ -30,9 +25,9 @@
     <property name="jar.contents" value="${build}/jar_contents" />
     <!-- classes go in jar.contents. redundant, but makes the rest of build.xml easier to read -->
     <property name="classes" value="${jar.contents}" />
-    <property name="generators" value="project" />
-    <property name="build.generated.src" value="${build}/scala-${scala.version}/src_managed/main/scala" />
-    <property name="build.generated.tests" value="gen/${build}/scala-${scala.version}/src_managed/test/scala" />
+    <property name="generators" value="src/generators/scala" />
+    <property name="build.generated.src" value="${build}/generated/src/main/scala" />
+    <property name="build.generated.tests" value="${build}/generated/src/test/scala" />
     <property name="build.tests" value="${build}/tests" />
     <property name="build.tests.jar" value="${build}/tests.jar" />
     <property name="build.examples" value="${build}/examples" />
@@ -48,9 +43,7 @@
     <property name="demodoc" value="${demo}/example/javadoc" />
     <property name="example" value="${demo}/example" />
 
-    <property name="jvmargs" value="-Xmx3000M -Xss10M"/>
-    <property name="mvn.deploy.plugin"
-              value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
+    <property name="jvmargs" value="-Xmx2500M -Xss10M"/>
 
   <!--
   <property name="build.compiler" value="jikes"/>
@@ -68,6 +61,8 @@
         <mkdir dir="${build.generated.tests}" />
         <mkdir dir="${dist}" />
         <mkdir dir="${demodoc}" />
+        <mkdir dir="${doc}" />
+        <mkdir dir="${jdoc}" />
         <mkdir dir="${jdoc}" />
 
         <copy file="pom_template.xml" tofile="${build}/pom.xml" overwrite="true">
@@ -119,14 +114,14 @@
 
         <taskdef resource="scala/tools/ant/antlib.xml">
             <classpath>
-            	<pathelement location="${org.scala-lang:scala-library:jar}" />
-            	<pathelement location="${org.scala-lang:scala-compiler:jar}" />
-            	<pathelement location="${org.scala-lang:scala-reflect:jar}" /> <!-- needed for 2.10 build -->
+                <pathelement location="${org.scala-lang:scala-library:jar}" />
+                <pathelement location="${org.scala-lang:scala-compiler:jar}" />
+                <pathelement location="${org.scala-lang:scala-reflect:jar}" />
             </classpath>
         </taskdef>
 
         <path id="scaladoc.source.path">
-            <pathelement location="${build}/docsrc" />
+            <pathelement location="${scalasrc}" />
             <pathelement location="${build.generated.src}" />
         </path>
 
@@ -139,23 +134,16 @@
         </path>
 
         <uptodate property="gentables.uptodate"
-                  srcfile="project/GenTable.scala">
+                  srcfile="src/generators/scala/GenTable.scala">
           <mapper type="merge" to=
-            "${build}/scala-${scala.version}/src_managed/main/scala/org/scalatest/prop/TableFor1.scala">
-          </mapper>
-        </uptodate>
-
-        <uptodate property="genmatchers.uptodate"
-                  srcfile="project/GenMatchers.scala">
-          <mapper type="merge" to=
-            "${build}/scala-${scala.version}/src_managed/main/scala/org/scalatest/junit/MustMatchersForJUnit.scala">
+            "target/generated/src/main/scala/org/scalatest/prop/TableFor1.scala">
           </mapper>
         </uptodate>
 
         <uptodate property="gengen.uptodate"
-                  srcfile="project/GenGen.scala">
+                  srcfile="src/generators/scala/GenGen.scala">
           <mapper type="merge" to=
-            "${build}/scala-${scala.version}/src_managed/main/scala/org/scalatest/prop/GeneratorDrivenPropertyChecks.scala">
+            "target/generated/src/main/scala/org/scalatest/prop/GeneratorDrivenPropertyChecks.scala">
           </mapper>
         </uptodate>
     </target>
@@ -168,109 +156,66 @@
 
     <target name="clean">
         <delete dir="${build}" />
-    	<delete dir="gen" />
         <delete dir="test-output" quiet="true" />
     </target>
 
     <target name="compile-codegenerators" depends="init">
-        <scalac srcdir="${generators}" destdir="${build.generators}" target="jvm-1.5" deprecation="yes" classpathref="build.generators.class.path">
-        	<include name="GenDeprecatedShouldMatchersTests.scala" />
-        	<include name="GenFunSuiteN.scala" />
-        	<include name="GenGen.scala" />
-        	<!--<include name="GenMustMatchers.scala" />-->
-            <include name="GenMatchers.scala" />
-        	<include name="GenTable.scala" />
-        	<include name="GenTheyWord.scala" />
-        </scalac>
+        <scalac srcdir="${generators}" destdir="${build.generators}" target="jvm-1.5" deprecation="yes" classpathref="build.generators.class.path" />
     </target>
 
     <target name="gentables" depends="init, compile-codegenerators"
             unless="gentables.uptodate">
         <java classname="GenTable" classpathref="run.generators.class.path"
-              fork="false">
-        	<arg value="${build}/scala-${scala.version}/src_managed" />
-            <arg value="${scala.version}" />
-        </java>
-    </target>
-
-    <target name="genmatchers" depends="init, compile-codegenerators"
-            unless="genmatchers.uptodate">
-        <java classname="GenMatchers"
-              classpathref="run.generators.class.path" fork="false">
-        	<arg value="${build}/scala-${scala.version}/src_managed" />
-            <arg value="${scala.version}" />
-        </java>
+              fork="false" />
     </target>
 
     <target name="gengen" depends="init, compile-codegenerators"
             unless="gengen.uptodate">
-        <java classname="GenGen" classpathref="run.generators.class.path" fork="false">
-        	<arg value="${build}/scala-${scala.version}/src_managed" />
-            <arg value="${scala.version}" />
-        </java>
+        <java classname="GenGen" classpathref="run.generators.class.path" fork="false" />
     </target>
 
     <target name="gendeprecatedshouldtests" depends="init, compile-codegenerators">
         <!-- Then, run it. -->
-        <java classname="GenDeprecatedShouldMatchersTests" classpathref="run.generators.class.path" fork="false">
-        	<arg value="${build}/scala-${scala.version}/src_managed" />
-            <arg value="${scala.version}" />
-        </java>
+        <java classname="GenDeprecatedShouldMatchersTests" classpathref="run.generators.class.path" fork="false" />
     </target>
 
     <target name="gencode" depends="init, compile-codegenerators">
-        <java classname="GenMatchers" classpathref="run.generators.class.path" fork="false">
-        	<arg value="${build}/scala-${scala.version}/src_managed" />
-            <arg value="${scala.version}" />
-        </java>
-    	<java classname="GenTheyWord" classpathref="run.generators.class.path" fork="false">
-    		<arg value="${build}/scala-${scala.version}/src_managed" />
-            <arg value="${scala.version}" />
-    	</java>
+        <java classname="GenMustMatchers" classpathref="run.generators.class.path" fork="false" />
+        <java classname="GenMustMatchersTests" classpathref="run.generators.class.path" fork="false" />
+    	<java classname="GenTheyWord" classpathref="run.generators.class.path" fork="false" />
     </target>
 
-    <target name="compile" depends="compile-main, compile-tests"/>
+    <target name="compile" depends="compile-main, compile-tests, compile-examples"/>
 
     <!--<target name="compile-main" depends="init">-->
-    <target name="compile-main" depends="init, gentables, genmatchers, gengen">
-        <!--<fail message="Wrong JVM [${ant.java.version}]. Include 'java6' target to use java 6."
-              unless="jvm.ok"/>-->
+    <target name="compile-main" depends="init, gentables, gengen">
 
         <!-- If ever want to see the typer output, add -Xprint:typer to the addparams like this: -->
         <!--<scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" classpathref="build.class.path" addparams="-no-specialization -Xprint:typer" fork="true" jvmargs="${jvmargs}" />-->
 
         <!-- Compile the Scala code from ${scalasrc} into ${classes}. Scalac will parse the referenced .java files. -->
         <!-- Compile the Scala code from ${build.generated.src} into ${classes}. Scalac will parse any referenced .java files. -->
+        <!-- turn off deprecation warnings <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="yes" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" /> -->
         <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="no" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
 
     	<!-- Compile the Java code from ${javasrc} into ${classes} -->
     	<javac srcdir="${javasrc}" destdir="${classes}" compiler="javac1.5" memoryMaximumSize="1500M" fork="true" classpathref="build.class.path" debug="yes">
     	    <include name="org/scalatest/Ignore.java" />
-    	    <include name="org/scalatest/DoNotDiscover.java" />
     	    <include name="org/scalatest/tools/ScalaTestTask.java" />
     	    <include name="org/scalatest/WrapWith.java" />
-    	    <include name="org/scalatest/Finders.java" />
     	</javac>
     	
        <!-- copy these here not in dist because sometimes I like to do -cp target/jar_contents things, such as REPL sessions -->
-       <antcall target="copy-resources"/>
-    </target>
-
-    <target name="copy-resources">
-        <copy file="${resources}/org/scalatest/ScalaTestBundle.properties" todir="${jar.contents}/org/scalatest" />
         <copy file="${resources}/org/scalatest/ScalaTestBundle.properties" todir="${jar.contents}/org/scalatest">
         	<filterset>
         	   <filter token="RELEASE" value="${release}" />
         	   <filter token="SCALAVERSION" value="${for.scala}" />
         	</filterset>
         </copy>
-        <copy file="${resources}/org/scalautils/ScalaUtilsBundle.properties" todir="${jar.contents}/org/scalautils" />
         <copy todir="${jar.contents}/images">
             <fileset dir="${images}" />
         </copy>
-    	<copy file="${resources}/org/scalatest/HtmlReporter.css" todir="${jar.contents}/org/scalatest" />
-    	<copy file="${resources}/org/scalatest/sorttable.js" todir="${jar.contents}/org/scalatest" />
-	    <copy file="${resources}/org/scalatest/d3.v2.min.js" todir="${jar.contents}/org/scalatest" />
+
     </target>
 
     <target name="compile-tests" depends="compile-main">
@@ -279,7 +224,7 @@
         <scalac srcdir="${scalasrc.test}:${javasrc.test}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="yes" addparams="-no-specialization" fork="true" jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC"/>
 
         <!-- Compile the Scala code from ${build.generated.tests} into ${classes}. Scalac will parse any referenced .java files. -->
-        <scalac srcdir="${build.generated.tests}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="yes" addparams="-no-specialization" fork="true" jvmargs="${jvmargs} -XX:+UseConcMarkSweepGC" />
+        <scalac srcdir="${build.generated.tests}" destdir="${build.tests}" target="jvm-1.5" classpathref="build.test.class.path" deprecation="yes" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
 
         <!-- Compile the Java code from ${javasrc.test} into ${build.tests} -->
         <javac srcdir="${javasrc.test}" destdir="${build.tests}" compiler="javac1.5" memoryMaximumSize="2000M" fork="true" classpath="${classes}:${org.scala-lang:scala-library:jar}:${junit:junit:jar}" debug="yes" />
@@ -306,66 +251,25 @@
     </target>
 
     <target name="doc" depends="compile-main">
-      <javadoc sourcepath="${javasrc}" destdir="${jdoc}" packagenames="org.scalatest,org.scalatest.tools" classpathref="build.class.path" windowtitle="ScalaTest ${release}" doctitle="ScalaTest ${release}" bottom="Copyright (C) 2001-2012 Artima, Inc. All rights reserved." />
-      <delete dir="${build}/doc" />
-      <mkdir  dir="${build}/doc" />
+        <javadoc sourcepath="${javasrc}" destdir="${jdoc}" packagenames="org.scalatest,org.scalatest.tools" classpathref="build.class.path" windowtitle="ScalaTest ${release}" doctitle="ScalaTest ${release}" bottom="Copyright (C) 2001-2010 Artima, Inc. All rights reserved." />
 
-      <delete dir="${build}/docsrc" />
-      <mkdir  dir="${build}/docsrc" />
+        <scaladoc addparams="-no-specialization" srcref="scaladoc.source.path" destdir="${doc}" classpathref="build.class.path" doctitle="ScalaTest ${release}">
+            <include name="**/*.scala" />
+        </scaladoc>
 
-      <copy todir="${build}/docsrc">
-        <fileset dir="src/main/scala" />
-      </copy>
+        <concat destfile="${doc}/lib/template.css" force="yes">
+          <filelist dir="${html}" files="template.css, addl.css"/>
+        </concat>
 
-      <replaceregexp match="@Finders(.*)" replace="">
-        <fileset dir="target/docsrc">
-          <include name="**/*.scala" />
-        </fileset>
-      </replaceregexp>
-
-      <exec executable="support/docjavatags.scala"/>
-
-      <scaladoc addparams="-no-specialization"
-                srcref="scaladoc.source.path"
-                destdir="${doc}"
-                classpathref="lib.path"
-                doctitle="ScalaTest ${release}">
-        <include name="**/*.scala" />
-      </scaladoc>
-
-      <concat destfile="${doc}/lib/template.css" force="yes">
-        <filelist dir="${html}" files="template.css, addl.css"/>
-      </concat>
-    </target>
-
-    <target name="docutils" depends="compile-main">
-      <delete dir="${build}/utilsdoc" />
-      <mkdir  dir="${build}/utilsdoc" />
-
-      <delete dir="${build}/docsrc" />
-      <mkdir  dir="${build}/docsrc" />
-
-      <copy todir="${build}/docsrc">
-        <fileset dir="src/main/scala" includes="org/scalautils/**"/>
-      </copy>
-
-      <replaceregexp match="@Finders(.*)" replace="">
-        <fileset dir="target/docsrc">
-          <include name="**/*.scala" />
-        </fileset>
-      </replaceregexp>
-
-      <scaladoc addparams="-no-specialization"
-                srcdir="target/docsrc"
-                destdir="${build}/utilsdoc"
-                classpathref="lib.path"
-                doctitle="ScalaUtils ${release}">
-        <include name="**/*.scala" />
-      </scaladoc>
-
-      <concat destfile="${doc}/lib/template.css" force="yes">
-        <filelist dir="${html}" files="template.css, addl.css"/>
-      </concat>
+        <!--
+      <javadoc sourcepath="${example}"
+        destdir="${demodoc}"
+        packagenames="com.artima.examples.*"
+        classpath="${classes}:${junit:junit:jar}"
+        windowtitle="ScalaTest Examples ${release}"
+        doctitle="ScalaTest Examples ${release}"
+        bottom="Copyright (C) 2001-2009 Artima, Inc. All rights reserved."/>
+-->
     </target>
 
      <!-- Put everything in ${jar.contents} into the scalatest.jar file -->
@@ -381,11 +285,6 @@
         <bnd classpath="${jar.contents}" sourcepath="${jar.contents}"
              eclipse="false" failok="false" exceptions="true" files="osgi.bnd"
              output="${dist}/lib/scalatest.jar" /> 
-
-        <!-- Create scalautils jar, including OSGi metadata -->
-        <bnd classpath="${jar.contents}" sourcepath="${jar.contents}"
-             eclipse="false" failok="false" exceptions="true"
-             files="scalautils-osgi.bnd" output="${dist}/lib/scalautils.jar" /> 
 
         <jar jarfile="${dist}/lib/scalatest-wbt.jar" basedir="${build.tests}" includes="org/scalatest/*.class" />
 
@@ -426,7 +325,6 @@
                 <filter token="SCALAVERSION" value="${for.scala}" />
             </filterset>
         </copy>
-        <copy file="${resources}/org/scalautils/ScalaUtilsBundle.properties" todir="${jar.contents}/org/scalautils" />
         <copy todir="${jar.contents}/images">
             <fileset dir="${images}" />
         </copy>
@@ -436,19 +334,15 @@
       - Called from 'test' and 'testfromjar' targets.
       -->
     <target name="runtest" depends="compile,copyprops,taskdefscalatest">
-        <mkdir dir="target/dash" />
-    	<mkdir dir="target/html" />
         <scalatest fork="true" runpath="${test.runpath}" parallel="true" haltonfailure="true">
             <jvmarg value="-XX:MaxPermSize=512m"/>
             <reporter type="graphic"/>
-            <reporter type="dashboard" directory="target/dash" numfiles="3" />
             <reporter type="junitxml" directory="target"/>
             <reporter type="stdout" config="D"/>
-        	<reporter type="html" directory="target/html" config="D" />
             <membersonly package="org.scalatest" />
-            <membersonly package="org.scalautils" />
             <membersonly package="org.scalatest.fixture" />
             <membersonly package="org.scalatest.concurrent" />
+            <membersonly package="org.scalatest.exceptions" />
             <membersonly package="org.scalatest.testng" />
             <membersonly package="org.scalatest.junit" />
             <membersonly package="org.scalatest.events" />
@@ -458,7 +352,6 @@
             <membersonly package="org.scalatest.suiteprop" />
             <membersonly package="org.scalatest.mock" />
         	<membersonly package="org.scalatest.path" />
-        	<membersonly package="org.scalatest.selenium" />
             <config name="dbname" value="testdb" />
         </scalatest>
     </target>
@@ -663,9 +556,9 @@
               unless="class" />
 
         <scalatest runpath="${build.tests};${classes}" haltonfailure="true">
-            <reporter type="graphic"/>
+            <!--<reporter type="graphic"/>-->
             <!--<reporter type="file" filename="test.out" config="ND"/>-->
-            <reporter type="stdout" config="N"/>
+            <reporter type="stdout" config="ND"/>
             <suite classname="${class}"/>
         </scalatest>
     </target>
@@ -766,7 +659,6 @@
 
     <target name="jar" depends="dist"></target>
 
-    <!-- creates jars of scalatest and scalautils source files -->
     <target name="jarsrc">
       <jar jarfile="${build}/scalatest-sources.jar">
         <fileset dir="src/main/scala"/>
@@ -774,97 +666,33 @@
         <fileset dir="src/main/resources" includes="org/**"/>
         <fileset dir="src/examples/scala"/>
         <fileset dir="src/examples/java"/>
-        <fileset dir="${build.generated.src}"/>
-      </jar>
-
-      <jar jarfile="${build}/scalautils-sources.jar">
-        <fileset dir="src/main/scala"     includes="org/scalautils/**"/>
-        <fileset dir="src/main/resources" includes="org/scalautils/**"/>
       </jar>
     </target>
 
-    <!-- creates jar of scalatest test source files -->
     <target name="jartestsrc">
       <jar jarfile="${build}/scalatest-test-sources.jar">
         <fileset dir="src/test/scala"/>
         <fileset dir="src/test/java"/>
-        <fileset dir="${build.generated.tests}"/>
       </jar>
     </target>
 
     <!--
-      - Creates jars of scaladoc and javadoc files for scalatest and
-      - scalautils.
-      -->
-    <target name="jardoc" depends="doc,docutils">
-      <mkdir dir="${build}/dummydoc" />
-
-      <echo file="${build}/dummydoc/index.html">
-         We don't have any java in this project to document, but
-         Sonatype requires a javadoc jar so we just jar this text file.
-
-         Move along, move along.  Nothing to see here.
-      </echo>
-
-      <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
-      <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
-      <jar jarfile="${build}/scalautils-scaladoc.jar"
-           basedir="${build}/utilsdoc"/>
-      <jar jarfile="${build}/scalautils-javadoc.jar"
-           basedir="${build}/dummydoc"/>
-    </target>
-
-    <!--
-      - Deploys jars to remote repository.  Deploys both scalatest and
-      - scalautils jars.
+      - Deploy to remote repository.
       -
-      - Requires username and password for repositories to be defined in your
+      - Requires username and password for repository to be defined in your
       - ~/.m2/settings.xml file, e.g.:
       -
       -   <servers>
       -     <server>
-      -       <id>sonatype-nexus-staging</id>
-      -       <username>username</username>
-      -       <password>password</password>
-      -     </server>
-      -
-      -     <server>
-      -       <id>sonatype-nexus-snapshots</id>
+      -       <id>scala-tools.org</id>
       -       <username>username</username>
       -       <password>password</password>
       -     </server>
       -   </servers>
       - 
       -->
-    <target name="deploy" depends="jar,jartests,jarsrc,jartestsrc,jardoc">
-      <property name="deploy.main"
-                value="${dist}/lib/scalatest.jar"/>
-      <property name="deploy.tests" 
-                value="${build.tests.jar}"/>
-      <property name="deploy.sources" 
-                value="${build}/scalatest-sources.jar"/>
-      <property name="deploy.test-sources" 
-                value="${build}/scalatest-test-sources.jar"/>
-      <property name="deploy.scaladoc" 
-                value="${build}/scalatest-scaladoc.jar"/>
-      <property name="deploy.javadoc" 
-                value="${build}/scalatest-javadoc.jar"/>
-      <property name="deploy.release"
-                value="${release}"/>
-
-      <antcall target="deploy-jars"/>
-      <antcall target="deploy-utils"/>
-    </target>
-
-    <!--
-      - Deploys a single jar based on properties:
-      -   deploy.pomfile
-      -   deploy.release
-      -   deploy.file
-      -   deploy.classifier
-      -->
-    <target name="deploy-jar">
-      <artifact:pom id="pom" file="${deploy.pomfile}" />
+     <target name="deploy" depends="jar,jartests,jarsrc,jartestsrc,doc">
+      <artifact:pom id="pom" file="${build}/pom.xml" />
 
       <property name="snapshot.repository"
                 value="${pom.distributionManagement.snapshotRepository.url}" />
@@ -874,309 +702,86 @@
                 value="${pom.distributionManagement.snapshotRepository.id}" />
       <property name="release.repository.id"
                 value="${pom.distributionManagement.repository.id}" />
+      <property name="mvn.deploy.plugin"
+                value="org.apache.maven.plugins:maven-gpg-plugin:1.1:sign-and-deploy-file" />
 
       <condition property="maven.repository.url" value="${snapshot.repository}"
                  else="${release.repository}">
-        <contains string="${deploy.release}" substring="-SNAPSHOT"/>
+        <contains string="${release}" substring="-SNAPSHOT"/>
       </condition>
 
       <condition property="repository.id" value="${snapshot.repository.id}"
                  else="${release.repository.id}">
-        <contains string="${deploy.release}" substring="-SNAPSHOT"/>
+        <contains string="${release}" substring="-SNAPSHOT"/>
       </condition>
+
+      <jar jarfile="${build}/scalatest-scaladoc.jar" basedir="${doc}"/>
+      <jar jarfile="${build}/scalatest-javadoc.jar"  basedir="${jdoc}"/>
 
       <artifact:mvn>
         <arg value="${mvn.deploy.plugin}" />
-        <arg value="-Dfile=${deploy.file}" />
-        <arg value="-Dclassifier=${deploy.classifier}" />
+        <arg value="-Dfile=${dist}/lib/scalatest.jar" />
         <arg value="-Durl=${maven.repository.url}" />
-        <arg value="-DpomFile=${deploy.pomfile}" />
+        <arg value="-DpomFile=${build}/pom.xml" />
         <arg value="-DrepositoryId=${repository.id}" />
         <arg value="-DuniqueVersion=false" />
         <arg value="-Pgpg" />
       </artifact:mvn>
-    </target>
 
-    <!--
-      - Deploys scalautils jars.
-      -
-      - The deploy-utils target depends on jar, jardoc, and jarsrc
-      - being run previously, either on the command line or by the
-      - task that calls deploy-utils using antcall.
-      -
-      - (It doesn't use the depends attribute since it is intended to
-      - be run using <antcall>, which causes it to run in its own project.
-      - If it had its own depends attribute those prereqs would get run
-      - even if they had already been run in the calling project.)
-      -->
-    <target name="deploy-utils">
-      <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
-            overwrite="true">
-        <filterset>
-          <filter token="RELEASE" value="${release}" />
-          <filter token="SCALA_VERSION" value="${scala.version}" />
-        </filterset>
-      </copy>
+      <artifact:mvn>
+        <arg value="${mvn.deploy.plugin}" />
+        <arg value="-Dfile=${build.tests.jar}" />
+        <arg value="-Dclassifier=tests" />
+        <arg value="-Durl=${maven.repository.url}" />
+        <arg value="-DpomFile=${build}/pom.xml" />
+        <arg value="-DrepositoryId=${repository.id}" />
+        <arg value="-DuniqueVersion=false" />
+        <arg value="-Pgpg" />
+      </artifact:mvn>
 
-      <antcall target="deploy-utils-jars">
-        <param name="deploy.pomfile"
-               value="${build}/pom.xml"/>
-        <param name="deploy.main"
-               value="${dist}/lib/scalautils.jar"/>
-        <param name="deploy.sources" 
-               value="${build}/scalautils-sources.jar"/>
-        <param name="deploy.scaladoc" 
-               value="${build}/scalautils-scaladoc.jar"/>
-        <param name="deploy.javadoc" 
-               value="${build}/scalautils-javadoc.jar"/>
-        <param name="deploy.release"
-               value="${release}"/>
-      </antcall>
+      <artifact:mvn>
+        <arg value="${mvn.deploy.plugin}" />
+        <arg value="-Dfile=${build}/scalatest-sources.jar" />
+        <arg value="-Dclassifier=sources" />
+        <arg value="-Durl=${maven.repository.url}" />
+        <arg value="-DpomFile=${build}/pom.xml" />
+        <arg value="-DrepositoryId=${repository.id}" />
+        <arg value="-DuniqueVersion=false" />
+        <arg value="-Pgpg" />
+      </artifact:mvn>
 
-    </target>
+      <artifact:mvn>
+        <arg value="${mvn.deploy.plugin}" />
+        <arg value="-Dfile=${build}/scalatest-test-sources.jar" />
+        <arg value="-Dclassifier=test-sources" />
+        <arg value="-Durl=${maven.repository.url}" />
+        <arg value="-DpomFile=${build}/pom.xml" />
+        <arg value="-DrepositoryId=${repository.id}" />
+        <arg value="-DuniqueVersion=false" />
+        <arg value="-Pgpg" />
+      </artifact:mvn>
 
-    <!--
-      - Deploys scalautils jars identified by properties:
-      -  deploy.pomfile
-      -  deploy.main
-      -  deploy.scaladoc
-      -  deploy.javadoc
-      -  deploy.sources
-      -->
-    <target name="deploy-utils-jars">
-      <antcall target="deploy-jar">
-        <param name="deploy.classifier" value=""/>
-        <param name="deploy.file"       value="${deploy.main}"/>
-      </antcall>
+      <artifact:mvn>
+        <arg value="${mvn.deploy.plugin}" />
+        <arg value="-Dfile=${build}/scalatest-scaladoc.jar" />
+        <arg value="-Dclassifier=scaladoc" />
+        <arg value="-Durl=${maven.repository.url}" />
+        <arg value="-DpomFile=${build}/pom.xml" />
+        <arg value="-DrepositoryId=${repository.id}" />
+        <arg value="-DuniqueVersion=false" />
+        <arg value="-Pgpg" />
+      </artifact:mvn>
 
-      <antcall target="deploy-jar">
-        <param name="deploy.classifier" value="scaladoc"/>
-        <param name="deploy.file"       value="${deploy.scaladoc}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.classifier" value="javadoc"/>
-        <param name="deploy.file"       value="${deploy.javadoc}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.classifier" value="sources"/>
-        <param name="deploy.file"       value="${deploy.sources}"/>
-      </antcall>
-    </target>
-
-    <!--
-      - Redeploys an already-deployed release, naming it with a different
-      - scala version.  E.g., if you have a release based on artifact:
-      -
-      -    scalatest_2.9.0
-      -
-      - then this target could be used to redeploy it to an artifact named,
-      - e.g.:
-      -
-      -    scalatest_2.9.0-1
-      -
-      - Requires three properties, old.scala.version, new.scala.version,
-      - and scalatest.version to be defined on the command line, e.g.:
-      -
-      -   ant redeploy -Dold.scala.version='2.9.0'
-      -                -Dnew.scala.version='2.9.0-1'
-      -                -Dscalatest.version=1.6.1
-      -
-      - Retrieves the specified jars from the maven repo, in this case
-      - for artifact scalatest_2.9.0, version 1.6.1, and redeploys them
-      - using the new artifact name, in this case scalatest_2.9.0-1.
-      -->
-    <target name="redeploy"
-          description="redeploy a release using a different scala version tag">
-
-      <fail message="Missing old.scala.version definition."
-            unless="old.scala.version" />
-      <fail message="Missing new.scala.version definition." 
-            unless="new.scala.version" />
-      <fail message="Missing scalatest.version definition." 
-            unless="scalatest.version"  />
-
-      <antcall target="redeploy-scalatest"/>
-      <antcall target="redeploy-utils"/>
-    </target>
-
-    <target name="redeploy-scalatest">
-      <artifact:dependencies filesetId="old.scala.fileset"
-                             versionsId="dependency.versions">
-        <dependency groupId="org.scalatest"
-                    artifactId="scalatest_${old.scala.version}"
-                    version="${scalatest.version}" />
-        <dependency groupId="org.scalatest"
-                    artifactId="scalatest_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="tests"/>
-        <dependency groupId="org.scalatest"
-                    artifactId="scalatest_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="sources"/>
-        <dependency groupId="org.scalatest"
-                    artifactId="scalatest_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="test-sources"/>
-        <dependency groupId="org.scalatest"
-                    artifactId="scalatest_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="scaladoc"/>
-        <dependency groupId="org.scalatest"
-                    artifactId="scalatest_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="javadoc"/>
-      </artifact:dependencies>
-
-      <copy file="pom_template.xml" tofile="${build}/pom.xml" overwrite="true">
-        <filterset>
-          <filter token="RELEASE" value="${scalatest.version}" />
-          <filter token="SCALA_VERSION" value="${new.scala.version}" />
-        </filterset>
-      </copy>
-
-      <delete dir="target/redeploy" />
-      <mkdir dir="target/redeploy" />
-      <copy todir="target/redeploy" verbose="true">
-        <fileset refid="old.scala.fileset" />
-        <mapper classpathref="maven-ant-tasks.classpath"
-                classname="org.apache.maven.artifact.ant.VersionMapper"
-                from="${scalatest.version}" to="flatten" />
-      </copy>
-
-      <move todir="target/redeploy" verbose="true">
-        <fileset dir="target/redeploy" includes="scalatest_*.jar"/>
-        <globmapper from="scalatest_${old.scala.version}*" to="scalatest*"/>
-      </move>
-
-      <property name="deploy.main"
-                value="target/redeploy/scalatest.jar"/>
-      <property name="deploy.tests" 
-                value="target/redeploy/scalatest-tests.jar"/>
-      <property name="deploy.sources" 
-                value="target/redeploy/scalatest-sources.jar"/>
-      <property name="deploy.test-sources" 
-                value="target/redeploy/scalatest-test-sources.jar"/>
-      <property name="deploy.scaladoc" 
-                value="target/redeploy/scalatest-scaladoc.jar"/>
-      <property name="deploy.javadoc" 
-                value="target/redeploy/scalatest-javadoc.jar"/>
-      <property name="deploy.release"
-                value="${scalatest.version}"/>
-
-      <antcall target="deploy-jars"/>
-    </target>
-
-    <target name="redeploy-utils">
-      <artifact:dependencies filesetId="old.scala.fileset"
-                             versionsId="dependency.versions">
-        <dependency groupId="org.scalautils"
-                    artifactId="scalautils_${old.scala.version}"
-                    version="${scalatest.version}" />
-        <dependency groupId="org.scalautils"
-                    artifactId="scalautils_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="sources"/>
-        <dependency groupId="org.scalautils"
-                    artifactId="scalautils_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="scaladoc"/>
-        <dependency groupId="org.scalautils"
-                    artifactId="scalautils_${old.scala.version}"
-                    version="${scalatest.version}"
-                    classifier="javadoc"/>
-      </artifact:dependencies>
-
-      <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
-            overwrite="true">
-        <filterset>
-          <filter token="RELEASE" value="${scalatest.version}" />
-          <filter token="SCALA_VERSION" value="${new.scala.version}" />
-        </filterset>
-      </copy>
-
-      <delete dir="target/redeploy" />
-      <mkdir dir="target/redeploy" />
-      <copy todir="target/redeploy" verbose="true">
-        <fileset refid="old.scala.fileset" />
-        <mapper classpathref="maven-ant-tasks.classpath"
-                classname="org.apache.maven.artifact.ant.VersionMapper"
-                from="${scalatest.version}" to="flatten" />
-      </copy>
-
-      <move todir="target/redeploy" verbose="true">
-        <fileset dir="target/redeploy" includes="scalautils_*.jar"/>
-        <globmapper from="scalautils_${old.scala.version}*" to="scalautils*"/>
-      </move>
-
-      <antcall target="deploy-utils-jars">
-        <param name="deploy.pomfile"
-               value="${build}/pom.xml"/>
-        <param name="deploy.main"
-               value="target/redeploy/scalautils.jar"/>
-        <param name="deploy.sources" 
-               value="target/redeploy/scalautils-sources.jar"/>
-        <param name="deploy.scaladoc" 
-               value="target/redeploy/scalautils-scaladoc.jar"/>
-        <param name="deploy.javadoc" 
-               value="target/redeploy/scalautils-javadoc.jar"/>
-        <param name="deploy.release"
-               value="${scalatest.version}"/>
-      </antcall>
-
-    </target>
-
-    <!--
-      - For internal use by targets 'deploy' and 'redeploy'.  Deploys jars
-      - specified by following properties:
-      -   
-      -    deploy.main
-      -    deploy.tests
-      -    deploy.sources
-      -    deploy.test-sources
-      -    deploy.scaladoc
-      -    deploy.javadoc
-      -
-      -->
-    <target name="deploy-jars">
-      <artifact:pom id="pom" file="${build}/pom.xml" />
-
-      <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
-        <param name="deploy.classifier" value=""/>
-        <param name="deploy.file"       value="${deploy.main}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
-        <param name="deploy.classifier" value="tests"/>
-        <param name="deploy.file"       value="${deploy.tests}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
-        <param name="deploy.classifier" value="sources"/>
-        <param name="deploy.file"       value="${deploy.sources}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
-        <param name="deploy.classifier" value="test-sources"/>
-        <param name="deploy.file"       value="${deploy.test-sources}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
-        <param name="deploy.classifier" value="scaladoc"/>
-        <param name="deploy.file"       value="${deploy.scaladoc}"/>
-      </antcall>
-
-      <antcall target="deploy-jar">
-        <param name="deploy.pomfile"    value="${build}/pom.xml"/>
-        <param name="deploy.classifier" value="javadoc"/>
-        <param name="deploy.file"       value="${deploy.javadoc}"/>
-      </antcall>
+      <artifact:mvn>
+        <arg value="${mvn.deploy.plugin}" />
+        <arg value="-Dfile=${build}/scalatest-javadoc.jar" />
+        <arg value="-Dclassifier=javadoc" />
+        <arg value="-Durl=${maven.repository.url}" />
+        <arg value="-DpomFile=${build}/pom.xml" />
+        <arg value="-DrepositoryId=${repository.id}" />
+        <arg value="-DuniqueVersion=false" />
+        <arg value="-Pgpg" />
+      </artifact:mvn>
     </target>
 
     <target name="test-junit">
@@ -1195,25 +800,6 @@
 -->
             <classpath refid="test.class.path" />
         </junit>
-    </target>
-
-    <!--
-      - Allows build to succeed when using a JVM other than 1.5.
-      -->
-    <target name="java6">
-        <property name="java6" value="true" />
-    </target>
-
-    <!--
-      - Sets property jvm.ok if JVM version 1.5 is being used.
-      -->
-    <target name="get-jvm">
-        <condition property="jvm.ok">
-            <or>
-                <equals arg1="${java6}" arg2="true"/>
-                <equals arg1="${ant.java.version}" arg2="1.5"/>
-            </or>
-        </condition>
     </target>
 </project>
 

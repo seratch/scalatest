@@ -4,12 +4,6 @@ package org.scalatest
  * Wrapper <code>Suite</code> that passes an instance of the config map to the constructor of the
  * wrapped <code>Suite</code> when <code>run</code> is invoked.
  *
- * <table><tr><td class="usage">
- * <strong>Recommended Usage</strong>:
- * Trait <code>ConfigMapWrapperSuite</code> is primarily intended to be used with the <a href="path/package.html">"path" traits</a>, which can't
- * use the usual approaches to accessing the config map because of the eager manner in which they run tests.</em>
- * </td></tr></table>
- * 
  * <p>
  * Each time <code>run</code> is invoked on an instance of <code>ConfigMapWrapperSuite</code>, this
  * suite will create a new instance of the suite to wrap, passing to the constructor the config map passed to
@@ -50,7 +44,7 @@ package org.scalatest
  * import org.scalatest._
  *
  * @WrapWith(classOf[ConfigMapWrapperSuite])
- * class ExampleSpec(configMap: ConfigMap) extends path.FunSpec {
+ * class ExampleSpec(configMap: Map[String, Any]) extends path.FunSpec {
  *
  *   describe("A widget database") {
  *     it("should contain consistent values") {
@@ -69,8 +63,6 @@ final class ConfigMapWrapperSuite(clazz: Class[_ <: Suite]) extends Suite {
     val constructor = clazz.getConstructor(classOf[Map[_, _]])
     constructor.newInstance(Map.empty)
   }
-
-  override def suiteId = clazz.getName
 
   /**
    * Returns the result obtained from invoking <code>expectedTestCount</code> on an instance of the wrapped
@@ -96,7 +88,7 @@ final class ConfigMapWrapperSuite(clazz: Class[_ <: Suite]) extends Suite {
    *
    * @return the result of invoking <code>nestedSuites</code> on an instance of wrapped suite
    */
-  override def nestedSuites: collection.immutable.IndexedSeq[Suite] = wrappedSuite.nestedSuites
+  override def nestedSuites: List[Suite] = wrappedSuite.nestedSuites
 
   /**
    * Returns the result obtained from invoking <code>tags</code> on an instance of the wrapped
@@ -113,17 +105,23 @@ final class ConfigMapWrapperSuite(clazz: Class[_ <: Suite]) extends Suite {
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when all tests and nested suites started by this method have completed, and whether or not a failure occurred.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code>
+   *   of tests (passed to both the constructor of the wrapped suite and its <code>run</code> method).
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
-   *     exists in the <code>Suite</code>
+   *     exists in this <code>Suite</code>
    */
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     val constructor = clazz.getConstructor(classOf[Map[_, _]])
-    val suite = constructor.newInstance(args.configMap)
-    suite.run(testName, args)
+    val suite = constructor.newInstance(configMap)
+    suite.run(testName, reporter, stopper, filter, configMap, distributor, tracker)
   }
 }
-  // TODO: Check the testName throwing an IAE behavior

@@ -15,10 +15,8 @@
  */
 package org.scalatest
 
-import exceptions.TestCanceledException
 import scala.reflect.Manifest
 import Assertions.areEqualComparingArraysStructurally
-import org.scalautils.LegacyTripleEquals
 
 /**
  * Trait that contains ScalaTest's basic assertion methods.
@@ -43,7 +41,7 @@ import org.scalautils.LegacyTripleEquals
  *
  * <p>
  * If the passed expression is <code>true</code>, <code>assert</code> will return normally. If <code>false</code>,
- * Scala's <code>assert</code> will complete abruptly with an <code>AssertionError</code>. This behavior is provided by
+ * <code>assert</code> will complete abruptly with an <code>AssertionError</code>. This behavior is provided by
  * the <code>assert</code> method defined in object <code>Predef</code>, whose members are implicitly imported into every
  * Scala source file. This <code>Assertions</code> traits defines another <code>assert</code> method that hides the
  * one in <code>Predef</code>. It behaves the same, except that if <code>false</code> is passed it throws
@@ -97,15 +95,15 @@ import org.scalautils.LegacyTripleEquals
  * as the operands become lengthy, the code becomes less readable. In addition, the <code>===</code> comparison
  * doesn't distinguish between actual and expected values. The operands are just called <code>left</code> and <code>right</code>,
  * because if one were named <code>expected</code> and the other <code>actual</code>, it would be difficult for people to
- * remember which was which. To help with these limitations of assertions, <code>Suite</code> includes a method called <code>expectResult</code> that
- * can be used as an alternative to <code>assert</code> with <code>===</code>. To use <code>expectResult</code>, you place
- * the expected value in parentheses after <code>expectResult</code>, followed by curly braces containing code
+ * remember which was which. To help with these limitations of assertions, <code>Suite</code> includes a method called <code>expect</code> that
+ * can be used as an alternative to <code>assert</code> with <code>===</code>. To use <code>expect</code>, you place
+ * the expected value in parentheses after <code>expect</code>, followed by curly braces containing code 
  * that should result in the expected value. For example:
  *
  * <pre class="stHighlight">
  * val a = 5
  * val b = 2
- * expectResult(2) {
+ * expect(2) {
  *   a - b
  * }
  * </pre>
@@ -114,24 +112,6 @@ import org.scalautils.LegacyTripleEquals
  * In this case, the expected value is <code>2</code>, and the code being tested is <code>a - b</code>. This expectation will fail, and
  * the detail message in the <code>TestFailedException</code> will read, "Expected 2, but got 3."
  * </p>
- *
- * <h2>Forcing failures</h2>
- *
- * <p>
- * If you just need the test to fail, you can write:
- * </p>
- *
- * <pre class="stHiglight">
- * fail()
- * </pre>
- *
- * <p>
- * Or, if you want the test to fail with a message, write:
- * </p>
- *
- * <pre class="stHiglight">
- * fail("I've got a bad feeling about this")
- * </pre>
  *
  * <h2>Intercepted exceptions</h2>
  *
@@ -178,58 +158,6 @@ import org.scalautils.LegacyTripleEquals
  * the exception has the expected values.
  * </p>
  *
- * <h2>Assumptions</h2>
- *
- * <p>
- * Trait <code>Assertions</code> also provides methods that allow you to <em>cancel</em> a test.
- * You would cancel a test if a resource required by the test was unavailable. For example, if a test
- * requires an external database to be online, and it isn't, the test could be canceled to indicate
- * it was unable to run because of the missing database. Such a test <em>assumes</em> a database is
- * available, and you can use the <code>assume</code> method to indicate this at the beginning of
- * the test, like this:
- * </p>
- *
- * <pre class="stHighlight">
- * assume(database.isAvailable)
- * </pre>
- *
- * <p>
- * For each overloaded <code>assert</code> method, trait <code>Assertions</code> provides an
- * overloaded <code>assume</code> method with an identical signature and behavior, except the
- * <code>assume</code> methods throw <code>TestCanceledException</code> whereas the
- * <code>assert</code> methods throw <code>TestFailedException</code>. As with <code>assert</code>,
- * <code>assume</code> hides a Scala method in <code>Predef</code> that performs a similar
- * function, but throws <code>AssertionError</code>. And just as you can with <code>assert</code>,
- * you can optionally provide a clue string, or use <code>===</code> to get a more detailed
- * error message. Here are some examples:
- * </p>
- *
- * <pre class="stHighlight">
- * assume(database.isAvailable, "The database was down again")
- * assume(database.getAllUsers.count === 9)
- * </pre>
- *
- * <h2>Forcing cancelations</h2>
- *
- * <p>
- * For each overloaded <code>fail</code> method, there's a corresponding <code>cancel</code> method
- * with an identical signature and behavior, except the <code>cancel</code> methods throw
- * <code>TestCanceledException</code> whereas the <code>fail</code> methods throw
- * <code>TestFailedException</code>. Thus if you just need to cancel a test, you can write:
- * </p>
- *
- * <pre class="stHiglight">
- * cancel()
- * </pre>
- *
- * <p>
- * If you want to cancel the test with a message, just place the message in the parentheses:
- * </p>
- *
- * <pre class="stHiglight">
- * cancel("Can't run the test because no internet connection was found")
- * </pre>
- *
  * <h2>Getting a clue</h2>
  *
  * <p>
@@ -269,19 +197,15 @@ import org.scalautils.LegacyTripleEquals
  * }
  * </pre>
  *
- * <p>
  * The <code>withClue</code> method will only prepend the clue string to the detail
  * message of exception types that mix in the <code>ModifiableMessage</code> trait.
  * See the documentation for <a href="ModifiableMessage.html"><code>ModifiableMessage</code></a> for more information.
- * If you wish to place a clue string after a block of code, see the documentation for
- * <a href="AppendedClues.html"><code>AppendedClues</code></a>.
- * </p>
  *
  * @author Bill Venners
  */
-trait Assertions extends LegacyTripleEquals {
+trait Assertions {
 
-  /* *
+  /**
    * Class used via an implicit conversion to enable any two objects to be compared with
    * <code>===</code> in assertions in tests. For example:
    *
@@ -336,7 +260,6 @@ trait Assertions extends LegacyTripleEquals {
    *
    * @author Bill Venners
    */
-/*
   final class Equalizer(left: Any) {
 
     /**
@@ -374,7 +297,6 @@ trait Assertions extends LegacyTripleEquals {
       }
 */
   }
-*/
 
   /**
    * Assert that a boolean condition is true.
@@ -397,21 +319,13 @@ trait Assertions extends LegacyTripleEquals {
       case (Some(message), Some(cause)) => new TestFailedException(message.toString, cause, stackDepth)
     }
 
-  private def newTestCanceledException(optionalMessage: Option[Any], optionalCause: Option[Throwable], stackDepth: Int): Throwable =
-    (optionalMessage, optionalCause) match {
-      case (None, None) => new TestCanceledException(stackDepth)
-      case (None, Some(cause)) => new TestCanceledException(cause, stackDepth)
-      case (Some(message), None) => new TestCanceledException(message.toString, stackDepth)
-      case (Some(message), Some(cause)) => new TestCanceledException(message.toString, cause, stackDepth)
-    }
-
   /**
    * Assert that a boolean condition, described in <code>String</code>
    * <code>message</code>, is true.
    * If the condition is <code>true</code>, this method returns normally.
    * Else, it throws <code>TestFailedException</code> with the
    * <code>String</code> obtained by invoking <code>toString</code> on the
-   * specified <code>clue</code> as the exception's detail message.
+   * specified <code>message</code> as the exception's detail message.
    *
    * @param condition the boolean condition to assert
    * @param clue An objects whose <code>toString</code> method returns a message to include in a failure report.
@@ -429,7 +343,7 @@ trait Assertions extends LegacyTripleEquals {
    * Else, it throws <code>TestFailedException</code> with the <code>String</code>
    * value of the <code>Some</code>, as well as the 
    * <code>String</code> obtained by invoking <code>toString</code> on the
-   * specified <code>clue</code>,
+   * specified <code>message</code>,
    * included in the <code>TestFailedException</code>'s detail message.
    *
    * <p>
@@ -442,7 +356,7 @@ trait Assertions extends LegacyTripleEquals {
    * </pre>
    *
    * <p>
-   * For more information on how this mechanism works, see the <a href="Assertions$Equalizer.html">documentation for
+   * For more information on how this mechanism works, see the <a href="Suite.Equalizer.html">documentation for
    * <code>Equalizer</code></a>.
    * </p>
    *
@@ -475,7 +389,7 @@ trait Assertions extends LegacyTripleEquals {
    * </pre>
    *
    * <p>
-   * For more information on how this mechanism works, see the <a href="Assertions$Equalizer.html">documentation for
+   * For more information on how this mechanism works, see the <a href="Suite.Equalizer.html">documentation for
    * <code>Equalizer</code></a>.
    * </p>
    *
@@ -490,115 +404,6 @@ trait Assertions extends LegacyTripleEquals {
   }
 
   /**
-   * Assume that a boolean condition is true.
-   * If the condition is <code>true</code>, this method returns normally.
-   * Else, it throws <code>TestCanceledException</code>.
-   *
-   * @param condition the boolean condition to assert
-   * @throws TestCanceledException if the condition is <code>false</code>.
-   */
-  def assume(condition: Boolean) {
-    if (!condition)
-      throw newTestCanceledException(None, None, 3)
-  }
-
-  
-  /**
-   * Assume that a boolean condition, described in <code>String</code>
-   * <code>message</code>, is true.
-   * If the condition is <code>true</code>, this method returns normally.
-   * Else, it throws <code>TestCanceledException</code> with the
-   * <code>String</code> obtained by invoking <code>toString</code> on the
-   * specified <code>clue</code> as the exception's detail message.
-   *
-   * @param condition the boolean condition to assume
-   * @param clue An objects whose <code>toString</code> method returns a message to include in a failure report.
-   * @throws TestFailedException if the condition is <code>false</code>.
-   * @throws NullPointerException if <code>message</code> is <code>null</code>.
-   */
-  def assume(condition: Boolean, clue: Any) {
-    if (!condition)
-      throw newTestCanceledException(Some(clue.toString), None, 3)
-  }
-
-  /**
-   * Assume that an <code>Option[String]</code> is <code>None</code>. 
-   * If the condition is <code>None</code>, this method returns normally.
-   * Else, it throws <code>TestCanceledException</code> with the <code>String</code>
-   * value of the <code>Some</code>, as well as the 
-   * <code>String</code> obtained by invoking <code>toString</code> on the
-   * specified <code>clue</code>,
-   * included in the <code>TestCanceledException</code>'s detail message.
-   *
-   * <p>
-   * This form of <code>assume</code> is usually called in conjunction with an
-   * implicit conversion to <code>Equalizer</code>, using a <code>===</code> comparison, as in:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * assume(a === b, "extra info reported if assertion fails")
-   * </pre>
-   *
-   * <p>
-   * For more information on how this mechanism works, see the <a href="Assertions$Equalizer.html">documentation for
-   * <code>Equalizer</code></a>.
-   * </p>
-   *
-   * @param o the <code>Option[String]</code> to assert
-   * @param clue An objects whose <code>toString</code> method returns a message to include in a failure report.
-   * @throws TestCanceledException if the <code>Option[String]</code> is <code>Some</code>.
-   * @throws NullPointerException if <code>message</code> is <code>null</code>.
-   */
-  def assume(o: Option[String], clue: Any) {
-    o match {
-      case Some(s) => throw newTestCanceledException(Some(clue + "\n" + s), None, 3)
-      case None =>
-    }
-  }
-  
-  /**
-   * Assume that an <code>Option[String]</code> is <code>None</code>.
-   * If the condition is <code>None</code>, this method returns normally.
-   * Else, it throws <code>TestCanceledException</code> with the <code>String</code>
-   * value of the <code>Some</code> included in the <code>TestCanceledException</code>'s
-   * detail message.
-   *
-   * <p>
-   * This form of <code>assume</code> is usually called in conjunction with an
-   * implicit conversion to <code>Equalizer</code>, using a <code>===</code> comparison, as in:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * assert(a === b)
-   * </pre>
-   *
-   * <p>
-   * For more information on how this mechanism works, see the <a href="Assertions$Equalizer.html">documentation for
-   * <code>Equalizer</code></a>.
-   * </p>
-   *
-   * @param o the <code>Option[String]</code> to assert
-   * @throws TestFailedException if the <code>Option[String]</code> is <code>Some</code>.
-   */
-  // def assume(o: Option[String]) = throwIfSome(o, (a: Any) => newTestCanceledException(Some(a.toString), None, 3))
-  def assume(o: Option[String]) {
-    o match {
-      case Some(s) => throw newTestCanceledException(Some(s), None, 3)
-      case None =>
-    }
-  }
-
-/*
-  def throwIfSome(o: Option[String], exception: (Any) => Throwable) {
-    o match {
-      case Some(s) => throw exception(s)
-      case None =>
-    }
-  }
-*/
-  
-
-  /* *
    * Implicit conversion from <code>Any</code> to <code>Equalizer</code>, used to enable
    * assertions with <code>===</code> comparisons.
    *
@@ -629,7 +434,7 @@ trait Assertions extends LegacyTripleEquals {
    * @param left the object whose type to convert to <code>Equalizer</code>.
    * @throws NullPointerException if <code>left</code> is <code>null</code>.
    */
-  // implicit def convertToEqualizer(left: Any) = new Equalizer(left)
+  implicit def convertToEqualizer(left: Any) = new Equalizer(left)
 
   /*
    * Intercept and return an instance of the passed exception class (or an instance of a subclass of the
@@ -637,7 +442,7 @@ trait Assertions extends LegacyTripleEquals {
    * function. If it throws an exception that's an instance of the passed class or one of its
    * subclasses, this method returns that exception. Else, whether the passed function returns normally
    * or completes abruptly with a different exception, this method throws <code>TestFailedException</code>
-   * whose detail message includes the <code>String</code> obtained by invoking <code>toString</code> on the passed <code>clue</code>.
+   * whose detail message includes the <code>String</code> obtained by invoking <code>toString</code> on the passed <code>message</code>.
    *
    * <p>
    * Note that the passed <code>Class</code> may represent any type, not just <code>Throwable</code> or one of its subclasses. In
@@ -765,7 +570,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
 */
 
 
-  /**
+/**
    * Expect that the value passed as <code>expected</code> equals the value passed as <code>actual</code>.
    * If the <code>actual</code> equals the <code>expected</code>
    * (as determined by <code>==</code>), <code>expectResult</code> returns
@@ -930,7 +735,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
    * Throws <code>TestFailedException</code>, with the passed
    * <code>Throwable</code> cause, to indicate a test failed.
    * The <code>getMessage</code> method of the thrown <code>TestFailedException</code>
-   * will return <code>cause.toString</code>.
+   * will return <code>cause.toString()</code>.
    *
    * @param cause a <code>Throwable</code> that indicates the cause of the failure.
    * @throws NullPointerException if <code>cause</code> is <code>null</code>
@@ -942,65 +747,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
         
     throw newAssertionFailedException(None, Some(cause), 4)
   }
-  
-  /**
-   * Throws <code>TestCanceledException</code> to indicate a test was canceled.
-   */
-  def cancel() = { throw newTestCanceledException(None, None, 3) }
 
-  /**
-   * Throws <code>TestCanceledException</code>, with the passed
-   * <code>String</code> <code>message</code> as the exception's detail
-   * message, to indicate a test was canceled.
-   *
-   * @param message A message describing the cancellation.
-   * @throws NullPointerException if <code>message</code> is <code>null</code>
-   */
-  def cancel(message: String) = {
-
-    if (message == null)
-        throw new NullPointerException("message is null")
-     
-    throw newTestCanceledException(Some(message),  None, 3)
-  }
-
-  /**
-   * Throws <code>TestCanceledException</code>, with the passed
-   * <code>String</code> <code>message</code> as the exception's detail
-   * message and <code>Throwable</code> cause, to indicate a test failed.
-   *
-   * @param message A message describing the failure.
-   * @param cause A <code>Throwable</code> that indicates the cause of the failure.
-   * @throws NullPointerException if <code>message</code> or <code>cause</code> is <code>null</code>
-   */
-  def cancel(message: String, cause: Throwable) = {
-
-    if (message == null)
-      throw new NullPointerException("message is null")
-
-    if (cause == null)
-      throw new NullPointerException("cause is null")
-
-    throw newTestCanceledException(Some(message), Some(cause), 3)
-  }
-
-  /**
-   * Throws <code>TestCanceledException</code>, with the passed
-   * <code>Throwable</code> cause, to indicate a test failed.
-   * The <code>getMessage</code> method of the thrown <code>TestCanceledException</code>
-   * will return <code>cause.toString</code>.
-   *
-   * @param cause a <code>Throwable</code> that indicates the cause of the cancellation.
-   * @throws NullPointerException if <code>cause</code> is <code>null</code>
-   */
-  def cancel(cause: Throwable) = {
-
-    if (cause == null)
-      throw new NullPointerException("cause is null")
-        
-    throw newTestCanceledException(None, Some(cause), 3)
-  }
-  
   /**
    * Executes the block of code passed as the second parameter, and, if it
    * completes abruptly with a <code>ModifiableMessage</code> exception,
@@ -1039,7 +786,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
     def prepend(currentMessage: Option[String]) =
       currentMessage match {
         case Some(msg) =>
-          if (clue.toString.last.isWhitespace) // TODO: shouldn't I also check if the head of msg isWhite?
+          if (clue.toString.last.isWhitespace)
             Some(clue.toString + msg)
           else 
             Some(clue.toString + " " + msg)
