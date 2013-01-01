@@ -997,6 +997,10 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(rightMatcherX2: Matcher[String]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX2)
     }
+    
+    def should(right: NounMatcher[String]) {
+      ShouldMethodHelper.shouldMatcher(left, right)
+    }
 
     /**
      * This method enables syntax such as the following:
@@ -1124,6 +1128,18 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(rightMatcherX3: Matcher[T]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX3)
+    }
+    
+    def should(right: NounMatcher[T]) {
+      val result = right(left)
+      if (!result.matches)
+        throw newTestFailedException(
+          FailureMessages(
+            result.failureMessage, 
+            left,
+            right.noun
+          )
+        )
     }
 
     /**
@@ -1423,6 +1439,18 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(rightMatcherX6: Matcher[GenTraversable[T]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX6)
     }
+    
+    def should[U <: GenTraversable[T]](right: NounMatcher[U]) {
+      val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
+      if (!result.matches)
+        throw newTestFailedException(
+          FailureMessages(
+            result.failureMessage,
+            left,
+            right.noun
+          )
+        )
+    }
 
     /**
      * This method enables syntax such as the following:
@@ -1669,6 +1697,18 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(rightMatcherX9: Matcher[GenSeq[T]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX9)
     }
+    
+    def should[U <: GenSeq[T]](right: NounMatcher[U]) {
+      val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
+      if (!result.matches)
+        throw newTestFailedException(
+          FailureMessages(
+            result.failureMessage,
+            left,
+            right.noun
+          )
+        )
+    }
 
     /**
      * This method enables syntax such as the following:
@@ -1703,7 +1743,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * </pre>
      */
     def should(beWord: BeWord): ResultOfBeWordForAnyRef[GenSeq[T]] = new ResultOfBeWordForAnyRef(left, true)
-
+    
     /**
      * This method enables syntax such as the following:
      *

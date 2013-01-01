@@ -3059,6 +3059,19 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /*def be[U <: GenSeq[E]](right: NounMatcher[U]): ResultOfNotWordForSeqForNounMatcher = {
+      val result = right(left.asInstanceOf[U])
+      if (result.matches != shouldBeTrue)
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            left,
+            right.noun
+          )
+        )
+      new ResultOfNotWordForSeqForNounMatcher
+    }*/
   }
 
   /**
@@ -3307,6 +3320,18 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         )
       }
     }
+    
+    def apply(right: NounMatcher[T]) {
+      val result = right(left)
+      if (result.matches != shouldBeTrue)
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            left,
+            right.noun
+          )
+        )
+    }
   }
 
   /**
@@ -3345,14 +3370,29 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def be(right: Any) {
-      if ((left == right) != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-           if (shouldBeTrue) "wasNotEqualTo" else "wasEqualTo",
-            left,
-            right
-          )
-        )
+      right match {
+        case nounMatcher: NounMatcher[Any] => 
+          val result = nounMatcher(left)
+          if (result.matches != shouldBeTrue)
+            throw newTestFailedException(
+              FailureMessages(
+                if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+                left,
+                nounMatcher.noun
+              )
+            )
+          
+        case _ =>
+          if ((left == right) != shouldBeTrue)
+            throw newTestFailedException(
+              FailureMessages(
+                if (shouldBeTrue) "wasNotEqualTo" else "wasEqualTo",
+                left,
+                right
+              )
+            )
+      }
+      
     }
 
     /**
@@ -3474,6 +3514,18 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
             result.negatedFailureMessage
         )
       }
+    }
+    
+    def be(right: NounMatcher[T]) {
+      val result = right(left)
+      if (result.matches != shouldBeTrue)
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            left,
+            right.noun
+          )
+        )
     }
   }
 
@@ -4707,6 +4759,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
             }
         }
       }
+    
+    def apply[T](right: NounMatcher[T]): NounMatcher[T] = right
   }
 
   /**
@@ -5156,6 +5210,11 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     }
+    
+    def be[T](right: NounMatcher[T]) = 
+      new Matcher[T] {
+        def apply(left: T): MatchResult = right(left)
+      }
 
     /**
      * This method enables the following syntax: 
