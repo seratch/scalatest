@@ -3320,18 +3320,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         )
       }
     }
-    
-    def apply(right: NounMatcher[T]) {
-      val result = right(left)
-      if (result.matches != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
-            left,
-            right.noun
-          )
-        )
-    }
   }
 
   /**
