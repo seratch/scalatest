@@ -3363,11 +3363,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           val result = nounMatcher(left)
           if (result.matches != shouldBeTrue)
             throw newTestFailedException(
-              FailureMessages(
-                if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
-                left,
-                nounMatcher.noun
-              )
+              if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
             )
           
         case _ =>
@@ -3508,11 +3504,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       val result = right(left)
       if (result.matches != shouldBeTrue)
         throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
-            left,
-            right.noun
-          )
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
         )
     }
   }
