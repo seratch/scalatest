@@ -21,11 +21,12 @@ object NounMatcher {
       def apply(left: T) = {
         MatchResult(
           fun(left), 
-          FailureMessages(if (useAn(noun)) "shouldBeAnNoun" else "shouldBeANoun", left, noun),
-          FailureMessages(if (useAn(noun)) "shouldNotBeAnNoun" else "shouldNotBeANoun", left, noun)
+          FailureMessages(if (useAn(noun)) "wasNotAn" else "wasNotA", left, this),
+          FailureMessages(if (useAn(noun)) "wasAn" else "wasA", left, this)
         )
       }
-    }  
+      override def toString = noun
+    }
   
   private def useAn(noun: String) = 
     noun.startsWith("a") || noun.startsWith("e") || noun.startsWith("i") || noun.startsWith("o") || noun.startsWith("u")

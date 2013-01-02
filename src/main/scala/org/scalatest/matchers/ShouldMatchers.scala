@@ -1134,11 +1134,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       val result = right(left)
       if (!result.matches)
         throw newTestFailedException(
-          FailureMessages(
-            result.failureMessage, 
-            left,
-            right.noun
-          )
+          result.failureMessage
         )
     }
 
@@ -1209,6 +1205,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      */
     def should(rightMatcherX4: Matcher[scala.collection.GenMap[K, V]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX4)
+    }
+    
+    def should[U <: GenMap[K, V]](right: NounMatcher[U]) {
+      val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
+      if (!result.matches)
+        throw newTestFailedException(
+          result.failureMessage
+        )
     }
 
     /**
@@ -1444,11 +1448,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
       if (!result.matches)
         throw newTestFailedException(
-          FailureMessages(
-            result.failureMessage,
-            left,
-            right.noun
-          )
+          result.failureMessage
         )
     }
 
@@ -1702,11 +1702,7 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
       if (!result.matches)
         throw newTestFailedException(
-          FailureMessages(
-            result.failureMessage,
-            left,
-            right.noun
-          )
+          result.failureMessage
         )
     }
 
