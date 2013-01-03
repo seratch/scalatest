@@ -998,6 +998,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX2)
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * string should be (oddNumber)
+     *        ^
+     * </pre>
+     */
     def should(right: NounMatcher[String]) {
       ShouldMethodHelper.shouldMatcher(left, right)
     }
@@ -1130,6 +1138,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX3)
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * aDouble should be (oddNumber)
+     *         ^
+     * </pre>
+     */
     def should(right: NounMatcher[T]) {
       val result = right(left)
       if (!result.matches)
@@ -1207,6 +1223,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX4)
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should be (oddNumber)
+     *     ^
+     * </pre>
+     */
     def should[U <: GenMap[K, V]](right: NounMatcher[U]) {
       val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
       if (!result.matches)
@@ -1444,6 +1468,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX6)
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * traversable should be (oddNumber)
+     *             ^
+     * </pre>
+     */
     def should[U <: GenTraversable[T]](right: NounMatcher[U]) {
       val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
       if (!result.matches)
@@ -1606,10 +1638,6 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(rightMatcherX8: Matcher[java.util.Map[K, V]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX8)
     }
-    
-    def should(rightMatcherX8: NounMatcher[java.util.Map.Entry[K, V]]) {
-      //ShouldMethodHelper.shouldMatcher(left, rightMatcherX8)
-    }
 
     /**
      * This method enables syntax such as the following:
@@ -1702,6 +1730,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX9)
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * seq should be (oddNumber)
+     *     ^
+     * </pre>
+     */
     def should[U <: GenSeq[T]](right: NounMatcher[U]) {
       val result = right(left.asInstanceOf[U]) // TODO: Any other way than doing an ugly cast here?
       if (!result.matches)
@@ -1812,6 +1848,14 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(notWord: NotWord): ResultOfNotWordForArray[T] =
       new ResultOfNotWordForArray(left, false)
     
+    /**
+     * This method enables syntax such as the following:
+     * 
+     * <pre class="stHighlight">
+     * result shouldBe Array(1, 2, 3)
+     * 
+     * </pre>
+     */
     def shouldBe(right: Array[T]) {
       if (!left.deep.equals(right.deep)) {
         val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
