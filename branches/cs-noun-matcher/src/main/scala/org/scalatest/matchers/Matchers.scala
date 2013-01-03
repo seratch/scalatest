@@ -1668,6 +1668,14 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         )
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should contain key oddNumber
+     *                    ^
+     * </pre>
+     */
     def key(right: NounMatcher[K]) {
       left.find(t => right(t._1).matches) match {
         case Some(value) => 
@@ -1698,6 +1706,14 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         )
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should contain value oddNumber
+     *                    ^
+     * </pre>
+     */
     def value(right: NounMatcher[V]) {
       left.find(t => right(t._2).matches) match {
         case Some(value) => 
@@ -1736,6 +1752,14 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         )
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * javaMap should contain key oddNumber
+     *                        ^
+     * </pre>
+     */
     def key(right: NounMatcher[K]) {
       import collection.JavaConversions._
       left.keySet.find(right(_).matches) match {
@@ -1766,6 +1790,14 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         )
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * javaMap should contain value oddNumber
+     *                        ^
+     * </pre>
+     */
     def value(right: NounMatcher[V]) {
       import collection.JavaConversions._
       left.values.find(right(_).matches) match {
@@ -1910,6 +1942,14 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
           )
       }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * Array(1, 2) should contain (oddNumber)
+     *                    ^
+     * </pre>
+     */
     def apply[T](right: NounMatcher[T]): Matcher[GenTraversable[T]] =
       new Matcher[GenTraversable[T]] {
         def apply(left: GenTraversable[T]): MatchResult =
@@ -2906,6 +2946,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * iterable should not contain oddNumber
+     *                     ^
+     * </pre>
+     */
     def contain(right: NounMatcher[E]) {
       left.find(right(_).matches) match {
         case Some(noun) => 
@@ -2990,6 +3038,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * javaCollection should not contain oddNumber
+     *                           ^
+     * </pre>
+     */
     def contain(right: NounMatcher[E]) {
       import collection.JavaConversions._
       left.find(right(_).matches) match {
@@ -3034,6 +3090,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should not contain key (oddNumber)
+     *                ^
+     * </pre>
+     */
     def contain(resultOfKeyWordApplication: ResultOfKeyWordApplicationForNounMatcher[K]) {
       val right = resultOfKeyWordApplication.nounMatcher
       left.find(t => right(t._1).matches) match {
@@ -3067,6 +3131,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should not contain value (oddNumber)
+     *                ^
+     * </pre>
+     */
     def contain(resultOfValueWordApplication: ResultOfValueWordApplicationForNounMatcher[V]) {
       val right = resultOfValueWordApplication.nounMatcher
       left.find(t => right(t._2).matches) match {
@@ -3110,6 +3182,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * javaMap should not contain key (oddNumber)
+     *                    ^
+     * </pre>
+     */
     def contain(resultOfKeyWordApplication: ResultOfKeyWordApplicationForNounMatcher[K]) {
       import collection.JavaConversions._
       val right = resultOfKeyWordApplication.nounMatcher
@@ -3144,6 +3224,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * javaMap should not contain value (oddNumber)
+     *                    ^
+     * </pre>
+     */
     def contain(resultOfValueWordApplication: ResultOfValueWordApplicationForNounMatcher[V]) {
       import collection.JavaConversions._
       val right = resultOfValueWordApplication.nounMatcher
@@ -3187,19 +3275,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
-    
-    /*def be[U <: GenSeq[E]](right: NounMatcher[U]): ResultOfNotWordForSeqForNounMatcher = {
-      val result = right(left.asInstanceOf[U])
-      if (result.matches != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
-            left,
-            right.noun
-          )
-        )
-      new ResultOfNotWordForSeqForNounMatcher
-    }*/
   }
 
   /**
@@ -3233,6 +3308,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * Array(2, 3) should not contain oddNumber
+     *                        ^
+     * </pre>
+     */
     def contain(right: NounMatcher[E]) {
       left.find(right(_).matches) match {
         case Some(noun) => 
@@ -3639,6 +3722,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * 2 should not be oddNumber
+     *              ^
+     * </pre>
+     */
     def be(right: NounMatcher[T]) {
       val result = right(left)
       if (result.matches != shouldBeTrue)
@@ -4879,6 +4970,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * 2 should be (oddNumber)
+     *          ^
+     * </pre>
+     */
     def apply[T](right: NounMatcher[T]): NounMatcher[T] = right
   }
 
@@ -5296,15 +5395,15 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *
      * <pre class="stHighlight">
      * result should not be (None)
-     *                      ^
-     * result should not be (Some(1))
-     *                      ^
-     * result should not be (true)
-     *                      ^
-     * result should not be (false)
-     *                      ^
-     * sum should not be (19)
      *                   ^
+     * result should not be (Some(1))
+     *                   ^
+     * result should not be (true)
+     *                   ^
+     * result should not be (false)
+     *                   ^
+     * sum should not be (19)
+     *                ^
      * </pre>
      */
     def be(right: Any): Matcher[Any] = {
@@ -5330,6 +5429,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * result should not be oddNumber
+     *                   ^
+     * </pre>
+     */
     def be[T](right: NounMatcher[T]) = 
       new Matcher[T] {
         def apply(left: T): MatchResult = right(left)
@@ -5817,8 +5924,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   final class ResultOfKeyWordApplication[T](val expectedKey: T)
   
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
   final class ResultOfKeyWordApplicationForNounMatcher[T](val nounMatcher: NounMatcher[T])
-
+  
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
@@ -5837,6 +5950,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def apply[T](expectedKey: T): ResultOfKeyWordApplication[T] = new ResultOfKeyWordApplication(expectedKey)
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should not contain key (oddNumber)
+     *                            ^
+     * </pre>
+     */
     def apply[T](nounMatcher: NounMatcher[T]): ResultOfKeyWordApplicationForNounMatcher[T] = new ResultOfKeyWordApplicationForNounMatcher(nounMatcher)
   }
 
@@ -5858,6 +5979,12 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   final class ResultOfValueWordApplication[T](val expectedValue: T)
   
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
   final class ResultOfValueWordApplicationForNounMatcher[T](val nounMatcher: NounMatcher[T])
 
   /**
@@ -5878,6 +6005,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def apply[T](expectedValue: T): ResultOfValueWordApplication[T] = new ResultOfValueWordApplication(expectedValue)
     
+    /**
+     * This method enables the following syntax (oddNumber is an instance of <code>NounMatcher[T]</code>):
+     *
+     * <pre class="stHighlight">
+     * map should not contain value (oddNumber)
+     *                              ^
+     * </pre>
+     */
     def apply[T](nounMatcher: NounMatcher[T]): ResultOfValueWordApplicationForNounMatcher[T] = new ResultOfValueWordApplicationForNounMatcher(nounMatcher)
   }
 
