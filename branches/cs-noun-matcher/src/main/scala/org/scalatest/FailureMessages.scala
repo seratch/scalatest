@@ -47,6 +47,12 @@ private[scalatest] object FailureMessages {
       case _ => if (o != null) o.toString else "null"
     }
   }
+  
+  class DoNotDecorateString(value: String) {
+    override def toString = value
+  }
+  
+  def noDecorate(value: String) = new DoNotDecorateString(value)
 }
 
 // This is used to pass a string to the FailureMessages apply method

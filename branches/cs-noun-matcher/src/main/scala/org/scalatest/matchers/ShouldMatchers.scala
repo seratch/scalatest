@@ -1606,6 +1606,10 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
     def should(rightMatcherX8: Matcher[java.util.Map[K, V]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX8)
     }
+    
+    def should(rightMatcherX8: NounMatcher[java.util.Map.Entry[K, V]]) {
+      //ShouldMethodHelper.shouldMatcher(left, rightMatcherX8)
+    }
 
     /**
      * This method enables syntax such as the following:
