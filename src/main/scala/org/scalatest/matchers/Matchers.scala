@@ -1667,6 +1667,17 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             expectedKey)
         )
     }
+    
+    def key(right: NounMatcher[K]) {
+      left.find(t => right(t._1).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedKey", left, FailureMessages.noDecorate(value._1 + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainKey", left, right))
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -1685,6 +1696,17 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             left,
             expectedValue)
         )
+    }
+    
+    def value(right: NounMatcher[V]) {
+      left.find(t => right(t._2).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedValue", left, FailureMessages.noDecorate(value._2 + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainValue", left, right))
+      }
     }
   }
 
@@ -1713,6 +1735,18 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             expectedKey)
         )
     }
+    
+    def key(right: NounMatcher[K]) {
+      import collection.JavaConversions._
+      left.keySet.find(right(_).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedKey", left, FailureMessages.noDecorate(value + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainKey", left, right))
+      }
+    }
 
     /**
      * This method enables the following syntax (<code>javaMap</code> is a <code>java.util.Map</code>):
@@ -1730,6 +1764,18 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             left,
             expectedValue)
         )
+    }
+    
+    def value(right: NounMatcher[V]) {
+      import collection.JavaConversions._
+      left.values.find(right(_).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedValue", left, FailureMessages.noDecorate(value + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainValue", left, right))
+      }
     }
   }
 
@@ -1862,6 +1908,15 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             FailureMessages("didNotContainExpectedElement", left, expectedElement),
             FailureMessages("containedExpectedElement", left, expectedElement)
           )
+      }
+    
+    def apply[T](right: NounMatcher[T]): Matcher[GenTraversable[T]] =
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult =
+          left.find(right(_).matches) match {
+            case Some(value) => MatchResult(true, FailureMessages("didNotContainNoun", left, right), FailureMessages("containedNoun", left, FailureMessages.noDecorate(value + ", which was " + right)))
+            case None => MatchResult(false, FailureMessages("didNotContainNoun", left, right), FailureMessages("containedNoun", left, right))
+          }
       }
 
     //
@@ -2850,6 +2905,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    def contain(right: NounMatcher[E]) {
+      left.find(right(_).matches) match {
+        case Some(noun) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedNoun", left, right, noun))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainNoun", left, right))
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -2923,6 +2989,18 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    def contain(right: NounMatcher[E]) {
+      import collection.JavaConversions._
+      left.find(right(_).matches) match {
+        case Some(noun) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedNoun", left, right, noun))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainNoun", left, right))
+      }
+    }
   }
 
   /**
@@ -2955,6 +3033,18 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    def contain(resultOfKeyWordApplication: ResultOfKeyWordApplicationForNounMatcher[K]) {
+      val right = resultOfKeyWordApplication.nounMatcher
+      left.find(t => right(t._1).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedKey", left, FailureMessages.noDecorate(value._1 + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainKey", left, right))
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -2974,6 +3064,18 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+    
+    def contain(resultOfValueWordApplication: ResultOfValueWordApplicationForNounMatcher[V]) {
+      val right = resultOfValueWordApplication.nounMatcher
+      left.find(t => right(t._2).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedValue", left, FailureMessages.noDecorate(value._2 + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainValue", left, right))
       }
     }
   }
@@ -3007,6 +3109,19 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    def contain(resultOfKeyWordApplication: ResultOfKeyWordApplicationForNounMatcher[K]) {
+      import collection.JavaConversions._
+      val right = resultOfKeyWordApplication.nounMatcher
+      left.keySet.find(right(_).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedKey", left, FailureMessages.noDecorate(value + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainKey", left, right))
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -3026,6 +3141,19 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+    
+    def contain(resultOfValueWordApplication: ResultOfValueWordApplicationForNounMatcher[V]) {
+      import collection.JavaConversions._
+      val right = resultOfValueWordApplication.nounMatcher
+      left.values.find(right(_).matches) match {
+        case Some(value) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedValue", left, FailureMessages.noDecorate(value + ", which was " + right)))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainValue", left, right))
       }
     }
   }
@@ -3102,6 +3230,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+    
+    def contain(right: NounMatcher[E]) {
+      left.find(right(_).matches) match {
+        case Some(noun) => 
+          if (!shouldBeTrue)
+            throw newTestFailedException(FailureMessages("containedNoun", left, right, noun))
+        case None => 
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainNoun", left, right))
       }
     }
 
@@ -5677,6 +5816,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfKeyWordApplication[T](val expectedKey: T)
+  
+  final class ResultOfKeyWordApplicationForNounMatcher[T](val nounMatcher: NounMatcher[T])
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -5695,6 +5836,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def apply[T](expectedKey: T): ResultOfKeyWordApplication[T] = new ResultOfKeyWordApplication(expectedKey)
+    
+    def apply[T](nounMatcher: NounMatcher[T]): ResultOfKeyWordApplicationForNounMatcher[T] = new ResultOfKeyWordApplicationForNounMatcher(nounMatcher)
   }
 
   /**
@@ -5714,6 +5857,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfValueWordApplication[T](val expectedValue: T)
+  
+  final class ResultOfValueWordApplicationForNounMatcher[T](val nounMatcher: NounMatcher[T])
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -5732,6 +5877,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def apply[T](expectedValue: T): ResultOfValueWordApplication[T] = new ResultOfValueWordApplication(expectedValue)
+    
+    def apply[T](nounMatcher: NounMatcher[T]): ResultOfValueWordApplicationForNounMatcher[T] = new ResultOfValueWordApplicationForNounMatcher(nounMatcher)
   }
 
   /**
