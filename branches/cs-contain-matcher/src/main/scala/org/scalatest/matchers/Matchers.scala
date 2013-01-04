@@ -1862,7 +1862,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             FailureMessages("didNotContainExpectedElement", left, expectedElement),
             FailureMessages("containedExpectedElement", left, expectedElement)
           )
-      }
+      }     
 
     //
     // This key method is called when "contain" is used in a logical expression, such as:
@@ -6409,6 +6409,38 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
   def produce[T](implicit manifest: Manifest[T]): ResultOfProduceInvocation[T] =
     new ResultOfProduceInvocation(manifest.erasure.asInstanceOf[Class[T]])
 
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfContainWordForTraversable[T](left: GenTraversable[T], shouldBeTrue: Boolean = true) {
+    
+    private def assertTheSameElementsAs[T](right: GenTraversable[T]): Boolean = 
+      left.size == right.size && left.forall(le => right.exists(_ == le))
+      
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain theSameElementsAs anotherTraversable
+     *                            ^
+     * </pre>
+     */
+    def theSameElementsAs[T](right: GenTraversable[T]) {
+      if (assertTheSameElementsAs(right) != shouldBeTrue)
+        throw newTestFailedException(
+          FailureMessages(
+           if (shouldBeTrue) "didNotContainSameElements" else "containedSameElements",
+            left,
+            right
+          )
+        )
+    }
+  
+  }
+  
   // For safe keeping
   private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
 
