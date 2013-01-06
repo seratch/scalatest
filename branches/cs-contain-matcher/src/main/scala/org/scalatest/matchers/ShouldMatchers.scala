@@ -1459,6 +1459,18 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny {
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
+     * traversable should contain customContainMatcher
+     *             ^
+     * </pre>
+     */
+    def should(containMatcher: ContainMatcher[E]) {
+      new ResultOfContainWordForTraversable(left.asInstanceOf[GenTraversable[E]], true).apply(containMatcher)
+    }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
      * traversable should be theSameInstanceAs anotherObject
      *             ^
      * </pre>
@@ -1713,6 +1725,18 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny {
      */
     def should(containWord: ContainWord) = 
       new ResultOfContainWordForTraversable(left.asInstanceOf[GenTraversable[E]], true)
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * traversable should contain customContainMatcher
+     *             ^
+     * </pre>
+     */
+    def should(containMatcher: ContainMatcher[E]) {
+      new ResultOfContainWordForTraversable(left.asInstanceOf[GenTraversable[E]], true).apply(containMatcher)
+    }
     
     /**
      * This method enables syntax such as the following:

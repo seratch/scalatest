@@ -10,6 +10,12 @@ class ContainMatcherSpec extends Spec with ShouldMatchers with SharedHelpers {
       List(1, 2, 3) should contain theSameElementsAs List(1, 2, 3)
     }
     
+    def `should work with ContainMatcher directly` {
+      val a = new TheSameElementsAsContainMatcher(List(1, 2, 3))
+      List(1, 2, 3) should contain (a)
+      Set(1, 2, 3) should contain (a)
+    }
+    
     def `should succeeded when left List contains same elements in different order as right List` {
       List(1, 2, 3) should contain theSameElementsAs List(2, 1, 3)
     }

@@ -1863,7 +1863,18 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             FailureMessages("containedExpectedElement", left, expectedElement)
           )
       }
-
+    
+    /**
+     * This method enables the following syntax, where <code>num</code> is, for example, of type <code>Int</code> and
+     * <code>odd</code> refers to a <code>BeMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * num should contain (odd)
+     *               ^
+     * </pre>
+     */
+    def apply[T](right: ContainMatcher[T]) = right
+    
     //
     // This key method is called when "contain" is used in a logical expression, such as:
     // map should { contain key 1 and equal (Map(1 -> "Howdy")) }. It results in a matcher
@@ -6417,15 +6428,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   final class ResultOfContainWordForTraversable[T](left: GenTraversable[T], shouldBeTrue: Boolean = true) {
     
-    /**
-     * This method enables the following syntax: 
-     *
-     * <pre class="stHighlight">
-     * traversable should contain customContainMatcher
-     *                            ^
-     * </pre>
-     */
-    def apply(containMatcher: ContainMatcher[T]) {
+    private[scalatest] def apply(containMatcher: ContainMatcher[T]) {
       val result = containMatcher(left)
       if (result.matches != shouldBeTrue)
         throw newTestFailedException(
