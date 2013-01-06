@@ -1862,7 +1862,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
             FailureMessages("didNotContainExpectedElement", left, expectedElement),
             FailureMessages("containedExpectedElement", left, expectedElement)
           )
-      }     
+      }
 
     //
     // This key method is called when "contain" is used in a logical expression, such as:
@@ -6417,9 +6417,22 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   final class ResultOfContainWordForTraversable[T](left: GenTraversable[T], shouldBeTrue: Boolean = true) {
     
-    private def assertTheSameElementsAs[T](right: GenTraversable[T]): Boolean = 
-      left.size == right.size && left.forall(le => right.exists(_ == le))
-      
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain customContainMatcher
+     *                            ^
+     * </pre>
+     */
+    def apply(containMatcher: ContainMatcher[T]) {
+      val result = containMatcher(left)
+      if (result.matches != shouldBeTrue)
+        throw newTestFailedException(
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
+        )
+    }
+  
     /**
      * This method enables the following syntax: 
      *
@@ -6428,17 +6441,26 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                            ^
      * </pre>
      */
-    def theSameElementsAs[T](right: GenTraversable[T]) {
-      if (assertTheSameElementsAs(right) != shouldBeTrue)
-        throw newTestFailedException(
-          FailureMessages(
-           if (shouldBeTrue) "didNotContainSameElements" else "containedSameElements",
-            left,
-            right
-          )
-        )
+    def theSameElementsAs(right: GenTraversable[T]) {
+      apply(new TheSameElementsAsContainMatcher(right))
     }
+  }
   
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  class TheSameElementsAsContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    
+    def apply(left: GenTraversable[T]): MatchResult = 
+      MatchResult(
+        left.size == right.size && left.forall(le => right.exists(_ == le)), 
+        FailureMessages("didNotContainSameElements", left, right), 
+        FailureMessages("containedSameElements", left, right)
+      )
+    
   }
   
   // For safe keeping
