@@ -2861,6 +2861,23 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * collection should not contain containMatcher
+     *                       ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[E]) {
+      val result = right(left)
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
+        )
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -6457,6 +6474,9 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   class TheSameElementsAsContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
     
+    /**
+     * This method contains the matching code for theSameElementsAs.
+     */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
         left.size == right.size && left.forall(le => right.exists(_ == le)), 
@@ -6465,6 +6485,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       )
     
   }
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * traversable should contain (theSameElementsAs(anotherTraversable))
+   *                             ^
+   * </pre>
+   */
+  def theSameElementsAs[T](xs: GenTraversable[T]) = 
+    new TheSameElementsAsContainMatcher(xs)
   
   // For safe keeping
   private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
