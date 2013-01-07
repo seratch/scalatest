@@ -118,6 +118,14 @@ class TheSameElementsAsContainMatcherSpec extends Spec with ShouldMatchers with 
       checkStackDepth(e, left, right, thisLineNumber - 2)
     }
     
+    def `should throw TestFailedException with correct stack depth and message when left List does not contain all repeated elements in right List` {
+      val left = List(1, 1, 2)
+      val right = List(1, 2, 2)
+      val e = intercept[exceptions.TestFailedException] {
+        left should contain theSameElementsAs right
+      }
+      checkStackDepth(e, left, right, thisLineNumber - 2)
+    }
   }
   
   object `not theSameElementsAs ` {

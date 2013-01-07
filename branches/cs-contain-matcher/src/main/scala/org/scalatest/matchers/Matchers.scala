@@ -6486,13 +6486,37 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   class TheSameElementsAsContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    @tailrec
+    private def checkEqual(left: Iterator[T], right: Iterator[T], remains: IndexedSeq[T]): Boolean = {
+      if (left.hasNext) {
+        val nextLeft = left.next
+        // Let's look from the remains first
+        val idx = remains.indexOf(nextLeft)
+        if (idx >= 0) {
+          // Found in remains, let's remove it from remains and continue
+          val (first, second) = remains.splitAt(idx)
+          checkEqual(left, right, first ++: second.tail)
+        }
+        else {
+          // Not found in remains, let's try right iterator
+          if (right.isEmpty) // right is empty, so the element not found
+            false
+          else {
+            val newRemains = right.takeWhile(_ != nextLeft)
+            checkEqual(left, right, remains ++: newRemains.toIndexedSeq)
+          }
+        }
+      }
+      else
+        right.isEmpty && remains.isEmpty
+    }
     
     /**
      * This method contains the matching code for theSameElementsAs.
      */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
-        left.size == right.size && left.forall(le => right.exists(_ == le)), 
+        checkEqual(left.toIterator, right.toIterator, IndexedSeq.empty), 
         FailureMessages("didNotContainSameElements", left, right), 
         FailureMessages("containedSameElements", left, right)
       )
@@ -6519,8 +6543,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
   class TheSameIteratedElementsAsContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
     @tailrec
     private def checkEqual(left: Iterator[T], right: Iterator[T]): Boolean = {
-      // The checking assume left and right has the same size (checked before calling this method)
-      if (left.hasNext) {
+      if (left.hasNext && right.hasNext) {
         val nextLeft = left.next
         val nextRight = right.next
         if (nextLeft != nextRight)
@@ -6529,7 +6552,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           checkEqual(left, right)
       }
       else
-        true
+        left.isEmpty && right.isEmpty
     }
     
     /**
@@ -6537,7 +6560,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
-        left.size == right.size && checkEqual(left.toIterator, right.toIterator), 
+        checkEqual(left.toIterator, right.toIterator), 
         FailureMessages("didNotContainSameIteratedElements", left, right), 
         FailureMessages("containedSameIteratedElements", left, right)
       )
