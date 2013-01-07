@@ -31,6 +31,7 @@ import scala.collection.GenMap
 import org.scalautils.Tolerance
 import org.scalautils.Interval
 import org.scalautils.TripleEqualsInvocation
+import scala.annotation.tailrec
 
 // TODO: drop generic support for be as an equality comparison, in favor of specific ones.
 // TODO: mention on JUnit and TestNG docs that you can now mix in ShouldMatchers or MustMatchers
@@ -6464,6 +6465,18 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def theSameElementsAs(right: GenTraversable[T]) {
       apply(new TheSameElementsAsContainMatcher(right))
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain theSameIteratedElementsAs anotherTraversable
+     *                            ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenTraversable[T]) {
+      apply(new TheSameIteratedElementsAsContainMatcher(right))
+    }
   }
   
   /**
@@ -6496,6 +6509,51 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def theSameElementsAs[T](xs: GenTraversable[T]) = 
     new TheSameElementsAsContainMatcher(xs)
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  class TheSameIteratedElementsAsContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    @tailrec
+    private def checkEqual(left: Iterator[T], right: Iterator[T]): Boolean = {
+      // The checking assume left and right has the same size (checked before calling this method)
+      if (left.hasNext) {
+        val nextLeft = left.next
+        val nextRight = right.next
+        if (nextLeft != nextRight)
+          false
+        else
+          checkEqual(left, right)
+      }
+      else
+        true
+    }
+    
+    /**
+     * This method contains the matching code for theSameIteratedElementsAs.
+     */
+    def apply(left: GenTraversable[T]): MatchResult = 
+      MatchResult(
+        left.size == right.size && checkEqual(left.toIterator, right.toIterator), 
+        FailureMessages("didNotContainSameIteratedElements", left, right), 
+        FailureMessages("containedSameIteratedElements", left, right)
+      )
+    
+  }
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * traversable should contain (theSameIteratedElementsAs(anotherTraversable))
+   *                             ^
+   * </pre>
+   */
+  def theSameIteratedElementsAs[T](xs: GenTraversable[T]) = 
+    new TheSameIteratedElementsAsContainMatcher(xs)
   
   // For safe keeping
   private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
