@@ -2,13 +2,13 @@ package org.scalatest.matchers
 
 import org.scalatest._
 
-class ContainMatcherSpec extends Spec with ShouldMatchers with SharedHelpers {
+class TheSameElementsAsContainMatcherSpec extends Spec with ShouldMatchers with SharedHelpers {
 
   object `theSameElementsAs ` {
     
     def checkStackDepth(e: exceptions.StackDepthException, left: Any, right: Any, lineNumber: Int) {
       e.message should be (Some(left + " did not contain the same elements as " + right))
-      e.failedCodeFileName should be (Some("ContainMatcherSpec.scala"))
+      e.failedCodeFileName should be (Some("TheSameElementsAsContainMatcherSpec.scala"))
       e.failedCodeLineNumber should be (Some(lineNumber))
     }
     
@@ -124,7 +124,7 @@ class ContainMatcherSpec extends Spec with ShouldMatchers with SharedHelpers {
     
     def checkStackDepth(e: exceptions.StackDepthException, left: Any, right: Any, lineNumber: Int) {
       e.message should be (Some(left + " contained the same elements as " + right))
-      e.failedCodeFileName should be (Some("ContainMatcherSpec.scala"))
+      e.failedCodeFileName should be (Some("TheSameElementsAsContainMatcherSpec.scala"))
       e.failedCodeLineNumber should be (Some(lineNumber))
     }
     
@@ -144,15 +144,15 @@ class ContainMatcherSpec extends Spec with ShouldMatchers with SharedHelpers {
       Set(1, 2, 8) should not contain theSameElementsAs(List(1, 2, 3))
     }
     
-    def `should succeeded when left List contains same elements in different order as right List` {
+    def `should succeeded when left List contains different elements in different order as right List` {
       List(1, 2, 3) should not contain theSameElementsAs (List(2, 1, 8))
     }
     
-    def `should succeeded when left List contains same elements in different order as right Set` {
+    def `should succeeded when left List contains different elements in different order as right Set` {
       List(1, 2, 3) should not contain theSameElementsAs (Set(2, 1, 8))
     }
     
-    def `should succeeded when left List contains same elements in same order as right Set` {
+    def `should succeeded when left List contains different elements in same order as right Set` {
       List(1, 2, 3) should not contain theSameElementsAs (Set(1, 2, 8))
     }
     
