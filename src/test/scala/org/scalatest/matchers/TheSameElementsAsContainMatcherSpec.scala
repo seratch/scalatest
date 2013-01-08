@@ -188,7 +188,7 @@ class TheSameElementsAsContainMatcherSpec extends Spec with ShouldMatchers with 
       checkStackDepth(e4, left2, matcherRight, thisLineNumber - 2)
     }
     
-    def `should throw TestFailedException with correct stack depth and message when left and right List are same size but contain different elements` {
+    def `should throw TestFailedException with correct stack depth and message when left and right List are same size but contain same elements in different order` {
       val left = List(1, 2, 3)
       val right = List(2, 1, 3)
       val e = intercept[exceptions.TestFailedException] {
@@ -197,7 +197,7 @@ class TheSameElementsAsContainMatcherSpec extends Spec with ShouldMatchers with 
       checkStackDepth(e, left, right, thisLineNumber - 2)
     }
     
-    def `should throw TestFailedException with correct stack depth and message when left List and right Set are same size but contain different elements` {
+    def `should throw TestFailedException with correct stack depth and message when left List and right Set are same size but contain same elements in different order` {
       val left = List(2, 3, 5)
       val right = Set(2, 5, 3)
       val e = intercept[exceptions.TestFailedException] {
