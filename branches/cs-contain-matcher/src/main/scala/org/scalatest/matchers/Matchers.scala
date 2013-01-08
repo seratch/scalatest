@@ -6477,6 +6477,30 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def theSameIteratedElementsAs(right: GenTraversable[T]) {
       apply(new TheSameIteratedElementsAsContainMatcher(right))
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain allOf (1, 2)
+     *                            ^
+     * </pre>
+     */
+    def allOf(right: T*) {
+      apply(new AllOfContainMatcher(right))
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain inOrder (1, 2)
+     *                            ^
+     * </pre>
+     */
+    def inOrder(right: T*) {
+      apply(new InOrderContainMatcher(right))
+    }
   }
   
   /**
@@ -6577,6 +6601,111 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def theSameIteratedElementsAs[T](xs: GenTraversable[T]) = 
     new TheSameIteratedElementsAsContainMatcher(xs)
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  class AllOfContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    @tailrec
+    private def checkEqual(left: GenTraversable[T], rightItr: Iterator[T], processedSet: Set[T]): Boolean = {
+      if (rightItr.hasNext) {
+        val nextRight = rightItr.next
+        if (processedSet.contains(nextRight))
+          throw new IllegalArgumentException(FailureMessages("allOfDuplicate", nextRight))
+        if (left.exists(_ == nextRight)) 
+          checkEqual(left, rightItr, processedSet + nextRight)
+        else
+          false // Element not found, let's fail early
+      }
+      else // No more element in right, left contains all of right.
+        true
+    }
+    
+    /**
+     * This method contains the matching code for theSameIteratedElementsAs.
+     */
+    def apply(left: GenTraversable[T]): MatchResult = 
+      MatchResult(
+        checkEqual(left, right.toIterator, Set.empty), 
+        FailureMessages("didNotContainAllOfElements", left, FailureMessages.noDecorate(right.mkString(", "))), 
+        FailureMessages("containedAllOfElements", left, FailureMessages.noDecorate(right.mkString(", ")))
+      )
+  }
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * List(1, 2, 3) should contain (allOf(1, 2))
+   *                               ^
+   * </pre>
+   */
+  def allOf[T](xs: T*) = 
+    new AllOfContainMatcher(xs)
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  class InOrderContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    
+    @tailrec
+    private def lastIndexOf(itr: Iterator[T], element: T, idx: Option[Int], i: Int): Option[Int] = {
+      if (itr.hasNext) {
+        val next = itr.next
+        if (next == element)
+          lastIndexOf(itr, element, Some(i), i + 1)
+        else
+          lastIndexOf(itr, element, idx, i + 1)
+      }
+      else
+        idx
+    }
+    
+    @tailrec
+    private def checkEqual(left: GenTraversable[T], rightItr: Iterator[T], processedSet: Set[T]): Boolean = {
+      
+      if (rightItr.hasNext) {
+        val nextRight = rightItr.next
+        if (processedSet.contains(nextRight))
+            throw new IllegalArgumentException(FailureMessages("inOrderDuplicate", nextRight))
+        lastIndexOf(left.toIterator, nextRight, None, 0) match {
+          case Some(idx) => 
+            checkEqual(left.drop(idx).tail, rightItr, processedSet + nextRight)
+          case None => 
+            false // Element not found, let's fail early
+        }
+      }
+      else // No more element in right, left contains all of right.
+        true
+    }
+    
+    /**
+     * This method contains the matching code for theSameIteratedElementsAs.
+     */
+    def apply(left: GenTraversable[T]): MatchResult = 
+      MatchResult(
+        checkEqual(left, right.toIterator, Set.empty), 
+        FailureMessages("didNotContainAllOfElementsInOrder", left, FailureMessages.noDecorate(right.mkString(", "))), 
+        FailureMessages("containedAllOfElementsInOrder", left, FailureMessages.noDecorate(right.mkString(", ")))
+      )
+  }
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * List(1, 2, 3) should contain (inOrder(1, 2))
+   *                               ^
+   * </pre>
+   */
+  def inOrder[T](xs: T*) = 
+    new InOrderContainMatcher(xs)
   
   // For safe keeping
   private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
