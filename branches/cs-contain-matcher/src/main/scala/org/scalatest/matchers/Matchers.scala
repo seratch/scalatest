@@ -6501,6 +6501,30 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def inOrder(right: T*) {
       apply(new InOrderContainMatcher(right))
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain oneOf (1, 2)
+     *                            ^
+     * </pre>
+     */
+    def oneOf(right: T*) {
+      apply(new OneOfContainMatcher(right))
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain only (1, 2)
+     *                            ^
+     * </pre>
+     */
+    def only(right: T*) {
+      apply(new OnlyContainMatcher(right))
+    }
   }
   
   /**
@@ -6706,6 +6730,115 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def inOrder[T](xs: T*) = 
     new InOrderContainMatcher(xs)
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  class OneOfContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    
+    @tailrec
+    private def checkEqual(left: GenTraversable[T], rightItr: Iterator[T], processedSet: Set[T]): Boolean = {
+      
+      if (rightItr.hasNext) {
+        val nextRight = rightItr.next
+        if (processedSet.contains(nextRight))
+            throw new IllegalArgumentException(FailureMessages("oneOfDuplicate", nextRight))
+        if (left.exists(_ == nextRight)) // Found one of right in left, can succeed early
+          true
+        else
+          checkEqual(left, rightItr, processedSet + nextRight)
+      }
+      else // No more element in right, left does not contain one of right.
+        false
+    }
+    
+    /**
+     * This method contains the matching code for theSameIteratedElementsAs.
+     */
+    def apply(left: GenTraversable[T]): MatchResult = 
+      MatchResult(
+        checkEqual(left, right.toIterator, Set.empty), 
+        FailureMessages("didNotContainOneOfElements", left, FailureMessages.noDecorate(right.mkString(", "))), 
+        FailureMessages("containedOneOfElements", left, FailureMessages.noDecorate(right.mkString(", ")))
+      )
+  }
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * List(1, 2, 3) should contain (oneOf(1, 2))
+   *                               ^
+   * </pre>
+   */
+  def oneOf[T](xs: T*) = 
+    new OneOfContainMatcher(xs)
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  class OnlyContainMatcher[T](right: GenTraversable[T]) extends ContainMatcher[T] {
+    
+    @tailrec
+    private def findNext(value: T, rightItr: Iterator[T], processedSet: Set[T]): Set[T] = 
+      if (rightItr.hasNext) {
+        val nextRight = rightItr.next
+        if (processedSet.contains(nextRight))
+            throw new IllegalArgumentException(FailureMessages("onlyDuplicate", nextRight))
+        if (nextRight == value)
+          processedSet + nextRight
+        else
+          findNext(value, rightItr, processedSet + nextRight)
+      }
+      else
+        processedSet
+     
+    @tailrec
+    private def checkEqual(leftItr: Iterator[T], rightItr: Iterator[T], processedSet: Set[T]): Boolean = {
+      if (leftItr.hasNext) {
+        val nextLeft = leftItr.next
+        if (processedSet.contains(nextLeft)) // The nextLeft is contained in right, let's continue next
+          checkEqual(leftItr, rightItr, processedSet)
+        else {
+          //val rightList = rightItr.takeWhile(_ != nextLeft)
+          val newProcessedSet = findNext(nextLeft, rightItr, processedSet)
+          if (newProcessedSet.contains(nextLeft)) // The nextLeft is contained in right, let's continue next
+            checkEqual(leftItr, rightItr, newProcessedSet)
+          else // The nextLeft is not in right, let's fail early
+            false
+        }
+      }
+      else // No more element in left, left contains only elements of right.
+        true
+    }
+    
+    /**
+     * This method contains the matching code for theSameIteratedElementsAs.
+     */
+    def apply(left: GenTraversable[T]): MatchResult = 
+      MatchResult(
+        checkEqual(left.toIterator, right.toIterator, Set.empty), 
+        FailureMessages("didNotContainOnlyElements", left, FailureMessages.noDecorate(right.mkString(", "))), 
+        FailureMessages("containedOnlyElements", left, FailureMessages.noDecorate(right.mkString(", ")))
+      )
+  }
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * List(1, 2, 3) should contain (only(1, 2))
+   *                               ^
+   * </pre>
+   */
+  def only[T](xs: T*) = 
+    new OnlyContainMatcher(xs)
   
   // For safe keeping
   private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
