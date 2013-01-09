@@ -1,0 +1,419 @@
+/*
+ * Copyright 2001-2011 Artima, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.scalatest
+
+import scala.collection.immutable.TreeSet
+import org.scalatest.events._
+import java.lang.annotation.AnnotationFormatError
+import java.nio.charset.CoderMalfunctionError
+import javax.xml.parsers.FactoryConfigurationError
+import javax.xml.transform.TransformerFactoryConfigurationError
+import java.awt.AWTError
+
+/* Uncomment after remove type aliases in org.scalatest package object
+import org.scalatest.exceptions.NotAllowedException
+import org.scalatest.exceptions.TestFailedException
+*/
+
+class SuiteSuite extends Suite with PrivateMethodTester with SharedHelpers with SeveredStackTraces {
+
+  def testNamesAndGroupsMethodsDiscovered() {
+
+    val a = new Suite {
+      def testNames(info: Informer): Unit = ()
+    }
+    assert(a.expectedTestCount(Filter()) === 1)
+    val tnResult: Set[String] = a.testNames
+    val gResult: Map[String, Set[String]] = a.tags
+    assert(tnResult.size === 1)
+    assert(gResult.keySet.size === 0)
+  }
+
+  def testThatTestMethodsWithNoGroupsDontShowUpInGroupsMap() {
+    
+    val a = new Suite {
+      def testNotInAGroup() = ()
+    }
+    assert(a.tags.keySet.size === 0)
+  }
+
+  def testThatTestMethodsThatReturnNonUnitAreDiscovered() {
+    val a = new Suite {
+      def testThis(): Int = 1
+      def testThat(info: Informer): String = "hi"
+    }
+    assert(a.expectedTestCount(Filter()) === 2)
+    assert(a.testNames.size === 2)
+    assert(a.tags.keySet.size === 0)
+  }
+
+  def testThatOverloadedTestMethodsAreDiscovered() {
+    val a = new Suite {
+      def testThis() = ()
+      def testThis(info: Informer) = ()
+    }
+    assert(a.expectedTestCount(Filter()) === 2)
+    assert(a.testNames.size === 2)
+    assert(a.tags.keySet.size === 0)
+  }
+
+  def testThatInterceptCatchesSubtypes() {
+    class MyException extends RuntimeException
+    class MyExceptionSubClass extends MyException
+    intercept[MyException] {
+      throw new MyException
+      new AnyRef // This is needed because right now Nothing doesn't overload as an Any
+    }
+    intercept[MyException] {
+      throw new MyExceptionSubClass
+      new AnyRef // This is needed because right now Nothing doesn't overload as an Any
+    }
+    // Try with a trait
+    trait MyTrait {
+      def someRandomMethod() {}
+    }
+    class AnotherException extends RuntimeException with MyTrait
+    val caught = intercept[MyTrait] {
+      throw new AnotherException
+      new AnyRef // This is needed because right now Nothing doesn't overload as an Any
+    }
+    // Make sure the result type is the type passed in, so I can 
+    // not cast and still invoke any method on it I want
+    caught.someRandomMethod()
+  }
+
+  def testThatInterceptReturnsTheCaughtException() {
+    val e = new RuntimeException
+    val result = intercept[RuntimeException] {
+      throw e
+      new AnyRef // This is needed because right now Nothing doesn't overload as an Any
+    }
+    assert(result eq e)
+  }
+
+  def testStripDollars() {
+    expectResult("MySuite") {
+     Suite.stripDollars("line8$object$$iw$$iw$$iw$$iw$$iw$MySuite")
+    }
+    expectResult("MySuite") {
+     Suite.stripDollars("MySuite")
+    }
+    expectResult("nested.MySuite") {
+     Suite.stripDollars("nested.MySuite")
+    }
+    expectResult("$$$") {
+     Suite.stripDollars("$$$") 
+    }
+    expectResult("DollarAtEnd") {
+     Suite.stripDollars("DollarAtEnd$") 
+    }
+    expectResult("DollarAtEnd") {
+     Suite.stripDollars("line8$object$$iw$$iw$$iw$$iw$$iw$DollarAtEnd$")
+    }
+    expectResult("MySuite$1") {
+     Suite.stripDollars("MySuite$1")
+    }
+    expectResult("ExampleSuite") {
+      Suite.stripDollars("$read$$iw$$iw$$iw$$iw$ExampleSuite")
+    }
+    expectResult("Fred") {
+      Suite.stripDollars("$line19.$read$$iw$$iw$Fred$")
+    }
+  }
+  
+  def testDiffStrings() {
+    expectResult(("[]", "[a]")) { Suite.diffStrings("", "a") }
+    expectResult(("[a]", "[]")) { Suite.diffStrings("a", "") }
+    expectResult(("a[]", "a[b]")) { Suite.diffStrings("a", "ab") }
+    expectResult(("a[b]", "a[]")) { Suite.diffStrings("ab", "a") }
+    expectResult(("[a]", "[b]")) { Suite.diffStrings("a", "b") }
+    expectResult(("[a]big", "[]big")) { Suite.diffStrings("abig", "big") }
+    expectResult(("[]big", "[a]big")) { Suite.diffStrings("big", "abig") }
+    expectResult(("big[a]", "big[]")) { Suite.diffStrings("biga", "big") }
+    expectResult(("big[]", "big[a]")) { Suite.diffStrings("big", "biga") }
+    expectResult(("small[a]big", "small[]big")) { Suite.diffStrings("smallabig", "smallbig") }
+    expectResult(("0123456789[]0123456789", "0123456789[a]0123456789")) {
+      Suite.diffStrings("01234567890123456789", "0123456789a0123456789")
+    }
+    expectResult(("...01234567890123456789[]0123456789", "...01234567890123456789[a]0123456789")) {
+      Suite.diffStrings("X012345678901234567890123456789", "X01234567890123456789a0123456789")
+    }
+    expectResult(("01234567890123456789[]01234567890123456789...", "01234567890123456789[a]01234567890123456789...")) {
+        Suite.diffStrings("0123456789012345678901234567890123456789X", "01234567890123456789a01234567890123456789X")
+    }
+    expectResult(("...01234567890123456789[]01234567890123456789...", "...01234567890123456789[a]01234567890123456789...")) {
+        Suite.diffStrings("XXXX0123456789012345678901234567890123456789XX", "XXXX01234567890123456789a01234567890123456789XX")
+    }
+    expectResult(("...01234567890123456789[]01234567890123456789...", "...01234567890123456789[a]01234567890123456789...")) {
+        Suite.diffStrings("X0123456789012345678901234567890123456789X", "X01234567890123456789a01234567890123456789X")
+    }
+  }
+
+  def testDecorateToStringValue() {
+
+    val decorateToStringValue = PrivateMethod[String]('decorateToStringValue)
+
+    expectResult("1") {
+      FailureMessages invokePrivate decorateToStringValue(1.toByte)
+    }
+    expectResult("1") {
+      FailureMessages invokePrivate decorateToStringValue(1.toShort)
+    }
+    expectResult("1") {
+      FailureMessages invokePrivate decorateToStringValue(1)
+    }
+    expectResult("10") {
+      FailureMessages invokePrivate decorateToStringValue(10L)
+    }
+    expectResult("1.0") {
+      FailureMessages invokePrivate decorateToStringValue(1.0f)
+    }
+    expectResult("1.0") {
+      FailureMessages invokePrivate decorateToStringValue(1.0)
+    }
+    expectResult("false") {
+      FailureMessages invokePrivate decorateToStringValue(false)
+    }
+    expectResult("true") {
+      FailureMessages invokePrivate decorateToStringValue(true)
+    }
+    expectResult("<(), the Unit value>") {
+      FailureMessages invokePrivate decorateToStringValue(())
+    }
+    expectResult("\"Howdy!\"") {
+      FailureMessages invokePrivate decorateToStringValue("Howdy!")
+    }
+    expectResult("'c'") {
+      FailureMessages invokePrivate decorateToStringValue('c')
+    }
+    expectResult("Hey!") {
+      FailureMessages invokePrivate decorateToStringValue(new AnyRef { override def toString = "Hey!"})
+    }
+  }
+
+  def testTestDurations() {
+
+    class MySuite extends Suite {
+      def testSucceeds() = ()
+      def testFails() { fail() }
+    }
+
+    val mySuite = new MySuite
+    val myReporter = new TestDurationReporter
+    mySuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
+    assert(myReporter.testSucceededWasFiredAndHadADuration)
+    assert(myReporter.testFailedWasFiredAndHadADuration)
+  }
+
+  def testSuiteDurations() {
+
+    // the suite duration is sent by runNestedSuites, so MySuite needs a
+    // nested suite
+    class MySuite extends Suite {
+      override def nestedSuites = List(new Suite {})
+      def testSucceeds() = ()
+      def testFails() { fail() }
+    }
+
+    val mySuite = new MySuite
+    val myReporter = new SuiteDurationReporter
+    mySuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
+    assert(myReporter.suiteCompletedWasFiredAndHadADuration)
+
+    class SuiteThatAborts extends Suite {
+      override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+              config: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+        throw new RuntimeException("Aborting for testing purposes")
+      }
+    }
+
+    // the suite duration is sent by runNestedSuites, so MySuite needs a
+    // nested suite
+    class MyOtherSuite extends Suite {
+      override def nestedSuites = List(new SuiteThatAborts)
+      def testSucceeds() = ()
+      def testFails() { fail() }
+    }
+
+    val myOtherSuite = new MyOtherSuite
+    val myOtherReporter = new SuiteDurationReporter
+    myOtherSuite.run(None, myOtherReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
+    assert(myOtherReporter.suiteAbortedWasFiredAndHadADuration)
+  }
+
+  def testPending() {
+
+    class MySuite extends Suite {
+      def testPending() { pending }
+    }
+
+    val mySuite = new MySuite
+    val myReporter = new PendingReporter
+    mySuite.run(None, myReporter, new Stopper {}, Filter(), Map(), None, new Tracker(new Ordinal(99)))
+    assert(myReporter.testPendingWasFired)
+  }
+
+  def testPrettifyArray() {
+
+    import FailureMessages.prettifyArrays
+
+    // non arrays print just a toString
+    assert(prettifyArrays(1) === "1")
+    assert(prettifyArrays("hi") === "hi")
+    assert(prettifyArrays(List(1, 2, 3)) === "List(1, 2, 3)")
+    assert(prettifyArrays(Map("one" -> 1)) === "Map(one -> 1)")
+
+    // arrays print pretty
+    assert(prettifyArrays(Array(1, 2)) === "Array(1, 2)")
+
+    // arrays of arrays print pretty
+    assert(prettifyArrays(Array(Array(1, 2), Array(3, 4))) === "Array(Array(1, 2), Array(3, 4))")
+  }
+
+  def testExecute() {
+    class TestWasCalledSuite extends Suite {
+      var theTestThisCalled = false
+      var theTestThatCalled = false
+      var theTestThisConfigMapWasEmpty = true
+      var theTestThatConfigMapWasEmpty = true
+      override def withFixture(test: NoArgTest) {
+        if (test.configMap.size > 0)
+          test.name match {
+            case "testThis" => theTestThisConfigMapWasEmpty = false
+            case "testThat" => theTestThatConfigMapWasEmpty = false
+            case _ => throw new Exception("Should never happen")
+          }
+        test()
+      }
+      def testThis() { theTestThisCalled = true }
+      def testThat() { theTestThatCalled = true }
+    }
+
+    val s1 = new TestWasCalledSuite
+    s1.execute()
+    assert(s1.theTestThisCalled)
+    assert(s1.theTestThatCalled)
+    assert(s1.theTestThisConfigMapWasEmpty)
+    assert(s1.theTestThatConfigMapWasEmpty)
+
+    val s2 = new TestWasCalledSuite
+    s2.execute("testThis")
+    assert(s2.theTestThisCalled)
+    assert(!s2.theTestThatCalled)
+    assert(s2.theTestThisConfigMapWasEmpty)
+    assert(s2.theTestThatConfigMapWasEmpty)
+
+    val s3 = new TestWasCalledSuite
+    s3.execute(configMap = Map("s" -> "s"))
+    assert(s3.theTestThisCalled)
+    assert(s3.theTestThatCalled)
+    assert(!s3.theTestThisConfigMapWasEmpty)
+    assert(!s3.theTestThatConfigMapWasEmpty)
+
+    val s4 = new TestWasCalledSuite
+    s4.execute("testThis", Map("s" -> "s"))
+    assert(s4.theTestThisCalled)
+    assert(!s4.theTestThatCalled)
+    assert(!s4.theTestThisConfigMapWasEmpty)
+    assert(s4.theTestThatConfigMapWasEmpty)
+
+    val s5 = new TestWasCalledSuite
+    s5.execute(testName = "testThis")
+    assert(s5.theTestThisCalled)
+    assert(!s5.theTestThatCalled)
+    assert(s5.theTestThisConfigMapWasEmpty)
+    assert(s5.theTestThatConfigMapWasEmpty)
+
+    val s6 = new TestWasCalledSuite
+    s6.execute(testName = "testThis", configMap = Map("s" -> "s"))
+    assert(s6.theTestThisCalled)
+    assert(!s6.theTestThatCalled)
+    assert(!s6.theTestThisConfigMapWasEmpty)
+    assert(s6.theTestThatConfigMapWasEmpty)
+  }
+  
+  def testCheckChosenStyles() {
+    class SimpleSuite extends Suite {
+      def testMethod1() {}
+      def testMethod2() {}
+      def testMethod3() {}
+    }
+    
+    val simpleSuite = new SimpleSuite()
+    simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map.empty, None, new Tracker)
+    simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.Suite")), None, new Tracker)
+    val caught =
+      intercept[NotAllowedException] {
+        simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec")), None, new Tracker)
+      }
+    import OptionValues._
+    assert(caught.message.value === Resources("notTheChosenStyle", "org.scalatest.Suite", "org.scalatest.FunSpec"))
+    val caught2 =
+      intercept[NotAllowedException] {
+        simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec")), None, new Tracker)
+      }
+    assert(caught2.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.Suite", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec"))))
+    val caught3 =
+      intercept[NotAllowedException] {
+        simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec")), None, new Tracker)
+      }
+    assert(caught3.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.Suite", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec"))))
+  }
+
+  def testMakeListForHumans() {
+    assert(Suite.makeListForHumans(Vector.empty) === "<empty list>")
+    assert(Suite.makeListForHumans(Vector("")) === "\"\"")
+    assert(Suite.makeListForHumans(Vector("   ")) === "\"   \"")
+    assert(Suite.makeListForHumans(Vector("FunSuite FunSpec")) === "\"FunSuite FunSpec\"")
+    assert(Suite.makeListForHumans(Vector("hi")) === "hi")
+    assert(Suite.makeListForHumans(Vector("ho")) === "ho")
+    assert(Suite.makeListForHumans(Vector("hi", "ho")) === Resources("leftAndRight", "hi", "ho"))
+    assert(Suite.makeListForHumans(Vector("fee", "fie", "foe", "fum")) === "fee, fie, " + Resources("leftCommaAndRight", "foe", "fum"))
+    assert(Suite.makeListForHumans(Vector("A", "stitch", "in", "time", "saves", "nine")) === "A, stitch, in, time, " + Resources("leftCommaAndRight", "saves", "nine"))
+    assert(Suite.makeListForHumans(Vector("fee ", "fie", " foe", "fum")) === "\"fee \", fie, " + Resources("leftCommaAndRight", "\" foe\"", "fum"))
+  }
+
+  def testStackDepth() {
+    class TestSpec extends Suite {
+      def testFailure() {
+        assert(1 === 2)
+      }
+    }
+    val rep = new EventRecordingReporter
+    val s1 = new TestSpec
+    s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
+    assert(rep.testFailedEventsReceived.size === 1)
+    assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "SuiteSuite.scala")
+    assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 8)
+  }
+
+  def testAnErrorThatShouldCauseAnAbort() {
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new AnnotationFormatError("oops")) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new AWTError("ouch")) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new CoderMalfunctionError(new Exception)) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new FactoryConfigurationError) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new LinkageError) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new ThreadDeath) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new TransformerFactoryConfigurationError) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new VirtualMachineError {}) }
+    expectResult(true) { Suite.anErrorThatShouldCauseAnAbort(new OutOfMemoryError) }
+    expectResult(false) { Suite.anErrorThatShouldCauseAnAbort(new AssertionError) }
+    expectResult(false) { Suite.anErrorThatShouldCauseAnAbort(new RuntimeException) }
+    expectResult(false) { Suite.anErrorThatShouldCauseAnAbort(new AssertionError) }
+    expectResult(false) { Suite.anErrorThatShouldCauseAnAbort(new AssertionError) }
+  }
+}
+
