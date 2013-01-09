@@ -41,10 +41,40 @@ object GenMatchers {
     val junitDir = new File(targetDir, "junit")
     junitDir.mkdirs()
 
+    val matchersFile = new File(matchersDir, "Matchers.scala")
+    val matchersWriter = new BufferedWriter(new FileWriter(matchersFile))
+    try {
+      val lines = Source.fromFile(new File("project/Matchers.template")).getLines.toList
+      for (line <- lines) {
+        matchersWriter.write(line)
+        matchersWriter.newLine()
+      }
+    }
+    finally {
+      matchersWriter.flush()
+      matchersWriter.close()
+      println("Generated " + matchersFile.getAbsolutePath)
+    }
+
+    val shouldMatchersFile = new File(matchersDir, "ShouldMatchers.scala")
+    val shouldMatchersWriter = new BufferedWriter(new FileWriter(shouldMatchersFile))
+    try {
+      val lines = Source.fromFile(new File("project/ShouldMatchers.template")).getLines.toList
+      for (line <- lines) {
+        shouldMatchersWriter.write(line)
+        shouldMatchersWriter.newLine()
+      }
+    }
+    finally {
+      shouldMatchersWriter.flush()
+      shouldMatchersWriter.close()
+      println("Generated " + shouldMatchersFile.getAbsolutePath)
+    }
+
     val mustMatchersFile = new File(matchersDir, "MustMatchers.scala")
     val mustMatchersWriter = new BufferedWriter(new FileWriter(mustMatchersFile))
     try {
-      val lines = Source.fromFile(new File("src/main/scala/org/scalatest/matchers/ShouldMatchers.scala")).getLines.toList
+      val lines = Source.fromFile(new File("project/ShouldMatchers.template")).getLines.toList
       for (line <- lines) {
         val mustLine = translateShouldToMust(line)
         mustMatchersWriter.write(mustLine)
@@ -155,6 +185,6 @@ object GenMatchers {
     val targetDir = args(0)
     val scalaVersion = args(1)
     genMain(new File(targetDir + "/main/scala/org/scalatest/"), scalaVersion)
-    // genTest(new File("gen/" + targetDir + "/test/scala/org/scalatest/"), scalaVersion)
+    genTest(new File("gen/" + targetDir + "/test/scala/org/scalatest/"), scalaVersion)
   }
 }

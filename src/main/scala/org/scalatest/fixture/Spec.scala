@@ -300,16 +300,10 @@ trait Spec extends Suite  { thisSuite =>
             val scope = isScopeMethod(o, m)
             if (scope) {
               val scopeDesc = getScopeDesc(m)
-              def scopeFun = 
-                try {
-                  val scopeObj = m.invoke(o)
-                  register(scopeObj)
-                }
-                catch {
-                  case ite: InvocationTargetException if ite.getTargetException != null =>
-                    throw ite.getTargetException
-                }
-              
+              def scopeFun = {
+                val scopeObj = m.invoke(o)
+                register(scopeObj)
+              }
               val scopeLocation = TopOfClass(m.getReturnType.getName)
               registerNestedBranch(scopeDesc, None, scopeFun, "registrationAlreadyClosed", sourceFileName, "ensureScopesAndTestsRegistered", 2, 0, Some(scopeLocation))
             }
@@ -573,7 +567,7 @@ trait Spec extends Suite  { thisSuite =>
    */
   final override val styleName: String = "org.scalatest.fixture.Spec"
 
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = createTestDataFor(testName, theConfigMap, this)
+  override def testDataFor(testName: String, theConfigMap: Map[String, Any] = Map.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 
 private[scalatest] object Spec {

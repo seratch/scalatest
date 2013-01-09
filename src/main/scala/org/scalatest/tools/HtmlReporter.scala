@@ -279,7 +279,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
                 scopeStack.pop
                 NodeSeq.Empty
           
-              case TestSucceeded(ordinal, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
+              case TestSucceeded(ordinal, suiteName, suiteID, suiteClassName, testName, testText, recordedEvents, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
             
                 val stringToPrint = stringToPrintWhenNoError("testSucceeded", formatter, suiteName, Some(testName), duration)
 
@@ -294,7 +294,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
             
                 nodeSeq :: recordedEvents.map(processInfoMarkupProvided(_)).toList
             
-              case TestFailed(ordinal, message, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
+              case TestFailed(ordinal, message, suiteName, suiteID, suiteClassName, testName, testText, recordedEvents, throwable, duration, formatter, location, rerunnable, payload, threadName, timeStamp) => 
 
                 val stringToPrint = stringsToPrintOnError("failedNote", "testFailed", message, throwable, formatter, Some(suiteName), Some(testName), duration)
                 val elementId = generateElementId
@@ -302,7 +302,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
             
                 nodeSeq :: recordedEvents.map(processInfoMarkupProvided(_)).toList
             
-              case TestIgnored(ordinal, suiteName, suiteId, suiteClassName, testName, testText, formatter, location, payload, threadName, timeStamp) => 
+              case TestIgnored(ordinal, suiteName, suiteID, suiteClassName, testName, testText, formatter, location, payload, threadName, timeStamp) => 
 
                 val stringToPrint =
                   formatter match {
@@ -319,7 +319,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
                     NodeSeq.Empty
                 }
               
-              case TestPending(ordinal, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, duration, formatter, location, payload, threadName, timeStamp) =>
+              case TestPending(ordinal, suiteName, suiteID, suiteClassName, testName, testText, recordedEvents, duration, formatter, location, payload, threadName, timeStamp) =>
 
                 val stringToPrint =
                   formatter match {
@@ -339,7 +339,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
             
                 nodeSeq :: recordedEvents.map(processInfoMarkupProvided(_)).toList
             
-              case TestCanceled(ordinal, message, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
+              case TestCanceled(ordinal, message, suiteName, suiteID, suiteClassName, testName, testText, recordedEvents, throwable, duration, formatter, location, payload, threadName, timeStamp) =>
 
                 val stringToPrint = stringsToPrintOnError("canceledNote", "testCanceled", message, throwable, formatter, Some(suiteName), Some(testName), duration)
                 val elementId = generateElementId
@@ -372,7 +372,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
             <td id="suite_footer_duration_value" colspan="2">
               { 
                 suiteResult.duration match {
-                  case Some(duration) => makeDurationString(duration)
+                  case Some(duration) => duration + " milliseconds"
                   case None => "-"
                 } 
               }
@@ -895,8 +895,6 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
         val (suiteEvents, otherEvents) = extractSuiteEvents(suiteId)
         eventList = otherEvents
         val sortedSuiteEvents = suiteEvents.sorted
-        if (sortedSuiteEvents.length == 0)
-          throw new IllegalStateException("Expected SuiteStarting for completion event: " + event + " in the head of suite events, but we got no suite event at all")
         sortedSuiteEvents.head match {
           case suiteStarting: SuiteStarting => 
             val suiteResult = sortedSuiteEvents.foldLeft(SuiteResult(suiteId, suiteName, suiteClassName, duration, suiteStarting, event, Vector.empty ++ sortedSuiteEvents.tail, 0, 0, 0, 0, 0, true)) { case (r, e) => 
@@ -912,15 +910,13 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
             results += suiteResult
             makeSuiteFile(suiteResult)
           case other => 
-            throw new IllegalStateException("Expected SuiteStarting for completion event: " + event +  " in the head of suite events, but we got: " + other)
+            throw new IllegalStateException("Expected SuiteStarting in the head of suite events, but we got: " + other.getClass.getName)
         }
             
       case SuiteAborted(ordinal, message, suiteName, suiteId, suiteClassName, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
         val (suiteEvents, otherEvents) = extractSuiteEvents(suiteId)
         eventList = otherEvents
         val sortedSuiteEvents = suiteEvents.sorted
-        if (sortedSuiteEvents.length == 0)
-          throw new IllegalStateException("Expected SuiteStarting for completion event: " + event + " in the head of suite events, but we got no suite event at all")
         sortedSuiteEvents.head match {
           case suiteStarting: SuiteStarting => 
             val suiteResult = sortedSuiteEvents.foldLeft(SuiteResult(suiteId, suiteName, suiteClassName, duration, suiteStarting, event, Vector.empty ++ sortedSuiteEvents.tail, 0, 0, 0, 0, 0, false)) { case (r, e) => 
@@ -936,7 +932,7 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
             results += suiteResult
             makeSuiteFile(suiteResult)
           case other => 
-            throw new IllegalStateException("Expected SuiteStarting for completion event: " + event + " in the head of suite events, but we got: " + other)
+            throw new IllegalStateException("Expected SuiteStarting in the head of suite events, but we got: " + other.getClass.getName)
         }
       
       case _ => eventList += event
@@ -954,17 +950,17 @@ private[scalatest] class HtmlReporter(directoryPath: String, presentAllDurations
       case e: InfoProvided   => 
         e.nameInfo match {
           case Some(nameInfo) => 
-            nameInfo.suiteId == suiteId
+            nameInfo.suiteID == suiteId
           case None => false
         }
       case e: MarkupProvided => 
         e.nameInfo match {
           case Some(nameInfo) => 
-            nameInfo.suiteId == suiteId
+            nameInfo.suiteID == suiteId
           case None => false
         }
-      case e: ScopeOpened    => e.nameInfo.suiteId == suiteId
-      case e: ScopeClosed    => e.nameInfo.suiteId == suiteId
+      case e: ScopeOpened    => e.nameInfo.suiteID == suiteId
+      case e: ScopeClosed    => e.nameInfo.suiteID == suiteId
       case e: SuiteStarting  => e.suiteId == suiteId
       case _ => false
     }
