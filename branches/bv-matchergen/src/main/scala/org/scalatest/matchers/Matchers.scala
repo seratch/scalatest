@@ -31,6 +31,7 @@ import scala.collection.GenMap
 import org.scalautils.Tolerance
 import org.scalautils.Interval
 import org.scalautils.TripleEqualsInvocation
+import org.scalautils.Equality
 
 // TODO: drop generic support for be as an equality comparison, in favor of specific ones.
 // TODO: mention on JUnit and TestNG docs that you can now mix in ShouldMatchers or MustMatchers
@@ -598,7 +599,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        * </pre>
        */
       def equal(any: Any): Matcher[T] =
-        matchersWrapper.and(matchers.not.apply(matchers.equal(any)))
+        matchersWrapper.and(matchers.not.apply(matchers.legacyEqual(any)))
 
       /**
        * This method enables the following syntax, for the "primitive" numeric types:
@@ -1333,7 +1334,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
        * </pre>
        */
       def equal(any: Any): Matcher[T] =
-        matchersWrapper.or(matchers.not.apply(matchers.equal(any)))
+        matchersWrapper.or(matchers.not.apply(matchers.legacyEqual(any)))
 
       /**
        * This method enables the following syntax for the "primitive" numeric types:
@@ -2999,9 +3000,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForMap[K, V](left: scala.collection.GenMap[K, V], shouldBeTrue: Boolean)
-      extends ResultOfNotWordForTraversable[(K, V), scala.collection.GenMap[K, V]](left, shouldBeTrue) {
-
+  final class ResultOfNotWordForMap[K, V, L[_, _] <: scala.collection.GenMap[_, _]](left: L[K, V], shouldBeTrue: Boolean)
+      extends ResultOfNotWordForTraversable[(K, V), scala.collection.GenTraversable[(K, V)]](left.asInstanceOf[scala.collection.GenTraversable[(K, V)]], shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -3013,7 +3013,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def contain(resultOfKeyWordApplication: ResultOfKeyWordApplication[K]) {
       val right = resultOfKeyWordApplication.expectedKey
-      if ((left.exists(_._1 == right)) != shouldBeTrue) {
+      if ((left.asInstanceOf[GenMap[K, V]].exists(_._1 == right)) != shouldBeTrue) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainKey" else "containedKey",
@@ -3034,7 +3034,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def contain(resultOfValueWordApplication: ResultOfValueWordApplication[V]) {
       val right = resultOfValueWordApplication.expectedValue
-      if ((left.exists(_._2 == right)) != shouldBeTrue) {
+      if ((left.asInstanceOf[GenMap[K, V]].exists(_._2 == right)) != shouldBeTrue) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainValue" else "containedValue",
@@ -3393,8 +3393,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                   ^
      * </pre>
      */
-    def equal(right: Any) {
-      if ((left == right) != shouldBeTrue)
+    def equal(right: Any)(implicit equality: Equality[T]) {
+      if (equality.areEqual(left, right) != shouldBeTrue)
         throw newTestFailedException(
           FailureMessages(
            if (shouldBeTrue) "didNotEqual" else "equaled",
@@ -4288,6 +4288,26 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * </p>
    *
    */
+/*
+  def equal(right: Any): MatcherGen1[Any, Equality] =
+    new MatcherGen1[Any, Equality] {
+      def matcher[T <: Any : Equality]: Matcher[T] = {
+        val equality = implicitly[Equality[T]]
+        new Matcher[T] {
+          def apply(left: T): MatchResult = {
+            val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
+            MatchResult(
+              equality.areEqual(left, right),
+              FailureMessages("didNotEqual", leftee, rightee),
+              FailureMessages("equaled", left, right)
+            )
+          }
+        }
+      }
+    }
+*/
+
+  // Going back to original, legacy one to get to a good place to check in.
   def equal(right: Any): Matcher[Any] =
       new Matcher[Any] {
         def apply(left: Any): MatchResult = {
@@ -4299,6 +4319,26 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
         }
       }
+
+  def legacyEqual(right: Any): Matcher[Any] =
+      new Matcher[Any] {
+        def apply(left: Any): MatchResult = {
+          val (leftee, rightee) = Suite.getObjectsForFailureMessage(left, right)
+          MatchResult(
+            areEqualComparingArraysStructurally(left, right),
+            FailureMessages("didNotEqual", leftee, rightee),
+            FailureMessages("equaled", left, right)
+          )
+        }
+      }
+
+  abstract class MatcherGen1[-SUPERCLASS, TYPECLASS[_]] {
+    def matcher[T <: SUPERCLASS : TYPECLASS]: Matcher[T]
+/*
+    def and[U <: SUPERCLASS](rightMatcher: Matcher[U]): MatcherHolder[U, TYPECLASS] =
+      new MatcherGen1(m and rightMatcher)
+*/
+  }
 
   /**
    * This method enables syntax such as the following:
@@ -4908,7 +4948,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                 ^
      * </pre>
      */
-    def equal(right: Any): Matcher[Any] = apply(matchers.equal(right))
+    def equal(right: Any): Matcher[Any] = apply(matchers.legacyEqual(right))
 
     /**
      * This method enables the following syntax for the "primitive" numeric types: 
