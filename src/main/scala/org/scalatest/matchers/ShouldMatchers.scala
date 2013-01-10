@@ -26,6 +26,7 @@ import org.scalautils.TripleEqualsInvocation
 import org.scalautils.TripleEqualsInvocationOnInterval
 import org.scalautils.EqualityConstraint
 import org.scalautils.AsAny
+import org.scalautils.Equality
 
 /**
  * Trait that provides a domain specific language (DSL) for expressing assertions in tests
@@ -915,12 +916,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * result should equal (3)
+     * result should be (3)
      *        ^
      * </pre>
      */
     def should(rightMatcherX1: Matcher[T]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX1)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should equal (3)
+     *        ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[T, Equality])(implicit equality: Equality[T]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
@@ -998,12 +1011,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * string should equal ("hi")
+     * string should be ("hi")
      *        ^
      * </pre>
      */
     def should(rightMatcherX2: Matcher[String]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX2)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * string should equal ("hi")
+     *        ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[String, Equality])(implicit equality: Equality[String]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
@@ -1126,12 +1151,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * aDouble should equal (8.8)
-     *        ^
+     * aDouble should be (8.8)
+     *         ^
      * </pre>
      */
     def should(rightMatcherX3: Matcher[T]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX3)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * aDouble should equal (8.8)
+     *         ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[T, Equality])(implicit equality: Equality[T]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
@@ -1217,12 +1254,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * map should equal (Map(1 -> "one", 2 -> "two"))
+     * map should be (Map(1 -> "one", 2 -> "two"))
      *     ^
      * </pre>
      */
     def should(rightMatcherX4: Matcher[L[K, V]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX4)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * map should equal (Map(1 -> "one", 2 -> "two"))
+     *     ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[L[K, V], Equality])(implicit equality: Equality[L[K, V]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
@@ -1267,8 +1316,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      *     ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForMap[K, V] = {
-      new ResultOfNotWordForMap(left.asInstanceOf[GenMap[K, V]], false)
+    def should(notWord: NotWord): ResultOfNotWordForMap[K, V, L] = {
+      new ResultOfNotWordForMap(left.asInstanceOf[L[K, V]], false)
     }
 
     /**
