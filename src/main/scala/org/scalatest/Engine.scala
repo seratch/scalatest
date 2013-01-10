@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 import FunSuite.IgnoreTagName
+import org.scalatest.NodeFamily.TestLeaf
 import org.scalatest.Suite._
 import org.scalatest.events.LineInFile
 import org.scalatest.events.SeeStackDepthException
@@ -617,7 +618,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     }
   }
   
-  private[scalatest] def createTestDataFor(testName: String, theConfigMap: ConfigMap, theSuite: Suite) = 
+  private[scalatest] def createTestDataFor(testName: String, theConfigMap: Map[String, Any], theSuite: Suite) = 
     new TestData {
       val configMap = theConfigMap 
       val name = testName
@@ -805,7 +806,7 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
         }
         // register with         informerForThisTest.fireRecordedMessages(testWasPending)
 
-        registerTest(testText, newTestFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, stackDepth + 1, adjustment, Some(durationOfRunningTest), location, Some(informerForThisTest), testTags: _*)
+        registerTest(testText, newTestFun, "itCannotAppearInsideAnotherIt", "FunSpec.scala", "apply", stackDepth + 1, adjustment, Some(durationOfRunningTest), location, Some(informerForThisTest), testTags: _*)
         targetLeafHasBeenReached = true
       }
       else if (targetLeafHasBeenReached && nextTargetPath.isEmpty) {
@@ -817,10 +818,10 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
     }
   }
 
-  def handleNestedBranch(description: String, childPrefix: Option[String], fun: => Unit, registrationClosedResource: String, sourceFileName: String, methodName: String, stackDepth: Int, adjustment: Int, location: Option[Location]) {
+  def handleNestedBranch(description: String, childPrefix: Option[String], fun: => Unit, registrationClosedResource: String, sourceFile: String, methodName: String, stackDepth: Int, adjustment: Int, location: Option[Location]) {
 
     if (insideAPathTest)
-      throw new TestRegistrationClosedException(Resources("describeCannotAppearInsideAnIt"), getStackDepthFun(sourceFileName, methodName, stackDepth + adjustment))
+      throw new TestRegistrationClosedException(Resources("describeCannotAppearInsideAnIt"), getStackDepthFun(sourceFile, methodName, stackDepth + adjustment))
 
     val nextPath = getNextPath()
     // val nextPathZero = if (nextPath.length > 0) nextPath(0) else -1
@@ -842,13 +843,13 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
         // Set this to true before executing the describe. If it has a test, then handleTest will be invoked
         // and it will set previousDescribeWasEmpty back to false
         describeRegisteredNoTests = true
-        registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, methodName, stackDepth + 1, adjustment, location)
+        registerNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", "FunSpec.scala", "describe", stackDepth + 1, adjustment, location)
         registeredPathSet += nextPath
         if (describeRegisteredNoTests)
           targetLeafHasBeenReached = true
       }
       else {
-        navigateToNestedBranch(nextPath, fun, "describeCannotAppearInsideAnIt", sourceFileName, methodName, stackDepth + 1, adjustment)
+        navigateToNestedBranch(nextPath, fun, "describeCannotAppearInsideAnIt", "FunSpec.scala", "describe", stackDepth + 1, adjustment)
       }
       currentPath = oldCurrentPath
     }
@@ -941,7 +942,7 @@ private[scalatest] class PathEngine(concurrentBundleModResourceName: String, sim
     describeRegisteredNoTests = false
     val nextPath = getNextPath()
     if (isInTargetPath(nextPath, targetPath)) {
-      super.registerIgnoredTest(testText, f, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, stackDepth + 1, adjustment, location, testTags: _*)
+      super.registerIgnoredTest(testText, f, "ignoreCannotAppearInsideAnIt", "FunSpec.scala", "ignore", stackDepth + 1, adjustment, location, testTags: _*)
       targetLeafHasBeenReached = true
     }
     else if (targetLeafHasBeenReached && nextTargetPath.isEmpty) {

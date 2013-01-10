@@ -33,7 +33,7 @@ package org.scalatest
  * arguments. This trait's implemention of the variant that takes the <code>configMap</code>
  * simply invokes the variant that takes no parameters, which does nothing. Thus you can override
  * whichever variant you want. If you need something from the <code>configMap</code> before
- * all tests and nested suites are run, override <code>beforeAll(ConfigMap)</code>. Otherwise,
+ * all tests and nested suites are run, override <code>beforeAll(Map[String, Any])</code>. Otherwise,
  * override <code>beforeAll()</code>.
  * </p>
  *
@@ -60,12 +60,12 @@ package org.scalatest
  * 
  *   type FixtureParam = File
  *   override def withFixture(test: OneArgTest) {
- *     val fileName = test.configMap.getRequired[String]("tempFileName")
+ *     val fileName = test.configMap("tempFileName").asInstanceOf[String]
  *     val file = new File(fileName)
  *     withFixture(test.toNoArgTest(file)) // loan the fixture to the test
  *   }
  * 
- *   "The temp file" should ("exist in " + suiteName) in { file =&gt;
+ *   "The temp file" should ("exist in " + suiteName) in { file =>
  *     assert(file.exists)
  *   }
  * }
@@ -85,21 +85,26 @@ package org.scalatest
  *   private val tempFileName = "tempFileName"
  * 
  *   // Set up the temp file needed by the test, taking
- *   // a file name from the config map
- *   override def beforeAll(cm: ConfigMap) {
- *     assume(
- *       cm.isDefinedAt(tempFileName),
- *       "must place a temp file name in the config map under the key: " + tempFileName
+ *   // a file name from the configMap
+ *   override def beforeAll(configMap: Map[String, Any]) {
+ * 
+ *     require(
+ *       configMap.isDefinedAt(tempFileName),
+ *       "must place a temp file name in the configMap under the key: " + tempFileName
  *     )
- *     val fileName = cm.getRequired[String](tempFileName)
+ * 
+ *     val fileName = configMap(tempFileName).asInstanceOf[String]
+ * 
  *     val writer = new FileWriter(fileName)
  *     try writer.write("Hello, suite of tests!")
  *     finally writer.close()
  *   }
  * 
  *   // Delete the temp file
- *   override def afterAll(cm: ConfigMap) {
- *     val fileName = cm.getRequired[String]("tempFileName")
+ *   override def afterAll(configMap: Map[String, Any]) {
+ *     // No need to require that configMap contains the key again because it won't get
+ *     // here if it didn't contain the key in beforeAll
+ *     val fileName = configMap("tempFileName").asInstanceOf[String]
  *     val file = new File(fileName)
  *     file.delete()
  *   }
@@ -114,9 +119,11 @@ package org.scalatest
  * scala&gt; new ExampleSpec execute
  * <span class="stGreen">ExampleSpec:</span>
  * <span class="stRed">Exception encountered when invoking run on a suite. *** ABORTED ***
- *   Exception encountered when invoking run on a suite. (<console>:30)
+ *   java.lang.IllegalArgumentException: requirement failed: must place a temp file name in the configMap under the key: tempFileName
+ *   ...
  * *** RUN ABORTED ***
- *   An exception or error caused a run to abort: must place a temp file name in the config map under the key: tempFileName (<console>:30)</span>
+ *   java.lang.IllegalArgumentException: requirement failed: must place a temp file name in the configMap under the key: tempFileName
+ *   ...</span>
  * </pre>
  *
  * <p>
@@ -124,7 +131,7 @@ package org.scalatest
  * </p>
  *
  * <pre class="stREPL">
- * scala&gt; new ExampleSpec execute (configMap = ConfigMap("tempFileName" -&gt; "tmp.txt"))
+ * scala&gt; new ExampleSpec execute (configMap = Map("tempFileName" -> "tmp.txt"))
  * <span class="stGreen">ExampleSpec:
  * OneSpec:
  * The temp file
@@ -143,9 +150,11 @@ package org.scalatest
  * </pre>
  *
  * <p>
- * <strong>Note: As of 2.0.M5, this trait uses the newly added <code>Status</code> result of <code>Suite</code>'s "run" methods
- * to ensure that the code in <code>afterAll</code> is executed after
- * all the tests and nested suites are executed even if a <code>Distributor</code> is passed.</strong>
+ * <strong>Note: This trait does not currently ensure that the code in <code>afterAll</code> is executed after
+ * all the tests and nested suites are executed if a <code>Distributor</code> is passed. The
+ * plan is to do that eventually (in fact, in a soon-to-be-released 2.0 milestone), but in the meantime, be aware that <code>afterAll</code> is
+ * guaranteed to be run after all the tests and nested suites only when they are run
+ * sequentially.</strong>
  * </p>
  *
  * @author Bill Venners
@@ -159,7 +168,7 @@ trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
    * This trait's implementation
    * of <code>run</code> invokes the overloaded form of this method that
    * takes a <code>configMap</code> before executing
-   * any tests or nested suites. This trait's implementation of that <code>beforeAll(ConfigMap)</code>
+   * any tests or nested suites. This trait's implementation of that <code>beforeAll(Map[String, Any])</code>
    * method simply invokes this <code>beforeAll()</code>
    * method. Thus this method can be used to set up a test fixture
    * needed by the entire suite, when you don't need anything from the <code>configMap</code>.
@@ -181,7 +190,7 @@ trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
    * overloaded form of <code>beforeAll</code> that takes no <code>configMap</code>.
    * </p>
    */
-  protected def beforeAll(configMap: ConfigMap) {
+  protected def beforeAll(configMap: Map[String, Any]) {
     beforeAll()
   }
 
@@ -193,7 +202,7 @@ trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
    * This trait's implementation
    * of <code>run</code> invokes the overloaded form of this method that
    * takes a <code>configMap</code> after executing
-   * all tests and nested suites. This trait's implementation of that <code>afterAll(ConfigMap)</code> method simply invokes this
+   * all tests and nested suites. This trait's implementation of that <code>afterAll(Map[String, Any])</code> method simply invokes this
    * <code>afterAll()</code> method. Thus this method can be used to tear down a test fixture
    * needed by the entire suite, when you don't need anything from the <code>configMap</code>.
    * This trait's implementation of this method does nothing.
@@ -214,7 +223,7 @@ trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
    * overloaded form of <code>afterAll</code> that takes no <code>configMap</code>.
    * </p>
    */
-  protected def afterAll(configMap: ConfigMap) {
+  protected def afterAll(configMap: Map[String, Any]) {
     afterAll()
   }
 
@@ -222,8 +231,8 @@ trait BeforeAndAfterAll  extends SuiteMixin { this: Suite =>
    * Execute a suite surrounded by calls to <code>beforeAll</code> and <code>afterAll</code>.
    *
    * <p>
-   * This trait's implementation of this method ("this method") invokes <code>beforeAll(ConfigMap)</code>
-   * before executing any tests or nested suites and <code>afterAll(ConfigMap)</code>
+   * This trait's implementation of this method ("this method") invokes <code>beforeAll(Map[String, Any])</code>
+   * before executing any tests or nested suites and <code>afterAll(Map[String, Any])</code>
    * after executing all tests and nested suites. It runs the suite by invoking <code>super.run</code>, passing along
    * the seven parameters passed to it.
    * </p>

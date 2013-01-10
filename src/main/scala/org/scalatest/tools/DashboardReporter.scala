@@ -311,7 +311,7 @@ private[scalatest] class DashboardReporter(directory: String,
       {
         oldRegressionsXml.find(
           node => (((node \ "@testName") == (test \ "@name")) &&
-                   ((node \ "@suiteId") == (suite \ "@id"))))
+                   ((node \ "@suiteID") == (suite \ "@id"))))
       }
 
       //
@@ -322,7 +322,7 @@ private[scalatest] class DashboardReporter(directory: String,
       String =
       {
         "    <regressedTest " +
-        "suiteId=\""        + (suite \ "@id")    + "\" " +
+        "suiteID=\""        + (suite \ "@id")    + "\" " +
         "suiteName=\""      + (suite \ "@name")  + "\" " +
         "testName=\""       + (test \ "@name")   + "\" " +
         "status=\""         + result             + "\" " +
@@ -426,13 +426,13 @@ private[scalatest] class DashboardReporter(directory: String,
       {
         def toXml: String = {
           val SlowerTestTemplate =
-            """      <slowerTest suiteId="$suiteId$" """ +
+            """      <slowerTest suiteID="$suiteID$" """ +
             """suiteName="$suiteName$" testName="$testName$" """ +
             """|oldAvg="$oldAvg$" newAvg="$newAvg$"/>
                |""".stripMargin
 
         SlowerTestTemplate.
-          replaceFirst("""\$suiteId\$""",   quoteReplacement(suite.suiteId)).
+          replaceFirst("""\$suiteID\$""",   quoteReplacement(suite.suiteID)).
           replaceFirst("""\$suiteName\$""", quoteReplacement(suite.suiteName)).
           replaceFirst("""\$testName\$""",  quoteReplacement(test.name)).
           replaceFirst("""\$oldAvg\$""",    "" + oldAvg).
