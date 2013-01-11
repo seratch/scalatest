@@ -1034,6 +1034,37 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         }
       }
 
+// XXX
+    def or[U <: T, TYPECLASS[_]](rightMatcherGen1: MatcherGen1[U, TYPECLASS]): MatcherGen1[U, TYPECLASS] =
+      new MatcherGen1[U, TYPECLASS] {
+        def matcher[V <: U : TYPECLASS]: Matcher[V] = {
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              val leftMatchResult = leftMatcher(left)
+              val rightMatcher = rightMatcherGen1.matcher
+              val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
+              if (leftMatchResult.matches)
+                MatchResult(
+                  true,
+                  leftMatchResult.negatedFailureMessage,
+                  leftMatchResult.failureMessage,
+                  leftMatchResult.midSentenceNegatedFailureMessage,
+                  leftMatchResult.midSentenceFailureMessage
+                )
+              else {
+                MatchResult(
+                  rightMatchResult.matches,
+                  Resources("commaAnd", leftMatchResult.failureMessage, rightMatchResult.midSentenceFailureMessage),
+                  Resources("commaAnd", leftMatchResult.failureMessage, rightMatchResult.midSentenceNegatedFailureMessage),
+                  Resources("commaAnd", leftMatchResult.midSentenceFailureMessage, rightMatchResult.midSentenceFailureMessage),
+                  Resources("commaAnd", leftMatchResult.midSentenceFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
+                )
+              }
+            }
+          }
+        }
+      }
+
     /**
      * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
      * the matchers DSL.
