@@ -2896,7 +2896,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  sealed class ResultOfNotWordForTraversable[E, T <: GenTraversable[E]](left: T, shouldBeTrue: Boolean)
+  sealed class ResultOfNotWordForTraversable[E, T[_] <: GenTraversable[_]](left: T[E], shouldBeTrue: Boolean)
       extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
 
     /**
@@ -3001,7 +3001,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfNotWordForMap[K, V, L[_, _] <: scala.collection.GenMap[_, _]](left: L[K, V], shouldBeTrue: Boolean)
-      extends ResultOfNotWordForTraversable[(K, V), scala.collection.GenTraversable[(K, V)]](left.asInstanceOf[scala.collection.GenTraversable[(K, V)]], shouldBeTrue) {
+      // extends ResultOfNotWordForTraversable[(K, V), L[(K, V)]](left, shouldBeTrue) {
+      extends ResultOfNotWordForTraversable(left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -3104,8 +3105,9 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForSeq[E, T <: GenSeq[E]](left: T, shouldBeTrue: Boolean)
-      extends ResultOfNotWordForTraversable[E, T](left, shouldBeTrue) {
+  final class ResultOfNotWordForSeq[E, T[_] <: GenSeq[_]](left: T[E], shouldBeTrue: Boolean)
+      // extends ResultOfNotWordForTraversable[E, T[E]](left, shouldBeTrue) {
+      extends ResultOfNotWordForTraversable(left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
