@@ -1034,7 +1034,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         }
       }
 
-// XXX
+// TODO: YYY Remove code duplication between the or(Matcher) and or(MatcherGen1), and do the same for the and methods
     def or[U <: T, TYPECLASS[_]](rightMatcherGen1: MatcherGen1[U, TYPECLASS]): MatcherGen1[U, TYPECLASS] =
       new MatcherGen1[U, TYPECLASS] {
         def matcher[V <: U : TYPECLASS]: Matcher[V] = {
@@ -4487,12 +4487,39 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
 
-  abstract class MatcherGen1[-SUPERCLASS, TYPECLASS[_]] {
+  abstract class MatcherGen1[-SUPERCLASS, TYPECLASS[_]] { thisMatcherGen1 =>
+
     def matcher[T <: SUPERCLASS : TYPECLASS]: Matcher[T]
-/*
-    def and[U <: SUPERCLASS](rightMatcher: Matcher[U]): MatcherHolder[U, TYPECLASS] =
-      new MatcherGen1(m and rightMatcher)
-*/
+
+    def and[U <: SUPERCLASS](rightMatcher: Matcher[U]): MatcherGen1[U, TYPECLASS] =
+      new MatcherGen1[U, TYPECLASS] {
+        def matcher[V <: U : TYPECLASS]: Matcher[V] = {
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              val leftMatcher = thisMatcherGen1.matcher
+              val leftMatchResult = leftMatcher(left)
+              val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
+              if (!leftMatchResult.matches)
+                MatchResult(
+                  false,
+                  leftMatchResult.failureMessage,
+                  leftMatchResult.negatedFailureMessage,
+                  leftMatchResult.midSentenceFailureMessage,
+                  leftMatchResult.midSentenceNegatedFailureMessage
+                )
+              else {
+                MatchResult(
+                  rightMatchResult.matches,
+                  Resources("commaBut", leftMatchResult.negatedFailureMessage, rightMatchResult.midSentenceFailureMessage),
+                  Resources("commaAnd", leftMatchResult.negatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage),
+                  Resources("commaBut", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceFailureMessage),
+                  Resources("commaAnd", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
+                )
+              }
+            }
+          }
+        }
+      }
   }
 
   /**
