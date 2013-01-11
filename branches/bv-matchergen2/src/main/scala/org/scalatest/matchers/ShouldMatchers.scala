@@ -1358,12 +1358,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * anyRef should equal (anotherObject)
+     * anyRef should be (anotherObject)
      *        ^
      * </pre>
      */
     def should(rightMatcherX5: Matcher[T]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX5)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * anyRef should equal (anotherObject)
+     *        ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[T, Equality])(implicit equality: Equality[T]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
@@ -1788,12 +1800,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * seq should equal (List(1, 2, 3))
+     * seq should be (List(1, 2, 3))
      *     ^
      * </pre>
      */
     def should(rightMatcherX9: Matcher[L[E]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX9)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * seq should equal (List(1, 2, 3))
+     *     ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[L[E], Equality])(implicit equality: Equality[L[E]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**

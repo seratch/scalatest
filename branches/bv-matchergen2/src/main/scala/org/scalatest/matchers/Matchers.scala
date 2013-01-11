@@ -269,6 +269,36 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         }
       }
 
+    def and[U <: T, TYPECLASS[_]](rightMatcherGen1: MatcherGen1[U, TYPECLASS]): MatcherGen1[U, TYPECLASS] =
+      new MatcherGen1[U, TYPECLASS] {
+        def matcher[V <: U : TYPECLASS]: Matcher[V] = {
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              val leftMatchResult = leftMatcher(left)
+              val rightMatcher = rightMatcherGen1.matcher
+              val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
+              if (!leftMatchResult.matches)
+                MatchResult(
+                  false,
+                  leftMatchResult.failureMessage,
+                  leftMatchResult.negatedFailureMessage,
+                  leftMatchResult.midSentenceFailureMessage,
+                  leftMatchResult.midSentenceNegatedFailureMessage
+                )
+              else {
+                MatchResult(
+                  rightMatchResult.matches,
+                  Resources("commaBut", leftMatchResult.negatedFailureMessage, rightMatchResult.midSentenceFailureMessage),
+                  Resources("commaAnd", leftMatchResult.negatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage),
+                  Resources("commaBut", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceFailureMessage),
+                  Resources("commaAnd", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
+                )
+              }
+            }
+          }
+        }
+      }
+
     /**
      * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
      * the matchers DSL.
@@ -3030,8 +3060,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfNotWordForMap[K, V, L[_, _] <: scala.collection.GenMap[_, _]](left: L[K, V], shouldBeTrue: Boolean)
-      // extends ResultOfNotWordForTraversable[(K, V), L[(K, V)]](left, shouldBeTrue) {
-      extends ResultOfNotWordForTraversable(left, shouldBeTrue) {
+      extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
 
     /**
      * This method enables the following syntax:
@@ -3068,6 +3097,70 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         throw newTestFailedException(
           FailureMessages(
             if (shouldBeTrue) "didNotContainValue" else "containedValue",
+              left,
+              right
+            )
+          )
+      }
+    }
+
+    // TODO: Had to pull these methods out of ReusltOfNotWordForTraversable, because can't exent
+    // it without losing precision on the inferred types. Map[String, Int] becomes GenIterable[(Any, Any)]
+    // So the wrong Equality type class was chosen. By going around ResultOfNotWordForTraversable, I can
+    // get the precise Map type up to ResultOfNotWord's equal method, which requires the Equality type class.
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * iterable should not contain ("one")
+     *                     ^
+     * </pre>
+     */
+    def contain(expectedElement: (K, V)) {
+      val right = expectedElement
+      if ((left.exists(_ == right)) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "didNotContainExpectedElement" else "containedExpectedElement",
+              left,
+              right
+            )
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * collection should not contain containMatcher
+     *                       ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[(K, V)]) {
+      val result = right(left.asInstanceOf[scala.collection.GenTraversable[(K, V)]])
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
+        )
+      }
+    }
+
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * collection should not have size (3)
+     *                       ^
+     * </pre>
+     */
+    def have(resultOfSizeWordApplication: ResultOfSizeWordApplication) {
+      val right = resultOfSizeWordApplication.expectedSize
+      if ((left.size == right) != shouldBeTrue) {
+        throw newTestFailedException(
+          FailureMessages(
+            if (shouldBeTrue) "didNotHaveExpectedSize" else "hadExpectedSize",
               left,
               right
             )
@@ -4319,7 +4412,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * </p>
    *
    */
-/*
   def equal(right: Any): MatcherGen1[Any, Equality] =
     new MatcherGen1[Any, Equality] {
       def matcher[T <: Any : Equality]: Matcher[T] = {
@@ -4336,9 +4428,9 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     }
-*/
 
   // Going back to original, legacy one to get to a good place to check in.
+/*
   def equal(right: Any): Matcher[Any] =
       new Matcher[Any] {
         def apply(left: Any): MatchResult = {
@@ -4350,6 +4442,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
         }
       }
+*/
 
   def legacyEqual(right: Any): Matcher[Any] =
       new Matcher[Any] {
