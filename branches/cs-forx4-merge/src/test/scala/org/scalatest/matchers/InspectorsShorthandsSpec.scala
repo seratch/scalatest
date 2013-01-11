@@ -501,8 +501,7 @@ class InspectorsShorthandsSpec extends Spec with ShouldMatchers with InspectorsS
       }
     }
 
-    // TODO: To enable this when new === using Bill's new approach is ready
-    /*def `should throw TestFailedException with correct stack depth and message when 'be triple equal' failed` {
+    def `should throw TestFailedException with correct stack depth and message when 'be triple equal' failed` {
       forAll(examples) { colFun => 
         val col = colFun(Set(1, 2, 3))
         val e2 = intercept[exceptions.TestFailedException] {
@@ -546,7 +545,7 @@ class InspectorsShorthandsSpec extends Spec with ShouldMatchers with InspectorsS
           case other => fail("Expected cause to be TestFailedException, but got: " + other)
         }
       }
-    }*/
+    }
     
     def `should throw TestFailedException with correct stack depth and message when 'be null' failed` {
       forAll(nullableExamples) { colFun => 

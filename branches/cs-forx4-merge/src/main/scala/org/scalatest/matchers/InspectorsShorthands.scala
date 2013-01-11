@@ -5,6 +5,7 @@ import scala.collection.GenTraversable
 import scala.collection.GenSeq
 import scala.collection.GenMap
 import scala.util.matching.Regex
+import org.scalautils.TripleEqualsInvocation
 
 trait InspectorsShorthands extends matchers.ClassicMatchers {
   
@@ -205,7 +206,6 @@ trait InspectorsShorthands extends matchers.ClassicMatchers {
       }
     }
 
-    // TODO: To make === using Bill's new approach when ready
     /**
      * This method enables the following syntax:
      *
@@ -213,10 +213,10 @@ trait InspectorsShorthands extends matchers.ClassicMatchers {
      * all(xs) should not be === (7)
      *                    ^
      * </pre>
-
-    def be(comparison: ResultOfTripleEqualsApplication) {
+     */
+    def be(comparison: TripleEqualsInvocation[_]) {
       doCollected(collected, xs, "be", 1) { e => 
-        if (comparison(e) != shouldBeTrue) {
+        if ((e == comparison.right) != shouldBeTrue) {
           throw newTestFailedException(
             FailureMessages(
               if (shouldBeTrue) "wasNotEqualTo" else "wasEqualTo",
@@ -228,7 +228,7 @@ trait InspectorsShorthands extends matchers.ClassicMatchers {
           )
         }
       }
-    }*/
+    }
 
     /**
      * This method enables the following syntax, where <code>odd</code> refers to
