@@ -885,10 +885,9 @@ object GenInspectors {
       ("'should be greater than comparison' failed", " should be > " + right, "MoreThan", errorFunPrefix + "LessThanEqual", "" + right, (errorFun: String, errorValue: String) => new WasNotGreaterThanMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString)),
       ("'should not be greater than comparison' failed", " should not be > (" + right + ")", "LessThanEqual", errorFunPrefix + "MoreThan", "" + right, (errorFun: String, errorValue: String) => new WasGreaterThanMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString)), 
       ("'should be greater than or equal comparison' failed", " should be >= " + right, "MoreThanEqual", errorFunPrefix + "LessThan", "" + right, (errorFun: String, errorValue: String) => new WasNotGreaterThanOrEqualToMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString)), 
-      ("'should not be greater than or equal comparison' failed", " should not be >= (" + right + ")", "LessThan", errorFunPrefix + "MoreThanEqual", "" + right, (errorFun: String, errorValue: String) => new WasGreaterThanOrEqualToMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString))
-      /*// TODO: To enable this when new === using Bill's new approach is ready
-      ("'should be ===' failed", " should be === " + right, "_ != " + right, (errorFun: String) => new WasNotEqualToMessageTemplate(leftTemplateFun(errorFun), right)), 
-      ("'should not be ===' failed", " should not be === (" + right + ")", "getFirstEqual", "" + right, (errorFun: String) => new WasEqualToMessageTemplate(leftTemplateFun(errorFun), right))*/
+      ("'should not be greater than or equal comparison' failed", " should not be >= (" + right + ")", "LessThan", errorFunPrefix + "MoreThanEqual", "" + right, (errorFun: String, errorValue: String) => new WasGreaterThanOrEqualToMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString)), 
+      ("'should be ===' failed", " should be === " + right, "Equal[Int]", errorFunPrefix + "NotEqual[Int]", "" + right, (errorFun: String, errorValue: String) => new WasNotEqualToMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString)), 
+      ("'should not be ===' failed", " should not be === (" + right + ")", "NotEqual[Int]", errorFunPrefix + "Equal[Int]", "" + right, (errorFun: String, errorValue: String) => new WasEqualToMessageTemplate(leftTemplateFun(errorFun, errorValue), right, autoQuoteString))
     )
     
   def stdNullStringTypes(leftTemplateFun: (String, String) => Template, errorFunPrefix: String, autoQuoteString: Boolean = true) = 
