@@ -5030,6 +5030,29 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
 
     /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * hasNoSize should not { have size (2) and equal (hasNoSize) }
+     *                      ^
+     * </pre>
+     */
+    def apply[S <: Any, TYPECLASS[_]](matcherGen1: MatcherGen1[S, TYPECLASS]): MatcherGen1[S, TYPECLASS] = {
+      new MatcherGen1[S, TYPECLASS] {
+        def matcher[V <: S : TYPECLASS]: Matcher[V] = {
+          val innerMatcher: Matcher[V] = matcherGen1.matcher
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              innerMatcher(left) match {
+                case MatchResult(bool, s1, s2, s3, s4) => MatchResult(!bool, s2, s1, s4, s3)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    /**
      * This method enables any <code>BeMatcher</code> to be negated by passing it to <code>not</code>. 
      * For example, if you have a <code>BeMatcher[Int]</code> called <code>odd</code>, which matches
      * <code>Int</code>s that are odd, you can negate it to get a <code>BeMatcher[Int]</code> that matches
