@@ -59,6 +59,7 @@ import exceptions.StackDepthExceptionHelper.getStackDepthFun
 import exceptions._
 import exceptions._
 import collection.mutable.ListBuffer
+import collection.GenTraversable
 
 /*
  * <h2>Using <code>info</code> and <code>markup</code></h2>
@@ -2083,6 +2084,9 @@ used for test events like succeeded/failed, etc.
       Resources("exceptionThrown", e.getClass.getName) // Say something like, "java.lang.Exception was thrown."
 
   def indentation(level: Int) = "  " * level
+  
+  def indentLines(level: Int, lines: GenTraversable[String]) = 
+    lines.map(line => line.split("\n").map(indentation(level) + _).mkString("\n"))
 
   def reportTestFailed(theSuite: Suite, report: Reporter, throwable: Throwable, testName: String, testText: String,
                        recordedEvents: collection.immutable.IndexedSeq[RecordableEvent], rerunnable: Option[String], tracker: Tracker, duration: Long, formatter: Formatter, location: Option[Location]) {
