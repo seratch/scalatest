@@ -1507,12 +1507,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * traversable should equal (Set(1, 2, 3))
+     * traversable should be (Set(1, 2, 3))
      *             ^
      * </pre>
      */
     def should(rightMatcherX6: Matcher[GenTraversable[E]]) {
       ShouldMethodHelper.shouldMatcher(left.asInstanceOf[GenTraversable[E]], rightMatcherX6)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * traversable should equal (Set(1, 2, 3))
+     *             ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[L[E], Equality])(implicit equality: Equality[L[E]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
