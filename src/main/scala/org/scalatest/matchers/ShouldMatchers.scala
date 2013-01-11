@@ -1926,12 +1926,24 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * array should equal (Array("one", "two"))
+     * array should be (Array("one", "two"))
      *       ^
      * </pre>
      */
     def should(rightMatcherX10: Matcher[Array[T]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX10)
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * array should equal (Array("one", "two"))
+     *       ^
+     * </pre>
+     */
+    def should(rightMatcherGen1: MatcherGen1[Array[T], Equality])(implicit equality: Equality[Array[T]]) {
+      ShouldMethodHelper.shouldMatcher(left, rightMatcherGen1.matcher)
     }
 
     /**
