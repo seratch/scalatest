@@ -1532,8 +1532,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      *             ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForTraversable[E, GenTraversable[E]] =
-      new ResultOfNotWordForTraversable(left.asInstanceOf[GenTraversable[E]], false)
+    def should(notWord: NotWord): ResultOfNotWordForTraversable[E, L] =
+      new ResultOfNotWordForTraversable(left, false)
 
     /**
      * This method enables syntax such as the following:
@@ -1792,8 +1792,8 @@ trait ShouldMatchers extends Matchers with ShouldVerb with AsAny with LoneElemen
      *     ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForSeq[E, GenSeq[E]] =
-      new ResultOfNotWordForSeq(left.asInstanceOf[GenSeq[E]], false)
+    def should(notWord: NotWord): ResultOfNotWordForSeq[E, L] =
+      new ResultOfNotWordForSeq(left, false)
     // def should(notWord: NotWord): ResultOfNotWordForAnyRef[GenSeq[E]] =
       // new ResultOfNotWordForAnyRef(left, false)
 
