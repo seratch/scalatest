@@ -247,6 +247,8 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
     def and[U <: T](rightMatcher: Matcher[U]): Matcher[U] =
       new Matcher[U] {
         def apply(left: U): MatchResult = {
+          andMatchersAndApply(left, leftMatcher, rightMatcher)
+/*
           val leftMatchResult = leftMatcher(left)
           val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
           if (!leftMatchResult.matches)
@@ -266,6 +268,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
               Resources("commaAnd", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
             )
           }
+*/
         }
       }
 
@@ -274,8 +277,10 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
         def matcher[V <: U : TYPECLASS]: Matcher[V] = {
           new Matcher[V] {
             def apply(left: V): MatchResult = {
-              val leftMatchResult = leftMatcher(left)
               val rightMatcher = rightMatcherGen1.matcher
+              andMatchersAndApply(left, leftMatcher, rightMatcher)
+/*
+              val leftMatchResult = leftMatcher(left)
               val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
               if (!leftMatchResult.matches)
                 MatchResult(
@@ -294,6 +299,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
                   Resources("commaAnd", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
                 )
               }
+*/
             }
           }
         }
@@ -1012,6 +1018,8 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
     def or[U <: T](rightMatcher: Matcher[U]): Matcher[U] =
       new Matcher[U] {
         def apply(left: U): MatchResult = {
+          orMatchersAndApply(left, leftMatcher, rightMatcher)
+/*
           val leftMatchResult = leftMatcher(left)
           val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
           if (leftMatchResult.matches)
@@ -1031,17 +1039,19 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
               Resources("commaAnd", leftMatchResult.midSentenceFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
             )
           }
+*/
         }
       }
 
-// TODO: YYY Remove code duplication between the or(Matcher) and or(MatcherGen1), and do the same for the and methods
     def or[U <: T, TYPECLASS[_]](rightMatcherGen1: MatcherGen1[U, TYPECLASS]): MatcherGen1[U, TYPECLASS] =
       new MatcherGen1[U, TYPECLASS] {
         def matcher[V <: U : TYPECLASS]: Matcher[V] = {
           new Matcher[V] {
             def apply(left: V): MatchResult = {
-              val leftMatchResult = leftMatcher(left)
               val rightMatcher = rightMatcherGen1.matcher
+              orMatchersAndApply(left, leftMatcher, rightMatcher)
+/*
+              val leftMatchResult = leftMatcher(left)
               val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
               if (leftMatchResult.matches)
                 MatchResult(
@@ -1060,6 +1070,7 @@ trait ClassicMatchers extends Assertions with Tolerance { matchers =>
                   Resources("commaAnd", leftMatchResult.midSentenceFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
                 )
               }
+*/
             }
           }
         }
@@ -4487,17 +4498,63 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
 
+  private def andMatchersAndApply[T](left: T, leftMatcher: Matcher[T], rightMatcher: Matcher[T]): MatchResult = {
+    val leftMatchResult = leftMatcher(left)
+    val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
+    if (!leftMatchResult.matches)
+      MatchResult(
+        false,
+        leftMatchResult.failureMessage,
+        leftMatchResult.negatedFailureMessage,
+        leftMatchResult.midSentenceFailureMessage,
+        leftMatchResult.midSentenceNegatedFailureMessage
+      )
+    else {
+      MatchResult(
+        rightMatchResult.matches,
+        Resources("commaBut", leftMatchResult.negatedFailureMessage, rightMatchResult.midSentenceFailureMessage),
+        Resources("commaAnd", leftMatchResult.negatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage),
+        Resources("commaBut", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceFailureMessage),
+        Resources("commaAnd", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
+      )
+    }
+  }
+
+  private def orMatchersAndApply[T](left: T, leftMatcher: Matcher[T], rightMatcher: Matcher[T]): MatchResult = {
+    val leftMatchResult = leftMatcher(left)
+    val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
+    if (leftMatchResult.matches)
+      MatchResult(
+        true,
+        leftMatchResult.negatedFailureMessage,
+        leftMatchResult.failureMessage,
+        leftMatchResult.midSentenceNegatedFailureMessage,
+        leftMatchResult.midSentenceFailureMessage
+      )
+    else {
+      MatchResult(
+        rightMatchResult.matches,
+        Resources("commaAnd", leftMatchResult.failureMessage, rightMatchResult.midSentenceFailureMessage),
+        Resources("commaAnd", leftMatchResult.failureMessage, rightMatchResult.midSentenceNegatedFailureMessage),
+        Resources("commaAnd", leftMatchResult.midSentenceFailureMessage, rightMatchResult.midSentenceFailureMessage),
+        Resources("commaAnd", leftMatchResult.midSentenceFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
+      )
+    }
+  }
+
   abstract class MatcherGen1[-SUPERCLASS, TYPECLASS[_]] { thisMatcherGen1 =>
 
     def matcher[T <: SUPERCLASS : TYPECLASS]: Matcher[T]
 
+    // (equal (7) and ...)
     def and[U <: SUPERCLASS](rightMatcher: Matcher[U]): MatcherGen1[U, TYPECLASS] =
       new MatcherGen1[U, TYPECLASS] {
         def matcher[V <: U : TYPECLASS]: Matcher[V] = {
           new Matcher[V] {
             def apply(left: V): MatchResult = {
               val leftMatcher = thisMatcherGen1.matcher
-              val leftMatchResult = leftMatcher(left)
+              andMatchersAndApply(left, leftMatcher, rightMatcher)
+/*
               val rightMatchResult = rightMatcher(left) // Not short circuiting anymore
               if (!leftMatchResult.matches)
                 MatchResult(
@@ -4516,6 +4573,51 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
                   Resources("commaAnd", leftMatchResult.midSentenceNegatedFailureMessage, rightMatchResult.midSentenceNegatedFailureMessage)
                 )
               }
+*/
+            }
+          }
+        }
+      }
+
+    // (equal (7) or ...)
+    def or[U <: SUPERCLASS](rightMatcher: Matcher[U]): MatcherGen1[U, TYPECLASS] =
+      new MatcherGen1[U, TYPECLASS] {
+        def matcher[V <: U : TYPECLASS]: Matcher[V] = {
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              val leftMatcher = thisMatcherGen1.matcher
+              orMatchersAndApply(left, leftMatcher, rightMatcher)
+            }
+          }
+        }
+      }
+
+// XXX
+// Need one for the same typeclass and one for a different typeclass, yes, and can overload because
+// one returns a MatcherGen1 the other a MatcherGen2.
+     // "hi" should (equal ("hi") or {mockClown.hasBigRedNose; equal ("ho")})
+    def or[U <: SUPERCLASS](rightMatcherGen1: MatcherGen1[U, TYPECLASS]): MatcherGen1[U, TYPECLASS] =
+      new MatcherGen1[U, TYPECLASS] {
+        def matcher[V <: U : TYPECLASS]: Matcher[V] = {
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              val leftMatcher = thisMatcherGen1.matcher
+              val rightMatcher = rightMatcherGen1.matcher
+              orMatchersAndApply(left, leftMatcher, rightMatcher)
+            }
+          }
+        }
+      }
+
+    // "hi" should (equal ("ho") and {mockClown.hasBigRedNose; equal ("ho")})
+    def and[U <: SUPERCLASS](rightMatcherGen1: MatcherGen1[U, TYPECLASS]): MatcherGen1[U, TYPECLASS] =
+      new MatcherGen1[U, TYPECLASS] {
+        def matcher[V <: U : TYPECLASS]: Matcher[V] = {
+          new Matcher[V] {
+            def apply(left: V): MatchResult = {
+              val leftMatcher = thisMatcherGen1.matcher
+              val rightMatcher = rightMatcherGen1.matcher
+              andMatchersAndApply(left, leftMatcher, rightMatcher)
             }
           }
         }
