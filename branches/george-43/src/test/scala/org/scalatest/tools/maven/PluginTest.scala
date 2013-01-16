@@ -45,7 +45,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   def testDefault {
     val config = configure(_ => ())
     config should contain("-o")
-    config should containCompoundArgs("-p", outputDirectory, testOutputDirectory)
+    config should containCompoundArgs("-R", outputDirectory, testOutputDirectory)
     config should have length (3)
   }
 
@@ -56,7 +56,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testRunpath {
-    configure(_.runpath = comma("http://foo.com/my.jar", "/some/where")) should containCompoundArgs("-p", outputDirectory, testOutputDirectory, "http://foo.com/my.jar", "/some/where")
+    configure(_.runpath = comma("http://foo.com/my.jar", "/some/where")) should containCompoundArgs("-R", outputDirectory, testOutputDirectory, "http://foo.com/my.jar", "/some/where")
   }
 
   def testFilereporters {
