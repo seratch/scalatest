@@ -1927,6 +1927,17 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
        */
       def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] =
         matchersWrapper.and(matchers.not.contain(resultOfValueWordApplication))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * collection should (contain theSameElementsAs (List(1, 2, 3)) and not contain theSameElementsAs (List(8, 1, 2))) 
+       *                                                                      ^
+       * </pre>
+       */
+      def contain[U](right: ContainMatcher[U]): Matcher[T with GenTraversable[U]] =
+        matchersWrapper.and(matchers.not.contain(right))
     }
 
     /**
@@ -2786,6 +2797,17 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
        */
       def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] =
         matchersWrapper.or(matchers.not.contain(resultOfValueWordApplication))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * collection should (contain theSameElementsAs (List(1, 2, 3)) or not contain theSameElementsAs (List(8, 1, 2))) 
+       *                                                                     ^
+       * </pre>
+       */
+      def contain[U](right: ContainMatcher[U]): Matcher[T with GenTraversable[U]] =
+        matchersWrapper.or(matchers.not.contain(right))
     }
 
     /**
@@ -7068,6 +7090,22 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     }
+    
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * collection should (not contain theSameIteratedElementsAs List(8, 1, 2) and contain theSameElementsAs List(3, 2, 1))
+     *                        ^
+     * </pre>
+     */
+    def contain[E](right: ContainMatcher[E]): Matcher[GenTraversable[E]] = 
+      new Matcher[GenTraversable[E]] {
+        def apply(left: GenTraversable[E]): MatchResult = {
+          val result = right(left)
+          MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+        }
+      }
   }
 
   /**
@@ -8356,7 +8394,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
     
     /**
-     * This method contains the matching code for theSameIteratedElementsAs.
+     * This method contains the matching code for allOf.
      */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
@@ -8417,7 +8455,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
     
     /**
-     * This method contains the matching code for theSameIteratedElementsAs.
+     * This method contains the matching code for inOrder.
      */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
@@ -8463,7 +8501,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
     
     /**
-     * This method contains the matching code for theSameIteratedElementsAs.
+     * This method contains the matching code for oneOf.
      */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
@@ -8525,7 +8563,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
     
     /**
-     * This method contains the matching code for theSameIteratedElementsAs.
+     * This method contains the matching code for only.
      */
     def apply(left: GenTraversable[T]): MatchResult = 
       MatchResult(
@@ -8588,7 +8626,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
     
     /**
-     * This method contains the matching code for theSameIteratedElementsAs.
+     * This method contains the matching code for inOrderOnly.
      */
     def apply(left: GenTraversable[T]): MatchResult = {
       val rightItr = right.toIterator
@@ -8654,7 +8692,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     }
     
     /**
-     * This method contains the matching code for theSameIteratedElementsAs.
+     * This method contains the matching code for noneOf.
      */
     def apply(left: GenTraversable[T]): MatchResult = {
       MatchResult(
