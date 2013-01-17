@@ -12857,18 +12857,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * traversable should contain customContainMatcher
-     *             ^
-     * </pre>
-     */
-    def should(containMatcher: ContainMatcher[E]) {
-      new ResultOfContainWordForTraversable(left.asInstanceOf[GenTraversable[E]], true).apply(containMatcher)
-    }
-    
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
      * seq should not have length (3)
      *     ^
      * </pre>
