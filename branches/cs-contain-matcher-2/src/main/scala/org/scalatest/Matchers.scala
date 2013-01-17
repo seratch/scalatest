@@ -3050,7 +3050,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      *            ^
      * </pre>
      */
-    def apply[T](right: ContainMatcher[T]): ContainMatcher[T] = right
+    def apply[T](right: ContainMatcher[T]): Matcher[GenTraversable[T]] = 
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = right(left)
+      }
     
     //
     // This key method is called when "contain" is used in a logical expression, such as:
@@ -12533,18 +12536,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(containWord: ContainWord) = 
       new ResultOfContainWordForTraversable(left.asInstanceOf[GenTraversable[E]], true)
-    
-    /**
-     * This method enables syntax such as the following:
-     *
-     * <pre class="stHighlight">
-     * traversable should contain customContainMatcher
-     *             ^
-     * </pre>
-     */
-    def should(containMatcher: ContainMatcher[E]) {
-      new ResultOfContainWordForTraversable(left.asInstanceOf[GenTraversable[E]], true).apply(containMatcher)
-    }
     
     /**
      * This method enables syntax such as the following:
