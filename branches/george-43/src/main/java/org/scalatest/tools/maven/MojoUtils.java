@@ -96,14 +96,19 @@ final class MojoUtils {
         return r;
     }
 
+    //
+    // Splits a comma-delimited string.  Supports backslash escapes for
+    // commas where string should not be split.  E.g. "a, b, c" returns
+    // list ("a", "b", "c"), but "a\, b, c" returns ("a, b", "c").
+    //
     static List<String> splitOnComma(String cs) {
         List<String> args = new ArrayList<String>();
         if (cs == null) {
             return args;
         } else {
-            String[] split = cs.split(",");
+            String[] split = cs.split("(?<!\\\\),");
             for (String arg : split) {
-                args.add(arg.trim());
+                args.add(arg.trim().replaceAll("\\\\,", ","));
             }
             return args;
         }
