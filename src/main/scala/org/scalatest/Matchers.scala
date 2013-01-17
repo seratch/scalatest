@@ -3137,7 +3137,11 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def theSameElementsAs[T](right: GenTraversable[T]): Matcher[GenTraversable[T]] = 
-      new TheSameElementsAsContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new TheSameElementsAsContainMatcher(right).apply(left)
+      }
+      
     
     /**
      * This method enables the following syntax:
@@ -3148,7 +3152,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def theSameIteratedElementsAs[T](right: GenTraversable[T]): Matcher[GenTraversable[T]] = 
-      new TheSameIteratedElementsAsContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new TheSameIteratedElementsAsContainMatcher(right).apply(left)
+      }
     
     /**
      * This method enables the following syntax:
@@ -3159,7 +3166,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def allOf[T](right: T*): Matcher[GenTraversable[T]] = 
-      new AllOfContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new AllOfContainMatcher(right).apply(left)
+      }
     
     /**
      * This method enables the following syntax:
@@ -3170,7 +3180,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def inOrder[T](right: T*): Matcher[GenTraversable[T]] = 
-      new InOrderContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new InOrderContainMatcher(right).apply(left)
+      }
     
     /**
      * This method enables the following syntax:
@@ -3181,7 +3194,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def oneOf[T](right: T*): Matcher[GenTraversable[T]] = 
-      new OneOfContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new OneOfContainMatcher(right).apply(left)
+      }
     
     /**
      * This method enables the following syntax:
@@ -3192,7 +3208,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def only[T](right: T*): Matcher[GenTraversable[T]] = 
-      new OnlyContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new OnlyContainMatcher(right).apply(left)
+      }
     
     /**
      * This method enables the following syntax:
@@ -3203,7 +3222,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def inOrderOnly[T](right: T*): Matcher[GenTraversable[T]] = 
-      new InOrderOnlyContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new InOrderOnlyContainMatcher(right).apply(left)
+      }
     
     /**
      * This method enables the following syntax:
@@ -3214,7 +3236,10 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
      * </pre>
      */
     def noneOf[T](right: T*): Matcher[GenTraversable[T]] = 
-      new NoneOfContainMatcher(right)
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = 
+          new NoneOfContainMatcher(right).apply(left)
+      }
   }
 
   /**
