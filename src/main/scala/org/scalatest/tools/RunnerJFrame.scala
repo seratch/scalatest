@@ -692,6 +692,7 @@ private[scalatest] class RunnerJFrame(
     viewMenu.add(optionsMap(PresentTestSucceeded))
     viewMenu.add(optionsMap(PresentTestFailed))
     viewMenu.add(optionsMap(PresentTestIgnored))
+    viewMenu.add(optionsMap(PresentTestPending))
     viewMenu.add(optionsMap(PresentScopeOpened))
     viewMenu.add(optionsMap(PresentScopeClosed))
     viewMenu.add(optionsMap(PresentScopePending))
@@ -699,6 +700,7 @@ private[scalatest] class RunnerJFrame(
     viewMenu.add(optionsMap(PresentSuiteCompleted))
     viewMenu.add(optionsMap(PresentSuiteAborted))
     viewMenu.add(optionsMap(PresentInfoProvided))
+    viewMenu.add(optionsMap(PresentMarkupProvided))
     viewMenu.add(optionsMap(PresentRunStopped))
     viewMenu.add(optionsMap(PresentRunCompleted))
     viewMenu.add(optionsMap(PresentRunAborted))
@@ -1042,7 +1044,9 @@ private[scalatest] class RunnerJFrame(
           }
           
         case MarkupProvided(ordinal, message, nameInfo, formatter, location, payload, threadName, timeStamp) =>
-          // Do nothing for MarkupProvided, MarkupProvided should only be shown in HtmlReporter.
+          usingEventDispatchThread {
+            registerEvent(event)
+          }
       }
     }
   }
@@ -1463,6 +1467,9 @@ private[scalatest] class RunnerJFrame(
           }
           
         case MarkupProvided(ordinal, message, nameInfo, formatter, location, payload, threadName, timeStamp) =>
+          usingEventDispatchThread {
+            registerRerunEvent(event)
+          }
       }
     }
   }
@@ -1567,7 +1574,7 @@ private[tools] object RunnerJFrame {
       case PresentScopeOpened => "SCOPE_OPENED"
       case PresentScopeClosed => "SCOPE_CLOSED"
       case PresentScopePending => "SCOPE_PENDING"
-      case PresentMarkupProvided => "MARKUP_PROVIDED" // Shouldn't get here, because not registering these events in the GUI
+      case PresentMarkupProvided => "MARKUP_PROVIDED"
       case PresentRunStopped => "RUN_STOPPED"
       case PresentRunAborted => "RUN_ABORTED"
       case PresentRunCompleted => "RUN_COMPLETED"
