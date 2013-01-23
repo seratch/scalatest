@@ -1245,6 +1245,7 @@ object Runner {
         case 'P' => set += FilterScopeOpened
         case 'Q' => set += FilterScopeClosed
         case 'R' => set += FilterScopePending
+        case 'M' => set += FilterMarkupProvided
         case 'W' => set += PresentWithoutColor
         case 'F' => set += PresentFullStackTraces
         case 'S' => set += PresentShortStackTraces
