@@ -10240,6 +10240,27 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
             FailureMessages("containedExpectedElement", left, expectedElement)
           )
       }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain theSameElementsAs List(1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenTraversable[T]) {
+      val containMatcher = new TheSameElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
   }
   
   /**
@@ -10819,6 +10840,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(notWord: NotWord): ResultOfNotWordForCollectedGenTraversable[T, GenTraversable[T]] = 
       new ResultOfNotWordForCollectedGenTraversable(collected, xs, false)
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain (containMatcher)
+     *                       ^
+     * </pre>
+     */
+    def should(containWord: ContainWord): ResultOfContainWordForCollectedGenTraversable[T] = 
+      new ResultOfContainWordForCollectedGenTraversable(collected, xs, true)
   }
   
   /**
@@ -10955,6 +10987,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(notWord: NotWord): ResultOfNotWordForCollectedGenSeq[T, GenSeq[T]] = 
       new ResultOfNotWordForCollectedGenSeq(collected, xs, false)
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfGenSeq) should contain (containMatcher)
+     *                       ^
+     * </pre>
+     */
+    def should(containWord: ContainWord): ResultOfContainWordForCollectedGenTraversable[T] = 
+      new ResultOfContainWordForCollectedGenTraversable(collected, xs, true)
   }
   
   /**
@@ -11006,6 +11049,37 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               e,
               expectedSize
             ), 
+            None, 
+            6
+          )
+      }
+    }
+  }
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="InspectorsMatchers.html"><code>InspectorsMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   * @author Chee Seng
+   */
+  final class ResultOfContainWordForCollectedGenTraversable[T](collected: Collected, xs: GenTraversable[GenTraversable[T]], shouldBeTrue: Boolean) {
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain theSameElementsAs List(1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenTraversable[T]) {
+      val containMatcher = new TheSameElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
             None, 
             6
           )
@@ -11091,6 +11165,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(notWord: NotWord): ResultOfNotWordForCollectedArray[T, Array[T]] = 
       new ResultOfNotWordForCollectedArray(collected, xs, false)
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain (containMatcher)
+     *                 ^
+     * </pre>
+     */
+    def should(containWord: ContainWord): ResultOfContainWordForCollectedArray[T] = 
+      new ResultOfContainWordForCollectedArray(collected, xs, true)
   }
   
   /**
@@ -11282,6 +11367,27 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain theSameElementsAs List(1, 2, 3)
+     *                              ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenMap[K, V]) {
+      val containMatcher = new TheSameElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
   }
   
   /**
