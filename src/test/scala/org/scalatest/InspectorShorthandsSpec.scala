@@ -2209,124 +2209,124 @@ class InspectorShorthandsSpec extends Spec with Matchers with TableDrivenPropert
       }
     }*/
     
-    /*def `should work correctly with all(traversable) should not contain theSameElementsAs syntax` {
+    def `should work correctly with all(traversable) should not contain theSameElementsAs syntax` {
       forAll(traversableExamples) { colFun => 
         val col = colFun(Set(Set("1", "2", "3"), Set("2", "3", "1"), Set("3", "2", "1")))
-        all(col) should not contain theSameElementsAs Set("1", "2", "8")
+        all(col) should not contain theSameElementsAs (Set("1", "2", "8"))
       }
     }
     
-    def `should work correctly with all(array) should contain theSameElementsAs syntax` {
-      all(List(Array("1", "2", "3"), Array("2", "3", "1"), Array("3", "2", "1"))) should contain theSameElementsAs Set("1", "2", "3")
+    def `should throw TestFailedException with correct message and stack depth when all(traversable) should not contain theSameElementsAs failed` {
+      val right = Set("1", "2", "8")
+      forAll(traversableExamples) { colFun => 
+        val col = colFun(Set(Set("1", "2", "8"), Set("2", "3", "1"), Set("3", "8", "1")))
+        val e = intercept[exceptions.TestFailedException] {
+          all(col) should not contain theSameElementsAs (right)
+        }
+        e.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
+        e.failedCodeLineNumber should be (Some(thisLineNumber - 3))
+        val firstViolation = getFirst[GenTraversable[String]](col, e => e.size == 3 && e.exists(_ == "1") && e.exists(_ == "2") && e.exists(_ == "8") )
+        e.message should be (Some("forAll failed, because: \n" +
+                                  "  at index " + getIndex(col, firstViolation) + ", " + firstViolation + " contained the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 6) + ") \n" +
+                                  "in " + col))
+        e.getCause match {
+          case tfe: exceptions.TestFailedException =>
+            tfe.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
+            tfe.failedCodeLineNumber should be (Some(thisLineNumber - 11))
+            tfe.message should be (Some(firstViolation + " contained the same elements as " + right))
+            tfe.getCause should be (null)
+          case other => fail("Expected cause to be TestFailedException, but got: " + other)
+        }
+      }
     }
     
-    def `should throw TestFailedException with correct message and stack depth when all(array) should contain theSameElementsAs failed` {
+    def `should work correctly with all(array) should not contain theSameElementsAs syntax` {
+      all(List(Array("1", "2", "3"), Array("2", "3", "1"), Array("3", "2", "1"))) should not contain theSameElementsAs (Set("1", "2", "8"))
+    }
+    
+    def `should throw TestFailedException with correct message and stack depth when all(array) should not contain theSameElementsAs failed` {
       val right = Set("1", "2", "8")
       val col = List(Array("1", "2", "8"), Array("2", "3", "1"), Array("3", "8", "1"))
       val e = intercept[exceptions.TestFailedException] {
-        all(col) should contain theSameElementsAs right
+        all(col) should not contain theSameElementsAs (right)
       }
       e.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
       e.failedCodeLineNumber should be (Some(thisLineNumber - 3))
-      val firstViolationArray = getFirstNot[Array[String]](col, e => e.size == 3 && e.contains("1") && e.contains("2") && e.contains("8") )
+      val firstViolationArray = getFirst[Array[String]](col, e => e.size == 3 && e.contains("1") && e.contains("2") && e.contains("8") )
       val firstViolation: GenTraversable[String] = firstViolationArray
       e.message should be (Some("forAll failed, because: \n" +
-                                "  at index " + getIndex(col, firstViolationArray) + ", " + firstViolation + " did not contain the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 7) + ") \n" +
+                                "  at index " + getIndex(col, firstViolationArray) + ", " + firstViolation + " contained the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 7) + ") \n" +
                                 "in " + col))
       e.getCause match {
         case tfe: exceptions.TestFailedException =>
           tfe.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
           tfe.failedCodeLineNumber should be (Some(thisLineNumber - 12))
-          tfe.message should be (Some(firstViolation + " did not contain the same elements as " + right))
+          tfe.message should be (Some(firstViolation + " contained the same elements as " + right))
           tfe.getCause should be (null)
         case other => fail("Expected cause to be TestFailedException, but got: " + other)
       }
     }
     
-    def `should throw TestFailedException with correct message and stack depth when all(traversable) should contain theSameElementsAs failed` {
-      val right = Set("1", "2", "8")
-      forAll(traversableExamples) { colFun => 
-        val col = colFun(Set(Set("1", "2", "8"), Set("2", "3", "1"), Set("3", "8", "1")))
-        val e = intercept[exceptions.TestFailedException] {
-          all(col) should contain theSameElementsAs right
-        }
-        e.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
-        e.failedCodeLineNumber should be (Some(thisLineNumber - 3))
-        val firstViolation = getFirstNot[GenTraversable[String]](col, e => e.size == 3 && e.exists(_ == "1") && e.exists(_ == "2") && e.exists(_ == "8") )
-        e.message should be (Some("forAll failed, because: \n" +
-                                  "  at index " + getIndex(col, firstViolation) + ", " + firstViolation + " did not contain the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 6) + ") \n" +
-                                  "in " + col))
-        e.getCause match {
-          case tfe: exceptions.TestFailedException =>
-            tfe.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
-            tfe.failedCodeLineNumber should be (Some(thisLineNumber - 11))
-            tfe.message should be (Some(firstViolation + " did not contain the same elements as " + right))
-            tfe.getCause should be (null)
-          case other => fail("Expected cause to be TestFailedException, but got: " + other)
-        }
-      }
-    }
-    
-    def `should work correctly with all(seq) should contain theSameElementsAs syntax` {
+    def `should work correctly with all(seq) should not contain theSameElementsAs syntax` {
       forAll(seqExamples) { colFun => 
         val col = colFun(Set(Seq("1", "2", "3"), Seq("2", "3", "1"), Seq("3", "2", "1")))
-        all(col) should contain theSameElementsAs List("1", "2", "3")
+        all(col) should not contain theSameElementsAs (List("1", "2", "8"))
       }
     }
     
-    def `should throw TestFailedException with correct message and stack depth when all(seq) should contain theSameElementsAs failed` {
+    def `should throw TestFailedException with correct message and stack depth when all(seq) should not contain theSameElementsAs failed` {
       val right = Set("1", "2", "8")
       forAll(seqExamples) { colFun => 
         val col = colFun(Set(Seq("1", "2", "8"), Seq("2", "3", "1"), Seq("3", "8", "1")))
         val e = intercept[exceptions.TestFailedException] {
-          all(col) should contain theSameElementsAs right
+          all(col) should not contain theSameElementsAs (right)
         }
         e.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
         e.failedCodeLineNumber should be (Some(thisLineNumber - 3))
-        val firstViolation = getFirstNot[GenTraversable[String]](col, e => e.size == 3 && e.exists(_ == "1") && e.exists(_ == "2") && e.exists(_ == "8") )
+        val firstViolation = getFirst[GenTraversable[String]](col, e => e.size == 3 && e.exists(_ == "1") && e.exists(_ == "2") && e.exists(_ == "8") )
         e.message should be (Some("forAll failed, because: \n" +
-                                  "  at index " + getIndex(col, firstViolation) + ", " + firstViolation + " did not contain the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 6) + ") \n" +
+                                  "  at index " + getIndex(col, firstViolation) + ", " + firstViolation + " contained the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 6) + ") \n" +
                                   "in " + col))
         e.getCause match {
           case tfe: exceptions.TestFailedException =>
             tfe.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
             tfe.failedCodeLineNumber should be (Some(thisLineNumber - 11))
-            tfe.message should be (Some(firstViolation + " did not contain the same elements as " + right))
+            tfe.message should be (Some(firstViolation + " contained the same elements as " + right))
             tfe.getCause should be (null)
           case other => fail("Expected cause to be TestFailedException, but got: " + other)
         }
       }
     }
     
-    def `should work correctly with all(map) should contain theSameElementsAs syntax` {
+    def `should work correctly with all(map) should not contain theSameElementsAs syntax` {
       forAll(mapExamples) { colFun => 
         val col = colFun(Set(Map("1" -> "one", "2" -> "two", "3" -> "three"), Map("2" -> "two", "3" -> "three", "1" -> "one"), Map("3" -> "three", "2" -> "two", "1" -> "one")))
-        all(col) should contain theSameElementsAs Map("1" -> "one", "2" -> "two", "3" -> "three")
+        all(col) should not contain theSameElementsAs (Map("1" -> "one", "2" -> "two", "8" -> "eight"))
       }
     }
     
-    def `should throw TestFailedException with correct message and stack depth when all(map) should contain theSameElementsAs failed` {
+    def `should throw TestFailedException with correct message and stack depth when all(map) should not contain theSameElementsAs failed` {
       val right = Map("1" -> "one", "2" -> "two", "8" -> "eight")
       forAll(mapExamples) { colFun => 
         val col = colFun(Set(Map("1" -> "one", "2" -> "two", "8" -> "eight"), Map("2" -> "two", "3" -> "three", "1" -> "one"), Map("3" -> "three", "8" -> "eight", "1" -> "one")))
         val e = intercept[exceptions.TestFailedException] {
-          all(col) should contain theSameElementsAs right
+          all(col) should not contain theSameElementsAs (right)
         }
         e.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
         e.failedCodeLineNumber should be (Some(thisLineNumber - 3))
-        val firstViolation = getFirstNot[GenMap[String, String]](col, map => map.size == 3 && map.exists(e => e._1 == "1" && e._2 == "one") && map.exists(e => e._1 == "2" && e._2 == "two") && map.exists(e => e._1 == "8" && e._2 == "eight") )
+        val firstViolation = getFirst[GenMap[String, String]](col, map => map.size == 3 && map.exists(e => e._1 == "1" && e._2 == "one") && map.exists(e => e._1 == "2" && e._2 == "two") && map.exists(e => e._1 == "8" && e._2 == "eight") )
         e.message should be (Some("forAll failed, because: \n" +
-                                  "  at index " + getIndex(col, firstViolation) + ", " + firstViolation + " did not contain the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 6) + ") \n" +
+                                  "  at index " + getIndex(col, firstViolation) + ", " + firstViolation + " contained the same elements as " + right + " (InspectorShorthandsSpec.scala:" + (thisLineNumber - 6) + ") \n" +
                                   "in " + col))
         e.getCause match {
           case tfe: exceptions.TestFailedException =>
             tfe.failedCodeFileName should be (Some("InspectorShorthandsSpec.scala"))
             tfe.failedCodeLineNumber should be (Some(thisLineNumber - 11))
-            tfe.message should be (Some(firstViolation.toString + " did not contain the same elements as " + right.toString))
+            tfe.message should be (Some(firstViolation.toString + " contained the same elements as " + right.toString))
             tfe.getCause should be (null)
           case other => fail("Expected cause to be TestFailedException, but got: " + other)
         }
       }
-    }*/
+    }
   }
 }
