@@ -9592,6 +9592,28 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     }
+    
+    /**
+     * This method enables the following syntax, where <code>num</code> is, for example, of type <code>Int</code> and
+     * <code>odd</code> refers to a <code>BeMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">testing
+     * all(traversableOfTraversable) should not contain (containMatcher)
+     *                                          ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[E]) {
+      doCollected(collected, xs, "contain", 1) { e =>
+        val result = right(e)
+        if (result.matches != shouldBeTrue) {
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage, 
+            None, 
+            6
+          )
+        }
+      }
+    }
   }
   
   /**
@@ -9628,7 +9650,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     }
-    
   }
   
   /**
@@ -9747,6 +9768,28 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               e,
               right
             ), 
+            None, 
+            6
+          )
+        }
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>num</code> is, for example, of type <code>Int</code> and
+     * <code>odd</code> refers to a <code>BeMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">testing
+     * all(traversableOfArray) should not contain (containMatcher)
+     *                                    ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[E]) {
+      doCollected(collected, xs, "contain", 1) { e =>
+        val result = right(e)
+        if (result.matches != shouldBeTrue) {
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage, 
             None, 
             6
           )
