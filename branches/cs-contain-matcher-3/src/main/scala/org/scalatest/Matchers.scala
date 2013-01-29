@@ -8423,6 +8423,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new AllOfContainMatcher(xs)
   
   /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should contain allOf Map(1 -> "one", 2 -> "two")
+   *                                                          ^
+   * </pre>
+   */
+  def allOf[K, V](xs: GenMap[K, V]) = 
+    new AllOfContainMatcher(xs)
+  
+  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -10304,6 +10315,48 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain theSameIteratedElementsAs List(1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenTraversable[T]) {
+      val containMatcher = new TheSameIteratedElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameIteratedElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain allOf (1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def allOf(right: T*) {
+      val containMatcher = new AllOfContainMatcher(right)
+      doCollected(collected, xs, "allOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
   }
   
   /**
@@ -11128,6 +11181,48 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain theSameIteratedElementsAs List(1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenTraversable[T]) {
+      val containMatcher = new TheSameIteratedElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameIteratedElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain allOf (1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def allOf(right: T*) {
+      val containMatcher = new AllOfContainMatcher(right)
+      doCollected(collected, xs, "allOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
   }
   
   /**
@@ -11422,6 +11517,48 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def theSameElementsAs(right: GenMap[K, V]) {
       val containMatcher = new TheSameElementsAsContainMatcher(right)
       doCollected(collected, xs, "theSameElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain theSameElementsAs List(1, 2, 3)
+     *                              ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenMap[K, V]) {
+      val containMatcher = new TheSameIteratedElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameIteratedElementsAs", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain allOf Map(1 -> "one", 2 -> "two", 3 -> "three")
+     *                              ^
+     * </pre>
+     */
+    def allOf(right: GenMap[K, V]) {
+      val containMatcher = new AllOfContainMatcher(right)
+      doCollected(collected, xs, "allOf", 1) { e =>
         val result = containMatcher(e)
         if (result.matches != shouldBeTrue)
           throw newTestFailedException(
