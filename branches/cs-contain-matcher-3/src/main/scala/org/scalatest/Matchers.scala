@@ -8426,8 +8426,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * This method enables the following syntax: 
    *
    * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should contain allOf Map(1 -> "one", 2 -> "two")
-   *                                                          ^
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain allOf (Map(1 -> "one", 2 -> "two"))
+   *                                                              ^
    * </pre>
    */
   def allOf[K, V](xs: GenMap[K, V]) = 
@@ -8495,6 +8495,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new InOrderContainMatcher(xs)
   
   /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain inOrder (Map(1 -> "one", 2 -> "two"))
+   *                                                              ^
+   * </pre>
+   */
+  def inOrder[K, V](xs: GenMap[K, V]) = 
+    new InOrderContainMatcher(xs)
+  
+  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -8538,6 +8549,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * </pre>
    */
   def oneOf[T](xs: T*) = 
+    new OneOfContainMatcher(xs)
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain oneOf (Map(1 -> "one", 2 -> "two"))
+   *                                                              ^
+   * </pre>
+   */
+  def oneOf[K, V](xs: GenMap[K, V]) = 
     new OneOfContainMatcher(xs)
   
   /**
@@ -8600,6 +8622,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * </pre>
    */
   def only[T](xs: T*) = 
+    new OnlyContainMatcher(xs)
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain only (Map(1 -> "one", 2 -> "two"))
+   *                                                              ^
+   * </pre>
+   */
+  def only[K, V](xs: GenMap[K, V]) = 
     new OnlyContainMatcher(xs)
   
   /**
@@ -8669,6 +8702,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new InOrderOnlyContainMatcher(xs)
   
   /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain inOrderOnly (Map(1 -> "one", 2 -> "two"))
+   *                                                              ^
+   * </pre>
+   */
+  def inOrderOnly[K, V](xs: GenMap[K, V]) = 
+    new InOrderOnlyContainMatcher(xs)
+  
+  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -8730,6 +8774,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * </pre>
    */
   def noneOf[T](xs: T*) = 
+    new NoneOfContainMatcher(xs)
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain noneOf (Map(7 -> "seven", 8 -> "eight"))
+   *                                                              ^
+   * </pre>
+   */
+  def noneOf[K, V](xs: GenMap[K, V]) = 
     new NoneOfContainMatcher(xs)
   
   // For safe keeping
@@ -10357,6 +10412,111 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain inOrder (1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def inOrder(right: T*) {
+      val containMatcher = new InOrderContainMatcher(right)
+      doCollected(collected, xs, "inOrder", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain oneOf (1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def oneOf(right: T*) {
+      val containMatcher = new OneOfContainMatcher(right)
+      doCollected(collected, xs, "oneOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain only (1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def only(right: T*) {
+      val containMatcher = new OnlyContainMatcher(right)
+      doCollected(collected, xs, "only", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain inOrderOnly (1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def inOrderOnly(right: T*) {
+      val containMatcher = new InOrderOnlyContainMatcher(right)
+      doCollected(collected, xs, "inOrderOnly", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfArray) should contain noneOf (1, 2, 3)
+     *                                ^
+     * </pre>
+     */
+    def noneOf(right: T*) {
+      val containMatcher = new NoneOfContainMatcher(right)
+      doCollected(collected, xs, "noneOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
   }
   
   /**
@@ -11223,6 +11383,111 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain inOrder (1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def inOrder(right: T*) {
+      val containMatcher = new InOrderContainMatcher(right)
+      doCollected(collected, xs, "inOrder", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain oneOf (1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def oneOf(right: T*) {
+      val containMatcher = new OneOfContainMatcher(right)
+      doCollected(collected, xs, "oneOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain only (1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def only(right: T*) {
+      val containMatcher = new OnlyContainMatcher(right)
+      doCollected(collected, xs, "only", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain inOrderOnly (1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def inOrderOnly(right: T*) {
+      val containMatcher = new InOrderOnlyContainMatcher(right)
+      doCollected(collected, xs, "inOrderOnly", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfTraversable) should contain noneOf (1, 2, 3)
+     *                                      ^
+     * </pre>
+     */
+    def noneOf(right: T*) {
+      val containMatcher = new NoneOfContainMatcher(right)
+      doCollected(collected, xs, "noneOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
   }
   
   /**
@@ -11559,6 +11824,111 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def allOf(right: GenMap[K, V]) {
       val containMatcher = new AllOfContainMatcher(right)
       doCollected(collected, xs, "allOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain inOrder Map(1 -> "one", 2 -> "two", 3 -> "three")
+     *                              ^
+     * </pre>
+     */
+    def inOrder(right: GenMap[K, V]) {
+      val containMatcher = new InOrderContainMatcher(right)
+      doCollected(collected, xs, "inOrder", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain oneOf Map(1 -> "one", 2 -> "two", 3 -> "three")
+     *                              ^
+     * </pre>
+     */
+    def oneOf(right: GenMap[K, V]) {
+      val containMatcher = new OneOfContainMatcher(right)
+      doCollected(collected, xs, "oneOf", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain only Map(1 -> "one", 2 -> "two", 3 -> "three")
+     *                              ^
+     * </pre>
+     */
+    def only(right: GenMap[K, V]) {
+      val containMatcher = new OnlyContainMatcher(right)
+      doCollected(collected, xs, "only", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain inOrderOnly Map(1 -> "one", 2 -> "two", 3 -> "three")
+     *                              ^
+     * </pre>
+     */
+    def inOrderOnly(right: GenMap[K, V]) {
+      val containMatcher = new InOrderOnlyContainMatcher(right)
+      doCollected(collected, xs, "inOrderOnly", 1) { e =>
+        val result = containMatcher(e)
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * all(colOfMap) should contain noneOf Map(1 -> "one", 2 -> "two", 3 -> "three")
+     *                              ^
+     * </pre>
+     */
+    def noneOf(right: GenMap[K, V]) {
+      val containMatcher = new NoneOfContainMatcher(right)
+      doCollected(collected, xs, "noneOf", 1) { e =>
         val result = containMatcher(e)
         if (result.matches != shouldBeTrue)
           throw newTestFailedException(
