@@ -119,7 +119,7 @@ public class TestMojo extends AbstractScalaTestMojo {
     }
 
     private List<String> reporters() {
-        return reporterArg("-r", reporters, passThrough);
+        return reporterArg("-C", reporters, passThrough);
     }
 
     private List<String> junitxml(){

@@ -67,8 +67,8 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
 
   def testReporters {
     val config = configure(_.reporters = comma("YZT org.my.reporter", "org.your.reporter"))
-    config should containSlice("-rYZT", "org.my.reporter")
-    config should containSlice("-r", "org.your.reporter")
+    config should containSlice("-CYZT", "org.my.reporter")
+    config should containSlice("-C", "org.your.reporter")
   }
 
   def testJUnitXmlReporters {
