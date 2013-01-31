@@ -24,6 +24,7 @@ import org.junit.runner.notification.RunListener
 import org.junit.runner.notification.Failure
 import org.scalatest.events._
 import org.scalatest.Suite.autoTagClassAnnotations
+import Suite.wrapReporterIfNecessary
 
 /**
  * A suite of tests that can be run with either JUnit or ScalaTest. This trait allows you to write JUnit 4 tests

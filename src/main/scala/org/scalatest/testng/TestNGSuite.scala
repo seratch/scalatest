@@ -26,6 +26,7 @@ import events.MotionToSuppress
 import org.testng.TestNG
 import org.testng.TestListenerAdapter
 import exceptions._
+import Suite.wrapReporterIfNecessary
 
 /**
  * A suite of tests that can be run with either TestNG or ScalaTest. This trait allows you to mark any

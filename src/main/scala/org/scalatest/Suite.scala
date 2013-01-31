@@ -45,6 +45,7 @@ import Suite.getEscapedIndentedTextForTest
 import Suite.getTopOfClass
 import Suite.getTopOfMethod
 import Suite.getTopOfMethod
+import Suite.getSuiteRunTestGoodies
 import Suite.autoTagClassAnnotations
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
@@ -56,6 +57,7 @@ import Suite.reportTestPending
 import Suite.reportInfoProvided
 import Suite.createInfoProvided
 import Suite.createMarkupProvided
+import Suite.wrapReporterIfNecessary
 import scala.reflect.NameTransformer
 import tools.SuiteDiscoveryHelper
 import tools.Runner
@@ -1105,26 +1107,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     test()
   }
 
-  // Factored out to share this with fixture.Suite.runTest
-  // MOVE IT
-  private[scalatest] def getSuiteRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Method, Long) = {
-    val (stopRequested, report, testStartTime) = getRunTestGoodies(theSuite, stopper, reporter, testName)
-    val method = getMethodForTestName(theSuite, testName)
-    (stopRequested, report, method, testStartTime)
-  }
-
-  // Sharing this with FunSuite and fixture.FunSuite as well as Suite and fixture.Suite
-  // MOVE IT
-  private[scalatest] def getRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Long) = {
-
-    val stopRequested = stopper
-    val report = wrapReporterIfNecessary(theSuite, reporter)
-
-    val testStartTime = System.currentTimeMillis
-
-    (stopRequested, report, testStartTime)
-  }
-
   /**
    * Run a test.
    *
@@ -1702,15 +1684,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
      countNestedSuiteTests(filter.runnableTestCount(testNames, tags, suiteId), nestedSuites.toList, filter)
   }
 
-  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
-  // so that exceptions are caught and transformed
-  // into error messages on the standard error stream.
-  // MOVE IT
-  private[scalatest] def wrapReporterIfNecessary(theSuite: Suite, reporter: Reporter): Reporter = reporter match {
-    case cr: CatchReporter => cr
-    case _ => createCatchReporter(reporter)
-  }
-  
   // MOVE IT
   private[scalatest] def createCatchReporter(reporter: Reporter): Reporter = new WrapperCatchReporter(reporter)
   
@@ -2402,6 +2375,31 @@ used for test events like succeeded/failed, etc.
   def getTopOfClass(theSuite: Suite) = TopOfClass(theSuite.getClass.getName)
   def getTopOfMethod(theSuite: Suite, method: Method) = TopOfMethod(theSuite.getClass.getName, method.toGenericString())
   def getTopOfMethod(theSuite: Suite, testName: String) = TopOfMethod(theSuite.getClass.getName, theSuite.getMethodForTestName(theSuite, testName).toGenericString())
-  
+
+  // Factored out to share this with fixture.Suite.runTest
+  def getSuiteRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Method, Long) = {
+    val (stopRequested, report, testStartTime) = getRunTestGoodies(theSuite, stopper, reporter, testName)
+    val method = theSuite.getMethodForTestName(theSuite, testName)
+    (stopRequested, report, method, testStartTime)
+  }
+
+  // Sharing this with FunSuite and fixture.FunSuite as well as Suite and fixture.Suite
+  def getRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Long) = {
+
+    val stopRequested = stopper
+    val report = wrapReporterIfNecessary(theSuite, reporter)
+
+    val testStartTime = System.currentTimeMillis
+
+    (stopRequested, report, testStartTime)
+  }
+
+  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+  // so that exceptions are caught and transformed
+  // into error messages on the standard error stream.
+  def wrapReporterIfNecessary(theSuite: Suite, reporter: Reporter): Reporter = reporter match {
+    case cr: CatchReporter => cr
+    case _ => theSuite.createCatchReporter(reporter)
+  }
 }
 
