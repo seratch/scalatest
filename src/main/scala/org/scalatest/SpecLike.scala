@@ -1206,7 +1206,7 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 @Finders(Array("org.scalatest.finders.SpecFinder"))
 trait SpecLike extends Suite { thisSuite =>
 
-  private final val engine = new Engine("concurrentSpecMod", "Spec")
+  private final val engine = new Engine("concurrentSpecMod", "SpecLike")
   import engine._
   // Sychronized on thisSuite, only accessed from ensureScopesAndTestsRegistered
   private var scopesRegistered = false
@@ -1311,7 +1311,7 @@ trait SpecLike extends Suite { thisSuite =>
   }
 
   // TODO: Probably make this private final val sourceFileName in a singleton object so it gets compiled in rather than carried around in each instance
-  private[scalatest] val sourceFileName = "Spec.scala"
+  private[scalatest] val sourceFileName = "SpecLike.scala"
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its

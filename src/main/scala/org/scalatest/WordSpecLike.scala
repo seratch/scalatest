@@ -1678,7 +1678,7 @@ import Suite.autoTagClassAnnotations
 @Finders(Array("org.scalatest.finders.WordSpecFinder"))
 trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { thisSuite =>
 
-  private final val engine = new Engine("concurrentWordSpecMod", "WordSpec")
+  private final val engine = new Engine("concurrentWordSpecMod", "WordSpecLike")
   import engine._
 
   /**
@@ -1721,7 +1721,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "WordSpec.scala", methodName, 4, -3, None, None, None, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "WordSpecLike.scala", methodName, 4, -3, None, None, None, testTags: _*)
   }
 
   /**
@@ -1744,11 +1744,11 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpec.scala", methodName, 4, -3, None, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, 4, -3, None, testTags: _*)
   }
 
   private def registerBranch(description: String, childPrefix: Option[String], methodName:String, stackDepth: Int, adjustment: Int, fun: () => Unit) {
-    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpec.scala", methodName, stackDepth, adjustment, None)
+    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, stackDepth, adjustment, None)
   }
 
   /**

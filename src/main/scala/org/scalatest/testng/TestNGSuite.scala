@@ -90,7 +90,7 @@ trait TestNGSuite extends Suite { thisSuite =>
   override def run(testName: Option[String], args: Args): Status = {
     import args._
     val status = new ScalaTestStatefulStatus
-    runTestNG(testName, wrapReporterIfNecessary(reporter), filter, tracker, status)
+    runTestNG(testName, wrapReporterIfNecessary(thisSuite, reporter), filter, tracker, status)
     
     status.setCompleted()
     status
