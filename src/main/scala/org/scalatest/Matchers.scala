@@ -1073,6 +1073,16 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
         )
     }
   }
+  
+  private[scalatest] def matchContainMatcher[T](left: GenTraversable[T], containMatcher: ContainMatcher[T], shouldBeTrue: Boolean) {
+    val result = containMatcher(left)
+    if (result.matches != shouldBeTrue)
+      throw newTestFailedException(
+        if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage, 
+        None, 
+        2
+      )
+  }
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -2888,6 +2898,102 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
             left,
             expectedValue)
         )
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain theSameElementsAs anotherMap
+     *                    ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenMap[K, V]) {
+      matchContainMatcher(left, new TheSameElementsAsContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain theSameIteratedElementsAs anotherMap
+     *                    ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenMap[K, V]) {
+      matchContainMatcher(left, new TheSameIteratedElementsAsContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain allOf anotherMap
+     *                    ^
+     * </pre>
+     */
+    def allOf(right: GenMap[K, V]) {
+      matchContainMatcher(left, new AllOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain inOrder anotherMap
+     *                    ^
+     * </pre>
+     */
+    def inOrder(right: GenMap[K, V]) {
+      matchContainMatcher(left, new InOrderContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain oneOf anotherMap
+     *                    ^
+     * </pre>
+     */
+    def oneOf(right: GenMap[K, V]) {
+      matchContainMatcher(left, new OneOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain only anotherMap
+     *                    ^
+     * </pre>
+     */
+    def only(right: GenMap[K, V]) {
+      matchContainMatcher(left, new OnlyContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain inOrderOnly anotherMap
+     *                    ^
+     * </pre>
+     */
+    def inOrderOnly(right: GenMap[K, V]) {
+      matchContainMatcher(left, new InOrderOnlyContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * map should contain noneOf anotherMap
+     *                    ^
+     * </pre>
+     */
+    def noneOf(right: GenMap[K, V]) {
+      matchContainMatcher(left, new NoneOfContainMatcher(right), shouldBeTrue)
     }
   }
 
@@ -8173,14 +8279,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfContainWordForTraversable[T](left: GenTraversable[T], shouldBeTrue: Boolean = true) {
-    
-    private[scalatest] def apply(containMatcher: ContainMatcher[T]) {
-      val result = containMatcher(left)
-      if (result.matches != shouldBeTrue)
-        throw newTestFailedException(
-          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
-        )
-    }
   
     /**
      * This method enables the following syntax: 
@@ -8191,7 +8289,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def theSameElementsAs(right: GenTraversable[T]) {
-      apply(new TheSameElementsAsContainMatcher(right))
+      matchContainMatcher(left, new TheSameElementsAsContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8203,7 +8301,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def theSameIteratedElementsAs(right: GenTraversable[T]) {
-      apply(new TheSameIteratedElementsAsContainMatcher(right))
+      matchContainMatcher(left, new TheSameIteratedElementsAsContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8215,7 +8313,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def allOf(right: T*) {
-      apply(new AllOfContainMatcher(right))
+      matchContainMatcher(left, new AllOfContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8227,7 +8325,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def inOrder(right: T*) {
-      apply(new InOrderContainMatcher(right))
+      matchContainMatcher(left, new InOrderContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8239,7 +8337,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def oneOf(right: T*) {
-      apply(new OneOfContainMatcher(right))
+      matchContainMatcher(left, new OneOfContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8251,7 +8349,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def only(right: T*) {
-      apply(new OnlyContainMatcher(right))
+      matchContainMatcher(left, new OnlyContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8263,7 +8361,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def inOrderOnly(right: T*) {
-      apply(new InOrderOnlyContainMatcher(right))
+      matchContainMatcher(left, new InOrderOnlyContainMatcher(right), shouldBeTrue)
     }
     
     /**
@@ -8275,7 +8373,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def noneOf(right: T*) {
-      apply(new NoneOfContainMatcher(right))
+      matchContainMatcher(left, new NoneOfContainMatcher(right), shouldBeTrue)
     }
   }
   
