@@ -32,6 +32,7 @@ import org.scalatest.events.MotionToSuppress
 import Suite.getIndentedTextForTest
 import org.scalatest.events._
 import exceptions._
+import Suite.wrapReporterIfNecessary
 
 /**
  * A <code>Suite</code> that is also a <code>junit.framework.TestCase</code>. 
