@@ -35,12 +35,16 @@ import Suite.formatterForSuiteAborted
 import Suite.anErrorThatShouldCauseAnAbort
 import Suite.getSimpleNameOfAnObjectsClass
 import Suite.takesInformer
+import Suite.handleFailedTest
 import Suite.takesCommunicator
 import Suite.isTestMethodGoodies
 import Suite.testMethodTakesAnInformer
 import scala.collection.immutable.TreeSet
 import Suite.getIndentedTextForTest
 import Suite.getEscapedIndentedTextForTest
+import Suite.getTopOfClass
+import Suite.getTopOfMethod
+import Suite.getTopOfMethod
 import Suite.autoTagClassAnnotations
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
@@ -1436,22 +1440,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     status
   }
 
-  // TODO see if I can take away the [scalatest] from the private
-  // MOVE IT
-  private[scalatest] def handleFailedTest(theSuite: Suite, throwable: Throwable, testName: String, recordedEvents: collection.immutable.IndexedSeq[RecordableEvent], report: Reporter, tracker: Tracker, formatter: Formatter, duration: Long) {
-
-    val message = getMessageForException(throwable)
-    //val formatter = getEscapedIndentedTextForTest(testName, 1, true)
-    val payload = 
-      throwable match {
-        case optPayload: PayloadField => 
-          optPayload.payload
-        case _ => 
-          None
-      }
-    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), testName, testName, recordedEvents, Some(throwable), Some(duration), Some(formatter), Some(SeeStackDepthException), rerunner, payload))
-  }
-
   /**
    *
    * Run zero to many of this <code>Suite</code>'s nested <code>Suite</code>s.
@@ -1740,11 +1728,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     else
       None
   }
-  
-  // MOVE IT (all 3)
-  private[scalatest] def getTopOfClass(theSuite: Suite) = TopOfClass(this.getClass.getName)
-  private[scalatest] def getTopOfMethod(theSuite: Suite, method: Method) = TopOfMethod(this.getClass.getName, method.toGenericString())
-  private[scalatest] def getTopOfMethod(theSuite: Suite, testName: String) = TopOfMethod(this.getClass.getName, getMethodForTestName(theSuite, testName).toGenericString())
   
   /**
    * Suite style name.
@@ -2393,5 +2376,32 @@ used for test events like succeeded/failed, etc.
     
     Runner.mergeMap[String, Set[String]](List(tags, autoTestTags)) ( _ ++ _ )
   }
+
+  def handleFailedTest(
+    theSuite: Suite,
+    throwable: Throwable,
+    testName: String,
+    recordedEvents: collection.immutable.IndexedSeq[RecordableEvent],
+    report: Reporter,
+    tracker: Tracker,
+    formatter: Formatter,
+    duration: Long
+  ) {
+    val message = getMessageForException(throwable)
+    //val formatter = getEscapedIndentedTextForTest(testName, 1, true)
+    val payload = 
+      throwable match {
+        case optPayload: PayloadField => 
+          optPayload.payload
+        case _ => 
+          None
+      }
+    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testName, recordedEvents, Some(throwable), Some(duration), Some(formatter), Some(SeeStackDepthException), theSuite.rerunner, payload))
+  }
+
+  def getTopOfClass(theSuite: Suite) = TopOfClass(theSuite.getClass.getName)
+  def getTopOfMethod(theSuite: Suite, method: Method) = TopOfMethod(theSuite.getClass.getName, method.toGenericString())
+  def getTopOfMethod(theSuite: Suite, testName: String) = TopOfMethod(theSuite.getClass.getName, theSuite.getMethodForTestName(theSuite, testName).toGenericString())
+  
 }
 
