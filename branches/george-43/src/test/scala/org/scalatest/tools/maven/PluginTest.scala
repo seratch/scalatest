@@ -65,6 +65,15 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
     config should containSlice("-fYZT", new File(reportsDirectory, "some.txt").getAbsolutePath)
   }
 
+  def testHtmlreporters {
+    val config = configure(_.htmlreporters =
+      comma("target/htmldir", "target/myhtmldir src/resources/my.css"))
+
+    config should containSlice("-h", "target/htmldir")
+    config should containSlice("-h", "target/myhtmldir",
+                               "-Y", "src/resources/my.css")
+  }
+
   def testReporters {
     val config = configure(_.reporters = comma("YZT org.my.reporter", "org.your.reporter"))
     config should containSlice("-CYZT", "org.my.reporter")
