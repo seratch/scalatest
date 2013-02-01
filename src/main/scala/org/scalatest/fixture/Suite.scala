@@ -17,7 +17,7 @@ package org.scalatest.fixture
 
 import org.scalatest._
 import collection.immutable.TreeSet
-import Suite._
+// import Suite._
 import java.lang.reflect.{InvocationTargetException, Method, Modifier}
 import org.scalatest.events._
 import org.scalatest.Suite._
@@ -281,6 +281,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
     }
   }
 
+/*
   // Overriding this in fixture.Suite to reduce duplication of tags method
   private[scalatest] override def getMethodForTestName(theSuite: org.scalatest.Suite, testName: String): Method = {
     val candidateMethods = theSuite.getClass.getMethods.filter(_.getName == Suite.simpleNameForTest(testName))
@@ -315,6 +316,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
          throw new IllegalArgumentException(Resources("testNotFound", testName))
      }
   }
+*/
   
   /**
    * Suite style name.
@@ -322,6 +324,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
   override val styleName: String = "org.scalatest.fixture.Suite"
 }
 
+/*
 private[scalatest] object Suite {
 
   val FixtureAndInformerInParens = "(FixtureParam, Informer)"
@@ -346,3 +349,4 @@ private[scalatest] object Suite {
     else
       Array(classOf[Informer])
 }
+*/

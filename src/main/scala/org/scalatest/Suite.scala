@@ -36,7 +36,6 @@ import Suite.anErrorThatShouldCauseAnAbort
 import Suite.getSimpleNameOfAnObjectsClass
 import Suite.takesInformer
 import Suite.handleFailedTest
-import Suite.takesCommunicator
 import Suite.isTestMethodGoodies
 import Suite.testMethodTakesAnInformer
 import scala.collection.immutable.TreeSet
@@ -58,6 +57,7 @@ import Suite.reportInfoProvided
 import Suite.createInfoProvided
 import Suite.createMarkupProvided
 import Suite.wrapReporterIfNecessary
+import Suite.getMethodForTestName
 import scala.reflect.NameTransformer
 import tools.SuiteDiscoveryHelper
 import tools.Runner
@@ -1038,7 +1038,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
       // Factored out to share code with fixture.Suite.testNames
       val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags, isTestDataFor) = isTestMethodGoodies(m)
 
-      isInstanceMethod && (firstFour == "test") && !isTestDataFor && ((hasNoParams && !isTestNames && !isTestTags) || takesInformer(m) || takesCommunicator(m))
+      isInstanceMethod && (firstFour == "test") && !isTestDataFor && ((hasNoParams && !isTestNames && !isTestTags) || takesInformer(m))
     }
 
     val testNameArray =
@@ -1056,8 +1056,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   Old style method names will have (Informer) at the end still, but new ones will
   not. This method will find the one without a Rep if the same name is used
   with and without a Rep.
-   */
-  // MOVE IT
   private[scalatest] def getMethodForTestName(theSuite: Suite, testName: String): Method =
     try {
       theSuite.getClass.getMethod(
@@ -1078,6 +1076,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
       case e: Throwable =>
         throw e
     }
+   */
 
   /**
    *  Run the passed test function in the context of a fixture established by this method.
@@ -1162,20 +1161,24 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
         (message, _, isConstructingThread, testWasPending, testWasCanceled, location) => createMarkupProvided(thisSuite, report, tracker, Some(testName), message, 2, location, isConstructingThread) // TODO: Need a test that fails because testWasCanceleed isn't being passed
       )
 
+/*
     class RepImpl(val info: Informer, val markup: Documenter) extends Rep
 
     def testMethodTakesARep(method: Method): Boolean = {
       val paramTypes = method.getParameterTypes
       (paramTypes.size == 1) && (paramTypes(0) eq classOf[Rep])
     }
+*/
 
     val argsArray: Array[Object] =
       if (testMethodTakesAnInformer(testName)) {
         Array(informerForThisTest)  
       }
+/*
       else if (testMethodTakesARep(method)) {
         Array(new RepImpl(informerForThisTest, documenterForThisTest))
       }
+*/
       else Array()
 
     try {
@@ -1745,15 +1748,15 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
 
 private[scalatest] object Suite {
 
-  private[scalatest] val TestMethodPrefix = "test"
-  private[scalatest] val InformerInParens = "(Informer)"
-  private[scalatest] val IgnoreAnnotation = "org.scalatest.Ignore"
+  val TestMethodPrefix = "test"
+  val InformerInParens = "(Informer)"
+  val IgnoreAnnotation = "org.scalatest.Ignore"
 
-  private[scalatest] def getSimpleNameOfAnObjectsClass(o: AnyRef) = stripDollars(parseSimpleName(o.getClass.getName))
+  def getSimpleNameOfAnObjectsClass(o: AnyRef) = stripDollars(parseSimpleName(o.getClass.getName))
 
   // [bv: this is a good example of the expression type refactor. I moved this from SuiteClassNameListCellRenderer]
   // this will be needed by the GUI classes, etc.
-  private[scalatest] def parseSimpleName(fullyQualifiedName: String) = {
+  def parseSimpleName(fullyQualifiedName: String) = {
 
     val dotPos = fullyQualifiedName.lastIndexOf('.')
 
@@ -1764,7 +1767,7 @@ private[scalatest] object Suite {
       fullyQualifiedName
   }
   
-  private[scalatest] def checkForPublicNoArgConstructor(clazz: java.lang.Class[_]) = {
+  def checkForPublicNoArgConstructor(clazz: java.lang.Class[_]) = {
     
     try {
       val constructor = clazz.getConstructor(new Array[java.lang.Class[T] forSome { type T }](0): _*)
@@ -1781,7 +1784,7 @@ private[scalatest] object Suite {
   // the interpreter started with "line". Now they don't, but in both cases they seemed to have at
   // least one "$iw$" in them. So now I leave the string alone unless I see a "$iw$" in it. Worst case
   // is sometimes people will get ugly strings coming out of the interpreter. -bv April 3, 2012
-  private[scalatest] def stripDollars(s: String): String = {
+  def stripDollars(s: String): String = {
     val lastDollarIndex = s.lastIndexOf('$')
     if (lastDollarIndex < s.length - 1)
       if (lastDollarIndex == -1 || !s.contains("$iw$")) s else s.substring(lastDollarIndex + 1)
@@ -1799,7 +1802,7 @@ private[scalatest] object Suite {
     }
   }
   
-  private[scalatest] def diffStrings(s: String, t: String): Tuple2[String, String] = {
+  def diffStrings(s: String, t: String): Tuple2[String, String] = {
     def findCommonPrefixLength(s: String, t: String): Int = {
       val max = s.length.min(t.length) // the maximum potential size of the prefix
       var i = 0
@@ -1838,7 +1841,7 @@ private[scalatest] object Suite {
   
   // If the objects are two strings, replace them with whatever is returned by diffStrings.
   // Otherwise, use the same objects.
-  private[scalatest] def getObjectsForFailureMessage(a: Any, b: Any) = 
+  def getObjectsForFailureMessage(a: Any, b: Any) = 
     a match {
       case aStr: String => {
         b match {
@@ -1851,22 +1854,24 @@ private[scalatest] object Suite {
       case _ => (a, b)
     }
 
-  private[scalatest] def formatterForSuiteStarting(suite: Suite): Option[Formatter] =
+  def formatterForSuiteStarting(suite: Suite): Option[Formatter] =
       Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
 
-  private[scalatest] def formatterForSuiteCompleted(suite: Suite): Option[Formatter] =
+  def formatterForSuiteCompleted(suite: Suite): Option[Formatter] =
       Some(MotionToSuppress)
 
-  private[scalatest] def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] =
+  def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] =
       Some(IndentedText(message, message, 0))
 
-  private[scalatest] def simpleNameForTest(testName: String) =
+/*
+  def simpleNameForTest(testName: String) =
     if (testName.endsWith(InformerInParens))
       testName.substring(0, testName.length - InformerInParens.length)
     else
       testName
+*/
 
-  private[scalatest] def anErrorThatShouldCauseAnAbort(throwable: Throwable) =
+  def anErrorThatShouldCauseAnAbort(throwable: Throwable) =
     throwable match {
       case _: AnnotationFormatError | 
            _: CoderMalfunctionError |
@@ -1886,10 +1891,12 @@ private[scalatest] object Suite {
     paramTypes.length == 1 && classOf[Informer].isAssignableFrom(paramTypes(0))
   }
 
+/* TODO: Delete me if not needed
   def takesCommunicator(m: Method) = {
     val paramTypes = m.getParameterTypes
     paramTypes.length == 1 && classOf[Rep].isAssignableFrom(paramTypes(0))
   }
+*/
 
   def isTestMethodGoodies(m: Method) = {
 
@@ -2374,12 +2381,12 @@ used for test events like succeeded/failed, etc.
 
   def getTopOfClass(theSuite: Suite) = TopOfClass(theSuite.getClass.getName)
   def getTopOfMethod(theSuite: Suite, method: Method) = TopOfMethod(theSuite.getClass.getName, method.toGenericString())
-  def getTopOfMethod(theSuite: Suite, testName: String) = TopOfMethod(theSuite.getClass.getName, theSuite.getMethodForTestName(theSuite, testName).toGenericString())
+  def getTopOfMethod(theSuite: Suite, testName: String) = TopOfMethod(theSuite.getClass.getName, getMethodForTestName(theSuite, testName).toGenericString())
 
   // Factored out to share this with fixture.Suite.runTest
   def getSuiteRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Method, Long) = {
     val (stopRequested, report, testStartTime) = getRunTestGoodies(theSuite, stopper, reporter, testName)
-    val method = theSuite.getMethodForTestName(theSuite, testName)
+    val method = getMethodForTestName(theSuite, testName)
     (stopRequested, report, method, testStartTime)
   }
 
@@ -2400,6 +2407,56 @@ used for test events like succeeded/failed, etc.
   def wrapReporterIfNecessary(theSuite: Suite, reporter: Reporter): Reporter = reporter match {
     case cr: CatchReporter => cr
     case _ => theSuite.createCatchReporter(reporter)
+  }
+
+  val FixtureAndInformerInParens = "(FixtureParam, Informer)"
+  val FixtureInParens = "(FixtureParam)"
+
+  def testMethodTakesAFixtureAndInformer(testName: String) = testName.endsWith(FixtureAndInformerInParens)
+  def testMethodTakesAFixture(testName: String) = testName.endsWith(FixtureInParens)
+
+  def simpleNameForTest(testName: String) =
+    if (testName.endsWith(FixtureAndInformerInParens))
+      testName.substring(0, testName.length - FixtureAndInformerInParens.length)
+    else if (testName.endsWith(FixtureInParens))
+      testName.substring(0, testName.length - FixtureInParens.length)
+    else if (testName.endsWith(InformerInParens))
+      testName.substring(0, testName.length - InformerInParens.length)
+    else
+      testName
+
+  def getMethodForTestName(theSuite: org.scalatest.Suite, testName: String): Method = {
+    val candidateMethods = theSuite.getClass.getMethods.filter(_.getName == Suite.simpleNameForTest(testName))
+    val found =
+      if (testMethodTakesAFixtureAndInformer(testName))
+        candidateMethods.find(
+          candidateMethod => {
+            val paramTypes = candidateMethod.getParameterTypes
+            paramTypes.length == 2 && paramTypes(1) == classOf[Informer]
+          }
+        )
+      else if (testMethodTakesAnInformer(testName))
+        candidateMethods.find(
+          candidateMethod => {
+            val paramTypes = candidateMethod.getParameterTypes
+            paramTypes.length == 1 && paramTypes(0) == classOf[Informer]
+          }
+        )
+      else if (testMethodTakesAFixture(testName))
+        candidateMethods.find(
+          candidateMethod => {
+            val paramTypes = candidateMethod.getParameterTypes
+            paramTypes.length == 1
+          }
+        )
+      else
+        candidateMethods.find(_.getParameterTypes.length == 0)
+
+     found match {
+       case Some(method) => method
+       case None =>
+         throw new IllegalArgumentException(Resources("testNotFound", testName))
+     }
   }
 }
 
