@@ -112,7 +112,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testTests {
-    configure(_.tests = comma("a", "b", "c")) should containSuiteArgs("-t", "a", "b", "c")
+    configure(_.tests = comma("a", "b", "c")) should containSuiteArgs("-z", "a", "b", "c")
   }
 
   //
@@ -120,7 +120,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   // support a test name that contains a comma.
   //
   def testTestsWithCommas {
-    configure(_.tests = comma("a\\, bc", "b", "c")) should containSuiteArgs("-t", "a, bc", "b", "c")
+    configure(_.tests = comma("a\\, bc", "b", "c")) should containSuiteArgs("-z", "a, bc", "b", "c")
   }
 
   def testMembers {

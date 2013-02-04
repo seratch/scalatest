@@ -419,7 +419,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     }
 
     private List<String> tests() {
-        return suiteArg("-t", tests);
+        return suiteArg("-z", tests);
     }
 
     private List<String> membersOnlySuites() {
