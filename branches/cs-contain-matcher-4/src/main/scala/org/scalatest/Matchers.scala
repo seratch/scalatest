@@ -1083,6 +1083,79 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
         2
       )
   }
+  
+  private[scalatest] class JavaCollectionWrapper[T](underlying: java.util.Collection[T]) extends Iterable[T] {
+    import collection.JavaConversions._
+    def iterator = underlying.iterator
+    override def size = underlying.size
+    override def isEmpty = underlying.isEmpty
+    def newBuilder[B] = new collection.mutable.ArrayBuffer[B]
+    override def toString = if (underlying == null) "null" else underlying.toString
+  }
+  
+  private[scalatest] def matchContainMatcher[T](left: java.util.Collection[T], containMatcher: ContainMatcher[T], shouldBeTrue: Boolean) {
+    val result = containMatcher(new JavaCollectionWrapper(left))
+    if (result.matches != shouldBeTrue)
+      throw newTestFailedException(
+        if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage, 
+        None, 
+        2
+      )
+  }
+  
+  private[scalatest] class JavaMapWrapper[K, V, +Repr <: collection.mutable.MapLike[K, V, Repr] with collection.mutable.Map[K, V]](underlying: java.util.Map[K, V]) extends collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Repr] {
+    
+    override def size = underlying.size
+
+    def get(k: K) = {
+      val v = underlying get k
+      if (v != null)
+        Some(v)
+      else if (underlying containsKey k)
+        Some(null.asInstanceOf[V])
+      else
+        None
+    }
+
+    def +=(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -=(key: K): this.type = { underlying remove key; this }
+
+    override def put(k: K, v: V): Option[V] = {
+      val r = underlying.put(k, v)
+      if (r != null) Some(r) else None
+    }
+
+    override def update(k: K, v: V) { underlying.put(k, v) }
+
+    override def remove(k: K): Option[V] = {
+      val r = underlying remove k
+      if (r != null) Some(r) else None
+    }
+
+    def iterator: Iterator[(K, V)] = 
+      new collection.Iterator[(K, V)] {
+        val ui = underlying.entrySet.iterator
+        def hasNext = ui.hasNext
+        def next() = { val e = ui.next(); (e.getKey, e.getValue) }
+      }
+
+    override def clear() = underlying.clear()
+
+    // LinkedHashMap is used because it preserves insertion order
+    override def empty: Repr = collection.mutable.LinkedHashMap.empty.asInstanceOf[Repr]
+    
+    override def toString = if (underlying == null) "null" else underlying.toString
+  }
+  
+  private[scalatest] def matchContainMatcher[K, V](left: java.util.Map[K, V], containMatcher: ContainMatcher[(K, V)], shouldBeTrue: Boolean) {
+    val result = containMatcher(new JavaMapWrapper(left))
+    if (result.matches != shouldBeTrue)
+      throw newTestFailedException(
+        if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage, 
+        None, 
+        2
+      )
+  }
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -3040,6 +3113,104 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with AsAny with
             expectedValue)
         )
     }
+    
+    import collection.JavaConversions._
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain theSameElementsAs traversable
+     *                            ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenMap[K, V]) {
+      matchContainMatcher(left, new TheSameElementsAsContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain theSameIteratedElementsAs traversable
+     *                        ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenMap[K, V]) {
+      matchContainMatcher(left, new TheSameIteratedElementsAsContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain allOf (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def allOf(right: GenMap[K, V]) {
+      matchContainMatcher(left, new AllOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain inOrder (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def inOrder(right: GenMap[K, V]) {
+      matchContainMatcher(left, new InOrderContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain oneOf (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def oneOf(right: GenMap[K, V]) {
+      matchContainMatcher(left, new OneOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain only (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def only(right: GenMap[K, V]) {
+      matchContainMatcher(left, new OnlyContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain inOrderOnly (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def inOrderOnly(right: GenMap[K, V]) {
+      matchContainMatcher(left, new InOrderOnlyContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain noneOf (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def noneOf(right: GenMap[K, V]) {
+      matchContainMatcher(left, new NoneOfContainMatcher(right), shouldBeTrue)
+    }
   }
 
   /** 
@@ -4383,6 +4554,23 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * javaCollection should not contain containMatcher
+     *                           ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[E]) {
+      val result = right(new JavaCollectionWrapper(left.asInstanceOf[java.util.Collection[E]]))
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
+        )
+      }
+    }
   }
 
   /**
@@ -4549,6 +4737,23 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax:
+     *
+     * <pre class="stHighlight">
+     * javaMap should not contain containMatcher
+     *                    ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[(K, V)]) {
+      val result = right(new JavaMapWrapper(left.asInstanceOf[java.util.Map[K, V]]))
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
+        )
       }
     }
   }
@@ -8370,6 +8575,111 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * <pre class="stHighlight">
      * traversable should contain noneOf (1, 2)
      *                            ^
+     * </pre>
+     */
+    def noneOf(right: T*) {
+      matchContainMatcher(left, new NoneOfContainMatcher(right), shouldBeTrue)
+    }
+  }
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfContainWordForJavaCollection[T](left: java.util.Collection[T], shouldBeTrue: Boolean = true) {
+  
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain theSameElementsAs traversable
+     *                            ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenTraversable[T]) {
+      matchContainMatcher(left, new TheSameElementsAsContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain theSameIteratedElementsAs anotherTraversable
+     *                        ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenTraversable[T]) {
+      matchContainMatcher(left, new TheSameIteratedElementsAsContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain allOf (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def allOf(right: T*) {
+      matchContainMatcher(left, new AllOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain inOrder (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def inOrder(right: T*) {
+      matchContainMatcher(left, new InOrderContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain oneOf (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def oneOf(right: T*) {
+      matchContainMatcher(left, new OneOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain only (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def only(right: T*) {
+      matchContainMatcher(left, new OnlyContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain inOrderOnly (1, 2)
+     *                        ^
+     * </pre>
+     */
+    def inOrderOnly(right: T*) {
+      matchContainMatcher(left, new InOrderOnlyContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain noneOf (1, 2)
+     *                        ^
      * </pre>
      */
     def noneOf(right: T*) {
@@ -13450,6 +13760,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(haveWord: HaveWord): ResultOfHaveWordForJavaCollection[E, L] =
       new ResultOfHaveWordForJavaCollection(left, true)
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * javaCollection should contain theSameElementsAs anotherSeq
+     *                ^
+     * </pre>
+     */
+    def should(containWord: ContainWord) = 
+      new ResultOfContainWordForJavaCollection(left.asInstanceOf[java.util.Collection[E]], true)
 
     /**
      * This method enables syntax such as the following:
@@ -13834,6 +14155,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def should(haveWord: HaveWord): ResultOfHaveWordForJavaList[E, L] = {
       new ResultOfHaveWordForJavaList(left, true)
     }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * javaList should contain theSameElementsAs anotherSeq
+     *          ^
+     * </pre>
+     */
+    def should(containWord: ContainWord) = 
+      new ResultOfContainWordForJavaCollection(left.asInstanceOf[java.util.Collection[E]], true)
 
     /**
      * This method enables syntax such as the following:
