@@ -10448,7 +10448,28 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         }
       }
     }
-    
+
+    /**
+     * This method enables the following syntax, where <code>num</code> is, for example, of type <code>Int</code> and
+     * <code>odd</code> refers to a <code>BeMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">testing
+     * all(colOfJavaCollection) should not contain (containMatcher)
+     *                                     ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[E]) {
+      doCollected(collected, xs, "contain", 1) { e =>
+        val result = right(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue) {
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+        }
+      }
+    }
   }
   
   /**
@@ -10566,6 +10587,27 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
     
+    /**
+     * This method enables the following syntax, where <code>num</code> is, for example, of type <code>Int</code> and
+     * <code>odd</code> refers to a <code>BeMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">testing
+     * all(colOfJavaMap) should not contain (containMatcher)
+     *                              ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[(K, V)]) {
+      doCollected(collected, xs, "contain", 1) { e =>
+        val result = right(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue) {
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+        }
+      }
+    }
   }
   
   /**
@@ -12372,6 +12414,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain theSameElementsAs List(1, 2, 3)
+     *                   ^
+     * </pre>
+     */
+    def should(containWord: ContainWord): ResultOfContainWordForCollectedJavaCollection[T] = 
+      new ResultOfContainWordForCollectedJavaCollection(collected, xs, true)
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
      * all(colOfJavaCol) should be (aJavaSet)
      *                   ^
      * </pre>
@@ -12484,6 +12537,184 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
             6
           )
         }
+    }
+  }
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="InspectorsMatchers.html"><code>InspectorsMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   * @author Chee Seng
+   */
+  final class ResultOfContainWordForCollectedJavaCollection[T](collected: Collected, xs: GenTraversable[java.util.Collection[T]], shouldBeTrue: Boolean) {
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain theSameElementsAs List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenTraversable[T]) {
+      val containMatcher = new TheSameElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameElementsAs", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain theSameIteratedElementsAs List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenTraversable[T]) {
+      val containMatcher = new TheSameIteratedElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameIteratedElementsAs", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain allOf List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def allOf(right: T*) {
+      val containMatcher = new AllOfContainMatcher(right)
+      doCollected(collected, xs, "allOf", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain inOrder List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def inOrder(right: T*) {
+      val containMatcher = new InOrderContainMatcher(right)
+      doCollected(collected, xs, "inOrder", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain oneOf List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def oneOf(right: T*) {
+      val containMatcher = new OneOfContainMatcher(right)
+      doCollected(collected, xs, "oneOf", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain only List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def only(right: T*) {
+      val containMatcher = new OnlyContainMatcher(right)
+      doCollected(collected, xs, "only", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain inOrderOnly List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def inOrderOnly(right: T*) {
+      val containMatcher = new InOrderOnlyContainMatcher(right)
+      doCollected(collected, xs, "inOrderOnly", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaCol) should contain noneOf List(1, 2, 3)
+     *                                  ^
+     * </pre>
+     */
+    def noneOf(right: T*) {
+      val containMatcher = new NoneOfContainMatcher(right)
+      doCollected(collected, xs, "noneOf", 1) { e =>
+        val result = containMatcher(new JavaCollectionWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
     }
   }
   
@@ -12682,6 +12913,174 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               expectedValue), 
               None, 
               6
+          )
+      }
+    }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain theSameElementsAs Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def theSameElementsAs(right: GenMap[K, V]) {
+      val containMatcher = new TheSameElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameElementsAs", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,  
+            None, 
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain theSameIteratedElementsAs Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: GenMap[K, V]) {
+      val containMatcher = new TheSameIteratedElementsAsContainMatcher(right)
+      doCollected(collected, xs, "theSameIteratedElementsAs", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain allOf Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def allOf(right: GenMap[K, V]) {
+      val containMatcher = new AllOfContainMatcher(right)
+      doCollected(collected, xs, "allOf", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain inOrder Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def inOrder(right: GenMap[K, V]) {
+      val containMatcher = new InOrderContainMatcher(right)
+      doCollected(collected, xs, "inOrder", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain oneOf Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def oneOf(right: GenMap[K, V]) {
+      val containMatcher = new OneOfContainMatcher(right)
+      doCollected(collected, xs, "oneOf", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain only Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def only(right: GenMap[K, V]) {
+      val containMatcher = new OnlyContainMatcher(right)
+      doCollected(collected, xs, "only", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain inOrderOnly Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def inOrderOnly(right: GenMap[K, V]) {
+      val containMatcher = new InOrderOnlyContainMatcher(right)
+      doCollected(collected, xs, "inOrderOnly", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
+          )
+      }
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * all(colOfJavaMap) should contain noneOf Map(1 -> "one", 2 - > "two", 3 -> "three")
+     *                                  ^
+     * </pre>
+     */
+    def noneOf(right: GenMap[K, V]) {
+      val containMatcher = new NoneOfContainMatcher(right)
+      doCollected(collected, xs, "noneOf", 1) { e =>
+        val result = containMatcher(new JavaMapWrapper(e))
+        if (result.matches != shouldBeTrue)
+          throw newTestFailedException(
+            if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage,
+            None,
+            6
           )
       }
     }
