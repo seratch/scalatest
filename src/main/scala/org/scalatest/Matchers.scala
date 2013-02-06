@@ -8830,17 +8830,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new AllOfContainMatcher(xs)
   
   /**
-   * This method enables the following syntax: 
-   *
-   * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain allOf (Map(1 -> "one", 2 -> "two"))
-   *                                                              ^
-   * </pre>
-   */
-  /*def allOf[K, V](xs: GenMap[K, V]) = 
-    new AllOfContainMatcher(xs)*/
-  
-  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -8902,17 +8891,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new InOrderContainMatcher(xs)
   
   /**
-   * This method enables the following syntax: 
-   *
-   * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain inOrder (Map(1 -> "one", 2 -> "two"))
-   *                                                              ^
-   * </pre>
-   */
-  /*def inOrder[K, V](xs: GenMap[K, V]) = 
-    new InOrderContainMatcher(xs)*/
-  
-  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -8957,17 +8935,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def oneOf[T](xs: T*) = 
     new OneOfContainMatcher(xs)
-  
-  /**
-   * This method enables the following syntax: 
-   *
-   * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain oneOf (Map(1 -> "one", 2 -> "two"))
-   *                                                              ^
-   * </pre>
-   */
-  /*def oneOf[K, V](xs: GenMap[K, V]) = 
-    new OneOfContainMatcher(xs)*/
   
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -9030,17 +8997,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def only[T](xs: T*) = 
     new OnlyContainMatcher(xs)
-  
-  /**
-   * This method enables the following syntax: 
-   *
-   * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain only (Map(1 -> "one", 2 -> "two"))
-   *                                                              ^
-   * </pre>
-   */
-  /*def only[K, V](xs: GenMap[K, V]) = 
-    new OnlyContainMatcher(xs)*/
   
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -9109,17 +9065,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new InOrderOnlyContainMatcher(xs)
   
   /**
-   * This method enables the following syntax: 
-   *
-   * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain inOrderOnly (Map(1 -> "one", 2 -> "two"))
-   *                                                              ^
-   * </pre>
-   */
-  /*def inOrderOnly[K, V](xs: GenMap[K, V]) = 
-    new InOrderOnlyContainMatcher(xs)*/
-  
-  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -9182,17 +9127,6 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def noneOf[T](xs: T*) = 
     new NoneOfContainMatcher(xs)
-  
-  /**
-   * This method enables the following syntax: 
-   *
-   * <pre class="stHighlight">
-   * Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain noneOf (Map(7 -> "seven", 8 -> "eight"))
-   *                                                              ^
-   * </pre>
-   */
-  /*def noneOf[K, V](xs: GenMap[K, V]) = 
-    new NoneOfContainMatcher(xs)*/
   
   // For safe keeping
   private implicit def nodeToCanonical(node: scala.xml.Node) = new Canonicalizer(node)
