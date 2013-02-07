@@ -1082,6 +1082,77 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
         2
       )
   }
+  
+  /**
+   * This wrapper gives better toString as compared to Scala default one.
+   */
+  private[scalatest] class JavaCollectionWrapper[T](underlying: java.util.Collection[T]) extends Iterable[T] {
+    import collection.JavaConversions._
+    def iterator = underlying.iterator
+    override def size = underlying.size
+    override def isEmpty = underlying.isEmpty
+    def newBuilder[B] = new collection.mutable.ArrayBuffer[B]
+    override def toString = if (underlying == null) "null" else underlying.toString
+  }
+  
+  /**
+   * This wrapper gives better toString as compared to Scala default one.
+   */
+  private[scalatest] class JavaMapWrapper[K, V, +Repr <: collection.mutable.MapLike[K, V, Repr] with collection.mutable.Map[K, V]](underlying: java.util.Map[K, V]) extends collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Repr] {
+    
+    override def size = underlying.size
+
+    def get(k: K) = {
+      val v = underlying get k
+      if (v != null)
+        Some(v)
+      else if (underlying containsKey k)
+        Some(null.asInstanceOf[V])
+      else
+        None
+    }
+
+    def +=(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -=(key: K): this.type = { underlying remove key; this }
+
+    override def put(k: K, v: V): Option[V] = {
+      val r = underlying.put(k, v)
+      if (r != null) Some(r) else None
+    }
+
+    override def update(k: K, v: V) { underlying.put(k, v) }
+
+    override def remove(k: K): Option[V] = {
+      val r = underlying remove k
+      if (r != null) Some(r) else None
+    }
+
+    def iterator: Iterator[(K, V)] = 
+      new collection.Iterator[(K, V)] {
+        val ui = underlying.entrySet.iterator
+        def hasNext = ui.hasNext
+        def next() = { val e = ui.next(); (e.getKey, e.getValue) }
+      }
+
+    override def clear() = underlying.clear()
+
+    // LinkedHashMap is used because it preserves insertion order
+    override def empty: Repr = collection.mutable.LinkedHashMap.empty.asInstanceOf[Repr]
+    
+    override def toString = if (underlying == null) "null" else underlying.toString
+  }
+  
+  /**
+   * This wrapper gives better toString (Array(x, x, x)) as compared to Scala default one (WrappedArray(x, x, x)).
+   */
+  private[scalatest] class ArrayWrapper[T](underlying: Array[T]) extends Iterable[T] {
+    import collection.JavaConversions._
+    def iterator = underlying.iterator
+    override def size = underlying.size
+    override def isEmpty = underlying.isEmpty
+    def newBuilder[B] = new collection.mutable.ArrayBuffer[B]
+    override def toString = if (underlying == null) "null" else "Array(" + underlying.mkString(", ") + ")"
+  }
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -2994,6 +3065,48 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
     def noneOf(right: GenMap[K, V]) {
       matchContainMatcher(left, new NoneOfContainMatcher(right), shouldBeTrue)
     }
+    
+    /**
+     * This method enables the following syntax (positiveNumberKey is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * map should contain a positiveNumberKey
+     *                    ^
+     * </pre>
+     */
+    def a(aMatcher: AMatcher[(K, V)]) {
+      left.find(aMatcher(_).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e)
+            throw newTestFailedException(FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (oddNumberKey is a <code>AnMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * map should contain an oddNumberKey
+     *                    ^
+     * </pre>
+     */
+    def an(anMatcher: AnMatcher[(K, V)]) {
+      left.find(anMatcher(_).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e)
+            throw newTestFailedException(FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)))
+      }
+    }
   }
 
   /**
@@ -3038,6 +3151,50 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
             left,
             expectedValue)
         )
+    }
+    
+    /**
+     * This method enables the following syntax (positiveNumberKey is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * javaMap should contain a positiveNumberKey
+     *                        ^
+     * </pre>
+     */
+    def a(aMatcher: AMatcher[(K, V)]) {
+      val leftWrapper = new JavaMapWrapper(left.asInstanceOf[java.util.Map[K, V]])
+      leftWrapper.find(e => aMatcher(e).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e)
+            throw newTestFailedException(FailureMessages("containedA", leftWrapper, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", leftWrapper, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (oddNumberKey is a <code>AnMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * javaMap should contain an oddNumberKey
+     *                        ^
+     * </pre>
+     */
+    def an(anMatcher: AnMatcher[(K, V)]) {
+      val leftWrapper = new JavaMapWrapper(left.asInstanceOf[java.util.Map[K, V]])
+      leftWrapper.find(e => anMatcher(e).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e)
+            throw newTestFailedException(FailureMessages("containedAn", leftWrapper, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", leftWrapper, UnquotedString(anMatcher.nounName)))
+      }
     }
   }
 
@@ -3174,7 +3331,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
     
     /**
      * This method enables the following syntax, where <code>num</code> is, for example, of type <code>Int</code> and
-     * <code>odd</code> refers to a <code>BeMatcher[Int]</code>:
+     * <code>odd</code> refers to a <code>ContainMatcher[Int]</code>:
      *
      * <pre class="stHighlight">
      * num should contain (odd)
@@ -4309,6 +4466,52 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         )
       }
     }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * collection should not contain a (positiveNumber)
+     *                       ^
+     * </pre>
+     */
+    def contain(resultOfAWordToAMatcherApplication: ResultOfAWordToAMatcherApplication[E]) {
+      val aMatcher = resultOfAWordToAMatcherApplication.aMatcher
+      left.find (e => aMatcher(e.asInstanceOf[E]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e.asInstanceOf[E])
+            throw newTestFailedException(FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * collection should not contain a (positiveNumber)
+     *                       ^
+     * </pre>
+     */
+    def contain(resultOfAnWordToAMatcherApplication: ResultOfAnWordToAMatcherApplication[E]) {
+      val anMatcher = resultOfAnWordToAMatcherApplication.anMatcher
+      left.find (e => anMatcher(e.asInstanceOf[E]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e.asInstanceOf[E])
+            throw newTestFailedException(FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)))
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -4380,6 +4583,54 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * javaCol should not contain a (positiveNumber)
+     *                    ^
+     * </pre>
+     */
+    def contain(resultOfAWordToAMatcherApplication: ResultOfAWordToAMatcherApplication[E]) {
+      val aMatcher = resultOfAWordToAMatcherApplication.aMatcher
+      val leftWrapper = new JavaCollectionWrapper(left.asInstanceOf[java.util.Collection[E]])
+      leftWrapper.find (e => aMatcher(e.asInstanceOf[E]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e.asInstanceOf[E])
+            throw newTestFailedException(FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>oddNumber</code> refers to
+     * a <code>AnMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * javaCol should not contain an (oddNumber)
+     *                    ^
+     * </pre>
+     */
+    def contain(resultOfAnWordToAMatcherApplication: ResultOfAnWordToAMatcherApplication[E]) {
+      val anMatcher = resultOfAnWordToAMatcherApplication.anMatcher
+      val leftWrapper = new JavaCollectionWrapper(left.asInstanceOf[java.util.Collection[E]])
+      leftWrapper.find (e => anMatcher(e.asInstanceOf[E]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e.asInstanceOf[E])
+            throw newTestFailedException(FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)))
       }
     }
   }
@@ -4465,8 +4716,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method enables the following syntax:
      *
      * <pre class="stHighlight">
-     * collection should not contain containMatcher
-     *                       ^
+     * map should not contain containMatcher
+     *                ^
      * </pre>
      */
     def contain(right: ContainMatcher[(K, V)]) {
@@ -4475,6 +4726,52 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
         throw newTestFailedException(
           if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
         )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumberKey</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * map should not contain a (positiveNumberKey)
+     *                ^
+     * </pre>
+     */
+    def contain(resultOfAWordToAMatcherApplication: ResultOfAWordToAMatcherApplication[(K, V)]) {
+      val aMatcher = resultOfAWordToAMatcherApplication.aMatcher
+      left.find (e => aMatcher(e.asInstanceOf[(K, V)]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e.asInstanceOf[(K, V)])
+            throw newTestFailedException(FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>oddNumberKey</code> refers to
+     * a <code>AnMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * map should not contain a (oddNumberKey)
+     *                ^
+     * </pre>
+     */
+    def contain(resultOfAnWordToAMatcherApplication: ResultOfAnWordToAMatcherApplication[(K, V)]) {
+      val anMatcher = resultOfAnWordToAMatcherApplication.anMatcher
+      left.find (e => anMatcher(e.asInstanceOf[(K, V)]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e.asInstanceOf[(K, V)])
+            throw newTestFailedException(FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)))
       }
     }
 
@@ -4550,6 +4847,54 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * javaMap should not contain a (positiveNumber)
+     *                    ^
+     * </pre>
+     */
+    def contain(resultOfAWordToAMatcherApplication: ResultOfAWordToAMatcherApplication[(K, V)]) {
+      val aMatcher = resultOfAWordToAMatcherApplication.aMatcher
+      val leftWrapper = new JavaMapWrapper(left.asInstanceOf[java.util.Map[K, V]])
+      leftWrapper.find (e => aMatcher(e.asInstanceOf[(K, V)]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e.asInstanceOf[(K, V)])
+            throw newTestFailedException(FailureMessages("containedA", leftWrapper, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", leftWrapper, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>oddNumber</code> refers to
+     * a <code>AnMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * javaMap should not contain an (oddNumber)
+     *                    ^
+     * </pre>
+     */
+    def contain(resultOfAnWordToAMatcherApplication: ResultOfAnWordToAMatcherApplication[(K, V)]) {
+      val anMatcher = resultOfAnWordToAMatcherApplication.anMatcher
+      val leftWrapper = new JavaMapWrapper(left.asInstanceOf[java.util.Map[K, V]])
+      leftWrapper.find (e => anMatcher(e.asInstanceOf[(K, V)]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e.asInstanceOf[(K, V)])
+            throw newTestFailedException(FailureMessages("containedAn", leftWrapper, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", leftWrapper, UnquotedString(anMatcher.nounName)))
+      }
+    }
   }
 
   /**
@@ -4613,6 +4958,52 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           )
       }
     }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * Array(-1, -2) should not contain a (positiveNumber)
+     *                          ^
+     * </pre>
+     */
+    def contain(resultOfAWordToAMatcherApplication: ResultOfAWordToAMatcherApplication[E]) {
+      val aMatcher = resultOfAWordToAMatcherApplication.aMatcher
+      left.find (e => aMatcher(e.asInstanceOf[E]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e.asInstanceOf[E])
+            throw newTestFailedException(FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>oddNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * Array(-1, -2) should not contain an (oddNumber)
+     *                          ^
+     * </pre>
+     */
+    def contain(resultOfAnWordToAMatcherApplication: ResultOfAnWordToAMatcherApplication[E]) {
+      val anMatcher = resultOfAnWordToAMatcherApplication.anMatcher
+      left.find (e => anMatcher(e.asInstanceOf[E]).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e.asInstanceOf[E])
+            throw newTestFailedException(FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)))
+      }
+    }
 
     /**
      * This method enables the following syntax:
@@ -4656,7 +5047,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
       }
     }
   }
-
+  
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
@@ -4721,6 +5112,49 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+  }
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfBeWordForAny[T](left: T, shouldBeTrue: Boolean) {
+    
+    /**
+     * This method enables the following syntax (positiveNumber is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * 1 should be a positiveNumber
+     *               ^
+     * </pre>
+     */
+    def a(aMatcher: AMatcher[T]) {
+      val matcherResult = aMatcher(left)
+      if (matcherResult.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) matcherResult.failureMessage else matcherResult.negatedFailureMessage
+        )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (positiveNumber is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * 1 should be an oddNumber
+     *                ^
+     * </pre>
+     */
+    def an(anMatcher: AnMatcher[T]) {
+      val matcherResult = anMatcher(left)
+      if (matcherResult.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) matcherResult.failureMessage else matcherResult.negatedFailureMessage
+        )
       }
     }
   }
@@ -4807,6 +5241,40 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
             FailureMessages("wasNotA", left, UnquotedString(result.propertyName))
           else
             FailureMessages("wasA", left, UnquotedString(result.propertyName))
+        )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (longString is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * "a long string" should be a longString
+     *                           ^
+     * </pre>
+     */
+    def a(aMatcher: AMatcher[T]) {
+      val matcherResult = aMatcher(left)
+      if (matcherResult.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) matcherResult.failureMessage else matcherResult.negatedFailureMessage
+        )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (apple is a <code>AnMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * result should be an apple
+     *                  ^
+     * </pre>
+     */
+    def an(anMatcher: AnMatcher[T]) {
+      val matcherResult = anMatcher(left)
+      if (matcherResult.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) matcherResult.failureMessage else matcherResult.negatedFailureMessage
         )
       }
     }
@@ -5010,6 +5478,50 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def be(beMatcher: BeMatcher[T]) {
       val result = beMatcher(left)
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue)
+            result.failureMessage
+          else
+            result.negatedFailureMessage
+        )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * 2 should not be a (positiveNumber)
+     *              ^
+     * </pre>
+     */
+    def be(resultOfAWordToAMatcherApplication: ResultOfAWordToAMatcherApplication[T]) {
+      val aMatcher = resultOfAWordToAMatcherApplication.aMatcher
+      val result = aMatcher(left)
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue)
+            result.failureMessage
+          else
+            result.negatedFailureMessage
+        )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>oddNumber</code> refers to
+     * a <code>AMatcher[Int]</code>:
+     *
+     * <pre class="stHighlight">
+     * 2 should not be an (oddNumber)
+     *              ^
+     * </pre>
+     */
+    def be(resultOfAnWordToAMatcherApplication: ResultOfAnWordToAMatcherApplication[T]) {
+      val anMatcher = resultOfAnWordToAMatcherApplication.anMatcher
+      val result = anMatcher(left)
       if (result.matches != shouldBeTrue) {
         throw newTestFailedException(
           if (shouldBeTrue)
@@ -7582,6 +8094,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    * @author Bill Venners
    */
   final class ResultOfAWordToBePropertyMatcherApplication[T](val bePropertyMatcher: BePropertyMatcher[T])
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfAWordToAMatcherApplication[T](val aMatcher: AMatcher[T])
 
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -7611,6 +8131,16 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def apply[T](beTrueMatcher: BePropertyMatcher[T]): ResultOfAWordToBePropertyMatcherApplication[T] = new ResultOfAWordToBePropertyMatcherApplication(beTrueMatcher)
+    
+    /**
+     * This method enables the following syntax, where, <code>positiveNumber</code> is a <code>AMatcher[Book]</code>:
+     *
+     * <pre class="stHighlight">
+     * result should not be a (positiveNumber)
+     *                        ^
+     * </pre>
+     */
+    def apply[T](aMatcher: AMatcher[T]): ResultOfAWordToAMatcherApplication[T] = new ResultOfAWordToAMatcherApplication(aMatcher)
   }
 
   /**
@@ -7645,6 +8175,14 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
+  final class ResultOfAnWordToAMatcherApplication[T](val anMatcher: AnMatcher[T])
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
   final class AnWord {
 
     /**
@@ -7667,6 +8205,16 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * </pre>
      */
     def apply[T](beTrueMatcher: BePropertyMatcher[T]): ResultOfAnWordToBePropertyMatcherApplication[T] = new ResultOfAnWordToBePropertyMatcherApplication(beTrueMatcher)
+    
+    /**
+     * This method enables the following syntax, where, <code>positiveNumber</code> is a <code>AnMatcher[Book]</code>:
+     *
+     * <pre class="stHighlight">
+     * result should not be an (positiveNumber)
+     *                         ^
+     * </pre>
+     */
+    def apply[T](anMatcher: AnMatcher[T]): ResultOfAnWordToAMatcherApplication[T] = new ResultOfAnWordToAMatcherApplication(anMatcher)
   }
 
   /**
@@ -8373,6 +8921,101 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def noneOf(right: T*) {
       matchContainMatcher(left, new NoneOfContainMatcher(right), shouldBeTrue)
+    }
+    
+    /**
+     * This method enables the following syntax (positiveNumber is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * traversable should contain a positiveNumber
+     *                            ^
+     * </pre>
+     */
+    def a(aMatcher: AMatcher[T]) {
+      left.find(aMatcher(_).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e)
+            throw newTestFailedException(FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (oddNumber is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * traversable should contain an oddNumber
+     *                            ^
+     * </pre>
+     */
+    def an(anMatcher: AnMatcher[T]) {
+      left.find(anMatcher(_).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e)
+            throw newTestFailedException(FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)))
+      }
+    }
+  }
+  
+  /**
+   * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
+   * the matchers DSL.
+   *
+   * @author Bill Venners
+   */
+  final class ResultOfContainWordForJavaCollection[E, L[_] <: java.util.Collection[_]](left: L[E], shouldBeTrue: Boolean) {
+
+    /**
+     * This method enables the following syntax (positiveNumber is a <code>AMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain a positiveNumber
+     *                        ^
+     * </pre>
+     */
+    def a(aMatcher: AMatcher[E]) {
+      val leftWrapper = new JavaCollectionWrapper(left.asInstanceOf[java.util.Collection[E]])
+      leftWrapper.find(e => aMatcher(e).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = aMatcher(e)
+            throw newTestFailedException(FailureMessages("containedA", leftWrapper, UnquotedString(aMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainA", leftWrapper, UnquotedString(aMatcher.nounName)))
+      }
+    }
+    
+    /**
+     * This method enables the following syntax (oddNumber is a <code>AnMatcher</code>):
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain an oddNumber
+     *                        ^
+     * </pre>
+     */
+    def an(anMatcher: AnMatcher[E]) {
+      val leftWrapper = new JavaCollectionWrapper(left.asInstanceOf[java.util.Collection[E]])
+      leftWrapper.find(e => anMatcher(e).matches) match {
+        case Some(e) => 
+          if (!shouldBeTrue) {
+            val result = anMatcher(e)
+            throw newTestFailedException(FailureMessages("containedAn", leftWrapper, UnquotedString(anMatcher.nounName), UnquotedString(result.negatedFailureMessage)))
+          }
+        case None =>
+          if (shouldBeTrue)
+            throw newTestFailedException(FailureMessages("didNotContainAn", leftWrapper, UnquotedString(anMatcher.nounName)))
+      }
     }
   }
   
@@ -12921,6 +13564,16 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def should(notWord: NotWord): ResultOfNotWordForNumeric[T] = {
       new ResultOfNotWordForNumeric[T](left, false)
     }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * result should be a aMatcher
+     *        ^
+     * </pre>
+     */
+    def should(beWord: BeWord): ResultOfBeWordForAny[T] = new ResultOfBeWordForAny(left, true)
 
     /**
      * This method enables syntax such as the following:
@@ -13043,7 +13696,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *     ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[scala.collection.GenMap[K, V]] = new ResultOfBeWordForAnyRef(left.asInstanceOf[GenMap[K, V]], true)
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[L[K, V]] = new ResultOfBeWordForAnyRef(left.asInstanceOf[L[K, V]], true)
 
     /**
      * This method enables syntax such as the following:
@@ -13347,7 +14000,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *             ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[GenTraversable[E]] = new ResultOfBeWordForAnyRef(left.asInstanceOf[GenTraversable[E]], true)
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[L[E]] = new ResultOfBeWordForAnyRef(left.asInstanceOf[L[E]], true)
 
     /**
      * This method enables syntax such as the following:
@@ -13449,6 +14102,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(haveWord: HaveWord): ResultOfHaveWordForJavaCollection[E, L] =
       new ResultOfHaveWordForJavaCollection(left, true)
+    
+    /**
+     * This method enables syntax such as the following, where <code>positiveNumber</code> is <code>AMatcher</code>:
+     *
+     * <pre class="stHighlight">
+     * javaCol should contain a positiveNumber
+     *         ^
+     * </pre>
+     */
+    def should(containWord: ContainWord) = 
+      new ResultOfContainWordForJavaCollection(left.asInstanceOf[java.util.Collection[E]], true)
 
     /**
      * This method enables syntax such as the following:
@@ -13458,7 +14122,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                ^
      * </pre>
      */
-    def should(beWord: BeWord): ResultOfBeWordForAnyRef[java.util.Collection[E]] = new ResultOfBeWordForAnyRef(left.asInstanceOf[java.util.Collection[E]], true)
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[L[E]] = new ResultOfBeWordForAnyRef(left.asInstanceOf[L[E]], true)
 
     /**
      * This method enables syntax such as the following:
@@ -13670,7 +14334,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
-     * seq should be theSameInstanceAs anotherObject
+     * seq should be theSameInstanceAs List(1, 2, 3)
      *     ^
      * </pre>
      */
@@ -13744,6 +14408,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def should(haveWord: HaveWord): ResultOfHaveWordForSeq[T] = {
       new ResultOfHaveWordForSeq(left, true)
     }
+    
+     /**
+     * This method enables syntax such as the following, where <code>positiveNumber</code> is a <code>AMatcher</code>:
+     *
+     * <pre class="stHighlight">
+     * array should contain a positiveNumber
+     *       ^
+     * </pre>
+     */
+    def should(containWord: ContainWord) = 
+      new ResultOfContainWordForTraversable(new ArrayWrapper(left), true)
 
     /**
      * This method enables syntax such as the following:
@@ -13755,6 +14430,16 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      */
     def should(notWord: NotWord): ResultOfNotWordForArray[T] =
       new ResultOfNotWordForArray(left, false)
+    
+    /**
+     * This method enables syntax such as the following, where <code>bigArray</code> is a <code>AMatcher</code>:
+     *
+     * <pre class="stHighlight">
+     * array should be a bigArray
+     *       ^
+     * </pre>
+     */
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[Array[T]] = new ResultOfBeWordForAnyRef(left, true)
     
     def shouldBe(right: Array[T]) {
       if (!left.deep.equals(right.deep)) {
@@ -13833,6 +14518,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def should(haveWord: HaveWord): ResultOfHaveWordForJavaList[E, L] = {
       new ResultOfHaveWordForJavaList(left, true)
     }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * javaList should contain theSameElementsAs anotherSeq
+     *          ^
+     * </pre>
+     */
+    def should(containWord: ContainWord) = 
+      new ResultOfContainWordForJavaCollection(left.asInstanceOf[java.util.Collection[E]], true)
 
     /**
      * This method enables syntax such as the following:
@@ -13845,6 +14541,16 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def should(notWord: NotWord): ResultOfNotWordForJavaList[E, L] = {
       new ResultOfNotWordForJavaList(left, false)
     }
+    
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
+     * seq should be theSameInstanceAs List(1, 2, 3)
+     *     ^
+     * </pre>
+     */
+    def should(beWord: BeWord): ResultOfBeWordForAnyRef[L[E]] = new ResultOfBeWordForAnyRef(left, true)
 
     /**
      * This method enables syntax such as the following:
