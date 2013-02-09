@@ -236,7 +236,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
     
     object `when use with 'or'` {
       
-      def `should pass when both be a passes` {
+      def `should pass when both be an passes` {
         
         89 should (be an oddMarks or be an integerValidMarks)
         89 should ((be an (oddMarks)) or (be an (integerValidMarks)))
@@ -244,7 +244,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when be a passed and be a failed` {
+      def `should pass when be an passed and be an failed` {
         
         101 should (be an oddMarks or be an integerValidMarks)
         101 should ((be an (oddMarks)) or (be an (integerValidMarks)))
@@ -252,7 +252,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when be a failed and be a passed` {
+      def `should pass when be an failed and be an passed` {
         
         88 should (be an oddMarks or be an integerValidMarks)
         88 should ((be an (oddMarks)) or (be an (integerValidMarks)))
@@ -260,7 +260,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should failed with correctly stack depth and message when both be a failed` {
+      def `should failed with correctly stack depth and message when both be an failed` {
         
         val e1 = intercept[exceptions.TestFailedException] {
           168 should (be an oddMarks or be an integerValidMarks)
@@ -284,7 +284,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         e3.failedCodeLineNumber should be (Some(thisLineNumber - 4))
       }
       
-      def `should pass when not be a and be a passes` {
+      def `should pass when not be an and be an passes` {
         
         30 should (not be an (oddMarks) or be an integerValidMarks)
         30 should ((not be an (oddMarks)) or (be an (integerValidMarks)))
@@ -292,7 +292,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when not be a passed and be a failed` {
+      def `should pass when not be an passed and be an failed` {
         
        168 should (not be an (oddMarks) or be an integerValidMarks)
        168 should ((not be an (oddMarks)) or (be an (integerValidMarks)))
@@ -300,7 +300,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when not be a failed and be a passed` {
+      def `should pass when not be an failed and be an passed` {
         
         99 should (not be an (oddMarks) or be an integerValidMarks)
         99 should ((not be an (oddMarks)) or (be an (integerValidMarks)))
@@ -308,7 +308,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should failed with correctly stack depth and message when not be a failed and be a failed` {
+      def `should failed with correctly stack depth and message when not be an failed and be an failed` {
         
         val e1 = intercept[exceptions.TestFailedException] {
           199 should (not be an (oddMarks) or be an integerValidMarks)
@@ -332,7 +332,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         e3.failedCodeLineNumber should be (Some(thisLineNumber - 4))
       }
       
-      def `should pass when be a and not be a passed` {
+      def `should pass when be an and not be an passed` {
         
         30 should (be an (integerValidMarks) or not be an (oddMarks))
         30 should ((be an (integerValidMarks)) or (not be an (oddMarks)))
@@ -340,7 +340,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when be a passed and not be a failed` {
+      def `should pass when be an passed and not be an failed` {
         
         31 should (be an (integerValidMarks) or not be an (oddMarks))
         31 should ((be an (integerValidMarks)) or (not be an (oddMarks)))
@@ -348,7 +348,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when be a failed and not be a passed` {
+      def `should pass when be an failed and not be an passed` {
         
         130 should (be an (integerValidMarks) or not be an (oddMarks))
         130 should ((be an (integerValidMarks)) or (not be an (oddMarks)))
@@ -356,7 +356,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should failed with correctly stack depth and message when be a failed and not be a failed` {
+      def `should failed with correctly stack depth and message when be an failed and not be an failed` {
         
         val e1 = intercept[exceptions.TestFailedException] {
           28 should (be an (oddMarks) or not be an (integerValidMarks))
@@ -380,7 +380,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         e3.failedCodeLineNumber should be (Some(thisLineNumber - 4))
       }
       
-      def `should pass when not be a and not be a passed` {
+      def `should pass when not be an and not be an passed` {
         
         -10 should (not be an (oddMarks) or not be an (integerValidMarks))
         -10 should ((not be an (oddMarks)) or (not be an (integerValidMarks)))
@@ -388,7 +388,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when not be a passed and not be a failed` {
+      def `should pass when not be an passed and not be an failed` {
         
         10 should (not be an (oddMarks) or not be an (integerValidMarks))
         10 should ((not be an (oddMarks)) or (not be an (integerValidMarks)))
@@ -396,7 +396,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should pass when not be a failed and not be a passed` {
+      def `should pass when not be an failed and not be an passed` {
         
         111 should (not be an (oddMarks) or not be an (integerValidMarks))
         111 should ((not be an (oddMarks)) or (not be an (integerValidMarks)))
@@ -404,7 +404,7 @@ class ShouldBeAnMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
         
       }
       
-      def `should failed with correctly stack depth and message when not be a failed and not be a failed` {
+      def `should failed with correctly stack depth and message when not be an failed and not be an failed` {
         
         val e1 = intercept[exceptions.TestFailedException] {
           99 should (not be an (oddMarks) or not be an (integerValidMarks))

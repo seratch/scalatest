@@ -1413,6 +1413,28 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        */
       def noneOf[E](right: E*): Matcher[T with GenTraversable[E]] = 
         matchersWrapper.and(matchers.contain.noneOf(right.toList: _*))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (contain a (positiveNumber) and contain a (validNumber))
+       *                                                       ^
+       * </pre>
+       */
+      def a[E](aMatcher: AMatcher[E]): Matcher[T with GenTraversable[E]] = 
+        and(matchers.contain.a(aMatcher))
+      
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (contain an (positiveNumber) and contain an (validNumber))
+       *                                                        ^
+       * </pre>
+       */
+      def an[E](anMatcher: AnMatcher[E]): Matcher[T with GenTraversable[E]] = 
+        and(matchers.contain.an(anMatcher))
     }
 
     /**
@@ -1896,8 +1918,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        * This method enables the following syntax:
        *
        * <pre class="stHighlight">
-       * isNotAppleMock should (not be an ('apple) and not be an ('apple)) 
-       *                                                   ^
+       * result should (not be a negativeNumber and not be a primeNumber)
+       *                                                ^
        * </pre>
        */
       def be(resultOfAnWordApplication: ResultOfAnWordToSymbolApplication): Matcher[T with AnyRef] = matchersWrapper.and(matchers.not.be(resultOfAnWordApplication))
@@ -2062,6 +2084,28 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        */
       def contain[U](right: ContainMatcher[U]): Matcher[T with GenTraversable[U]] =
         matchersWrapper.and(matchers.not.contain(right))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (not contain a negativeNumber and not contain a primeNumber)
+       *                                                     ^
+       * </pre>
+       */
+      def contain[U](resultOfAWordApplication: ResultOfAWordToAMatcherApplication[U]): Matcher[T with GenTraversable[U]] = 
+        matchersWrapper.and(matchers.not.contain(resultOfAWordApplication))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (not contain an oddNumber and not contain an invalidNumber)
+       *                                                 ^
+       * </pre>
+       */
+      def contain[U](resultOfAnWordApplication: ResultOfAnWordToAnMatcherApplication[U]): Matcher[T with GenTraversable[U]] = 
+        matchersWrapper.and(matchers.not.contain(resultOfAnWordApplication))
     }
 
     /**
@@ -2323,6 +2367,28 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        */
       def noneOf[E](right: E*): Matcher[T with GenTraversable[E]] = 
         matchersWrapper.or(matchers.contain.noneOf(right.toList: _*))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (contain a (positiveNumber) or contain a (validNumber))
+       *                                                      ^
+       * </pre>
+       */
+      def a[E](aMatcher: AMatcher[E]): Matcher[T with GenTraversable[E]] = 
+        or(matchers.contain.a(aMatcher))
+      
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (contain an (positiveNumber) or contain an (validNumber))
+       *                                                       ^
+       * </pre>
+       */
+      def an[E](anMatcher: AnMatcher[E]): Matcher[T with GenTraversable[E]] = 
+        or(matchers.contain.an(anMatcher))
     }
 
     /**
@@ -2972,6 +3038,28 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        */
       def contain[U](right: ContainMatcher[U]): Matcher[T with GenTraversable[U]] =
         matchersWrapper.or(matchers.not.contain(right))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (not contain a negativeNumber or not contain a primeNumber)
+       *                                                    ^
+       * </pre>
+       */
+      def contain[U](resultOfAWordApplication: ResultOfAWordToAMatcherApplication[U]): Matcher[T with GenTraversable[U]] = 
+        matchersWrapper.or(matchers.not.contain(resultOfAWordApplication))
+        
+      /**
+       * This method enables the following syntax:
+       *
+       * <pre class="stHighlight">
+       * result should (not contain an oddNumber or not contain an invalidNumber)
+       *                                                ^
+       * </pre>
+       */
+      def contain[U](resultOfAnWordApplication: ResultOfAnWordToAnMatcherApplication[U]): Matcher[T with GenTraversable[U]] = 
+        matchersWrapper.or(matchers.not.contain(resultOfAnWordApplication))
     }
 
     /**
@@ -3610,6 +3698,46 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       new Matcher[GenTraversable[T]] {
         def apply(left: GenTraversable[T]): MatchResult = 
           new NoneOfContainMatcher(right).apply(left)
+      }
+    
+    /**
+     * This method enables the following syntax, where <code>positiveNumber</code> and <code>validNumber</code> are, for example, of type <code>AMatcher</code>:
+     *
+     * <pre class="stHighlight">
+     * Array(1, 2, 3) should (contain a positiveNumber and contain a validNumber)
+     *                                ^
+     * </pre>
+     */
+    def a[T](aMatcher: AMatcher[T]): Matcher[GenTraversable[T]] = 
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = {
+          val matched = left.find(aMatcher(_).matches)
+          MatchResult(
+            matched.isDefined, 
+            FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName)),
+            FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(if (matched.isDefined) aMatcher(matched.get).negatedFailureMessage else "-"))
+          )
+        }
+      }
+    
+    /**
+     * This method enables the following syntax, where <code>oddNumber</code> and <code>invalidNumber</code> are, for example, of type <code>AnMatcher</code>:
+     *
+     * <pre class="stHighlight">
+     * Array(1, 2, 3) should (contain an oddNumber and contain an invalidNumber)
+     *                                ^
+     * </pre>
+     */
+    def an[T](anMatcher: AnMatcher[T]): Matcher[GenTraversable[T]] = 
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = {
+          val matched = left.find(anMatcher(_).matches)
+          MatchResult(
+            matched.isDefined, 
+            FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName)),
+            FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(if (matched.isDefined) anMatcher(matched.get).negatedFailureMessage else "-"))
+          )
+        }
       }
   }
 
@@ -7880,6 +8008,50 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
           MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
         }
       }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * result should (not contain a (passedMarks) and contain a (validMarks)))
+     *                    ^
+     * </pre>
+     */
+    def contain[T](resultOfAWordApplication: ResultOfAWordToAMatcherApplication[T]): Matcher[GenTraversable[T]] = {
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = {
+          val aMatcher = resultOfAWordApplication.aMatcher
+          val matched = left.find(aMatcher(_).matches)
+          MatchResult(
+            !matched.isDefined, 
+            FailureMessages("containedA", left, UnquotedString(aMatcher.nounName), UnquotedString(if (matched.isDefined) aMatcher(matched.get).negatedFailureMessage else "-")), 
+            FailureMessages("didNotContainA", left, UnquotedString(aMatcher.nounName))
+          )
+        }
+      }
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * result should (not contain an (passedMarks) and contain an (validMarks)))
+     *                    ^
+     * </pre>
+     */
+    def contain[T](resultOfAnWordApplication: ResultOfAnWordToAnMatcherApplication[T]): Matcher[GenTraversable[T]] = {
+      new Matcher[GenTraversable[T]] {
+        def apply(left: GenTraversable[T]): MatchResult = {
+          val anMatcher = resultOfAnWordApplication.anMatcher
+          val matched = left.find(anMatcher(_).matches)
+          MatchResult(
+            !matched.isDefined, 
+            FailureMessages("containedAn", left, UnquotedString(anMatcher.nounName), UnquotedString(if (matched.isDefined) anMatcher(matched.get).negatedFailureMessage else "-")), 
+            FailureMessages("didNotContainAn", left, UnquotedString(anMatcher.nounName))
+          )
+        }
+      }
+    }
   }
 
   /**
@@ -14430,7 +14602,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     def should(rightMatcherX9: Matcher[L[E]]) {
       ShouldMethodHelper.shouldMatcher(left, rightMatcherX9)
     }
-
+    
     /**
      * This method enables syntax such as the following:
      *
