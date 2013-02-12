@@ -412,15 +412,14 @@ object Checkers extends Checkers {
               ) +
               "  " + FailureMessages("occurredOnValues") + "\n" + 
               prettyArgs(getArgsWithSpecifiedNames(argNames, scalaCheckArgs)) + "\n" +
-              "  )" + 
-              getLabelDisplay(scalaCheckLabels),
+              "  )",
             None,
             getStackDepthFun(stackDepthFileName, stackDepthMethodName),
             None,
             FailureMessages("propertyFailed", result.succeeded),
-            scalaCheckArgs,
+            args,
             None,
-            scalaCheckLabels.toList
+            labels
           )
 
         case Test.PropException(scalaCheckArgs, e, scalaCheckLabels) =>
@@ -437,15 +436,14 @@ object Checkers extends Checkers {
               ) +
               "  " + FailureMessages("occurredOnValues") + "\n" +
               prettyArgs(getArgsWithSpecifiedNames(argNames, scalaCheckArgs)) + "\n" +
-              "  )" + 
-              getLabelDisplay(scalaCheckLabels),
+              "  )",
             Some(e),
             getStackDepthFun(stackDepthFileName, stackDepthMethodName),
             None,
             FailureMessages("propertyException", UnquotedString(e.getClass.getName)),
-            scalaCheckArgs,
+            args,
             None,
-            scalaCheckLabels.toList
+            labels
           )
 
         case Test.GenException(e) =>
@@ -473,12 +471,6 @@ object Checkers extends Checkers {
     else
       scalaCheckArgs
   }
-  
-  private def getLabelDisplay(labels: Set[String]): String = 
-    if (labels.size > 0)
-      "\n  " + Resources(if (labels.size == 1) "propCheckLabel" else "propCheckLabels") + "\n" + labels.map("    " + _).mkString("\n")
-    else
-      ""
 
   private def argsAndLabels(result: Test.Result): (List[Any], List[String]) = {
 

@@ -45,9 +45,14 @@ import org.scalatest.events.Ordinal
  *
  * @author Bill Venners
  */
-final class Tracker(firstOrdinal: Ordinal = new Ordinal(0)) {
+final class Tracker(firstOrdinal: Ordinal) {
 
   private var currentOrdinal = firstOrdinal
+
+  /**
+   * Constructs a new <code>Tracker</code> with a new <code>Ordinal</code> initialized with a run stamp of 0.
+   */
+  def this() = this(new Ordinal(0))
 
   /**
    * Returns the next <code>Ordinal</code> in the series tracked by this <code>Tracker</code>.
@@ -92,9 +97,4 @@ final class Tracker(firstOrdinal: Ordinal = new Ordinal(0)) {
       new Tracker(nextForNewThread)
     }
   }
-}
-
-object Tracker {
-  private val defaultTracker = new Tracker()
-  def default: Tracker = defaultTracker
 }

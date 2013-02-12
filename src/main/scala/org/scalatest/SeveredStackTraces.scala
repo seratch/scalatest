@@ -24,7 +24,7 @@ package org.scalatest
  *
  * @author Bill Venners
  */
-trait SeveredStackTraces extends SuiteMixin { this: Suite =>
+trait SeveredStackTraces extends AbstractSuite { this: Suite =>
 
   /**
    * Invokes <code>super.withFixture(test)</code> and transforms a thrown <code>StackDepth</code> exception by severing
