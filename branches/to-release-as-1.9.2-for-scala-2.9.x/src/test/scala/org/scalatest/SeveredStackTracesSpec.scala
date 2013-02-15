@@ -170,9 +170,9 @@ class SeveredStackTracesSpec extends FunSpec with ShouldMatchers with SeveredSta
       }
     }
 
-    it("should give the proper line on expect(1) { 2 }") {
+    it("should give the proper line on assertResult(1) { 2 }") {
       try {
-        expect(1) { 2 }
+        assertResult(1) { 2 }
       }
       catch {
         case e: TestFailedException =>
@@ -180,17 +180,17 @@ class SeveredStackTracesSpec extends FunSpec with ShouldMatchers with SeveredSta
             case Some(s) =>
               s should equal ("SeveredStackTracesSpec.scala:" + (baseLineNumber + 150))
               checkFileNameAndLineNumber(e, s)
-            case None => fail("expect(1) { 2 } didn't produce a file name and line number string", e)
+            case None => fail("assertResult(1) { 2 } didn't produce a file name and line number string", e)
           }
           e.failedCodeStackDepth should equal (4)
         case e: Throwable =>
-          fail("expect(1) { 2 } didn't produce a TestFailedException", e)
+          fail("assertResult(1) { 2 } didn't produce a TestFailedException", e)
       }
     }
 
-    it("should give the proper line on expect(1, \"some message\") { 2 }") {
+    it("should give the proper line on assertResult(1, \"some message\") { 2 }") {
       try {
-        expect(1, "some message") { 2 }
+        assertResult(1, "some message") { 2 }
       }
       catch {
         case e: TestFailedException =>
@@ -198,11 +198,11 @@ class SeveredStackTracesSpec extends FunSpec with ShouldMatchers with SeveredSta
             case Some(s) =>
               s should equal ("SeveredStackTracesSpec.scala:" + (baseLineNumber + 168))
               checkFileNameAndLineNumber(e, s)
-            case None => fail("expect(1, \"some message\") { 2 } didn't produce a file name and line number string", e)
+            case None => fail("assertResult(1, \"some message\") { 2 } didn't produce a file name and line number string", e)
           }
           e.failedCodeStackDepth should equal (4)
         case e: Throwable =>
-          fail("expect(1, \"some message\") { 2 } didn't produce a TestFailedException", e)
+          fail("assertResult(1, \"some message\") { 2 } didn't produce a TestFailedException", e)
       }
     }
 

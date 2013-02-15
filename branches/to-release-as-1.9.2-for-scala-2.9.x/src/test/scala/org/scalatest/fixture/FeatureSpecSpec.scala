@@ -35,7 +35,7 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
       }
 
-      expect(List("Scenario: should do that", "Scenario: should do this")) {
+      assertResult(List("Scenario: should do that", "Scenario: should do this")) {
         a.testNames.iterator.toList
       }
 
@@ -44,7 +44,7 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {}
       }
 
-      expect(List[String]()) {
+      assertResult(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -57,7 +57,7 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
       }
 
-      expect(List("Scenario: should do this", "Scenario: should do that")) {
+      assertResult(List("Scenario: should do this", "Scenario: should do that")) {
         c.testNames.iterator.toList
       }
     }

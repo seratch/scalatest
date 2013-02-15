@@ -33,13 +33,13 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test that") {}
       }
 
-      expect(List("Scenario: test this", "Scenario: test that")) {
+      assertResult(List("Scenario: test this", "Scenario: test that")) {
         a.testNames.iterator.toList
       }
 
       val b = new FeatureSpec {}
 
-      expect(List[String]()) {
+      assertResult(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -48,7 +48,7 @@ class FeatureSpecSpec extends FunSpec with SharedHelpers {
         scenario("test this") {}
       }
 
-      expect(List("Scenario: test that", "Scenario: test this")) {
+      assertResult(List("Scenario: test that", "Scenario: test this")) {
         c.testNames.iterator.toList
       }
     }
