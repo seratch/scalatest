@@ -15,3 +15,4 @@ class IntegrationPatienceSpec extends FeatureSpec with Eventually with Integrati
     }
   }
 }
+
