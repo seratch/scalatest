@@ -33,13 +33,13 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test that") {}
       }
 
-      expect(List("test this", "test that")) {
+      assertResult(List("test this", "test that")) {
         a.testNames.iterator.toList
       }
 
       val b = new FunSuite {}
 
-      expect(List[String]()) {
+      assertResult(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -48,7 +48,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test this") {}
       }
 
-      expect(List("test that", "test this")) {
+      assertResult(List("test that", "test this")) {
         c.testNames.iterator.toList
       }
     }

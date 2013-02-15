@@ -692,7 +692,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
   }
 
   def testParseCompoundArgIntoSet() {
-    expect(Set("Cat", "Dog")) {
+    assertResult(Set("Cat", "Dog")) {
       Runner.parseCompoundArgIntoSet(List("-n", "Cat Dog"), "-n")
     }
   }
@@ -720,47 +720,47 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       Runner invokePrivate parseConfigSet("")
     }
 
-    expect(Set(FilterTestStarting)) {
+    assertResult(Set(FilterTestStarting)) {
       Runner invokePrivate parseConfigSet("-oN")
     }
-    expect(Set(FilterTestSucceeded)) {
+    assertResult(Set(FilterTestSucceeded)) {
       Runner invokePrivate parseConfigSet("-oC")
     }
-    expect(Set(FilterTestIgnored)) {
+    assertResult(Set(FilterTestIgnored)) {
       Runner invokePrivate parseConfigSet("-oX")
     }
-    expect(Set(FilterTestPending)) {
+    assertResult(Set(FilterTestPending)) {
       Runner invokePrivate parseConfigSet("-oE")
     }
-    expect(Set(FilterSuiteStarting)) {
+    assertResult(Set(FilterSuiteStarting)) {
       Runner invokePrivate parseConfigSet("-oH")
     }
-    expect(Set(FilterSuiteCompleted)) {
+    assertResult(Set(FilterSuiteCompleted)) {
       Runner invokePrivate parseConfigSet("-oL")
     }
-    expect(Set(FilterInfoProvided)) {
+    assertResult(Set(FilterInfoProvided)) {
       Runner invokePrivate parseConfigSet("-oO")
     }
-    expect(Set(PresentWithoutColor)) {
+    assertResult(Set(PresentWithoutColor)) {
       Runner invokePrivate parseConfigSet("-oW")
     }
-    expect(Set(PresentAllDurations)) {
+    assertResult(Set(PresentAllDurations)) {
       Runner invokePrivate parseConfigSet("-oD")
     }
-    expect(Set(PresentFullStackTraces)) {
+    assertResult(Set(PresentFullStackTraces)) {
       Runner invokePrivate parseConfigSet("-oF")
     }
-    expect(Set[ReporterConfigParam]()) {
+    assertResult(Set[ReporterConfigParam]()) {
       Runner invokePrivate parseConfigSet("-f")
     }
-    expect(Set[ReporterConfigParam]()) {
+    assertResult(Set[ReporterConfigParam]()) {
       Runner invokePrivate parseConfigSet("-u")
     }
 
-    expect(Set(FilterInfoProvided, PresentWithoutColor)) {
+    assertResult(Set(FilterInfoProvided, PresentWithoutColor)) {
       Runner invokePrivate parseConfigSet("-oOW")
     }
-    expect(Set(FilterInfoProvided, PresentWithoutColor)) {
+    assertResult(Set(FilterInfoProvided, PresentWithoutColor)) {
       Runner invokePrivate parseConfigSet("-oWO") // Just reverse the order of the params
     }
     val allOpts = Set(
@@ -775,7 +775,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
       PresentWithoutColor,
       PresentFullStackTraces
     )
-    expect(allOpts) {
+    assertResult(allOpts) {
       Runner invokePrivate parseConfigSet("-oNCXEHLOWDF")
     }
   }
@@ -820,43 +820,43 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[IllegalArgumentException] {
       Runner.parseReporterArgsIntoConfigurations(List("-C")) // Can't have -C last, because need a reporter class
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(Nil)
     }
-    expect(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set())), Nil, Nil, None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set())), Nil, Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-g"))
     }
-    expect(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set(FilterSuiteCompleted))), Nil, Nil, None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(Some(new GraphicReporterConfiguration(Set(FilterSuiteCompleted))), Nil, Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-gL"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Some(new StandardOutReporterConfiguration(Set())), None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, Some(new StandardOutReporterConfiguration(Set())), None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-o"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, Some(new StandardOutReporterConfiguration(Set(FilterTestSucceeded,FilterTestIgnored))), None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, Some(new StandardOutReporterConfiguration(Set(FilterTestSucceeded,FilterTestIgnored))), None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-oCX"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set())), Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set())), Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-e"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set(PresentFullStackTraces))), Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, None, Some(new StandardErrReporterConfiguration(Set(PresentFullStackTraces))), Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-eF"))
     }
-    expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(), "theFilename")), Nil, None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(), "theFilename")), Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-f", "theFilename"))
     }
-    expect(new ReporterConfigurations(None, Nil, List(new XmlReporterConfiguration(Set(), "target")), None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, List(new XmlReporterConfiguration(Set(), "target")), None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-u", "target"))
     }
-    expect(new ReporterConfigurations(None, Nil, List(new XmlReporterConfiguration(Set(), "target")), None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, Nil, List(new XmlReporterConfiguration(Set(), "target")), None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-uN", "target"))
     }
-    expect(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(FilterTestStarting), "theFilename")), Nil, None, None, Nil, Nil)) {
+    assertResult(new ReporterConfigurations(None, List(new FileReporterConfiguration(Set(FilterTestStarting), "theFilename")), Nil, None, None, Nil, Nil)) {
       Runner.parseReporterArgsIntoConfigurations(List("-fN", "theFilename"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(), "the.reporter.Class")))) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(), "the.reporter.Class")))) {
       Runner.parseReporterArgsIntoConfigurations(List("-r", "the.reporter.Class"))
     }
-    expect(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(FilterTestPending), "the.reporter.Class")))) {
+    assertResult(new ReporterConfigurations(None, Nil, Nil, None, None, Nil, List(new CustomReporterConfiguration(Set(FilterTestPending), "the.reporter.Class")))) {
       Runner.parseReporterArgsIntoConfigurations(List("-rE", "the.reporter.Class"))
     }
   }
@@ -874,10 +874,10 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[IllegalArgumentException] {
       Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s", "-s"), "-s")
     }
-    expect(List("SweetSuite", "OKSuite")) {
+    assertResult(List("SweetSuite", "OKSuite")) {
       Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s", "OKSuite"), "-s")
     }
-    expect(List("SweetSuite", "OKSuite", "SomeSuite")) {
+    assertResult(List("SweetSuite", "OKSuite", "SomeSuite")) {
       Runner.parseSuiteArgsIntoNameStrings(List("-s", "SweetSuite", "-s", "OKSuite", "-s", "SomeSuite"), "-s")
     }
   }
@@ -907,16 +907,16 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[IllegalArgumentException] {
       Runner.parseRunpathArgIntoList(List("-p", "\t"))
     }
-    expect(List("bla")) {
+    assertResult(List("bla")) {
       Runner.parseRunpathArgIntoList(List("-p", "bla"))
     }
-    expect(List("bla", "bla", "bla")) {
+    assertResult(List("bla", "bla", "bla")) {
       Runner.parseRunpathArgIntoList(List("-p", "bla bla bla"))
     }
-    expect(List("serviceuitest-1.1beta4.jar", "myjini", "http://myhost:9998/myfile.jar")) {
+    assertResult(List("serviceuitest-1.1beta4.jar", "myjini", "http://myhost:9998/myfile.jar")) {
       Runner.parseRunpathArgIntoList(List("-p", "serviceuitest-1.1beta4.jar myjini http://myhost:9998/myfile.jar"))
     }
-    expect(List("\\", "c:\\", "c:\\Program Files", "c:\\Documents and Settings", "\\", "myjini")) {
+    assertResult(List("\\", "c:\\", "c:\\Program Files", "c:\\Documents and Settings", "\\", "myjini")) {
       Runner.parseRunpathArgIntoList(List("-p", """\ c:\ c:\Program\ Files c:\Documents\ and\ Settings \ myjini"""))
     }
   }
@@ -940,7 +940,7 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[IllegalArgumentException] {
       Runner.parsePropertiesArgsIntoMap(List("-Dab=")) // no value
     }
-    expect(Map("a" -> "b", "cat" -> "dog", "Glorp" -> "Glib")) {
+    assertResult(Map("a" -> "b", "cat" -> "dog", "Glorp" -> "Glib")) {
       Runner.parsePropertiesArgsIntoMap(List("-Da=b", "-Dcat=dog", "-DGlorp=Glib"))
     }
   }
@@ -949,11 +949,11 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[NullPointerException] {
       Runner.checkArgsForValidity(null)
     }
-    expect(None) {
+    assertResult(None) {
       Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-p", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite"))
     }
     assert(Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-z", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite")) != None)
-    expect(None) {
+    assertResult(None) {
       Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-p", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite", "-c"))
     }
   }
@@ -962,11 +962,11 @@ class RunnerSuite() extends Suite with PrivateMethodTester {
     intercept[NullPointerException] {
       Runner.checkArgsForValidity(null)
     }
-    expect(None) {
+    assertResult(None) {
       Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-R", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite"))
     }
     assert(Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-z", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite")) != None)
-    expect(None) {
+    assertResult(None) {
       Runner.checkArgsForValidity(Array("-Ddbname=testdb", "-Dserver=192.168.1.188", "-R", "serviceuitest-1.1beta4.jar", "-g", "-eFBA", "-s", "MySuite", "-P"))
     }
   }

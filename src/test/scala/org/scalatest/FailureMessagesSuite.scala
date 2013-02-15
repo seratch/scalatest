@@ -22,11 +22,11 @@ import org.scalatest.matchers.ShouldMatchers
 class FailureMessagesSuite extends Suite with ShouldMatchers {
 
   def testPrettifyArraysShouldHandleNullArrayElementValues() {
-    expect("Array(1, null, 3)") {
+    assertResult("Array(1, null, 3)") {
       FailureMessages.prettifyArrays(Array(1, null, 3)) 
     }
     Array(1, null, 3) should be (Array(1, null, 3))
-    expect("Array(1, Array(hi, null), null, 3)") {
+    assertResult("Array(1, Array(hi, null), null, 3)") {
       FailureMessages.prettifyArrays(Array(1, Array("hi", null), null, 3)) 
     }
   }

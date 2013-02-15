@@ -35,7 +35,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
       }
 
-      expect(List("Scenario: should do that", "Scenario: should do this")) {
+      assertResult(List("Scenario: should do that", "Scenario: should do this")) {
         a.testNames.iterator.toList
       }
 
@@ -44,7 +44,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         def withFixture(test: OneArgTest) {}
       }
 
-      expect(List[String]()) {
+      assertResult(List[String]()) {
         b.testNames.iterator.toList
       }
 
@@ -57,7 +57,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
       }
 
-      expect(List("Scenario: should do this", "Scenario: should do that")) {
+      assertResult(List("Scenario: should do this", "Scenario: should do that")) {
         c.testNames.iterator.toList
       }
     }
@@ -180,7 +180,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         ignore("test this") { fixture => }
         scenario("test that") { fixture => }
       }
-      expect(Map("Scenario: test this" -> Set("org.scalatest.Ignore"))) {
+      assertResult(Map("Scenario: test this" -> Set("org.scalatest.Ignore"))) {
         a.tags
       }
 
@@ -190,7 +190,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         scenario("test this") { fixture => }
         ignore("test that") { fixture => }
       }
-      expect(Map("Scenario: test that" -> Set("org.scalatest.Ignore"))) {
+      assertResult(Map("Scenario: test that" -> Set("org.scalatest.Ignore"))) {
         b.tags
       }
 
@@ -200,7 +200,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         ignore("test this") { fixture => }
         ignore("test that") { fixture => }
       }
-      expect(Map("Scenario: test this" -> Set("org.scalatest.Ignore"), "Scenario: test that" -> Set("org.scalatest.Ignore"))) {
+      assertResult(Map("Scenario: test this" -> Set("org.scalatest.Ignore"), "Scenario: test that" -> Set("org.scalatest.Ignore"))) {
         c.tags
       }
 
@@ -210,7 +210,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         scenario("test this", mytags.SlowAsMolasses) { fixture => }
         ignore("test that", mytags.SlowAsMolasses) { fixture => }
       }
-      expect(Map("Scenario: test this" -> Set("org.scalatest.SlowAsMolasses"), "Scenario: test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+      assertResult(Map("Scenario: test this" -> Set("org.scalatest.SlowAsMolasses"), "Scenario: test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
         d.tags
       }
 
@@ -218,7 +218,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         type FixtureParam = String
         def withFixture(test: OneArgTest) {}
       }
-      expect(Map()) {
+      assertResult(Map()) {
         e.tags
       }
 
@@ -228,7 +228,7 @@ class FixtureFeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         scenario("test this", mytags.SlowAsMolasses, mytags.WeakAsAKitten) { fixture => }
         scenario("test that", mytags.SlowAsMolasses) { fixture => }
       }
-      expect(Map("Scenario: test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "Scenario: test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      assertResult(Map("Scenario: test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "Scenario: test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         f.tags
       }
     }
