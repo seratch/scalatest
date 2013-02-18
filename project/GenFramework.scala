@@ -331,3 +331,5 @@ object Generator {
     }
   }
 }
+
+class GenFramework 
