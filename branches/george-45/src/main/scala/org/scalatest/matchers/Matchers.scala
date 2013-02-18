@@ -7101,3 +7101,5 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
   }
 }
 
+class Matchers
+
