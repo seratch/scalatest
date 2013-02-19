@@ -980,4 +980,1022 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
     }
   }
+  
+  describe("when used with shorthand") {
+    
+    describe("'it should'") {
+      
+      it("should work correctly at 1st level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            } 
+          } 
+
+          it should { 
+            "do something interesting" in {} 
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack should do something interesting")
+      }
+      
+      it("should work correctly at 1st level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+          
+          it should { 
+            "do something interesting" in {} 
+          }
+          
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "should do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            }
+            it should { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            it should { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when should do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be a data structure that" should {
+                "be empty" in {} 
+              }
+              it should { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should be a data structure that should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should be a data structure that should do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              it should { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when empty should should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when empty should should do something interesting")
+      }
+      
+    }
+    
+    describe("'it must'") {
+      
+      it("should work correctly at 1st level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            } 
+          } 
+
+          it must { 
+            "do something interesting" in {} 
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack must do something interesting")
+      }
+      
+      it("should work correctly at 1st level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+          
+          it must { 
+            "do something interesting" in {} 
+          }
+          
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "must do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            }
+            it must { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty must do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            it must { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when must do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be a data structure that" should {
+                "be empty" in {} 
+              }
+              it must { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should be a data structure that must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should be a data structure that must do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              it must { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when empty should must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when empty should must do something interesting")
+      }
+      
+    }
+    
+    describe("'it can'") {
+      
+      it("should work correctly at 1st level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            } 
+          } 
+
+          it can { 
+            "do something interesting" in {} 
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack can do something interesting")
+      }
+      
+      it("should work correctly at 1st level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+          
+          it can { 
+            "do something interesting" in {} 
+          }
+          
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "can do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            }
+            it can { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty can do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            it can { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when can do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be a data structure that" should {
+                "be empty" in {} 
+              }
+              it can { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should be a data structure that can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should be a data structure that can do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              it can { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when empty should can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when empty should can do something interesting")
+      }
+      
+    }
+    
+    describe("'they should'") {
+      
+      it("should work correctly at 1st level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            } 
+          } 
+
+          they should { 
+            "do something interesting" in {} 
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack should do something interesting")
+      }
+      
+      it("should work correctly at 1st level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+          
+          they should { 
+            "do something interesting" in {} 
+          }
+          
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "should do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            }
+            they should { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            they should { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when should do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be a data structure that" should {
+                "be empty" in {} 
+              }
+              they should { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should be a data structure that should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should be a data structure that should do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              they should { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when empty should should do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when empty should should do something interesting")
+      }
+      
+    }
+    
+    describe("'they must'") {
+      
+      it("should work correctly at 1st level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            } 
+          } 
+
+          they must { 
+            "do something interesting" in {} 
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack must do something interesting")
+      }
+      
+      it("should work correctly at 1st level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+          
+          they must { 
+            "do something interesting" in {} 
+          }
+          
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "must do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            }
+            they must { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty must do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            they must { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when must do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be a data structure that" should {
+                "be empty" in {} 
+              }
+              they must { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should be a data structure that must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should be a data structure that must do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              they must { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when empty should must do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when empty should must do something interesting")
+      }
+      
+    }
+    
+    describe("'they can'") {
+      
+      it("should work correctly at 1st level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            } 
+          } 
+
+          they can { 
+            "do something interesting" in {} 
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack can do something interesting")
+      }
+      
+      it("should work correctly at 1st level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+          
+          they can { 
+            "do something interesting" in {} 
+          }
+          
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "can do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be empty" in {} 
+            }
+            they can { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty can do something interesting")
+      }
+      
+      it("should work correctly at 2nd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            they can { 
+              "do something interesting" in {} 
+            }
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when can do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope exists") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              "be a data structure that" should {
+                "be empty" in {} 
+              }
+              they can { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 2)
+        assert(testStartingList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testStartingList(1).testName === "A Stack when empty should be a data structure that can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 2)
+        assert(testSucceededList(0).testName === "A Stack when empty should be a data structure that should be empty")
+        assert(testSucceededList(1).testName === "A Stack when empty should be a data structure that can do something interesting")
+      }
+      
+      it("should work correctly at 3rd level when last scope does not exist") {
+      
+        class TestSpec extends WordSpec { 
+
+          "A Stack" when { 
+            "empty" should { 
+              they can { 
+                "do something interesting" in {} 
+              }
+            }
+            
+          } 
+        }
+      
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+      
+        val testStartingList = rep.testStartingEventsReceived
+        assert(testStartingList.size === 1)
+        assert(testStartingList(0).testName === "A Stack when empty should can do something interesting")
+      
+        val testSucceededList = rep.testSucceededEventsReceived
+        assert(testSucceededList.size === 1)
+        assert(testSucceededList(0).testName === "A Stack when empty should can do something interesting")
+      }
+      
+    }
+    
+  }
 }

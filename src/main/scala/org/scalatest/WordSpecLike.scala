@@ -112,9 +112,12 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
     registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, 4, -3, None, testTags: _*)
   }
+  
+  private var lastDescription: Option[String] = None
 
   private def registerBranch(description: String, childPrefix: Option[String], methodName:String, stackDepth: Int, adjustment: Int, fun: () => Unit) {
     registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, stackDepth, adjustment, None)
+    lastDescription = Some(description)
   }
 
   /**
@@ -504,6 +507,42 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * </pre>
    */
   protected def afterWord(text: String) = new AfterWord(text)
+  
+  protected final class ItWord {
+    
+    def should(right: => Unit) {
+      registerBranch(lastDescription.getOrElse(""), Some("should"), "should", 4, -2, right _)
+    }
+    
+    def must(right: => Unit) {
+      registerBranch(lastDescription.getOrElse(""), Some("must"), "must", 4, -2, right _)
+    }
+    
+    def can(right: => Unit) {
+      registerBranch(lastDescription.getOrElse(""), Some("can"), "can", 4, -2, right _)
+    }
+    
+  }
+  
+  protected val it = new ItWord
+  
+  protected final class TheyWord {
+    
+    def should(right: => Unit) {
+      registerBranch(lastDescription.getOrElse(""), Some("should"), "should", 4, -2, right _)
+    }
+    
+    def must(right: => Unit) {
+      registerBranch(lastDescription.getOrElse(""), Some("must"), "must", 4, -2, right _)
+    }
+    
+    def can(right: => Unit) {
+      registerBranch(lastDescription.getOrElse(""), Some("can"), "can", 4, -2, right _)
+    }
+    
+  }
+  
+  protected val they = new TheyWord
 
   /**
    * Implicitly converts <code>String</code>s to <code>WordSpecStringWrapper</code>, which enables
