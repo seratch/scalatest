@@ -23,7 +23,7 @@ import Suite.autoTagClassAnnotations
  *
  * <table><tr><td class="usage">
  * <strong>Recommended Usage</strong>:
- * <code>PropSpec</code> is a good fit for teams that want to write tests exclusively in terms of property checks, and is also a good choice
+ * Class <code>PropSpec</code> is a good fit for teams that want to write tests exclusively in terms of property checks, and is also a good choice
  * for writing the occasional <a href="#testMatrix">test matrix</a> when a different style trait is chosen as the main unit testing style.
  * </td></tr></table>
  * 
