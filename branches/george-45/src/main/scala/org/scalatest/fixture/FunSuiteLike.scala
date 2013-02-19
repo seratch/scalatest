@@ -21,7 +21,7 @@ import org.scalatest.Suite.autoTagClassAnnotations
 
 /**
  * Implementation trait for class <code>fixture.FunSuite</code>, which is
- * a sister trait to <code>org.scalatest.FunSuite</code> that can pass a
+ * a sister class to <code>org.scalatest.FunSuite</code> that can pass a
  * fixture object into its tests.
  * 
  * <p>
