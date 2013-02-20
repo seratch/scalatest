@@ -511,15 +511,15 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   protected final class ItWord {
     
     def should(right: => Unit) {
-      registerBranch(lastDescription.getOrElse(""), Some("should"), "should", 4, -2, right _)
+      registerBranch(lastDescription.getOrElse(""), Some("should"), "should", 3, -2, right _)
     }
     
     def must(right: => Unit) {
-      registerBranch(lastDescription.getOrElse(""), Some("must"), "must", 4, -2, right _)
+      registerBranch(lastDescription.getOrElse(""), Some("must"), "must", 3, -2, right _)
     }
     
     def can(right: => Unit) {
-      registerBranch(lastDescription.getOrElse(""), Some("can"), "can", 4, -2, right _)
+      registerBranch(lastDescription.getOrElse(""), Some("can"), "can", 3, -2, right _)
     }
     
   }
@@ -529,15 +529,15 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   protected final class TheyWord {
     
     def should(right: => Unit) {
-      registerBranch(lastDescription.getOrElse(""), Some("should"), "should", 4, -2, right _)
+      registerBranch(lastDescription.getOrElse(""), Some("should"), "should", 3, -2, right _)
     }
     
     def must(right: => Unit) {
-      registerBranch(lastDescription.getOrElse(""), Some("must"), "must", 4, -2, right _)
+      registerBranch(lastDescription.getOrElse(""), Some("must"), "must", 3, -2, right _)
     }
     
     def can(right: => Unit) {
-      registerBranch(lastDescription.getOrElse(""), Some("can"), "can", 4, -2, right _)
+      registerBranch(lastDescription.getOrElse(""), Some("can"), "can", 3, -2, right _)
     }
     
   }

@@ -1150,6 +1150,38 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         assert(testSucceededList(0).testName === "A Stack when empty should should do something interesting")
       }
       
+      it("should generate TestRegistrationClosedException with correct stack depth info when nested inside an in") {
+        class TestSpec extends WordSpec {
+          var registrationClosedThrown = false
+          "a feature" should {
+            "a scenario" in {
+              it should {
+                
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
+      }
     }
     
     describe("'it must'") {
@@ -1317,6 +1349,39 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         val testSucceededList = rep.testSucceededEventsReceived
         assert(testSucceededList.size === 1)
         assert(testSucceededList(0).testName === "A Stack when empty should must do something interesting")
+      }
+      
+      it("should generate TestRegistrationClosedException with correct stack depth info when nested inside an in") {
+        class TestSpec extends WordSpec {
+          var registrationClosedThrown = false
+          "a feature" should {
+            "a scenario" in {
+              it must {
+                
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
       }
       
     }
@@ -1488,6 +1553,39 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         assert(testSucceededList(0).testName === "A Stack when empty should can do something interesting")
       }
       
+      it("should generate TestRegistrationClosedException with correct stack depth info when nested inside an in") {
+        class TestSpec extends WordSpec {
+          var registrationClosedThrown = false
+          "a feature" should {
+            "a scenario" in {
+              it can {
+                
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
+      }
+      
     }
     
     describe("'they should'") {
@@ -1655,6 +1753,39 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         val testSucceededList = rep.testSucceededEventsReceived
         assert(testSucceededList.size === 1)
         assert(testSucceededList(0).testName === "A Stack when empty should should do something interesting")
+      }
+      
+      it("should generate TestRegistrationClosedException with correct stack depth info when nested inside an in") {
+        class TestSpec extends WordSpec {
+          var registrationClosedThrown = false
+          "a feature" should {
+            "a scenario" in {
+              they should {
+                
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
       }
       
     }
@@ -1826,6 +1957,39 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         assert(testSucceededList(0).testName === "A Stack when empty should must do something interesting")
       }
       
+      it("should generate TestRegistrationClosedException with correct stack depth info when nested inside an in") {
+        class TestSpec extends WordSpec {
+          var registrationClosedThrown = false
+          "a feature" should {
+            "a scenario" in {
+              they must {
+                
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
+      }
+      
     }
     
     describe("'they can'") {
@@ -1993,6 +2157,39 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
         val testSucceededList = rep.testSucceededEventsReceived
         assert(testSucceededList.size === 1)
         assert(testSucceededList(0).testName === "A Stack when empty should can do something interesting")
+      }
+      
+      it("should generate TestRegistrationClosedException with correct stack depth info when nested inside an in") {
+        class TestSpec extends WordSpec {
+          var registrationClosedThrown = false
+          "a feature" should {
+            "a scenario" in {
+              they can {
+                
+              }
+            }
+          }
+          override def withFixture(test: NoArgTest) {
+            try {
+              test.apply()
+            }
+            catch {
+              case e: TestRegistrationClosedException => 
+                registrationClosedThrown = true
+                throw e
+            }
+          }
+        }
+        val rep = new EventRecordingReporter
+        val s = new TestSpec
+        s.run(None, Args(rep))
+        assert(s.registrationClosedThrown == true)
+        val testFailedEvents = rep.testFailedEventsReceived
+        assert(testFailedEvents.size === 1)
+        assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
+        val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
+        assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
       }
       
     }
