@@ -26,7 +26,6 @@ import scala.reflect.Manifest
 import Helper.transformOperatorChars
 import scala.collection.Traversable
 import Assertions.areEqualComparingArraysStructurally
-import org.scalatest.exceptions.TestFailedException
 import scala.collection.GenTraversable
 import scala.collection.GenSeq
 import scala.collection.GenMap
@@ -38,13 +37,6 @@ import org.scalautils.Equality
 import org.scalatest.verb.ShouldVerb
 import org.scalautils.TripleEqualsInvocationOnInterval
 import org.scalautils.EqualityConstraint
-import org.scalatest.matchers.HavePropertyMatcher
-import org.scalatest.matchers.HavePropertyMatchResult
-import org.scalatest.matchers.BePropertyMatcher
-import org.scalatest.matchers.BePropertyMatchResult
-import org.scalatest.matchers.BeMatcher
-import org.scalatest.matchers.Matcher
-import org.scalatest.matchers.MatchResult
 
 // TODO: drop generic support for be as an equality comparison, in favor of specific ones.
 // TODO: mention on JUnit and TestNG docs that you can now mix in ShouldMatchers or MustMatchers
@@ -9629,7 +9621,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for theSameElementsAs.
      */
-    def apply(left: GenTraversable[T]): MatchResult = 
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = 
       MatchResult(
         checkEqual(left.toIterator, right.toIterator, IndexedSeq.empty), 
         FailureMessages("didNotContainSameElements", left, right), 
@@ -9673,7 +9665,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for theSameIteratedElementsAs.
      */
-    def apply(left: GenTraversable[T]): MatchResult = 
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = 
       MatchResult(
         checkEqual(left.toIterator, right.toIterator), 
         FailureMessages("didNotContainSameIteratedElements", left, right), 
@@ -9718,7 +9710,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for allOf.
      */
-    def apply(left: GenTraversable[T]): MatchResult = 
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = 
       MatchResult(
         checkEqual(left, right.toIterator, Set.empty), 
         FailureMessages("didNotContainAllOfElements", left, UnquotedString(right.mkString(", "))),
@@ -9779,7 +9771,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for inOrder.
      */
-    def apply(left: GenTraversable[T]): MatchResult = 
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = 
       MatchResult(
         checkEqual(left, right.toIterator, Set.empty), 
         FailureMessages("didNotContainAllOfElementsInOrder", left, UnquotedString(right.mkString(", "))),
@@ -9825,7 +9817,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for oneOf.
      */
-    def apply(left: GenTraversable[T]): MatchResult = 
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = 
       MatchResult(
         checkEqual(left, right.toIterator, Set.empty), 
         FailureMessages("didNotContainOneOfElements", left, UnquotedString(right.mkString(", "))),
@@ -9887,7 +9879,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for only.
      */
-    def apply(left: GenTraversable[T]): MatchResult = 
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = 
       MatchResult(
         checkEqual(left.toIterator, right.toIterator, Set.empty), 
         FailureMessages("didNotContainOnlyElements", left, UnquotedString(right.mkString(", "))),
@@ -9950,7 +9942,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for inOrderOnly.
      */
-    def apply(left: GenTraversable[T]): MatchResult = {
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = {
       val rightItr = right.toIterator
       val rightFirst = rightItr.next
       MatchResult(
@@ -10016,7 +10008,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     /**
      * This method contains the matching code for noneOf.
      */
-    def apply(left: GenTraversable[T]): MatchResult = {
+    def apply(left: GenTraversable[T])(implicit equality: Equality[GenTraversable[T]]): MatchResult = {
       MatchResult(
         checkEqual(left.toIterator, right.toIterator, Set.empty), 
         FailureMessages("containedOneOfElements", left, UnquotedString(right.mkString(", "))),
