@@ -45,20 +45,20 @@ class TheSameIteratedElementsAsContainMatcherSpec extends Spec with Matchers wit
       List(1, 2, 3) should contain (matcher)
       Set(1, 2, 3) should contain (matcher)
       
-      javaList(1, 2, 3) should contain (matcher)
-      javaSet(1, 2, 3) should contain (matcher)
+      //javaList(1, 2, 3) should contain (matcher)
+      //javaSet(1, 2, 3) should contain (matcher)
       
       List(1, 2, 3) should contain (theSameIteratedElementsAs(List(1, 2, 3)))
       Set(1, 2, 3) should contain (theSameIteratedElementsAs(List(1, 2, 3)))
       
-      javaList(1, 2, 3) should contain (theSameIteratedElementsAs(List(1, 2, 3)))
-      javaSet(1, 2, 3) should contain (theSameIteratedElementsAs(List(1, 2, 3)))
+      //javaList(1, 2, 3) should contain (theSameIteratedElementsAs(List(1, 2, 3)))
+      //javaSet(1, 2, 3) should contain (theSameIteratedElementsAs(List(1, 2, 3)))
       
       LinkedHashMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
       LinkedHashMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (theSameIteratedElementsAs(Map(1 -> "one", 2 -> "two", 3 -> "three")))
       
-      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
-      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (theSameIteratedElementsAs(Map(1 -> "one", 2 -> "two", 3 -> "three")))
+      //javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
+      //javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (theSameIteratedElementsAs(Map(1 -> "one", 2 -> "two", 3 -> "three")))
     }
     
     def `should throw TestFailedException with correct stack depth and message when left List contains same elements in different order as right List` {
@@ -116,7 +116,7 @@ class TheSameIteratedElementsAsContainMatcherSpec extends Spec with Matchers wit
       }
       checkStackDepth(e4, left2, mapMatcherRight, thisLineNumber - 2)
       
-      val e5 = intercept[exceptions.TestFailedException] {
+      /*val e5 = intercept[exceptions.TestFailedException] {
         left3 should contain (matcher)
       }
       checkStackDepth(e5, left3, matcherRight, thisLineNumber - 2)
@@ -134,7 +134,7 @@ class TheSameIteratedElementsAsContainMatcherSpec extends Spec with Matchers wit
       val e8 = intercept[exceptions.TestFailedException] {
         left4 should contain (theSameIteratedElementsAs(mapMatcherRight))
       }
-      checkStackDepth(e8, left4, mapMatcherRight, thisLineNumber - 2)
+      checkStackDepth(e8, left4, mapMatcherRight, thisLineNumber - 2)*/
     }
     
     def `should throw TestFailedException with correct stack depth and message when left and right List are same size but contain different elements` {
