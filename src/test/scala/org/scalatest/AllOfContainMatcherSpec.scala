@@ -44,19 +44,19 @@ class AllOfContainMatcherSpec extends Spec with Matchers with SharedHelpers {
       List(1, 2, 3) should contain (matcher)
       Set(1, 2, 3) should contain (matcher)
       
-      //javaList(1, 2, 3) should contain (matcher)
-      //javaSet(1, 2, 3) should contain (matcher)
+      javaList(1, 2, 3) should contain (matcher)
+      javaSet(1, 2, 3) should contain (matcher)
       
       List(1, 2, 3) should contain (allOf(1, 2))
       Set(1, 2, 3) should contain (allOf(1, 2))
       
-      //javaList(1, 2, 3) should contain (allOf(1, 2))
-      //javaSet(1, 2, 3) should contain (allOf(1, 2))
+      javaList(1, 2, 3) should contain (allOf(1, 2))
+      javaSet(1, 2, 3) should contain (allOf(1, 2))
       
       Map(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
       Map(1 -> "one", 2 -> "two", 3 -> "three") should contain allOf (1 -> "one", 2 -> "two")
       
-      //javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
+      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
       javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain allOf (1 -> "one", 2 -> "two")
     }
     
@@ -125,7 +125,7 @@ class AllOfContainMatcherSpec extends Spec with Matchers with SharedHelpers {
       }
       checkStackDepth(e6, left3, mapMatcherRight, thisLineNumber - 2)
       
-      /*val e7 = intercept[exceptions.TestFailedException] {
+      val e7 = intercept[exceptions.TestFailedException] {
         left4 should contain (matcher)
       }
       checkStackDepth(e7, left4, Array(1, 2).deep, thisLineNumber - 2)
@@ -148,7 +148,7 @@ class AllOfContainMatcherSpec extends Spec with Matchers with SharedHelpers {
       val e11 = intercept[exceptions.TestFailedException] {
         left6 should contain (mapMatcher)
       }
-      checkStackDepth(e11, left6, mapMatcherRight, thisLineNumber - 2)*/
+      checkStackDepth(e11, left6, mapMatcherRight, thisLineNumber - 2)
       
       val e12 = intercept[exceptions.TestFailedException] {
         left6 should contain allOf (1 -> "one", 2 -> "two")

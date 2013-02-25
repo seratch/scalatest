@@ -3493,6 +3493,26 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
         traversableMatcher.apply(traversable)
       }
     }
+  
+  implicit def convertTraversableMatcherGen1ToJavaCollectionMatcherGen1[T](traversableMatcher: MatcherGen1[GenTraversable[T], Equality]): MatcherGen1[java.util.Collection[T], Equality] =
+    new MatcherGen1[java.util.Collection[T], Equality] {
+      def matcher[L <: java.util.Collection[T] : Equality]: Matcher[L] = {
+        val equality = implicitly[Equality[GenTraversable[T]]]
+        new Matcher[java.util.Collection[T]] {
+          def apply(left: java.util.Collection[T]): MatchResult = {
+            val traversable = new Traversable[T] {
+              def foreach[U](f: (T) => U) {
+                val javaIterator = left.iterator
+                while (javaIterator.hasNext)
+                  f(javaIterator.next)
+              }
+              override def toString: String = left.toString
+            }
+            traversableMatcher.matcher(equality).apply(traversable)
+          }
+        }
+      }
+    }
 
   /**
    * This implicit conversion method enables the following syntax:
@@ -3565,6 +3585,44 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
         }
         val scalaMap = new MapWrapper[V](left)
         mapMatcher.apply(scalaMap)
+      }
+    }
+  
+  implicit def convertMapMatcherGen1ToJavaMapMatcherGen1[K, V](traversableMatcher: MatcherGen1[GenMap[K, V], Equality]): MatcherGen1[java.util.Map[K, V], Equality] =
+    new MatcherGen1[java.util.Map[K, V], Equality] {
+      def matcher[L <: java.util.Map[K, V] : Equality]: Matcher[L] = {
+        val equality = implicitly[Equality[GenMap[K, V]]]
+        new Matcher[java.util.Map[K, V]] {
+          def apply(left: java.util.Map[K, V]): MatchResult = {
+            class MapWrapper[Z](javaMap: java.util.Map[K, Z]) extends scala.collection.Map[K, Z] {
+              override def size: Int = javaMap.size
+              def get(key: K): Option[Z] =
+                if (javaMap.containsKey(key)) Some(javaMap.get(key)) else None
+              override def iterator: Iterator[(K, Z)] = new Iterator[(K, Z)] {
+                private val javaIterator = javaMap.keySet.iterator
+                def next: (K, Z) = {
+                  val nextKey = javaIterator.next
+                  (nextKey, javaMap.get(nextKey))
+                }
+                def hasNext: Boolean = javaIterator.hasNext
+              }
+              override def +[W >: Z] (kv: (K, W)): scala.collection.Map[K, W] = {
+                val newJavaMap = new java.util.HashMap[K, W](javaMap)
+                val (key, value) = kv
+                newJavaMap.put(key, value)
+                new MapWrapper[W](newJavaMap)
+              }
+              override def - (key: K): scala.collection.Map[K, Z] = {
+                val newJavaMap = new java.util.HashMap[K, Z](javaMap)
+                newJavaMap.remove(key)
+                new MapWrapper[Z](newJavaMap)
+              }
+              override def toString: String = javaMap.toString
+            }
+            val scalaMap = new MapWrapper[V](left)
+            traversableMatcher.matcher(equality).apply(scalaMap)
+          }
+        }
       }
     }
 

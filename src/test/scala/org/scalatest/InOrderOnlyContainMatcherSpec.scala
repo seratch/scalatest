@@ -43,13 +43,13 @@ class InOrderOnlyContainMatcherSpec extends Spec with Matchers with SharedHelper
     def `should work with ContainMatcher directly` {
       
       List(1, 2, 2, 3, 3, 3) should contain (matcher)
-      //javaList(1, 2, 2, 3, 3, 3) should contain (matcher)
+      javaList(1, 2, 2, 3, 3, 3) should contain (matcher)
       
       List(1, 2, 2, 3, 3, 3) should contain (inOrderOnly(1, 2, 3))
       List(1, 2, 2, 3, 3, 3) should contain (inOrderOnly(1, 2, 3))
       
       LinkedHashMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
-      //javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
+      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
       
       LinkedHashMap(1 -> "one", 2 -> "two", 3 -> "three") should contain inOrderOnly (1 -> "one", 2 -> "two", 3 -> "three")
       javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain inOrderOnly (1 -> "one", 2 -> "two", 3 -> "three")
@@ -95,7 +95,7 @@ class InOrderOnlyContainMatcherSpec extends Spec with Matchers with SharedHelper
       }
       checkStackDepth(e4, left2, Array(1 -> "one", 2 -> "two", 3 -> "three"), thisLineNumber - 2)
       
-      /*val e5 = intercept[exceptions.TestFailedException] {
+      val e5 = intercept[exceptions.TestFailedException] {
         left3 should contain (matcher)
       }
       checkStackDepth(e5, left3, Array(1, 2, 3).deep, thisLineNumber - 2)
@@ -108,7 +108,7 @@ class InOrderOnlyContainMatcherSpec extends Spec with Matchers with SharedHelper
       val e7 = intercept[exceptions.TestFailedException] {
         left4 should contain (mapMatcher)
       }
-      checkStackDepth(e7, left4, mapMatcherRight, thisLineNumber - 2)*/
+      checkStackDepth(e7, left4, mapMatcherRight, thisLineNumber - 2)
       
       val e8 = intercept[exceptions.TestFailedException] {
         left4 should contain inOrderOnly (1 -> "one", 2 -> "two", 3 -> "three")
