@@ -44,19 +44,19 @@ class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with Shared
       
       List(1, 2, 3) should contain (matcher)
       Set(1, 2, 3) should contain (matcher)
-      javaList(1, 2, 3) should contain (matcher)
-      javaSet(1, 2, 3) should contain (matcher)
+      //javaList(1, 2, 3) should contain (matcher)
+      //javaSet(1, 2, 3) should contain (matcher)
       
       List(1, 2, 3) should contain (theSameElementsAs(List(1, 2, 3)))
       Set(1, 2, 3) should contain (theSameElementsAs(List(1, 2, 3)))
-      javaList(1, 2, 3) should contain (theSameElementsAs(List(1, 2, 3)))
-      javaSet(1, 2, 3) should contain (theSameElementsAs(List(1, 2, 3)))
+      //javaList(1, 2, 3) should contain (theSameElementsAs(List(1, 2, 3)))
+      //javaSet(1, 2, 3) should contain (theSameElementsAs(List(1, 2, 3)))
       
       Map(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
       Map(1 -> "one", 2 -> "two", 3 -> "three") should contain (theSameElementsAs(Map(1 -> "one", 2 -> "two", 3 -> "three")))
       
-      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
-      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (theSameElementsAs(Map(1 -> "one", 2 -> "two", 3 -> "three")))
+      //javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (mapMatcher)
+      //javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain (theSameElementsAs(Map(1 -> "one", 2 -> "two", 3 -> "three")))
     }
     
     def `should succeeded when left List contains same elements in different order as right List` {
@@ -125,7 +125,7 @@ class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with Shared
       }
       checkStackDepth(e6, left3, mapMatcherRight, thisLineNumber - 2)
       
-      val e7 = intercept[exceptions.TestFailedException] {
+      /*val e7 = intercept[exceptions.TestFailedException] {
         left4 should contain (matcher)
       }
       checkStackDepth(e7, left4, matcherRight, thisLineNumber - 2)
@@ -153,7 +153,7 @@ class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with Shared
       val e12 = intercept[exceptions.TestFailedException] {
         left6 should contain (theSameElementsAs(mapMatcherRight))
       }
-      checkStackDepth(e12, left6, mapMatcherRight, thisLineNumber - 2)
+      checkStackDepth(e12, left6, mapMatcherRight, thisLineNumber - 2)*/
     }
     
     def `should throw TestFailedException with correct stack depth and message when left and right List are same size but contain different elements` {

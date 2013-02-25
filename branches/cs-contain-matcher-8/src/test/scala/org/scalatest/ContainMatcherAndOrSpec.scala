@@ -2,7 +2,7 @@ package org.scalatest
 
 class ContainMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
 
-  object `ContainMatcher ` {
+  /*object `ContainMatcher ` {
     
     object `when use with 'and'` {
       
@@ -582,6 +582,6 @@ class ContainMatcherAndOrSpec extends Spec with Matchers with SharedHelpers {
       }
     }
     
-  }
+  }*/
   
 }
