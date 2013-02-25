@@ -3478,6 +3478,16 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
         traversableMatcher.apply(new JavaCollectionWrapper(left))
     }
   
+  /** 
+   * This implicit conversion method enables the following syntax (<code>javaColl</code> is a <code>java.util.Collection</code>, <code>containMatcher</code> is a <code>ContainMatcher</code>):
+   *
+   * <pre class="stHighlight">
+   * javaColl should contain (containMatcher)
+   * </pre>
+   *
+   * The <code>(contain (containMatcher))</code> expression will result in a <code>MatcherGen1[GenTraversable[String]]</code>. This
+   * implicit conversion method will convert that matcher to a <code>MatcherGen1[java.util.Collection[String]]</code>.
+   */
   implicit def convertTraversableMatcherGen1ToJavaCollectionMatcherGen1[T](traversableMatcher: MatcherGen1[GenTraversable[T], Equality]): MatcherGen1[java.util.Collection[T], Equality] =
     new MatcherGen1[java.util.Collection[T], Equality] {
       def matcher[L <: java.util.Collection[T] : Equality]: Matcher[L] = {
@@ -3504,6 +3514,27 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       def apply(left: Array[T]): MatchResult = 
         traversableMatcher.apply(new ArrayWrapper(left))
     }
+  
+  /** 
+   * This implicit conversion method enables the following syntax (<code>containMatcher</code> is a <code>ContainMatcher</code>):
+   *
+   * <pre class="stHighlight">
+   * Array(1, 2, 3) should contain (containMatcher)
+   * </pre>
+   *
+   * The <code>(contain (containMatcher))</code> expression will result in a <code>MatcherGen1[GenTraversable[String]]</code>. This
+   * implicit conversion method will convert that matcher to a <code>MatcherGen1[Array[String]]</code>.
+   */
+  implicit def convertTraversableMatcherGen1ToArrayMatcherGen1[T](traversableMatcher: MatcherGen1[GenTraversable[T], Equality]): MatcherGen1[Array[T], Equality] =
+    new MatcherGen1[Array[T], Equality] {
+      def matcher[L <: Array[T] : Equality]: Matcher[L] = {
+        val equality = implicitly[Equality[GenTraversable[T]]]
+        new Matcher[Array[T]] {
+          def apply(left: Array[T]): MatchResult = 
+            traversableMatcher.matcher(equality).apply(new ArrayWrapper(left))
+        }
+      }
+    }
 
   /**
    * This implicit conversion method enables the following syntax (<code>javaMap</code> is a <code>java.util.Map</code>):
@@ -3521,6 +3552,16 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
         mapMatcher.apply(new JavaMapWrapper(left))
     }
   
+  /**
+   * This implicit conversion method enables the following syntax (<code>javaMap</code> is a <code>java.util.Map</code>, <code>containMatcher</code> is a <code>ContainMatcher</code>):
+   *
+   * <pre class="stHighlight">
+   * javaMap should contain (containMatcher)
+   * </pre>
+   *
+   * The <code>contain (containMatcher)</code> expression will result in a <code>MatcherGen1[scala.collection.GenMap[String, Any]]</code>. This
+   * implicit conversion method will convert that matcher to a <code>MatcherGen1[java.util.Map[String, Any]]</code>.
+   */
   implicit def convertMapMatcherGen1ToJavaMapMatcherGen1[K, V](traversableMatcher: MatcherGen1[GenMap[K, V], Equality]): MatcherGen1[java.util.Map[K, V], Equality] =
     new MatcherGen1[java.util.Map[K, V], Equality] {
       def matcher[L <: java.util.Map[K, V] : Equality]: Matcher[L] = {
@@ -5308,7 +5349,7 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *
    * @author Bill Venners
    */
-  final class ResultOfNotWordForArray[E](left: Array[E], shouldBeTrue: Boolean)
+  final class ResultOfNotWordForArray[E](left: Array[E], shouldBeTrue: Boolean, equality: Equality[E])
       extends ResultOfNotWordForAnyRef(left, shouldBeTrue) {
 
     /**
@@ -5329,6 +5370,24 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
               right
             )
           )
+      }
+    }
+    
+    /**
+     * This method enables the following syntax, where <code>containMatcher</code> refers to
+     * a <code>ContainMatcher</code>:
+     *
+     * <pre class="stHighlight">
+     * Array(1, 2, 3) should not contain containMatcher
+     *                           ^
+     * </pre>
+     */
+    def contain(right: ContainMatcher[E]) {
+      val result = right(new ArrayWrapper(left), equality)
+      if (result.matches != shouldBeTrue) {
+        throw newTestFailedException(
+          if (shouldBeTrue) result.failureMessage else result.negatedFailureMessage
+        )
       }
     }
     
@@ -9209,12 +9268,36 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      * This method enables the following syntax: 
      *
      * <pre class="stHighlight">
+     * traversable should contain theSameElementsAs array
+     *                            ^
+     * </pre>
+     */
+    def theSameElementsAs(right: Array[T]) {
+      matchContainMatcher(left, new TheSameElementsAsContainMatcher(new ArrayWrapper(right)), shouldBeTrue, equality)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
      * traversable should contain theSameIteratedElementsAs anotherTraversable
      *                            ^
      * </pre>
      */
     def theSameIteratedElementsAs(right: GenTraversable[T]) {
       matchContainMatcher(left, new TheSameIteratedElementsAsContainMatcher(right), shouldBeTrue, equality)
+    }
+    
+    /**
+     * This method enables the following syntax: 
+     *
+     * <pre class="stHighlight">
+     * traversable should contain theSameIteratedElementsAs array
+     *                            ^
+     * </pre>
+     */
+    def theSameIteratedElementsAs(right: Array[T]) {
+      matchContainMatcher(left, new TheSameIteratedElementsAsContainMatcher(new ArrayWrapper(right)), shouldBeTrue, equality)
     }
     
     /**
@@ -9553,6 +9636,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
     new TheSameElementsAsContainMatcher(xs)
   
   /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * traversable should contain (theSameElementsAs(array))
+   *                             ^
+   * </pre>
+   */
+  def theSameElementsAs[T](xs: Array[T]) = 
+    new TheSameElementsAsContainMatcher(new ArrayWrapper(xs))
+  
+  /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
    * the matchers DSL.
    *
@@ -9595,6 +9689,17 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    */
   def theSameIteratedElementsAs[T](xs: GenTraversable[T]) = 
     new TheSameIteratedElementsAsContainMatcher(xs)
+  
+  /**
+   * This method enables the following syntax: 
+   *
+   * <pre class="stHighlight">
+   * traversable should contain (theSameIteratedElementsAs(array))
+   *                             ^
+   * </pre>
+   */
+  def theSameIteratedElementsAs[T](xs: Array[T]) = 
+    new TheSameIteratedElementsAsContainMatcher(new ArrayWrapper(xs))
   
   /**
    * This class is part of the ScalaTest matchers DSL. Please see the documentation for <a href="ShouldMatchers.html"><code>ShouldMatchers</code></a> or <a href="MustMatchers.html"><code>MustMatchers</code></a> for an overview of
@@ -15256,8 +15361,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *       ^
      * </pre>
      */
-    def should(notWord: NotWord): ResultOfNotWordForArray[T] =
-      new ResultOfNotWordForArray(left, false)
+    def should(notWord: NotWord)(implicit equality: Equality[T]): ResultOfNotWordForArray[T] =
+      new ResultOfNotWordForArray(left, false, equality)
     
     /**
      * This method enables syntax such as the following, where <code>bigArray</code> is a <code>AMatcher</code>:
