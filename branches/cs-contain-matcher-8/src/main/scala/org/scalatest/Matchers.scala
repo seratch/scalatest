@@ -1323,6 +1323,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        */
       def value[U](expectedValue: U): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] = matchersWrapper.and(matchers.contain.value(expectedValue))
       
+      // TODO: All of the following contain matcher methods are no longer in used, we should remove them once we support the desired syntax using MatcherGen2, MatcherGen3 etc.
       /**
        * This method enables the following syntax:
        *
@@ -1331,8 +1332,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def theSameElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.theSameElementsAs(right))
+      //def theSameElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.theSameElementsAs(right))
       
       /**
        * This method enables the following syntax:
@@ -1342,8 +1343,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def theSameIteratedElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.theSameIteratedElementsAs(right))
+      //def theSameIteratedElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.theSameIteratedElementsAs(right))
       
       /**
        * This method enables the following syntax:
@@ -1353,8 +1354,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def allOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.allOf(right.toList: _*))
+      //def allOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.allOf(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -1364,8 +1365,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def inOrder[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.inOrder(right.toList: _*))
+      //def inOrder[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.inOrder(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -1375,8 +1376,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def oneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.oneOf(right.toList: _*))
+      //def oneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.oneOf(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -1386,8 +1387,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def only[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.only(right.toList: _*))
+      //def only[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.only(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -1397,8 +1398,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def inOrderOnly[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.inOrderOnly(right.toList: _*))
+      //def inOrderOnly[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.inOrderOnly(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -1408,8 +1409,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                           ^
        * </pre>
        */
-      def noneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.and(matchers.contain.noneOf(right.toList: _*))
+      //def noneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.and(matchers.contain.noneOf(right.toList: _*))
         
       /**
        * This method enables the following syntax:
@@ -2071,6 +2072,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       def contain[U](resultOfValueWordApplication: ResultOfValueWordApplication[U]): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] =
         matchersWrapper.and(matchers.not.contain(resultOfValueWordApplication))
         
+      // TODO: The following contain matcher methods is no longer in used, we should remove them once we support the desired syntax using MatcherGen2, MatcherGen3 etc.
       /**
        * This method enables the following syntax:
        *
@@ -2079,8 +2081,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                      ^
        * </pre>
        */
-      def contain[U](right: ContainMatcher[U]): Matcher[T with GenTraversable[U]] =
-        matchersWrapper.and(matchers.not.contain(right))
+      //def contain[U](right: ContainMatcher[U]): Matcher[T with GenTraversable[U]] =
+        //matchersWrapper.and(matchers.not.contain(right))
         
       /**
        * This method enables the following syntax:
@@ -2277,6 +2279,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        */
       def value[U](expectedValue: U): Matcher[T with scala.collection.GenMap[K, U] forSome { type K }] = matchersWrapper.or(matchers.contain.value(expectedValue))
       
+      // TODO: All of the following contain matcher methods are no longer in used, we should remove them once we support the desired syntax using MatcherGen2, MatcherGen3 etc.
       /**
        * This method enables the following syntax:
        *
@@ -2285,8 +2288,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def theSameElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.theSameElementsAs(right))
+      //def theSameElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.theSameElementsAs(right))
       
       /**
        * This method enables the following syntax:
@@ -2296,8 +2299,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def theSameIteratedElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.theSameIteratedElementsAs(right))
+      //def theSameIteratedElementsAs[E](right: GenTraversable[E]): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.theSameIteratedElementsAs(right))
       
       /**
        * This method enables the following syntax:
@@ -2307,8 +2310,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def allOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.allOf(right.toList: _*))
+      //def allOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.allOf(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -2318,8 +2321,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def inOrder[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.inOrder(right.toList: _*))
+      //def inOrder[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.inOrder(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -2329,8 +2332,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def oneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.oneOf(right.toList: _*))
+      //def oneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.oneOf(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -2340,8 +2343,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def only[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.only(right.toList: _*))
+      //def only[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.only(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -2351,8 +2354,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def inOrderOnly[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.inOrderOnly(right.toList: _*))
+      //def inOrderOnly[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.inOrderOnly(right.toList: _*))
       
       /**
        * This method enables the following syntax:
@@ -2362,8 +2365,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
        *                                                                          ^
        * </pre>
        */
-      def noneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
-        matchersWrapper.or(matchers.contain.noneOf(right.toList: _*))
+      //def noneOf[E](right: E*): MatcherGen1[T with GenTraversable[E], Equality] = 
+        //matchersWrapper.or(matchers.contain.noneOf(right.toList: _*))
         
       /**
        * This method enables the following syntax:
@@ -3674,7 +3677,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new TheSameElementsAsContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3696,7 +3699,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new TheSameIteratedElementsAsContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3717,7 +3720,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new AllOfContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3738,7 +3741,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new InOrderContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3759,7 +3762,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new OneOfContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3780,7 +3783,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new OnlyContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3801,7 +3804,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new InOrderOnlyContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
@@ -3822,7 +3825,7 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
           new Matcher[GenTraversable[E]] {
             def apply(left: GenTraversable[E]): MatchResult = {
               val result = new NoneOfContainMatcher(right).apply(left, equality)
-              MatchResult(!result.matches, result.negatedFailureMessage, result.failureMessage)
+              MatchResult(result.matches, result.failureMessage, result.negatedFailureMessage)
             }
           }
         }
