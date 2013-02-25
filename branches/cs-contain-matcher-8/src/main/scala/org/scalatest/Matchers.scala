@@ -1077,13 +1077,13 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       )
   }
   
-  private[scalatest] class JavaCollectionWrapper[T](underlying: java.util.Collection[T]) extends Iterable[T] {
-    import collection.JavaConverters._
-    def iterator = underlying.iterator.asScala
-    override def size = underlying.size
-    override def isEmpty = underlying.isEmpty
-    def newBuilder[B] = new collection.mutable.ArrayBuffer[B]
-    override def toString = if (underlying == null) "null" else underlying.toString
+  private[scalatest] class JavaCollectionWrapper[T](underlying: java.util.Collection[T]) extends Traversable[T] {
+    def foreach[U](f: (T) => U) {
+      val javaIterator = underlying.iterator
+      while (javaIterator.hasNext)
+        f(javaIterator.next)
+    }
+    override def toString: String = if (underlying == null) "null" else underlying.toString
   }
   
   private[scalatest] def matchContainMatcher[T](left: java.util.Collection[T], containMatcher: ContainMatcher[T], shouldBeTrue: Boolean, equality: Equality[T]) {
@@ -1096,48 +1096,33 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       )
   }
   
-  private[scalatest] class JavaMapWrapper[K, V, +Repr <: collection.mutable.MapLike[K, V, Repr] with collection.mutable.Map[K, V]](val underlying: java.util.Map[K, V]) extends collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Repr] {
-    
-    override def size = underlying.size
-
-    def get(k: K) = {
-      val v = underlying get k
-      if (v != null)
-        Some(v)
-      else if (underlying containsKey k)
-        Some(null.asInstanceOf[V])
-      else
-        None
-    }
-
-    def +=(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
-    def -=(key: K): this.type = { underlying remove key; this }
-
-    override def put(k: K, v: V): Option[V] = {
-      val r = underlying.put(k, v)
-      if (r != null) Some(r) else None
-    }
-
-    override def update(k: K, v: V) { underlying.put(k, v) }
-
-    override def remove(k: K): Option[V] = {
-      val r = underlying remove k
-      if (r != null) Some(r) else None
-    }
-
-    def iterator: Iterator[(K, V)] = 
-      new collection.Iterator[(K, V)] {
-        val ui = underlying.entrySet.iterator
-        def hasNext = ui.hasNext
-        def next() = { val e = ui.next(); (e.getKey, e.getValue) }
+  private[scalatest] class JavaMapWrapper[K, V](val underlying: java.util.Map[K, V]) extends scala.collection.Map[K, V] {
+    // Even though the java map is mutable I just wrap it it to a plain old Scala map, because
+    // I have no intention of mutating it.
+    override def size: Int = underlying.size
+    def get(key: K): Option[V] =
+      if (underlying.containsKey(key)) Some(underlying.get(key)) else None
+    override def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
+      private val javaIterator = underlying.entrySet.iterator
+      def next: (K, V) = {
+        val nextEntry = javaIterator.next
+        (nextEntry.getKey, nextEntry.getValue)
       }
-
-    override def clear() = underlying.clear()
-
-    // LinkedHashMap is used because it preserves insertion order
-    override def empty: Repr = collection.mutable.LinkedHashMap.empty.asInstanceOf[Repr]
-    
-    override def toString = if (underlying == null) "null" else underlying.toString
+      def hasNext: Boolean = javaIterator.hasNext
+    }
+    override def +[W >: V] (kv: (K, W)): scala.collection.Map[K, W] = {
+      val newJavaMap = new java.util.LinkedHashMap[K, W](underlying)
+      val (key, value) = kv
+      newJavaMap.put(key, value)
+      new JavaMapWrapper[K, W](newJavaMap)
+    }
+    override def - (key: K): scala.collection.Map[K, V] = {
+      val newJavaMap = new java.util.LinkedHashMap[K, V](underlying)
+      newJavaMap.remove(key)
+      new JavaMapWrapper[K, V](underlying)
+    }
+    override def empty = new JavaMapWrapper[K, V](new java.util.LinkedHashMap[K, V]())
+    override def toString: String = if (underlying == null) "null" else underlying.toString
   }
   
   private[scalatest] def matchContainMatcher[K, V](left: java.util.Map[K, V], containMatcher: ContainMatcher[(K, V)], shouldBeTrue: Boolean, equality: Equality[(K, V)]) {
@@ -1153,12 +1138,17 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
   /**
    * This wrapper gives better toString (Array(x, x, x)) as compared to Scala default one (WrappedArray(x, x, x)).
    */
-  private[scalatest] class ArrayWrapper[T](underlying: Array[T]) extends Iterable[T] {
-    def iterator = underlying.iterator
-    override def size = underlying.size
-    override def isEmpty = underlying.isEmpty
-    def newBuilder[B] = new collection.mutable.ArrayBuffer[B]
-    override def toString = if (underlying == null) "null" else "Array(" + underlying.mkString(", ") + ")"
+  private[scalatest] class ArrayWrapper[T](underlying: Array[T]) extends Traversable[T] {
+    def foreach[U](f: (T) => U) {
+      var index = 0
+      while (index < underlying.length) {
+        index += 1
+        f(underlying(index - 1))
+      }
+    }
+    // Need to prettify the array's toString, because by the time it gets to decorateToStringValue, the array
+    // has been wrapped in this Traversable and so it won't get prettified anymore by FailureMessages.decorateToStringValue.
+    override def toString: String = FailureMessages.prettifyArrays(underlying).toString
   }
 
   /**
@@ -3481,17 +3471,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
    */
   implicit def convertTraversableMatcherToJavaCollectionMatcher[T](traversableMatcher: Matcher[GenTraversable[T]]): Matcher[java.util.Collection[T]] =
     new Matcher[java.util.Collection[T]] {
-      def apply(left: java.util.Collection[T]): MatchResult = {
-        val traversable = new Traversable[T] {
-          def foreach[U](f: (T) => U) {
-            val javaIterator = left.iterator
-            while (javaIterator.hasNext)
-              f(javaIterator.next)
-          }
-          override def toString: String = left.toString
-        }
-        traversableMatcher.apply(traversable)
-      }
+      def apply(left: java.util.Collection[T]): MatchResult = 
+        traversableMatcher.apply(new JavaCollectionWrapper(left))
     }
   
   implicit def convertTraversableMatcherGen1ToJavaCollectionMatcherGen1[T](traversableMatcher: MatcherGen1[GenTraversable[T], Equality]): MatcherGen1[java.util.Collection[T], Equality] =
@@ -3499,17 +3480,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       def matcher[L <: java.util.Collection[T] : Equality]: Matcher[L] = {
         val equality = implicitly[Equality[GenTraversable[T]]]
         new Matcher[java.util.Collection[T]] {
-          def apply(left: java.util.Collection[T]): MatchResult = {
-            val traversable = new Traversable[T] {
-              def foreach[U](f: (T) => U) {
-                val javaIterator = left.iterator
-                while (javaIterator.hasNext)
-                  f(javaIterator.next)
-              }
-              override def toString: String = left.toString
-            }
-            traversableMatcher.matcher(equality).apply(traversable)
-          }
+          def apply(left: java.util.Collection[T]): MatchResult = 
+            traversableMatcher.matcher(equality).apply(new JavaCollectionWrapper(left))
         }
       }
     }
@@ -3526,21 +3498,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
   */
   implicit def convertTraversableMatcherToArrayMatcher[T](traversableMatcher: Matcher[GenTraversable[T]]): Matcher[Array[T]] =
     new Matcher[Array[T]] {
-      def apply(left: Array[T]): MatchResult = {
-        val traversable = new Traversable[T] {
-          def foreach[U](f: (T) => U) {
-            var index = 0
-            while (index < left.length) {
-              index += 1
-              f(left(index - 1))
-            }
-          }
-          // Need to prettify the array's toString, because by the time it gets to decorateToStringValue, the array
-          // has been wrapped in this Traversable and so it won't get prettified anymore by FailureMessages.decorateToStringValue.
-          override def toString: String = FailureMessages.prettifyArrays(left).toString
-        }
-        traversableMatcher.apply(traversable)
-      }
+      def apply(left: Array[T]): MatchResult = 
+        traversableMatcher.apply(new ArrayWrapper(left))
     }
 
   /**
@@ -3555,37 +3514,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
    */
   implicit def convertMapMatcherToJavaMapMatcher[K, V](mapMatcher: Matcher[scala.collection.GenMap[K, V]]): Matcher[java.util.Map[K, V]] =
     new Matcher[java.util.Map[K, V]] {
-      def apply(left: java.util.Map[K, V]): MatchResult = {
-        // Even though the java map is mutable I just wrap it it to a plain old Scala map, because
-        // I have no intention of mutating it.
-        class MapWrapper[Z](javaMap: java.util.Map[K, Z]) extends scala.collection.Map[K, Z] {
-          override def size: Int = javaMap.size
-          def get(key: K): Option[Z] =
-            if (javaMap.containsKey(key)) Some(javaMap.get(key)) else None
-          override def iterator: Iterator[(K, Z)] = new Iterator[(K, Z)] {
-            private val javaIterator = javaMap.keySet.iterator
-            def next: (K, Z) = {
-              val nextKey = javaIterator.next
-              (nextKey, javaMap.get(nextKey))
-            }
-            def hasNext: Boolean = javaIterator.hasNext
-          }
-          override def +[W >: Z] (kv: (K, W)): scala.collection.Map[K, W] = {
-            val newJavaMap = new java.util.HashMap[K, W](javaMap)
-            val (key, value) = kv
-            newJavaMap.put(key, value)
-            new MapWrapper[W](newJavaMap)
-          }
-          override def - (key: K): scala.collection.Map[K, Z] = {
-            val newJavaMap = new java.util.HashMap[K, Z](javaMap)
-            newJavaMap.remove(key)
-            new MapWrapper[Z](newJavaMap)
-          }
-          override def toString: String = javaMap.toString
-        }
-        val scalaMap = new MapWrapper[V](left)
-        mapMatcher.apply(scalaMap)
-      }
+      def apply(left: java.util.Map[K, V]): MatchResult = 
+        mapMatcher.apply(new JavaMapWrapper(left))
     }
   
   implicit def convertMapMatcherGen1ToJavaMapMatcherGen1[K, V](traversableMatcher: MatcherGen1[GenMap[K, V], Equality]): MatcherGen1[java.util.Map[K, V], Equality] =
@@ -3593,35 +3523,8 @@ trait Matchers extends Assertions with Tolerance with ShouldVerb with LoneElemen
       def matcher[L <: java.util.Map[K, V] : Equality]: Matcher[L] = {
         val equality = implicitly[Equality[GenMap[K, V]]]
         new Matcher[java.util.Map[K, V]] {
-          def apply(left: java.util.Map[K, V]): MatchResult = {
-            class MapWrapper[Z](javaMap: java.util.Map[K, Z]) extends scala.collection.Map[K, Z] {
-              override def size: Int = javaMap.size
-              def get(key: K): Option[Z] =
-                if (javaMap.containsKey(key)) Some(javaMap.get(key)) else None
-              override def iterator: Iterator[(K, Z)] = new Iterator[(K, Z)] {
-                private val javaIterator = javaMap.keySet.iterator
-                def next: (K, Z) = {
-                  val nextKey = javaIterator.next
-                  (nextKey, javaMap.get(nextKey))
-                }
-                def hasNext: Boolean = javaIterator.hasNext
-              }
-              override def +[W >: Z] (kv: (K, W)): scala.collection.Map[K, W] = {
-                val newJavaMap = new java.util.HashMap[K, W](javaMap)
-                val (key, value) = kv
-                newJavaMap.put(key, value)
-                new MapWrapper[W](newJavaMap)
-              }
-              override def - (key: K): scala.collection.Map[K, Z] = {
-                val newJavaMap = new java.util.HashMap[K, Z](javaMap)
-                newJavaMap.remove(key)
-                new MapWrapper[Z](newJavaMap)
-              }
-              override def toString: String = javaMap.toString
-            }
-            val scalaMap = new MapWrapper[V](left)
-            traversableMatcher.matcher(equality).apply(scalaMap)
-          }
+          def apply(left: java.util.Map[K, V]): MatchResult = 
+            traversableMatcher.matcher(equality).apply(new JavaMapWrapper(left))
         }
       }
     }
