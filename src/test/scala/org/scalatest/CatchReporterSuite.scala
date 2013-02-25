@@ -33,47 +33,47 @@ class CatchReporterSuite extends Suite {
     }
 
     // Pass in a PrintStream so you don't get an ugly msg to the standard error stream
-    val catchReporter = new WrapperCatchReporter(buggyReporter, new PrintStream(new ByteArrayOutputStream))
+    val catchReporter = new CatchReporter(buggyReporter, new PrintStream(new ByteArrayOutputStream))
 
     intercept[RuntimeException] {
-      buggyReporter(RunStarting(new Ordinal(99), 1, ConfigMap()))
+      buggyReporter(RunStarting(new Ordinal(99), 1, Map()))
     }
-    catchReporter(RunStarting(new Ordinal(99), 1, ConfigMap()))
+    catchReporter(RunStarting(new Ordinal(99), 1, Map()))
 
     intercept[RuntimeException] {
-      buggyReporter(TestStarting(new Ordinal(99), "suite name", "suite ID", Some("suite.className"), "test name", "test name"))
+      buggyReporter(TestStarting(new Ordinal(99), "suite name", Some("suite.className"), "test name"))
     }
-    catchReporter(TestStarting(new Ordinal(99), "suite name", "suite ID", Some("suite.className"), "test name", "test name"))
+    catchReporter(TestStarting(new Ordinal(99), "suite name", Some("suite.className"), "test name"))
 
     intercept[RuntimeException] {
-      buggyReporter(TestSucceeded(new Ordinal(99), "suite name", "suite ID", Some("suite.className"), "test name", "test name", Vector.empty))
+      buggyReporter(TestSucceeded(new Ordinal(99), "suite name", Some("suite.className"), "test name"))
     }
-    catchReporter(TestSucceeded(new Ordinal(99), "suite name", "suite ID", Some("suite.className"), "test name", "test name", Vector.empty))
+    catchReporter(TestSucceeded(new Ordinal(99), "suite name", Some("suite.className"), "test name"))
 
     intercept[RuntimeException] {
-      buggyReporter(TestIgnored(new Ordinal(99), "suite name", "suite ID", Some("suite.className"), "test name", "test name"))
+      buggyReporter(TestIgnored(new Ordinal(99), "suite name", Some("suite.className"), "test name"))
     }
-    catchReporter(TestIgnored(new Ordinal(99), "suite name", "suite ID", Some("suite.className"), "test name", "test name"))
+    catchReporter(TestIgnored(new Ordinal(99), "suite name", Some("suite.className"), "test name"))
 
     intercept[RuntimeException] {
-      buggyReporter(TestFailed(new Ordinal(99), "message", "suite name", "suite ID", Some("suite.className"), "test name", "test name", Vector.empty, None))
+      buggyReporter(TestFailed(new Ordinal(99), "message", "suite name", Some("suite.className"), "test name", None))
     }
-    catchReporter(TestFailed(new Ordinal(99), "message", "suite name", "suite ID", Some("suite.className"), "test name", "test name", Vector.empty, None))
+    catchReporter(TestFailed(new Ordinal(99), "message", "suite name", Some("suite.className"), "test name", None))
 
     intercept[RuntimeException] {
-      buggyReporter(SuiteStarting(new Ordinal(99), "suite name", "suite ID", None, None))
+      buggyReporter(SuiteStarting(new Ordinal(99), "suite name", None))
     }
-    catchReporter(SuiteStarting(new Ordinal(99), "suite name", "suite ID", None, None))
+    catchReporter(SuiteStarting(new Ordinal(99), "suite name", None))
 
     intercept[RuntimeException] {
-      buggyReporter(SuiteCompleted(new Ordinal(99), "suite name", "suite ID", None, None))
+      buggyReporter(SuiteCompleted(new Ordinal(99), "suite name", None))
     }
-    catchReporter(SuiteCompleted(new Ordinal(99), "suite name", "suite ID", None, None))
+    catchReporter(SuiteCompleted(new Ordinal(99), "suite name", None))
 
     intercept[RuntimeException] {
-      buggyReporter(SuiteAborted(new Ordinal(99), "msg", "suiteName", "suite ID", None, None))
+      buggyReporter(SuiteAborted(new Ordinal(99), "msg", "suiteName", None, None))
     }
-    catchReporter(SuiteAborted(new Ordinal(99), "msg", "suiteName", "suite ID", None, None))
+    catchReporter(SuiteAborted(new Ordinal(99), "msg", "suiteName", None, None))
 
     intercept[RuntimeException] {
       buggyReporter(InfoProvided(new Ordinal(99), "msg", None))
@@ -98,6 +98,6 @@ class CatchReporterSuite extends Suite {
     intercept[RuntimeException] {
       buggyReporter.dispose()
     }
-    catchReporter.dispose()
+    catchReporter.catchDispose()
   }
 }

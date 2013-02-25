@@ -35,104 +35,170 @@ import Suite.formatterForSuiteAborted
 import Suite.anErrorThatShouldCauseAnAbort
 import Suite.getSimpleNameOfAnObjectsClass
 import Suite.takesInformer
-import Suite.handleFailedTest
 import Suite.isTestMethodGoodies
 import Suite.testMethodTakesAnInformer
 import scala.collection.immutable.TreeSet
-import Suite.getIndentedTextForTest
-import Suite.getEscapedIndentedTextForTest
-import Suite.getTopOfClass
-import Suite.getTopOfMethod
-import Suite.getTopOfMethod
-import Suite.getSuiteRunTestGoodies
-import Suite.autoTagClassAnnotations
+import Suite.getIndentedText
 import org.scalatest.events._
 import org.scalatest.tools.StandardOutReporter
+import Suite.checkRunTestParamsForNull
+import Suite.getIndentedTextForInfo
 import Suite.getMessageForException
 import Suite.reportTestStarting
 import Suite.reportTestIgnored
 import Suite.reportTestSucceeded
 import Suite.reportTestPending
 import Suite.reportInfoProvided
-import Suite.createInfoProvided
-import Suite.createMarkupProvided
-import Suite.wrapReporterIfNecessary
-import Suite.getMethodForTestName
-import scala.reflect.NameTransformer
-import tools.SuiteDiscoveryHelper
-import tools.Runner
 import exceptions.StackDepthExceptionHelper.getStackDepthFun
 import exceptions._
-import exceptions._
-import collection.mutable.ListBuffer
-import collection.GenTraversable
-import annotation.tailrec
-import collection.immutable
 
-/*
- * <h2>Using <code>info</code> and <code>markup</code></h2>
+/**
+ * A suite of tests. A <code>Suite</code> instance encapsulates a conceptual
+ * suite (<em>i.e.</em>, a collection) of tests.
  *
  * <p>
- * One of the parameters to <code>Suite</code>'s <code>run</code> method is a <code>Reporter</code>, which
- * will collect and report information about the running suite of tests.
- * Information about suites and tests that were run, whether tests succeeded or failed, 
- * and tests that were ignored will be passed to the <code>Reporter</code> as the suite runs.
- * Most often the reporting done by default will be sufficient, but
- * occasionally you may wish to provide custom information to the <code>Reporter</code> from a test.
- * For this purpose, an <a href="Informer.html"><code>Informer</code></a> that will forward information
- * to the current <code>Reporter</code> is provided via the <code>info</code> parameterless method.
- * You can pass the extra information to the <code>Informer</code> via its <code>apply</code> method.
- * The <code>Informer</code> will then pass the information to the <code>Reporter</code> via an <code>InfoProvided</code> event.
- * Here's an example that shows both a direct use as well as an indirect use through the methods
- * of <a href="GivenWhenThen.html"><code>GivenWhenThen</code></a>:
+ * This trait provides an interface that allows suites of tests to be run.
+ * Its implementation enables a default way of writing and executing tests.  Subtraits and subclasses can
+ * override <code>Suite</code>'s methods to enable other ways of writing and executing tests.
+ * This trait's default approach allows tests to be defined as methods whose name starts with "<code>test</code>."
+ * This approach is easy to understand, and a good way for Scala beginners to start writing tests.
+ * More advanced Scala programmers may prefer to mix together other <code>Suite</code> subtraits defined in ScalaTest, 
+ * or create their own, to write tests in the way they feel makes them most productive. Here's a quick overview
+ * of some of the options to help you get started:
+ * </p>
+ *
+ * <p>
+ * <em>For JUnit 3 users</em>
+ * </p>
+ *
+ * <p>
+ * If you are using JUnit 3 (version 3.8 or earlier releases) and you want to write JUnit 3 tests in Scala, look at
+ * <a href="junit/AssertionsForJUnit.html"><code>AssertionsForJUnit</code></a>, 
+ * <a href="junit/ShouldMatchersForJUnit.html"><code>ShouldMatchersForJUnit</code></a>, and
+ * <a href="junit/JUnit3Suite.html"><code>JUnit3Suite</code></a>. 
+ * </p>
+ *
+ * <p>
+ * <em>For JUnit 4 users</em>
+ * </p>
+ *
+ * <p>
+ * If you are using JUnit 4 and you want to write JUnit 4 tests in Scala, look at
+ * <a href="junit/JUnitSuite.html"><code>JUnitSuite</code></a>, and
+ * <a href="junit/JUnitRunner.html"><code>JUnitRunner</code></a>. With <code>JUnitRunner</code>,
+ * you can use any of the traits described here and still run your tests with JUnit 4.
+ * </p>
+ *
+ * <p>
+ * <em>For TestNG users</em>
+ * </p>
+ *
+ * <p>
+ * If you are using TestNG and you want to write TestNG tests in Scala, look at
+ * <a href="testng/TestNGSuite.html"><code>TestNGSuite</code></a>.
+ * </p>
+ *
+ * <p>
+ * <em>For high-level testing</em>
+ * </p>
+ *
+ * <p>
+ * If you want to write tests at a higher level than unit tests, such as integration tests, acceptance tests,
+ * or functional tests, check out <a href="FeatureSpec.html"><code>FeatureSpec</code></a>.
+ * </p>
+ *
+ * <p>
+ * <em>For unit testing</em>
+ * </p>
+ *
+ * <p>
+ * If you prefer a behavior-driven development (BDD) style, in which tests are combined with text that
+ * specifies the behavior being tested, look at
+ * <a href="FunSpec.html"><code>FunSpec</code></a>, 
+ * <a href="FlatSpec.html"><code>FlatSpec</code></a>,
+ * <a href="FreeSpec.html"><code>FreeSpec</code></a>, and
+ * <a href="WordSpec.html"><code>WordSpec</code></a>. Otherwise, if you just want to write tests
+ * and don't want to combine testing with specifying, look at 
+ * <a href="FunSuite.html"><code>FunSuite</code></a> or read on to learn how to write
+ * tests using this base trait, <code>Suite</code>. 
+ * </p>
+ *
+ * <p>
+ * To use this trait's approach to writing tests, simply create classes that
+ * extend <code>Suite</code> and define test methods. Test methods have names of the form <code>testX</code>, 
+ * where <code>X</code> is some unique, hopefully meaningful, string. A test method must be public and
+ * can have any result type, but the most common result type is <code>Unit</code>. Here's an example:
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.suite.info
+ * import org.scalatest.Suite
  *
- * import collection.mutable
- * import org.scalatest._
- * 
- * class SetSuite extends Suite with GivenWhenThen {
+ * class ExampleSuite extends Suite {
  *
- *   def &#96;test: an element can be added to an empty mutable Set&#96; {
+ *   def testAddition {
+ *     val sum = 1 + 1
+ *     assert(sum === 2)
+ *   }
  *
- *     given("an empty mutable Set")
- *     val set = mutable.Set.empty[String]
- *
- *     when("an element is added")
- *     set += "clarity"
- *
- *     then("the Set should have size 1")
- *     assert(set.size === 1)
- *
- *     and("the Set should contain the added element")
- *     assert(set.contains("clarity"))
- *
- *     info("That's all folks!")
+ *   def testSubtraction {
+ *     val diff = 4 - 1
+ *     assert(diff === 3)
  *   }
  * }
  * </pre>
  *
- * If you run this <code>Suite</code> from the interpreter, you will see the messages
- * included in the output:
+ * <p>
+ * You can run a <code>Suite</code> by invoking <code>execute</code> on it.
+ * This method, which prints test results to the standard output, is intended to serve as a
+ * convenient way to run tests from within the Scala interpreter. For example,
+ * to run <code>ExampleSuite</code> from within the Scala interpreter, you could write:
+ * </p>
  *
  * <pre class="stREPL">
- * scala&gt; new SetSuite execute
- * <span class="stGreen">SetSuite:
- * - an element can be added to an empty mutable Set
- *   + Given an empty mutable Set
- *   + When an element is added
- *   + Then the Set should have size 1
- *   + And the Set should contain the added element
- *   + That's all folks!</span>
+ * scala> (new ExampleSuite).execute()
  * </pre>
  *
  * <p>
- * Trait <code>Suite</code> also carries a <a href="Documenter.html"><code>Documenter</code></a> named <code>markup</code>, which
- * you can use to transmit markup text to the <code>Reporter</code>.
+ * And you would see:
  * </p>
- * --------------
+ *
+ * <pre class="stREPL">
+ * <span class="stGreen">ExampleSuite:
+ * - testAddition
+ * - testSubtraction</span>
+ * </pre>
+ *
+ * <p>
+ * Or, to run just the <code>testAddition</code> method, you could write:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * scala> (new ExampleSuite).execute("testAddition")
+ * </pre>
+ *
+ * <p>
+ * And you would see:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * <span class="stGreen">ExampleSuite:
+ * - testAddition</span>
+ * </pre>
+ *
+ * <p>
+ * You can also pass to <code>execute</code> a <a href="#configMapSection"><em>config map</em></a> of key-value
+ * pairs, which will be passed down into suites and tests, as well as other parameters that configure the run itself.
+ * For more information on running in the Scala interpreter, see the documentation for <code>execute</code> (below) and the
+ * <a href="Shell.html">ScalaTest shell</a>.</code>
+ * </p>
+ *
+ * <p>
+ * The <code>execute</code> method invokes a <code>run</code> method takes seven
+ * parameters. This <code>run</code> method, which actually executes the suite, will usually be invoked by a test runner, such
+ * as <code>org.scalatest.tools.Runner</code> or an IDE. See the <a href="tools/Runner$.html">documentation
+ * for <code>Runner</code></a> for more details.
+ * </p>
+ *
  * <h2>Assertions and <code>=</code><code>=</code><code>=</code></h2>
  *
  * <p>
@@ -200,15 +266,15 @@ import collection.immutable
  * as the operands become lengthy, the code becomes less readable. In addition, the <code>===</code> comparison
  * doesn't distinguish between actual and expected values. The operands are just called <code>left</code> and <code>right</code>,
  * because if one were named <code>expected</code> and the other <code>actual</code>, it would be difficult for people to
- * remember which was which. To help with these limitations of assertions, <code>Suite</code> includes a method called <code>expectResult</code> that
- * can be used as an alternative to <code>assert</code> with <code>===</code>. To use <code>expectResult</code>, you place
- * the expected value in parentheses after <code>expectResult</code>, followed by curly braces containing code 
+ * remember which was which. To help with these limitations of assertions, <code>Suite</code> includes a method called <code>expect</code> that
+ * can be used as an alternative to <code>assert</code> with <code>===</code>. To use <code>expect</code>, you place
+ * the expected value in parentheses after <code>expect</code>, followed by curly braces containing code 
  * that should result in the expected value. For example:
  *
  * <pre class="stHighlight">
  * val a = 5
  * val b = 2
- * expectResult(2) {
+ * expect(2) {
  *   a - b
  * }
  * </pre>
@@ -232,7 +298,7 @@ import collection.immutable
  *   fail()
  * }
  * catch {
- *   case _: IndexOutOfBoundsException =&gt; // Expected, so continue
+ *   case _: IndexOutOfBoundsException => // Expected, so continue
  * }
  * </pre>
  *
@@ -272,7 +338,7 @@ import collection.immutable
  * assert(caught.getMessage === "String index out of range: -1")
  * </pre>
  *
- * <h2>Using matchers and other assertions</h2>
+ * <h2>Using other assertions</h2>
  *
  * <p>
  * ScalaTest also supports another style of assertions via its matchers DSL. By mixing in
@@ -281,18 +347,19 @@ import collection.immutable
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.suite.matchers
+ * import org.scalatest.Suite
+ * import org.scalatest.matchers.ShouldMatchers
  *
- * import org.scalatest._
+ * class ExampleSuite extends Suite with ShouldMatchers {
  *
- * class SetSuite extends Suite with ShouldMatchers {
- *
- *   def &#96;test: an empty Set should have size 0&#96; {
- *     Set.empty.size should equal (0)
+ *   def testAddition {
+ *     val sum = 1 + 1
+ *     sum should equal (2)
  *   }
  *
- *   def &#96;test: invoking head on an empty Set should produce NoSuchElementException&#96; {
- *     evaluating { Set.empty.head } should produce [NoSuchElementException]
+ *   def testSubtraction {
+ *     val diff = 4 - 1
+ *     diff should equal (3)
  *   }
  * }
  * </pre>
@@ -307,28 +374,27 @@ import collection.immutable
  * can be used as is with ScalaTest. For example, to use the <code>assertEquals</code>
  * methods provided by JUnit or TestNG, simply import them and use them. (You will of course need
  * to include the relevant JAR file for the framework whose assertions you want to use on either the
- * classpath or runpath when you run your tests.) 
- * </p>
- */
-
-/**
- * A suite of tests. A <code>Suite</code> instance encapsulates a conceptual
- * suite (<em>i.e.</em>, a collection) of tests.
- *
- * <p>
- * This trait provides an interface composed of "lifecycle methods" that allow suites of tests to be run.
- * Its implementation enables a default way of writing and executing tests.  Subtraits and subclasses can
- * override <code>Suite</code>'s lifecycle methods to enable other ways of writing and executing tests.
+ * classpath or runpath when you run your tests.) Here's an example in which JUnit's assertions are
+ * imported, then used within a ScalaTest suite:
  * </p>
  *
- * <p>
- * <strong>Prior to ScalaTest 2.0.M4, trait <code>Suite</code> served two purposes: 1) It served as the base
- * class of ScalaTest's family of style traits, and 2) It was itself a style trait in which tests are methods.
- * Although it will continue to serve its first purpose, it has been deprecated as a style trait. Pre-existing code
- * that used <code>Suite</code> as a style trait to define tests as methods will continue to work during the
- * deprecation period, but will generate a deprecation warning. Please change all such uses of <code>Suite</code>
- * to use trait <a href="Spec.html"><code>Spec</code></a> instead.</strong>
- * </p>
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import org.junit.Assert._
+ *
+ * class ExampleSuite extends Suite {
+ *
+ *   def testAddition {
+ *     val sum = 1 + 1
+ *     assertEquals(2, sum)
+ *   }
+ *
+ *   def testSubtraction {
+ *     val diff = 4 - 1
+ *     assertEquals(3, diff)
+ *   }
+ * }
+ * </pre>
  *
  * <h2>Nested suites</h2>
  *
@@ -351,36 +417,20 @@ import collection.immutable
  * </p>
  *
  * <pre class="stHighlight">
- * package org.scalatest.examples.suite.nested
+ * import org.scalatest.Suite
+ * import org.scalatest.Suites
  *
- * import org.scalatest._
- *
- * class ASuite extends FunSuite {
- *   test("A should have ASCII value 41 hex") {
- *     assert('A' === 0x41)
- *   }
- *   test("a should have ASCII value 61 hex") {
- *     assert('a' === 0x61)
- *   }
+ * class ASuite extends Suite {
+ *   def testA {}
  * }
- * class BSuite extends FunSuite {
- *   test("B should have ASCII value 42 hex") {
- *     assert('B' === 0x42)
- *   }
- *   test("b should have ASCII value 62 hex") {
- *     assert('b' === 0x62)
- *   }
+ * class BSuite extends Suite {
+ *   def testB {}
  * }
- * class CSuite extends FunSuite {
- *   test("C should have ASCII value 43 hex") {
- *     assert('C' === 0x43)
- *   }
- *   test("c should have ASCII value 63 hex") {
- *     assert('c' === 0x63)
- *   }
+ * class CSuite extends Suite {
+ *   def testC {}
  * }
  *
- * class ASCIISuite extends Suites(
+ * class AlphabetSuite extends Suites(
  *   new ASuite,
  *   new BSuite,
  *   new CSuite
@@ -388,11 +438,11 @@ import collection.immutable
  * </pre>
  *
  * <p>
- * If you now run <code>ASCIISuite</code>:
+ * If you now run <code>AlphabetSuite</code>:
  * </p>
  *
  * <pre class="stREPL">
- * scala&gt; new ASCIISuite execute
+ * scala> (new AlphabetSuite).execute()
  * </pre>
  *
  * <p>
@@ -402,21 +452,18 @@ import collection.immutable
  * </p>
  *
  * <pre class="stREPL">
- * <span class="stGreen">ASCIISuite:
+ * <span class="stGreen">AlphabetSuite:
  * ASuite:
- * - A should have ASCII value 41 hex
- * - a should have ASCII value 61 hex
+ * - testA
  * BSuite:
- * - B should have ASCII value 42 hex
- * - b should have ASCII value 62 hex
+ * - testB
  * CSuite:
- * - C should have ASCII value 43 hex
- * - c should have ASCII value 63 hex</span>
+ * - testC</span>
  * </pre>
  *
  * <p>
  * Note that <code>Runner</code> can discover <code>Suite</code>s automatically, so you need not
- * necessarily define nested <code>Suites</code> explicitly. See the <a href="tools/Runner$.html#membersOnlyWildcard">documentation
+ * necessarily define nested <code>Suites</code> explicitly. See the <a href="tools/Runner$.html$membersOnlyWildcard">documentation
  * for <code>Runner</code></a> for more information.
  * </p>
  *
@@ -426,7 +473,7 @@ import collection.immutable
  * In some cases you may need to pass information to a suite of tests.
  * For example, perhaps a suite of tests needs to grab information from a file, and you want
  * to be able to specify a different filename during different runs.  You can accomplish this in ScalaTest by passing
- * the filename in a <em>config map</em> of key-value pairs, which is passed to <code>run</code> as a <code>ConfigMap</code>.
+ * the filename in a <em>config map</em> of key-value pairs, which is passed to <code>run</code> as a <code>Map[String, Any]</code>.
  * The values in the config map are called "config objects," because they can be used to <em>configure</em>
  * suites, reporters, and tests.
  * </p>
@@ -444,6 +491,159 @@ import collection.immutable
  * for instructions on how to access the config map in tests.)
  * </p>
  *
+ * <h2>Ignored tests</h2>
+ *
+ * <p>
+ * Another common use case is that tests must be &#8220;temporarily&#8221; disabled, with the
+ * good intention of resurrecting the test at a later time. ScalaTest provides an <code>Ignore</code>
+ * annotation for this purpose. You use it like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import org.scalatest.Ignore
+ *
+ * class ExampleSuite extends Suite {
+ *
+ *   def testAddition {
+ *     val sum = 1 + 1
+ *     assert(sum === 2)
+ *   }
+ *
+ *   @Ignore
+ *   def testSubtraction {
+ *     val diff = 4 - 1
+ *     assert(diff === 3)
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * If you run this version of <code>ExampleSuite</code> with:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * scala> (new ExampleSuite).run()
+ * </pre>
+ *
+ * <p>
+ * It will run only <code>testAddition</code> and report that <code>testSubtraction</code> was ignored. You'll see:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * <span class="stGreen">ExampleSuite:
+ * - testAddition</span>
+ * <span class="stYellow">- testSubtraction !!! IGNORED !!!</span>
+ * </pre>
+ * 
+ * <p>
+ * <code>Ignore</code> is implemented as a tag. The <code>Filter</code> class effectively 
+ * adds <code>org.scalatest.Ignore</code> to the <code>tagsToExclude</code> <code>Set</code> if it not already
+ * in the <code>tagsToExclude</code> set passed to its primary constructor.  The only difference between
+ * <code>org.scalatest.Ignore</code> and the tags you may define and exclude is that ScalaTest reports
+ * ignored tests to the <code>Reporter</code>. The reason ScalaTest reports ignored tests is 
+ * to encourage ignored tests to be eventually fixed and added back into the active suite of tests.
+ * </p>
+ *
+ * <h2>Pending tests</h2>
+ *
+ * <p>
+ * A <em>pending test</em> is one that has been given a name but is not yet implemented. The purpose of
+ * pending tests is to facilitate a style of testing in which documentation of behavior is sketched
+ * out before tests are written to verify that behavior (and often, before the behavior of
+ * the system being tested is itself implemented). Such sketches form a kind of specification of
+ * what tests and functionality to implement later.
+ * </p>
+ *
+ * <p>
+ * To support this style of testing, a test can be given a name that specifies one
+ * bit of behavior required by the system being tested. The test can also include some code that
+ * sends more information about the behavior to the reporter when the tests run. At the end of the test,
+ * it can call method <code>pending</code>, which will cause it to complete abruptly with <code>TestPendingException</code>.
+ * </p>
+ *
+ * <p>
+ * Because tests in ScalaTest can be designated as pending with <code>TestPendingException</code>, both the test name and any information
+ * sent to the reporter when running the test can appear in the report of a test run. (In other words,
+ * the code of a pending test is executed just like any other test.) However, because the test completes abruptly
+ * with <code>TestPendingException</code>, the test will be reported as pending, to indicate
+ * the actual test, and possibly the functionality it is intended to test, has not yet been implemented.
+ * </p>
+ *
+ * <p>
+ * Although pending tests may be used more often in specification-style suites, such as
+ * <code>org.scalatest.FunSpec</code>, you can also use it in <code>Suite</code>, like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ *
+ * class ExampleSuite extends Suite {
+ *
+ *   def testAddition {
+ *     val sum = 1 + 1
+ *     assert(sum === 2)
+ *   }
+ *
+ *   def testSubtraction { pending }
+ * }
+ * </pre>
+ *
+ * <p>
+ * If you run this version of <code>ExampleSuite</code> with:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * scala> (new ExampleSuite).run()
+ * </pre>
+ *
+ * <p>
+ * It will run both tests but report that <code>testSubtraction</code> is pending. You'll see:
+ * </p>
+ *
+ * <pre class="stREPL">
+ * <span class="stGreen">ExampleSuite:
+ * - testAddition</span>
+ * <span class="stYellow">- testSubtraction (pending)</span>
+ * </pre>
+ * 
+ * <h2>Informers</h2>
+ *
+ * <p>
+ * One of the parameters to <code>run</code> is a <code>Reporter</code>, which
+ * will collect and report information about the running suite of tests.
+ * Information about suites and tests that were run, whether tests succeeded or failed, 
+ * and tests that were ignored will be passed to the <code>Reporter</code> as the suite runs.
+ * Most often the reporting done by default by <code>Suite</code>'s methods will be sufficient, but
+ * occasionally you may wish to provide custom information to the <code>Reporter</code> from a test method.
+ * For this purpose, you can optionally include an <code>Informer</code> parameter in a test method, and then
+ * pass the extra information to the <code>Informer</code> via its <code>apply</code> method. The <code>Informer</code>
+ * will then pass the information to the <code>Reporter</code> by sending an <code>InfoProvided</code> event.
+ * Here's an example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest._
+ * 
+ * class ExampleSuite extends Suite {
+ *
+ *   def testAddition(info: Informer) {
+ *     assert(1 + 1 === 2)
+ *     info("Addition seems to work")
+ *   }
+ * }
+ * </pre>
+ *
+ * If you run this <code>Suite</code> from the interpreter, you will see the message
+ * included in the printed report:
+ *
+ * <pre class="stREPL">
+ * scala> (new ExampleSuite).run()
+ * <span class="stGreen">ExampleSuite:
+ * - testAddition(Informer)
+ *   + Addition seems to work </span>
+ * </pre>
+ *
  * <h2>Executing suites in parallel</h2>
  *
  * <p>
@@ -451,11 +651,677 @@ import collection.immutable
  * a <code>Distributor</code> is passed in, this trait's implementation of <code>run</code> puts its nested
  * <code>Suite</code>s into the distributor rather than executing them directly. The caller of <code>run</code>
  * is responsible for ensuring that some entity runs the <code>Suite</code>s placed into the 
- * distributor. The <code>-P</code> command line parameter to <code>Runner</code>, for example, will cause
+ * distributor. The <code>-c</code> command line parameter to <code>Runner</code>, for example, will cause
  * <code>Suite</code>s put into the <code>Distributor</code> to be run in parallel via a pool of threads.
- * If you wish to execute the tests themselves in parallel, mix in <a href="ParallelTestExecution.html"><code>ParallelTestExecution</code></a>.
  * </p>
  *
+ * <a name="TaggingTests"></a><h2>Tagging tests</h2>
+ *
+ * <p>
+ * A <code>Suite</code>'s tests may be classified into groups by <em>tagging</em> them with string names. When executing
+ * a <code>Suite</code>, groups of tests can optionally be included and/or excluded. In this
+ * trait's implementation, tags are indicated by annotations attached to the test method. To
+ * create a new tag type to use in <code>Suite</code>s, simply define a new Java annotation that itself is annotated with the <code>org.scalatest.TagAnnotation</code> annotation.
+ * (Currently, for annotations to be
+ * visible in Scala programs via Java reflection, the annotations themselves must be written in Java.) For example,
+ * to create a tag named <code>SlowAsMolasses</code>, to use to mark slow tests, you would
+ * write in Java:
+ * </p>
+ *
+ * <p><b>Because of a Scaladoc bug in Scala 2.8, I had to put a space after the at sign in one the target annotation example below. If you
+ * want to copy and paste from this example, you'll need to remove the space by hand.  - Bill Venners</b></p>
+ *
+ * <pre>
+ * import java.lang.annotation.*; 
+ * import org.scalatest.TagAnnotation
+ * 
+ * @TagAnnotation
+ * @Retention(RetentionPolicy.RUNTIME)
+ * @ Target({ElementType.METHOD, ElementType.TYPE})
+ * public @interface SlowAsMolasses {}
+ * </pre>
+ *
+ * <p>
+ * Given this new annotation, you could place a <code>Suite</code> test method into the <code>SlowAsMolasses</code> group
+ * (<em>i.e.</em>, tag it as being <code>SlowAsMolasses</code>) like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * @SlowAsMolasses
+ * def testSleeping { sleep(1000000) }
+ * </pre>
+ *
+ * <p>
+ * The <code>run</code> method takes a <code>Filter</code>, whose constructor takes an optional
+ * <code>Set[String]</code> called <code>tagsToInclude</code> and a <code>Set[String]</code> called
+ * <code>tagsToExclude</code>. If <code>tagsToInclude</code> is <code>None</code>, all tests will be run
+ * except those those belonging to tags listed in the
+ * <code>tagsToExclude</code> <code>Set</code>. If <code>tagsToInclude</code> is defined, only tests
+ * belonging to tags mentioned in the <code>tagsToInclude</code> set, and not mentioned in <code>tagsToExclude</code>,
+ * will be run.
+ * </p>
+ *
+ * <a name="sharedFixtures"></a><h2>Shared fixtures</h2>
+ *
+ * <p>
+ * A test <em>fixture</em> is objects or other artifacts (such as files, sockets, database
+ * connections, <em>etc.</em>) used by tests to do their work.
+ * If a fixture is used by only one test method, then the definitions of the fixture objects can
+ * be local to the method, such as the objects assigned to <code>sum</code> and <code>diff</code> in the
+ * previous <code>ExampleSuite</code> examples. If multiple methods need to share an immutable fixture, one approach
+ * is to assign them to instance variables.
+ * </p>
+ *
+ * <p>
+ * In some cases, however, shared <em>mutable</em> fixture objects may be changed by test methods such that
+ * they need to be recreated or reinitialized before each test. Shared resources such
+ * as files or database connections may also need to 
+ * be created and initialized before, and cleaned up after, each test. JUnit 3 offered methods <code>setUp</code> and
+ * <code>tearDown</code> for this purpose. In ScalaTest, you can use the <code>BeforeAndAfterEach</code> trait,
+ * which will be described later, to implement an approach similar to JUnit's <code>setUp</code>
+ * and <code>tearDown</code>, however, this approach usually involves reassigning <code>var</code>s or mutating objects
+ * between tests. Before going that route, you may wish to consider some more functional approaches that
+ * avoid side effects.
+ * </p>
+ *
+ * <h4>Calling create-fixture methods</h4>
+ *
+ * <p>
+ * One approach is to write one or more <em>create-fixture</em> methods
+ * that return a new instance of a needed fixture object (or an holder object containing multiple needed fixture objects) each time it
+ * is called. You can then call a create-fixture method at the beginning of each
+ * test method that needs the fixture, storing the returned object or objects in local variables. Here's an example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import collection.mutable.ListBuffer
+ *
+ * class ExampleSuite extends Suite {
+ * 
+ *   def fixture =
+ *     new {
+ *       val builder = new StringBuilder("ScalaTest is ")
+ *       val buffer = new ListBuffer[String]
+ *     }
+ * 
+ *   def testEasy {
+ *     val f = fixture
+ *     f.builder.append("easy!")
+ *     assert(f.builder.toString === "ScalaTest is easy!")
+ *     assert(f.buffer.isEmpty)
+ *     f.buffer += "sweet"
+ *   }
+ * 
+ *   def testFun {
+ *     val f = fixture
+ *     f.builder.append("fun!")
+ *     assert(f.builder.toString === "ScalaTest is fun!")
+ *     assert(f.buffer.isEmpty)
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * The &ldquo;<code>f.</code>&rdquo; in front of each use of a fixture object provides a visual indication of which objects 
+ * are part of the fixture, but if you prefer, you can import the the members with &ldquo;<code>import f._</code>&rdquo; and use the names directly.
+ * </p>
+ *
+ * <h4>Instantiating fixture traits</h4>
+ *
+ * <p>
+ * A related technique is to place
+ * the fixture objects in a <em>fixture trait</em> and run your test code in the context of a new anonymous class instance that mixes in
+ * the fixture trait, like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import collection.mutable.ListBuffer
+ * 
+ * class ExampleSuite extends Suite {
+ * 
+ *   trait Fixture {
+ *     val builder = new StringBuilder("ScalaTest is ")
+ *     val buffer = new ListBuffer[String]
+ *   }
+ * 
+ *   def testEasy {
+ *     new Fixture {
+ *       builder.append("easy!")
+ *       assert(builder.toString === "ScalaTest is easy!")
+ *       assert(buffer.isEmpty)
+ *       buffer += "sweet"
+ *     }
+ *   }
+ * 
+ *   def testFun {
+ *     new Fixture {
+ *       builder.append("fun!")
+ *       assert(builder.toString === "ScalaTest is fun!")
+ *       assert(buffer.isEmpty)
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * <h4>Mixing in <code>OneInstancePerTest</code></h4>
+ *
+ * <p>
+ * If every test method requires the same set of
+ * mutable fixture objects, one other approach you can take is make them simply <code>val</code>s and mix in trait
+ * <a href="OneInstancePerTest.html"><code>OneInstancePerTest</code></a>.  If you mix in <code>OneInstancePerTest</code>, each test
+ * will be run in its own instance of the <code>Suite</code>, similar to the way JUnit tests are executed. Here's an example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import org.scalatest.OneInstancePerTest
+ * import collection.mutable.ListBuffer
+ * 
+ * class ExampleSuite extends Suite with OneInstancePerTest {
+ * 
+ *   val builder = new StringBuilder("ScalaTest is ")
+ *   val buffer = new ListBuffer[String]
+ * 
+ *   def testEasy {
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
+ *   }
+ * 
+ *   def testFun {
+ *     builder.append("fun!")
+ *     assert(builder.toString === "ScalaTest is fun!")
+ *     assert(buffer.isEmpty)
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * Although the create-fixture, fixture-trait, and <code>OneInstancePerTest</code> approaches take care of setting up a fixture before each
+ * test, they don't address the problem of cleaning up a fixture after the test completes. In this situation, you'll need to either
+ * use side effects or the <em>loan pattern</em>.
+ * </p>
+ *
+ * <h4>Mixing in <code>BeforeAndAfter</code></h4>
+ *
+ * <p>
+ * One way to use side effects is to mix in the <a href="BeforeAndAfter.html"><code>BeforeAndAfter</code></a> trait.
+ * With this trait you can denote a bit of code to run before each test with <code>before</code> and/or after each test
+ * each test with <code>after</code>, like this:
+ * </p>
+ * 
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import org.scalatest.BeforeAndAfter
+ * import collection.mutable.ListBuffer
+ * 
+ * class ExampleSuite extends Suite with BeforeAndAfter {
+ * 
+ *   val builder = new StringBuilder
+ *   val buffer = new ListBuffer[String]
+ * 
+ *   before {
+ *     builder.append("ScalaTest is ")
+ *   }
+ * 
+ *   after {
+ *     builder.clear()
+ *     buffer.clear()
+ *   }
+ * 
+ *   def testEasy {
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
+ *   }
+ * 
+ *   def testFun {
+ *     builder.append("fun!")
+ *     assert(builder.toString === "ScalaTest is fun!")
+ *     assert(buffer.isEmpty)
+ *   }
+ * }
+ * </pre>
+ * 
+ * <h4>Overriding <code>withFixture(NoArgTest)</code></h4>
+ *
+ * <p>
+ * An alternate way to take care of setup and cleanup via side effects
+ * is to override <code>withFixture</code>. Trait <code>Suite</code>'s implementation of
+ * <code>runTest</code> passes a no-arg test function to <code>withFixture</code>. It is <code>withFixture</code>'s
+ * responsibility to invoke that test function.  <code>Suite</code>'s implementation of <code>withFixture</code> simply
+ * invokes the function, like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * // Default implementation
+ * protected def withFixture(test: NoArgTest) {
+ *   test()
+ * }
+ * </pre>
+ *
+ * <p>
+ * You can, therefore, override <code>withFixture</code> to perform setup before, and cleanup after, invoking the test function. If
+ * you have cleanup to perform, you should invoke the test function
+ * inside a <code>try</code> block and perform the cleanup in a <code>finally</code> clause.
+ * Here's an example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import collection.mutable.ListBuffer
+ *
+ * class ExampleSuite extends Suite {
+ *
+ *   val builder = new StringBuilder
+ *   val buffer = new ListBuffer[String]
+ *
+ *   override def withFixture(test: NoArgTest) {
+ *     builder.append("ScalaTest is ") // perform setup
+ *     try {
+ *       test() // invoke the test function
+ *     }
+ *     finally {
+ *       builder.clear() // perform cleanup
+ *       buffer.clear()
+ *     }
+ *   }
+ *
+ *   def testEasy {
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
+ *   }
+ *
+ *   def testFun {
+ *     builder.append("fun!")
+ *     assert(builder.toString === "ScalaTest is fun!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "clear"
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * Note that the <a href="Suite$NoArgTest.html"><code>NoArgTest</code></a> passed to <code>withFixture</code>, in addition to
+ * an <code>apply</code> method that executes the test, also includes the test name as well as the <a href="#configMapSection">config
+ * map</a> passed to <code>runTest</code>. Thus you can also use the test name and configuration objects in <code>withFixture</code>.
+ * </p>
+ *
+ * <p>
+ * The reason you should perform cleanup in a <code>finally</code> clause is that <code>withFixture</code> is called by
+ * <code>runTest</code>, which expects an exception to be thrown to indicate a failed test. Thus when you invoke
+ * the <code>test</code> function inside <code>withFixture</code>, it may complete abruptly with an exception. The <code>finally</code>
+ * clause will ensure the fixture cleanup happens as that exception propagates back up the call stack to <code>runTest</code>.
+ * </p>
+ *
+ * <h4>Overriding <code>withFixture(OneArgTest)</code></h4>
+ *
+ * <p>
+ * To use the loan pattern, you can extend <code>fixture.Suite</code> (from the <code>org.scalatest.fixture</code> package) instead of
+ * <code>Suite</code>. Each test in a <code>fixture.Suite</code> takes a fixture as a parameter, allowing you to pass the fixture into
+ * the test. You must indicate the type of the fixture parameter by specifying <code>FixtureParam</code>, and implement a
+ * <code>withFixture</code> method that takes a <code>OneArgTest</code>. This <code>withFixture</code> method is responsible for
+ * invoking the one-arg test function, so you can perform fixture set up before, and clean up after, invoking and passing
+ * the fixture into the test function. Here's an example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.fixture
+ * import java.io.FileWriter
+ * import java.io.File
+ * 
+ * class ExampleSuite extends fixture.Suite {
+ * 
+ *   final val tmpFile = "temp.txt"
+ * 
+ *   type FixtureParam = FileWriter
+ * 
+ *   def withFixture(test: OneArgTest) {
+ * 
+ *     val writer = new FileWriter(tmpFile) // set up the fixture
+ *     try {
+ *       test(writer) // "loan" the fixture to the test
+ *     }
+ *     finally {
+ *       writer.close() // clean up the fixture
+ *     }
+ *   }
+ * 
+ *   def testEasy(writer: FileWriter) {
+ *     writer.write("Hello, test!")
+ *     writer.flush()
+ *     assert(new File(tmpFile).length === 12)
+ *   }
+ * 
+ *   def testFun(writer: FileWriter) {
+ *     writer.write("Hi, test!")
+ *     writer.flush()
+ *     assert(new File(tmpFile).length === 9)
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * For more information, see the <a href="fixture/Suite.html">documentation for <code>fixture.Suite</code></a>.
+ * </p>
+ *
+ * <a name="differentFixtures"></a><h2>Providing different fixtures to different tests</h2>
+ * 
+ * <p>
+ * If different tests in the same <code>Suite</code> require different fixtures, you can combine the previous techniques and
+ * provide each test with just the fixture or fixtures it needs. Here's an example in which a <code>StringBuilder</code> and a
+ * <code>ListBuffer</code> are provided via fixture traits, and file writer (that requires cleanup) is provided via the loan pattern:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import java.io.FileWriter
+ * import java.io.File
+ * import collection.mutable.ListBuffer
+ * import org.scalatest.Suite
+ * 
+ * class ExampleSuite extends Suite {
+ * 
+ *   final val tmpFile = "temp.txt"
+ * 
+ *   trait Builder {
+ *     val builder = new StringBuilder("ScalaTest is ")
+ *   }
+ * 
+ *   trait Buffer {
+ *     val buffer = ListBuffer("ScalaTest", "is")
+ *   }
+ * 
+ *   def withWriter(testCode: FileWriter => Any) {
+ *     val writer = new FileWriter(tmpFile) // set up the fixture
+ *     try {
+ *       testCode(writer) // "loan" the fixture to the test
+ *     }
+ *     finally {
+ *       writer.close() // clean up the fixture
+ *     }
+ *   }
+ * 
+ *   def testProductive { // This test needs the StringBuilder fixture
+ *     new Builder {
+ *       builder.append("productive!")
+ *       assert(builder.toString === "ScalaTest is productive!")
+ *     }
+ *   }
+ * 
+ *   def testReadable { // This test needs the ListBuffer[String] fixture
+ *     new Buffer {
+ *       buffer += ("readable!")
+ *       assert(buffer === List("ScalaTest", "is", "readable!"))
+ *     }
+ *   }
+ * 
+ *   def testFriendly { // This test needs the FileWriter fixture
+ *     withWriter { writer =>
+ *       writer.write("Hello, user!")
+ *       writer.flush()
+ *       assert(new File(tmpFile).length === 12)
+ *     }
+ *   }
+ * 
+ *   def testClearAndConcise { // This test needs the StringBuilder and ListBuffer
+ *     new Builder with Buffer {
+ *       builder.append("clear!")
+ *       buffer += ("concise!")
+ *       assert(builder.toString === "ScalaTest is clear!")
+ *       assert(buffer === List("ScalaTest", "is", "concise!"))
+ *     }
+ *   }
+ * 
+ *   def testComposable { // This test needs all three fixtures
+ *     new Builder with Buffer {
+ *       builder.append("clear!")
+ *       buffer += ("concise!")
+ *       assert(builder.toString === "ScalaTest is clear!")
+ *       assert(buffer === List("ScalaTest", "is", "concise!"))
+ *       withWriter { writer =>
+ *         writer.write(builder.toString)
+ *         writer.flush()
+ *         assert(new File(tmpFile).length === 19)
+ *       }
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * In the previous example, <code>testProductive</code> uses only the <code>StringBuilder</code> fixture, so it just instantiates
+ * a <code>new Builder</code>, whereas <code>testReadable</code> uses only the <code>ListBuffer</code> fixture, so it just intantiates
+ * a <code>new Buffer</code>. <code>testFriendly</code> needs just the <code>FileWriter</code> fixture, so it invokes
+ * <code>withWriter</code>, which prepares and passes a <code>FileWriter</code> to the test (and takes care of closing it afterwords).
+ * </p>
+ *
+ * <p>
+ * Two tests need multiple fixtures: <code>testClearAndConcise</code> needs both the <code>StringBuilder</code> and the
+ * <code>ListBuffer</code>, so it instantiates a class that mixes in both fixture traits with <code>new Builder with Buffer</code>.
+ * <code>testComposable</code> needs all three fixtures, so in addition to <code>new Builder with Buffer</code> it also invokes
+ * <code>withWriter</code>, wrapping just the of the test code that needs the fixture.
+ * </p>
+ *
+ * <p>
+ * Note that in this case, the loan pattern is being implemented via the <code>withWriter</code> method that takes a function, not
+ * by overriding <code>fixture.Suite</code>'s <code>withFixture(OneArgTest)</code> method. <code>fixture.Suite</code> makes the most sense
+ * if all (or at least most) tests need the same fixture, whereas in this <code>Suite</code> only two tests need the
+ * <code>FileWriter</code>.
+ * </p>
+ *
+ * <p>
+ * Note also that two test methods, <code>testFriendly</code> and <code>testComposable</code>, are declared as parameterless methods even
+ * though they have a side effect. In production code you would normally declare these as <em>empty-paren</em> methods, and call them with
+ * empty parentheses, to make it more obvious to readers of the code that they have a side effect. Whether or not a test method has
+ * a side effect, however, is a less important distinction than it is for methods in production code. Moreover, test methods are not
+ * normally invoked directly by client code, but rather through reflection by running the <code>Suite</code> that contains them, so a
+ * lack of parentheses on an invocation of a side-effecting test method would not normally appear in any client code. Given the empty
+ * parentheses do not add much value in the test methods case, the recommended style is to simply always leave them off.
+ * </p>
+ *
+ * <p>
+ * In the previous example, the <code>withWriter</code> method passed an object into
+ * the tests. Passing fixture objects into tests is generally a good idea when possible, but sometimes a side affect is unavoidable.
+ * For example, if you need to initialize a database running on a server across a network, your with-fixture 
+ * method will likely have nothing to pass. In such cases, simply create a with-fixture method that takes a by-name parameter and
+ * performs setup and cleanup via side effects, like this:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * def withDataInDatabase(test: => Any) {
+ *   // initialize the database across the network
+ *   try {
+ *     test // "loan" the initialized database to the test
+ *   }
+ *   finally {
+ *     // clean up the database
+ *   }
+ * }
+ * </pre>
+ * 
+ * <p>
+ * You can then use it like:
+ * </p>
+ * 
+ * <pre class="stHighlight">
+ * def testUserLogsIn {
+ *   withDataInDatabase {
+ *     // test user logging in scenario
+ *   }
+ * }
+ * </pre>
+ * 
+ * <a name="composingFixtures"></a><h2>Composing stackable fixture traits</h2>
+ *
+ * <p>
+ * In larger projects, teams often end up with several different fixtures that test classes need in different combinations,
+ * and possibly initialized (and cleaned up) in different orders. A good way to accomplish this in ScalaTest is to factor the individual
+ * fixtures into traits that can be composed using the <em>stackable trait</em> pattern. This can be done, for example, by placing
+ * <code>withFixture</code> methods in several traits, each of which call <code>super.withFixture</code>. Here's an example in
+ * which the <code>StringBuilder</code> and <code>ListBuffer[String]</code> fixtures used in the previous examples have been
+ * factored out into two <em>stackable fixture traits</em> named <code>Builder</code> and <code>Buffer</code>:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import org.scalatest.AbstractSuite
+ * import collection.mutable.ListBuffer
+ * 
+ * trait Builder extends AbstractSuite { this: Suite =>
+ * 
+ *   val builder = new StringBuilder
+ * 
+ *   abstract override def withFixture(test: NoArgTest) {
+ *     builder.append("ScalaTest is ")
+ *     try {
+ *       super.withFixture(test) // To be stackable, must call super.withFixture
+ *     }
+ *     finally {
+ *       builder.clear()
+ *     }
+ *   }
+ * }
+ * 
+ * trait Buffer extends AbstractSuite { this: Suite =>
+ * 
+ *   val buffer = new ListBuffer[String]
+ * 
+ *   abstract override def withFixture(test: NoArgTest) {
+ *     try {
+ *       super.withFixture(test) // To be stackable, must call super.withFixture
+ *     }
+ *     finally {
+ *       buffer.clear()
+ *     }
+ *   }
+ * }
+ * 
+ * class ExampleSuite extends Suite with Builder with Buffer {
+ * 
+ *   def testEasy {
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
+ *   }
+ * 
+ *   def testFun {
+ *     builder.append("fun!")
+ *     assert(builder.toString === "ScalaTest is fun!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "clear"
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * By mixing in both the <code>Builder</code> and <code>Buffer</code> traits, <code>ExampleSuite</code> gets both fixtures, which will be
+ * initialized before each test and cleaned up after. The order the traits are mixed together determines the order of execution.
+ * In this case, <code>Builder</code> is "super" to </code>Buffer</code>. If you wanted <code>Buffer</code> to be "super"
+ * to <code>Builder</code>, you need only switch the order you mix them together, like this: 
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * class Example2Suite extends Suite with Buffer with Builder
+ * </pre>
+ *
+ * <p>
+ * And if you only need one fixture you mix in only that trait:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * class Example3Suite extends Suite with Builder
+ * </pre>
+ *
+ * <p>
+ * Another way to create stackable fixture traits is by extending the <a href="BeforeAndAfterEach.html"><code>BeforeAndAfterEach</code></a>
+ * and/or <a href="BeforeAndAfterAll.html"><code>BeforeAndAfterAll</code></a> traits.
+ * <code>BeforeAndAfterEach</code> has a <code>beforeEach</code> method that will be run before each test (like JUnit's <code>setUp</code>),
+ * and an <code>afterEach</code> method that will be run after (like JUnit's <code>tearDown</code>).
+ * Similarly, <code>BeforeAndAfterAll</code> has a <code>beforeAll</code> method that will be run before all tests,
+ * and an <code>afterAll</code> method that will be run after all tests. Here's what the previously shown example would look like if it
+ * were rewritten to use the <code>BeforeAndAfterEach</code> methods instead of <code>withFixture</code>:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.Suite
+ * import org.scalatest.BeforeAndAfterEach
+ * import collection.mutable.ListBuffer
+ * 
+ * trait Builder extends BeforeAndAfterEach { this: Suite =>
+ * 
+ *   val builder = new StringBuilder
+ * 
+ *   override def beforeEach() {
+ *     builder.append("ScalaTest is ")
+ *     super.beforeEach() // To be stackable, must call super.beforeEach
+ *   }
+ * 
+ *   override def afterEach() {
+ *     try {
+ *       super.afterEach() // To be stackable, must call super.afterEach
+ *     }
+ *     finally {
+ *       builder.clear()
+ *     }
+ *   }
+ * }
+ * 
+ * trait Buffer extends BeforeAndAfterEach { this: Suite =>
+ * 
+ *   val buffer = new ListBuffer[String]
+ * 
+ *   override def afterEach() {
+ *     try {
+ *       super.afterEach() // To be stackable, must call super.afterEach
+ *     }
+ *     finally {
+ *       buffer.clear()
+ *     }
+ *   }
+ * }
+ * 
+ * class ExampleSuite extends Suite with Builder with Buffer {
+ * 
+ *   def testEasy {
+ *     builder.append("easy!")
+ *     assert(builder.toString === "ScalaTest is easy!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "sweet"
+ *   }
+ * 
+ *   def testFun {
+ *     builder.append("fun!")
+ *     assert(builder.toString === "ScalaTest is fun!")
+ *     assert(buffer.isEmpty)
+ *     buffer += "clear"
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>
+ * To get the same ordering as <code>withFixture</code>, place your <code>super.beforeEach</code> call at the end of each
+ * <code>beforeEach</code> method, and the <code>super.afterEach</code> call at the beginning of each <code>afterEach</code>
+ * method, as shown in the previous example. It is a good idea to invoke <code>super.afterEach</code> in a <code>try</code>
+ * block and perform cleanup in a <code>finally</code> clause, as shown in the previous example, because this ensures the
+ * cleanup code is performed even if <code>super.afterAll</code> throws an exception.
+ * </p>
+ *
+ * <p>
+ * One difference to bear in mind between the before-and-after traits and the <code>withFixture</code> methods, is that if
+ * a <code>withFixture</code> method completes abruptly with an exception, it is considered a failed test. By contrast, if any of the
+ * methods on the before-and-after traits (<em>i.e.</em>, <code>before</code>  and <code>after</code> of <code>BeforeAndAfter</code>,
+ * <code>beforeEach</code> and <code>afterEach</code> of <code>BeforeAndAfterEach</code>,
+ * and <code>beforeAll</code> and <code>afterAll</code> of <code>BeforeAndAfterAll</code>) complete abruptly, it is considered a
+ * failed suite, which will result in a <a href="events/SuiteAborted.html"><code>SuiteAborted</code></a> event.
+ * </p>
+ * 
  * <a name="errorHandling"></a>
  * <h2>Treatment of <code>java.lang.Error</code>s</h2>
  *
@@ -555,7 +1421,6 @@ import collection.immutable
  *
  * @author Bill Venners
  */
-@Finders(Array("org.scalatest.finders.MethodFinder"))
 trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite =>
 
   import Suite.TestMethodPrefix, Suite.InformerInParens, Suite.IgnoreAnnotation
@@ -571,19 +1436,147 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * <code>NoArgTest</code> instance passed to <code>withFixture</code>.
    * </p>
    */
-  protected trait NoArgTest extends (() => Unit) with TestData {
-    
+  protected trait NoArgTest extends (() => Unit) {
+
+    /**
+     * The name of this test.
+     */
+    def name: String
+
     /**
      * Runs the code of the test.
      */
     def apply()
+
+    /**
+     * A <code>Map[String, Any]</code> containing objects that can be used
+     * to configure the fixture and test.
+     */
+    def configMap: Map[String, Any]
   }
 
   /**
-  * An immutable <code>IndexedSeq</code> of this <code>Suite</code> object's nested <code>Suite</code>s. If this <code>Suite</code> contains no nested <code>Suite</code>s,
-  * this method returns an empty <code>IndexedSeq</code>. This trait's implementation of this method returns an empty <code>List</code>.
+  * A <code>List</code> of this <code>Suite</code> object's nested <code>Suite</code>s. If this <code>Suite</code> contains no nested <code>Suite</code>s,
+  * this method returns an empty <code>List</code>. This trait's implementation of this method returns an empty <code>List</code>.
   */
-  def nestedSuites: collection.immutable.IndexedSeq[Suite] = Vector.empty
+  def nestedSuites: List[Suite] = Nil
+  
+  /**
+   * Executes this <code>Suite</code>, printing results to the standard output.
+   *
+   * <p>
+   * This method implementation calls <code>run</code> on this <code>Suite</code>, passing in:
+   * </p>
+   *
+   * <ul>
+   * <li><code>testName</code> - <code>None</code></li>
+   * <li><code>reporter</code> - a reporter that prints to the standard output</li>
+   * <li><code>stopper</code> - a <code>Stopper</code> whose <code>apply</code> method always returns <code>false</code></li>
+   * <li><code>filter</code> - a <code>Filter</code> constructed with <code>None</code> for <code>tagsToInclude</code> and <code>Set()</code>
+   *   for <code>tagsToExclude</code></li>
+   * <li><code>configMap</code> - an empty <code>Map[String, Any]</code></li>
+   * <li><code>distributor</code> - <code>None</code></li>
+   * <li><code>tracker</code> - a new <code>Tracker</code></li>
+   * </ul>
+   *
+   * <p>
+   * This method serves as a convenient way to execute a <code>Suite</code>, especially from
+   * within the Scala interpreter.
+   * </p>
+   *
+   * <p>
+   * Note:  In ScalaTest, the terms "execute" and "run" basically mean the same thing and
+   * can be used interchangably. The reason this convenience method and its three overloaded forms
+   * aren't named <code>run</code>
+   * is because <code>junit.framework.TestCase</code> declares a <code>run</code> method
+   * that takes no arguments but returns a <code>junit.framework.TestResult</code>. That
+   * <code>run</code> method would not overload with this method if it were named <code>run</code>,
+   * because it would have the same parameters but a different return type than the one
+   * defined in <code>TestCase</code>. To facilitate integration with JUnit 3, therefore,
+   * these convenience "run" methods are named <code>execute</code>. In particular, this allows trait
+   * <code>org.scalatest.junit.JUnit3Suite</code> to extend both <code>org.scalatest.Suite</code> and
+   * <code>junit.framework.TestCase</code>, which enables the creating of classes that
+   * can be run with either ScalaTest or JUnit 3.
+   * </p>
+   *
+  final def execute() {
+    run(None, new StandardOutReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
+  }
+
+   * Executes this <code>Suite</code> with the specified <code>configMap</code>, printing results to the standard output.
+   *
+   * <p>
+   * This method implementation calls <code>run</code> on this <code>Suite</code>, passing in:
+   * </p>
+   *
+   * <ul>
+   * <li><code>testName</code> - <code>None</code></li>
+   * <li><code>reporter</code> - a reporter that prints to the standard output</li>
+   * <li><code>stopper</code> - a <code>Stopper</code> whose <code>apply</code> method always returns <code>false</code></li>
+   * <li><code>filter</code> - a <code>Filter</code> constructed with <code>None</code> for <code>tagsToInclude</code> and <code>Set()</code>
+   *   for <code>tagsToExclude</code></li>
+   * <li><code>configMap</code> - the specified <code>configMap</code> <code>Map[String, Any]</code></li>
+   * <li><code>distributor</code> - <code>None</code></li>
+   * <li><code>tracker</code> - a new <code>Tracker</code></li>
+   * </ul>
+   *
+   * <p>
+   * This method serves as a convenient way to execute a <code>Suite</code>, passing in some objects via the <code>configMap</code>, especially from within the Scala interpreter.
+   * </p>
+   *
+   * <p>
+   * Note:  In ScalaTest, the terms "execute" and "run" basically mean the same thing and
+   * can be used interchangably. The reason this convenience method and its three overloaded forms
+   * aren't named <code>run</code> is described the documentation of the overloaded form that
+   * takes no parameters: <a href="#execute%28%29">execute()</a>.
+   * </p>
+   *
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   *
+   * @throws NullPointerException if the passed <code>configMap</code> parameter is <code>null</code>.
+   *
+  final def execute(configMap: Map[String, Any]) {
+    run(None, new StandardOutReporter, new Stopper {}, Filter(), configMap, None, new Tracker)
+  }
+
+   * Executes the test specified as <code>testName</code> in this <code>Suite</code>, printing results to the standard output.
+   *
+   * <p>
+   * This method implementation calls <code>run</code> on this <code>Suite</code>, passing in:
+   * </p>
+   *
+   * <ul>
+   * <li><code>testName</code> - <code>Some(testName)</code></li>
+   * <li><code>reporter</code> - a reporter that prints to the standard output</li>
+   * <li><code>stopper</code> - a <code>Stopper</code> whose <code>apply</code> method always returns <code>false</code></li>
+   * <li><code>filter</code> - a <code>Filter</code> constructed with <code>None</code> for <code>tagsToInclude</code> and <code>Set()</code>
+   *   for <code>tagsToExclude</code></li>
+   * <li><code>configMap</code> - an empty <code>Map[String, Any]</code></li>
+   * <li><code>distributor</code> - <code>None</code></li>
+   * <li><code>tracker</code> - a new <code>Tracker</code></li>
+   * </ul>
+   *
+   * <p>
+   * This method serves as a convenient way to run a single test, especially from within the Scala interpreter.
+   * </p>
+   *
+   * <p>
+   * Note:  In ScalaTest, the terms "execute" and "run" basically mean the same thing and
+   * can be used interchangably. The reason this convenience method and its three overloaded forms
+   * aren't named <code>run</code> is described the documentation of the overloaded form that
+   * takes no parameters: <a href="#execute%28%29">execute()</a>.
+   * </p>
+   *
+   * @param testName the name of one test to run.
+   *
+   * @throws NullPointerException if the passed <code>testName</code> parameter is <code>null</code>.
+   * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
+   *     exists in this <code>Suite</code>
+   *
+  final def execute(testName: String) {
+    run(Some(testName), new StandardOutReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
+  }
+*/
 
   /**
    * Executes one or more tests in this <code>Suite</code>, printing results to the standard output.
@@ -606,16 +1599,15 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute
+   * scala> (new ExampleSuite).execute()
    * </pre>
    *
    * <p>
-   * (The above syntax actually invokes the overloaded parameterless form of <code>execute</code>, which calls this form with its default parameter values.)
    * To run just the test named <code>"my favorite test"</code> in a suite from the Scala interpreter, you would write:
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute ("my favorite test")
+   * scala> (new ExampleSuite).execute("my favorite test")
    * </pre>
    *
    * <p>
@@ -623,7 +1615,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (testName = "my favorite test")
+   * scala> (new ExampleSuite).execute(testName = "my favorite test")
    * </pre>
    *
    * <p>
@@ -638,7 +1630,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (configMap = Map("inputFileName" -> "in.txt")
+   * scala> (new ExampleSuite).execute(configMap = Map("inputFileName" -> "in.txt")
    * </pre>
    *
    * <p>
@@ -651,7 +1643,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (color = false)
+   * scala> (new ExampleSuite).execute(color = false)
    * </pre>
    *
    * <p>
@@ -665,7 +1657,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (durations = true)
+   * scala> (new ExampleSuite).execute(durations = true)
    * </pre>
    *
    * <p>
@@ -680,7 +1672,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (shortstacks = true)
+   * scala> (new ExampleSuite).execute(shortstacks = true)
    * </pre>
    *
    * <p>
@@ -688,7 +1680,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (fullstacks = true)
+   * scala> (new ExampleSuite).execute(fullstacks = true)
    * </pre>
    *
    * <p>
@@ -708,7 +1700,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * <pre class="stREPL">
-   * scala&gt; new ExampleSuite execute (stats = true)
+   * scala> (new ExampleSuite).execute(stats = true)
    * </pre>
    *
    *
@@ -770,7 +1762,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    */
   final def execute(
     testName: String = null,
-    configMap: ConfigMap = ConfigMap.empty,
+    configMap: Map[String, Any] = Map(),
     color: Boolean = true,
     durations: Boolean = false,
     shortstacks: Boolean = false,
@@ -779,30 +1771,12 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   ) {
     if (configMap == null)
       throw new NullPointerException("configMap was null")
-    val SelectedTag = "Selected"
-    val SelectedSet = Set(SelectedTag)
-    val desiredTests: Set[String] =
-      if (testName == null) Set.empty
-      else {
-        testNames.filter { s =>
-          s.indexOf(testName) >= 0 || NameTransformer.decode(s).indexOf(testName) >= 0
-        }
-      }
-    if (testName != null && desiredTests.isEmpty)
+    if (testName != null && !testNames.contains(testName))
       throw new IllegalArgumentException(Resources("testNotFound", testName))
 
-    val dispatch = new DispatchReporter(List(new StandardOutReporter(durations, color, shortstacks, fullstacks, false)))
+    val dispatch = new DispatchReporter(List(new StandardOutReporter(durations, color, shortstacks, fullstacks)))
     val tracker = new Tracker
-    val filter =
-      if (testName == null) Filter()
-      else {
-        val taggedTests: Map[String, Set[String]] = desiredTests.map(_ -> SelectedSet).toMap
-        Filter(
-          tagsToInclude = Some(SelectedSet),
-          excludeNestedSuites = true,
-          dynaTags = DynaTags(Map.empty, Map(suiteId -> taggedTests))
-        )
-      }
+    val filter = Filter()
     val runStartTime = System.currentTimeMillis
     if (stats)
       dispatch(RunStarting(tracker.nextOrdinal(), expectedTestCount(filter), configMap))
@@ -817,27 +1791,28 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
           Resources("runOnSuiteExceptionWithMessage", eMessage)
       val formatter = formatterForSuiteAborted(thisSuite, rawString)
       val duration = System.currentTimeMillis - suiteStartTime
-      dispatch(SuiteAborted(tracker.nextOrdinal(), rawString, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), Some(e), Some(duration), formatter, Some(SeeStackDepthException)))
+      dispatch(SuiteAborted(tracker.nextOrdinal(), rawString, thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(e), Some(duration), formatter, None))
     }
 
     try {
 
       val formatter = formatterForSuiteStarting(thisSuite)
-      dispatch(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), formatter, Some(getTopOfClass(thisSuite))))
+      dispatch(SuiteStarting(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), formatter))
 
       run(
-        None,
-        Args(dispatch,
-        Stopper.default,
+        //if (testName != null) Some(testName) else None,
+        Option(testName),
+        dispatch,
+        new Stopper {},
         filter,
         configMap,
         None,
-        tracker,
-        Set.empty)
+        tracker
       )
+
       val suiteCompletedFormatter = formatterForSuiteCompleted(thisSuite)
       val duration = System.currentTimeMillis - suiteStartTime
-      dispatch(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), Some(duration), suiteCompletedFormatter, Some(getTopOfClass(thisSuite))))
+      dispatch(SuiteCompleted(tracker.nextOrdinal(), thisSuite.suiteName, Some(thisSuite.getClass.getName), Some(duration), suiteCompletedFormatter))
       if (stats) {
         val duration = System.currentTimeMillis - runStartTime
         dispatch(RunCompleted(tracker.nextOrdinal(), Some(duration)))
@@ -863,34 +1838,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   }
 
   /**
-   * Executes this <code>Suite</code>, printing results to the standard output.
-   *
-   * <p>
-   * This method, which simply invokes the other overloaded form of <code>execute</code> with default parameter values,
-   * is intended for use only as a mini-DSL for the Scala interpreter. It allows you to execute a <code>Suite</code> in the
-   * interpreter with a minimum of finger typing:
-   * </p>
-   *
-   * <pre class="stREPL">
-   * scala&gt; new SetSpec execute
-   * <span class="stGreen">An empty Set</span>
-   * <span class="stGreen">- should have size 0</span>
-   * <span class="stYellow">- should produce NoSuchElementException when head is invoked !!! IGNORED !!!</span>
-   * </pre>
-   *
-   * <p>
-   * If you do ever want to invoke <code>execute</code> outside the Scala interpreter, it is best style to invoke it with
-   * empty parens to indicate it has a side effect, like this:
-   * </p>
-   *
-   * <pre class="stREPL">
-   * // Use empty parens form in regular code (outside the Scala interpreter)
-   * (new ExampleSuite).execute()
-   * </pre>
-   */
-  final def execute { execute() }
-
-  /**
    * A <code>Map</code> whose keys are <code>String</code> tag names with which tests in this <code>Suite</code> are marked, and
    * whose values are the <code>Set</code> of test names marked with each tag.  If this <code>Suite</code> contains no tags, this
    * method returns an empty <code>Map</code>.
@@ -902,11 +1849,6 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * <code>Map</code> for each unique tag annotation name discovered through reflection. The mapped value for each tag name key will contain
    * the test method name, as provided via the <code>testNames</code> method. 
    * </p>
-   * 
-   * <p>
-   * In addition to test methods annotations, this trait's implementation will also auto-tag test methods with class level annotations.  
-   * For example, if you annotate @Ignore at the class level, all test methods in the class will be auto-annotated with @Ignore.
-   * </p>
    *
    * <p>
    * Subclasses may override this method to define and/or discover tags in a custom manner, but overriding method implementations
@@ -915,28 +1857,25 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    */
   def tags: Map[String, Set[String]] = {
-    val testNameSet = testNames
-      
-    val testTags = Map() ++ 
-      (for (testName <- testNameSet; if !getTags(testName).isEmpty)
-        yield testName -> (Set() ++ getTags(testName)))
 
-    autoTagClassAnnotations(testTags, this)
+    def getTags(testName: String) =
+      for {
+        a <- getMethodForTestName(testName).getDeclaredAnnotations
+        annotationClass = a.annotationType
+        if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
+      } yield annotationClass.getName
+
+    val elements =
+      for (testName <- testNames; if !getTags(testName).isEmpty)
+        yield testName -> (Set() ++ getTags(testName))
+
+    Map() ++ elements
   }
-  
-  private def getTags(testName: String) =
-    for {
-      a <- getMethodForTestName(thisSuite, testName).getDeclaredAnnotations
-      annotationClass = a.annotationType
-      if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
-    } yield annotationClass.getName
 
   /**
   * A <code>Set</code> of test names. If this <code>Suite</code> contains no tests, this method returns an empty <code>Set</code>.
   *
   * <p>
-  * <strong><code>Suite</code> has been deprecated as a style trait. During the deprecation period, the following behavior will continue
-  * to work as before, but will go away at the conclusion of the deprecation period:</strong>
   * This trait's implementation of this method uses Java reflection to discover all public methods whose name starts with <code>"test"</code>,
   * which take either nothing or a single <code>Informer</code> as parameters. For each discovered test method, it assigns a test name
   * comprised of just the method name if the method takes no parameters, or the method name plus <code>(Informer)</code> if the
@@ -975,109 +1914,37 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
   * (as is done in <code>JUnitSuite</code> and <code>TestNGSuite</code>) or test functions registered during construction (as is
   * done in <code>FunSuite</code> and <code>FunSpec</code>).
   * </p>
-  *
-  * <p>
-  * In ScalaTest's event model, a test may be surrounded by &ldquo;scopes.&rdquo; Each test and scope is associated with string of text.
-  * A test's name is concatenation of the text of any surrounding scopes followed by the text provided with the test
-  * itself, after each text element has been trimmed and one space inserted between each component. Here's an example:
-  * </p>
-  *
-  * <pre class="stHighlight">
-  * package org.scalatest.examples.freespec
-  * 
-  * import org.scalatest.FreeSpec
-  * 
-  * class SetSpec extends FreeSpec {
-  * 
-  *   "A Set" - {
-  *     "when empty" - {
-  *       "should have size 0" in {
-  *         assert(Set.empty.size === 0)
-  *       }
-  *       
-  *       "should produce NoSuchElementException when head is invoked" in {
-  *         intercept[NoSuchElementException] {
-  *           Set.empty.head
-  *         }
-  *       }
-  *     }
-  *   }
-  * }
-  * </pre>
-  *
-  * <p>
-  * The above <code>FreeSpec</code> contains two tests, both nested inside the same two scopes. The outermost scope names
-  * the subject, <code>A Set</code>. The nested scope qualifies the subject with <code>when empty</code>. Inside that
-  * scope are the two tests. The text of the tests are:
-  * <p>
-  *
-  * <ul>
-  * <li><code>should have size 0</code></li>
-  * <li><code>should produce NoSuchElementException when head is invoked</code></li>
-  * </ul>
-  *
-  * <p>
-  * Therefore, the names of these two tests are:
-  * </p>
-  *
-  * <ul>
-  * <li><code>A Stack when empty should have size 0</code></li>
-  * <li><code>A Stack when empty should produce NoSuchElementException when head is invoked</code></li>
-  * </ul>
-  *
-  * <p>
-  * Note that because the component scope and test text strings are trimmed, any leading or trailing space will be dropped
-  * before they are strung together to form the test name, with each trimmed component separated by a space. If the scopes
-  * in the above example had text <code>" A Set "</code> and <code>" when empty "</code>, and the first test had text
-  * <code>" should have size 0 "</code>, its test name would still be the same, "A Set when empty should have size 0"</code>.
-  * </p>
   */
   def testNames: Set[String] = {
 
     def isTestMethod(m: Method) = {
 
       // Factored out to share code with fixture.Suite.testNames
-      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags, isTestDataFor) = isTestMethodGoodies(m)
+      val (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames) = isTestMethodGoodies(m)
 
-      isInstanceMethod && (firstFour == "test") && !isTestDataFor && ((hasNoParams && !isTestNames && !isTestTags) || takesInformer(m))
+      isInstanceMethod && (firstFour == "test") && ((hasNoParams && !isTestNames) || takesInformer(m))
     }
 
     val testNameArray =
       for (m <- getClass.getMethods; if isTestMethod(m)) 
         yield if (takesInformer(m)) m.getName + InformerInParens else m.getName
 
-    val result = TreeSet.empty[String](EncodedOrdering) ++ testNameArray
-    if (result.size != testNameArray.length) {
-      throw new NotAllowedException("Howdy", 0)
-    }
-    result
+    TreeSet[String]() ++ testNameArray
   }
 
-  /*
-  Old style method names will have (Informer) at the end still, but new ones will
-  not. This method will find the one without a Rep if the same name is used
-  with and without a Rep.
-  private[scalatest] def getMethodForTestName(theSuite: Suite, testName: String): Method =
+  private[scalatest] def getMethodForTestName(testName: String) =
     try {
-      theSuite.getClass.getMethod(
+      getClass.getMethod(
         simpleNameForTest(testName),
         (if (testMethodTakesAnInformer(testName)) Array(classOf[Informer]) else new Array[Class[_]](0)): _*
       )
     }
     catch {
       case e: NoSuchMethodException =>
-        // Try (Rep) on the end
-        try {
-          theSuite.getClass.getMethod(simpleNameForTest(testName), classOf[Rep])
-        }
-        catch {
-          case e: NoSuchMethodException =>
-            throw new IllegalArgumentException(Resources("testNotFound", testName))
-        }
+        throw new IllegalArgumentException(Resources("testNotFound", testName))
       case e: Throwable =>
         throw e
     }
-   */
 
   /**
    *  Run the passed test function in the context of a fixture established by this method.
@@ -1107,6 +1974,33 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     test()
   }
 
+  // Factored out to share this with fixture.Suite.runTest
+  private[scalatest] def getSuiteRunTestGoodies(stopper: Stopper, reporter: Reporter, testName: String) = {
+    val (stopRequested, report, hasPublicNoArgConstructor, rerunnable, testStartTime) = getRunTestGoodies(stopper, reporter, testName)
+    val method = getMethodForTestName(testName)
+    (stopRequested, report, method, hasPublicNoArgConstructor, rerunnable, testStartTime)
+  }
+
+  // Sharing this with FunSuite and fixture.FunSuite as well as Suite and fixture.Suite
+  private[scalatest] def getRunTestGoodies(stopper: Stopper, reporter: Reporter, testName: String) = {
+
+    val stopRequested = stopper
+    val report = wrapReporterIfNecessary(reporter)
+
+    // Create a Rerunner if the Suite has a no-arg constructor
+    val hasPublicNoArgConstructor = checkForPublicNoArgConstructor(getClass)
+
+    val rerunnable =
+      if (hasPublicNoArgConstructor)
+        Some(new TestRerunner(getClass.getName, testName))
+      else
+        None
+
+    val testStartTime = System.currentTimeMillis
+
+    (stopRequested, report, hasPublicNoArgConstructor, rerunnable, testStartTime)
+  }
+
   /**
    * Run a test.
    *
@@ -1124,109 +2018,79 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * </p>
    *
    * @param testName the name of one test to run.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when the test started by this method has completed, and whether or not it failed .
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>configMap</code>
    *     or <code>tracker</code> is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected def runTest(testName: String, args: Args): Status = {
+  protected def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    if (testName == null)
-      throw new NullPointerException("testName was null")
-    if (args == null)
-      throw new NullPointerException("args was null")
-    
-    import args._
+    checkRunTestParamsForNull(testName, reporter, stopper, configMap, tracker)
 
-    val (stopRequested, report, method, testStartTime) =
-      getSuiteRunTestGoodies(thisSuite, stopper, reporter, testName)
+    val (stopRequested, report, method, hasPublicNoArgConstructor, rerunnable, testStartTime) =
+      getSuiteRunTestGoodies(stopper, reporter, testName)
 
-    reportTestStarting(this, report, tracker, testName, testName, rerunner, Some(getTopOfMethod(thisSuite, testName)))
+    reportTestStarting(this, report, tracker, testName, rerunnable)
 
-    val formatter = getEscapedIndentedTextForTest(testName, 1, true)
+    val formatter = getIndentedText(testName, 1, true)
 
-    val messageRecorderForThisTest = new MessageRecorder(report)
     val informerForThisTest =
-      MessageRecordingInformer(
-        messageRecorderForThisTest, 
-        (message, payload, isConstructingThread, testWasPending, testWasCanceled, location) => createInfoProvided(thisSuite, report, tracker, Some(testName), message, payload, 2, location, isConstructingThread, true)
+      MessageRecordingInformer2(
+        (message, payload, isConstructingThread, testWasPending) => reportInfoProvided(thisSuite, report, tracker, Some(testName), message, payload, 2, isConstructingThread, true, Some(testWasPending))
       )
 
-    // TODO: Was using reportInfoProvided here before, to double check with Bill for changing to markup provided.
-    val documenterForThisTest =
-      MessageRecordingDocumenter(
-        messageRecorderForThisTest, 
-        (message, _, isConstructingThread, testWasPending, testWasCanceled, location) => createMarkupProvided(thisSuite, report, tracker, Some(testName), message, 2, location, isConstructingThread) // TODO: Need a test that fails because testWasCanceleed isn't being passed
-      )
-
-/*
-    class RepImpl(val info: Informer, val markup: Documenter) extends Rep
-
-    def testMethodTakesARep(method: Method): Boolean = {
-      val paramTypes = method.getParameterTypes
-      (paramTypes.size == 1) && (paramTypes(0) eq classOf[Rep])
-    }
-*/
-
-    val argsArray: Array[Object] =
+    val args: Array[Object] =
       if (testMethodTakesAnInformer(testName)) {
+/*
+        val informer =
+          new Informer {
+            def apply(message: String) {
+              if (message == null)
+                throw new NullPointerException
+              reportInfoProvided(thisSuite, report, tracker, Some(testName), message, 2, true)
+            }
+          }
+*/
         Array(informerForThisTest)  
       }
-/*
-      else if (testMethodTakesARep(method)) {
-        Array(new RepImpl(informerForThisTest, documenterForThisTest))
-      }
-*/
       else Array()
 
+    var testWasPending = false
     try {
       val theConfigMap = configMap
-      val testData = testDataFor(testName, theConfigMap)
       withFixture(
         new NoArgTest {
-          val name = testData.name
-          def apply() { method.invoke(thisSuite, argsArray: _*) }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def name = testName
+          def apply() { method.invoke(thisSuite, args: _*) }
+          def configMap = theConfigMap
         }
       )
       val duration = System.currentTimeMillis - testStartTime
-      reportTestSucceeded(this, report, tracker, testName, testName, messageRecorderForThisTest.recordedEvents(false, false), duration, formatter, rerunner, Some(getTopOfMethod(thisSuite, method)))
-      SucceededStatus
+      reportTestSucceeded(this, report, tracker, testName, duration, formatter, rerunnable)
     }
     catch { 
       case ite: InvocationTargetException =>
         val t = ite.getTargetException
         t match {
           case _: TestPendingException =>
-            val duration = System.currentTimeMillis - testStartTime
-            // testWasPending = true so info's printed out in the finally clause show up yellow
-            reportTestPending(this, report, tracker, testName, testName, messageRecorderForThisTest.recordedEvents(true, false), duration, formatter, Some(getTopOfMethod(thisSuite, method)))
-            SucceededStatus
-          case e: TestCanceledException =>
-            val duration = System.currentTimeMillis - testStartTime
-            val message = getMessageForException(e)
-            val formatter = getEscapedIndentedTextForTest(testName, 1, true)
-            // testWasCanceled = true so info's printed out in the finally clause show up yellow
-            report(TestCanceled(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), 
-                                testName, testName, messageRecorderForThisTest.recordedEvents(false, true), Some(e), Some(duration), Some(formatter), Some(TopOfMethod(thisSuite.getClass.getName, method.toGenericString())), rerunner))
-            SucceededStatus                 
+            reportTestPending(this, report, tracker, testName, formatter)
+            testWasPending = true // Set so info's printed out in the finally clause show up yellow
           case e if !anErrorThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
-            handleFailedTest(thisSuite, t, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
-            FailedStatus
-          case e => throw e
+            handleFailedTest(t, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
+          case e: Throwable => throw e
         }
       case e if !anErrorThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
-        handleFailedTest(thisSuite, e, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
-        FailedStatus
+        handleFailedTest(e, hasPublicNoArgConstructor, testName, rerunnable, report, tracker, duration)
       case e: Throwable => throw e  
+    }
+    finally {
+      informerForThisTest.fireRecordedMessages(testWasPending)
     }
   }
   
@@ -1290,25 +2154,35 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when all tests started by this method have completed, and whether or not a failure occurred.
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of the passed parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected def runTests(testName: Option[String], args: Args): Status = {
+  protected def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                             configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
-    if (args == null)
-      throw new NullPointerException("args was null")
-    
-    if (!this.isInstanceOf[Spec] && !this.isInstanceOf[Suites] && !this.isInstanceOf[Specs])
-      println("Unfortunately Suite has been deprecated as a style trait. Please use trait Spec instead.")
-
-    import args._
-
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+  
     val theTestNames = testNames
     if (theTestNames.size > 0)
       checkChosenStyles(configMap, styleName)
@@ -1318,35 +2192,31 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
     // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
     // so that exceptions are caught and transformed
     // into error messages on the standard error stream.
-    val report = wrapReporterIfNecessary(thisSuite, reporter)
-    val newArgs = args.copy(reporter = report)
-    
-    val statusBuffer = new ListBuffer[Status]()
+    val report = wrapReporterIfNecessary(reporter)
 
     // If a testName is passed to run, just run that, else run the tests returned
     // by testNames.
     testName match {
 
       case Some(tn) =>
-        val (filterTest, ignoreTest) = filter(tn, tags, suiteId)
+        val (filterTest, ignoreTest) = filter(tn, tags)
         if (!filterTest) {
           if (ignoreTest)
-            reportTestIgnored(thisSuite, report, tracker, tn, tn, getEscapedIndentedTextForTest(tn, 1, true), Some(getTopOfMethod(thisSuite, tn)))
+            reportTestIgnored(thisSuite, report, tracker, tn, tn, 1)
           else
-            statusBuffer += runTest(tn, newArgs)
+            runTest(tn, report, stopRequested, configMap, tracker)
         }
 
       case None =>
-        for ((tn, ignoreTest) <- filter(theTestNames, tags, suiteId)) {
+        for ((tn, ignoreTest) <- filter(theTestNames, tags)) {
           if (!stopRequested()) {
             if (ignoreTest)
-              reportTestIgnored(thisSuite, report, tracker, tn, tn, getEscapedIndentedTextForTest(tn, 1, true), Some(getTopOfMethod(thisSuite, tn)))
+              reportTestIgnored(thisSuite, report, tracker, tn, tn, 1)
             else
-              statusBuffer += runTest(tn, newArgs)
+              runTest(tn, report, stopRequested, configMap, tracker)
           }
       }
     }
-    new CompositeStatus(Set.empty ++ statusBuffer)
   }
 
   /**
@@ -1393,37 +2263,64 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when all tests and nested suites started by this method have completed, and whether or not a failure occurred.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *         
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  def run(testName: Option[String], args: Args): Status = {
+  def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+              configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     if (testName == null)
       throw new NullPointerException("testName was null")
-    if (args == null)
-      throw new NullPointerException("args was null")
-
-    import args._
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
 
     val stopRequested = stopper
-    val report = wrapReporterIfNecessary(thisSuite, reporter)
-    val newArgs = args.copy(reporter = report)
+    val report = wrapReporterIfNecessary(reporter)
 
     testName match {
-      case None => runNestedSuites(newArgs)
+      case None => runNestedSuites(report, stopRequested, filter, configMap, distributor, tracker)
       case Some(_) =>
     }
-    val status = runTests(testName, newArgs)
+    runTests(testName, report, stopRequested, filter, configMap, distributor, tracker)
 
     if (stopRequested()) {
       val rawString = Resources("executeStopping")
-      report(InfoProvided(tracker.nextOrdinal(), rawString, Some(NameInfo(thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), testName))))
+      report(InfoProvided(tracker.nextOrdinal(), rawString, Some(NameInfo(thisSuite.suiteName, Some(thisSuite.getClass.getName), testName))))
     }
-    status
+  }
+
+  private[scalatest] def handleFailedTest(throwable: Throwable, hasPublicNoArgConstructor: Boolean, testName: String,
+      rerunnable: Option[Rerunner], report: Reporter, tracker: Tracker, duration: Long) {
+
+    val message = getMessageForException(throwable)
+    val formatter = getIndentedText(testName, 1, true)
+    val payload = 
+      throwable match {
+        case optPayload: PayloadField => 
+          optPayload.payload
+        case _ => 
+          None
+      }
+    report(TestFailed(tracker.nextOrdinal(), message, thisSuite.suiteName, Some(thisSuite.getClass.getName), testName, Some(throwable), Some(duration), Some(formatter), rerunnable, payload))
   }
 
   /**
@@ -1452,45 +2349,64 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * or <code>SuiteAborted</code> after executing any nested <code>Suite</code>.
    * </p>
    *
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when all nested suites started by this method have completed, and whether or not a failure occurred.
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
+   *         
    * @throws NullPointerException if any passed parameter is <code>null</code>.
    */
-  protected def runNestedSuites(args: Args): Status = {
+  protected def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
+                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    if (args == null)
-      throw new NullPointerException("args was null")
-
-    import args._
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (filter == null)
+      throw new NullPointerException("filter was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (distributor == null)
+      throw new NullPointerException("distributor was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
 
     val stopRequested = stopper
-    val report = wrapReporterIfNecessary(thisSuite, reporter)
+    val report = wrapReporterIfNecessary(reporter)
 
-    def callExecuteOnSuite(nestedSuite: Suite): Status = {
+    def callExecuteOnSuite(nestedSuite: Suite) {
 
       if (!stopRequested()) {
 
         // Create a Rerunner if the Suite has a no-arg constructor 
         val hasPublicNoArgConstructor = Suite.checkForPublicNoArgConstructor(nestedSuite.getClass)
 
+        val rerunnable =
+          if (hasPublicNoArgConstructor)
+            Some(new SuiteRerunner(nestedSuite.getClass.getName))
+          else
+            None
+
         val rawString = Resources("suiteExecutionStarting")
         val formatter = formatterForSuiteStarting(nestedSuite)
 
         val suiteStartTime = System.currentTimeMillis
 
-        report(SuiteStarting(tracker.nextOrdinal(), nestedSuite.suiteName, nestedSuite.suiteId, Some(nestedSuite.getClass.getName), formatter, Some(TopOfClass(nestedSuite.getClass.getName)), nestedSuite.rerunner))
+        report(SuiteStarting(tracker.nextOrdinal(), nestedSuite.suiteName, Some(nestedSuite.getClass.getName), formatter, rerunnable))
 
-        try { // TODO: pass runArgs down and that will get the chosenStyles passed down
+        try {
           // Same thread, so OK to send same tracker
-          val status = nestedSuite.run(None, Args(report, stopRequested, filter, configMap, distributor, tracker, Set.empty))
+          nestedSuite.run(None, report, stopRequested, filter, configMap, distributor, tracker)
 
           val rawString = Resources("suiteCompletedNormally")
           val formatter = formatterForSuiteCompleted(nestedSuite)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          report(SuiteCompleted(tracker.nextOrdinal(), nestedSuite.suiteName, nestedSuite.suiteId, Some(nestedSuite.getClass.getName), Some(duration), formatter, Some(TopOfClass(nestedSuite.getClass.getName)), nestedSuite.rerunner))
-          SucceededStatus
+          report(SuiteCompleted(tracker.nextOrdinal(), nestedSuite.suiteName, Some(nestedSuite.getClass.getName), Some(duration), formatter, rerunnable))
         }
         catch {       
           case e: RuntimeException => {
@@ -1503,30 +2419,24 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
             val formatter = formatterForSuiteAborted(nestedSuite, rawString)
 
             val duration = System.currentTimeMillis - suiteStartTime
-            report(SuiteAborted(tracker.nextOrdinal(), rawString, nestedSuite.suiteName, nestedSuite.suiteId, Some(nestedSuite.getClass.getName), Some(e), Some(duration), formatter, Some(SeeStackDepthException), nestedSuite.rerunner))
-            FailedStatus
+            report(SuiteAborted(tracker.nextOrdinal(), rawString, nestedSuite.suiteName, Some(nestedSuite.getClass.getName), Some(e), Some(duration), formatter, rerunnable))
           }
         }
       }
-      else
-        FailedStatus
     }
-    
-    val statusBuffer = new ListBuffer[Status]()
-    if (!filter.excludeNestedSuites) {
-      val nestedSuitesArray = nestedSuites.toArray
-      distributor match {
-        case None =>
-          for (nestedSuite <- nestedSuitesArray) {
-            if (!stopRequested()) 
-              statusBuffer += callExecuteOnSuite(nestedSuite)
+
+    distributor match {
+      case None =>
+        val nestedSuitesArray = nestedSuites.toArray
+        for (i <- 0 until nestedSuitesArray.length) {
+          if (!stopRequested()) {
+            callExecuteOnSuite(nestedSuitesArray(i))
           }
-        case Some(distribute) =>
-          for (nestedSuite <- nestedSuitesArray) 
-            statusBuffer += distribute(nestedSuite, args.copy(tracker = tracker.nextTracker))
-      }
+        }
+      case Some(distribute) =>
+        for (nestedSuite <- nestedSuites)
+          distribute(nestedSuite, tracker.nextTracker())
     }
-    new CompositeStatus(Set.empty ++ statusBuffer)
   }
 
   /**
@@ -1542,35 +2452,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    *
    * @return this <code>Suite</code> object's suite name.
    */
-  def suiteName: String = getSimpleNameOfAnObjectsClass(thisSuite)
-
-  /**
-   * A string ID for this <code>Suite</code> that is intended to be unique among all suites reported during a run.
-   *
-   * <p>
-   * This trait's
-   * implementation of this method returns the fully qualified name of this object's class. 
-   * Each suite reported during a run will commonly be an instance of a different <code>Suite</code> class,
-   * and in such cases, this default implementation of this method will suffice. However, in special cases
-   * you may need to override this method to ensure it is unique for each reported suite. For example, if you write
-   * a <code>Suite</code> subclass that reads in a file whose name is passed to its constructor and dynamically
-   * creates a suite of tests based on the information in that file, you will likely need to override this method
-   * in your <code>Suite</code> subclass, perhaps by appending the pathname of the file to the fully qualified class name. 
-   * That way if you run a suite of tests based on a directory full of these files, you'll have unique suite IDs for
-   * each reported suite.
-   * </p>
-   *
-   * <p>
-   * The suite ID is <em>intended</em> to be unique, because ScalaTest does not enforce that it is unique. If it is not
-   * unique, then you may not be able to uniquely identify a particular test of a particular suite. This ability is used,
-   * for example, to dynamically tag tests as having failed in the previous run when rerunning only failed tests.
-   * </p>
-   *
-   * @return this <code>Suite</code> object's ID.
-   */
-  def suiteId: String = thisSuite.getClass.getName
-
-// XXX
+  def suiteName = getSimpleNameOfAnObjectsClass(thisSuite)
 
   /**
    * Throws <code>TestPendingException</code> to indicate a test is pending.
@@ -1677,87 +2559,43 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    */
   def expectedTestCount(filter: Filter): Int = {
 
-    @tailrec
-    def countNestedSuiteTests(acc: Int, nestedSuitesToCount: List[Suite], filter: Filter): Int =
-      nestedSuitesToCount match {
-        case List() => acc
-        case head :: tail => 
-          countNestedSuiteTests(acc + head.expectedTestCount(filter), tail, filter)
-      }
+    // [bv: here was another tricky refactor. How to increment a counter in a loop]
+    def countNestedSuiteTests(nestedSuites: List[Suite], filter: Filter): Int =
+      nestedSuites match {
+        case List() => 0
+        case nestedSuite :: nestedSuites => nestedSuite.expectedTestCount(filter) +
+            countNestedSuiteTests(nestedSuites, filter)
+    }
 
-     countNestedSuiteTests(filter.runnableTestCount(testNames, tags, suiteId), nestedSuites.toList, filter)
+    filter.runnableTestCount(testNames, tags) + countNestedSuiteTests(nestedSuites, filter)
   }
 
-  // MOVE IT
-  private[scalatest] def createCatchReporter(reporter: Reporter): Reporter = new WrapperCatchReporter(reporter)
-  
-  /**
-   * The fully qualified class name of the rerunner to rerun this suite.  This implementation will look at this.getClass and see if it is
-   * either an accessible Suite, or it has a WrapWith annotation. If so, it returns the fully qualified class name wrapped in a Some, 
-   * or else it returns None.
-   */
-  def rerunner: Option[String] = {
-    val suiteClass = getClass
-    val isAccessible = SuiteDiscoveryHelper.isAccessibleSuite(suiteClass)
-    val hasWrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith]) != null
-    if (isAccessible || hasWrapWithAnnotation)
-      Some(suiteClass.getName)
-    else
-      None
+  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
+  // so that exceptions are caught and transformed
+  // into error messages on the standard error stream.
+  private[scalatest] def wrapReporterIfNecessary(reporter: Reporter) = reporter match {
+    case dr: DispatchReporter => dr
+    case cr: CatchReporter => cr
+    case _ => new CatchReporter(reporter)
   }
   
   /**
    * Suite style name.
    */
   val styleName: String = "org.scalatest.Suite"
-  
-  /**
-   * Provides a <code>TestData</code> instance for the passed test name, given the passed config map.
-   *
-   * <p>
-   * This method is used to obtain a <code>TestData</code> instance to pass to <code>withFixture(NoArgTest)</code>
-   * and <code>withFixture(OneArgTest)</code> and the <code>beforeEach</code> and <code>afterEach</code> methods
-   * of trait <code>BeforeAndAfterEach</code>.
-   * </p>
-   *
-   * @param testName the name of the test for which to return a <code>TestData</code> instance
-   * @param theConfigMap the config map to include in the returned <code>TestData</code>
-   * @return a <code>TestData</code> instance for the specified test, which includes the specified config map
-   */
-  def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = {
-    val suiteTags = for { 
-      a <- this.getClass.getDeclaredAnnotations
-      annotationClass = a.annotationType
-      if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
-    } yield annotationClass.getName
-    val testTags: Set[String] = 
-      try {
-        getTags(testName).toSet
-      }
-      catch {
-        case e: IllegalArgumentException => Set.empty[String]
-      }
-    new TestData {
-      val configMap = theConfigMap 
-      val name = testName
-      val scopes = Vector.empty
-      val text = testName
-      val tags = Set.empty ++ suiteTags ++ testTags
-    }
-  }
 }
 
 private[scalatest] object Suite {
 
-  val TestMethodPrefix = "test"
-  val InformerInParens = "(Informer)"
-  val IgnoreAnnotation = "org.scalatest.Ignore"
+  private[scalatest] val TestMethodPrefix = "test"
+  private[scalatest] val InformerInParens = "(Informer)"
+  private[scalatest] val IgnoreAnnotation = "org.scalatest.Ignore"
 
-  def getSimpleNameOfAnObjectsClass(o: AnyRef) = stripDollars(parseSimpleName(o.getClass.getName))
+  private[scalatest] def getSimpleNameOfAnObjectsClass(o: AnyRef) = stripDollars(parseSimpleName(o.getClass().getName()))
 
   // [bv: this is a good example of the expression type refactor. I moved this from SuiteClassNameListCellRenderer]
   // this will be needed by the GUI classes, etc.
-  def parseSimpleName(fullyQualifiedName: String) = {
+  private[scalatest] def parseSimpleName(fullyQualifiedName: String) = {
 
     val dotPos = fullyQualifiedName.lastIndexOf('.')
 
@@ -1768,7 +2606,7 @@ private[scalatest] object Suite {
       fullyQualifiedName
   }
   
-  def checkForPublicNoArgConstructor(clazz: java.lang.Class[_]) = {
+  private[scalatest] def checkForPublicNoArgConstructor(clazz: java.lang.Class[_]) = {
     
     try {
       val constructor = clazz.getConstructor(new Array[java.lang.Class[T] forSome { type T }](0): _*)
@@ -1780,12 +2618,12 @@ private[scalatest] object Suite {
     }
   }
 
-  // This attempts to strip dollar signs that happen when using the interpreter. It is quite fragile
+  // This attempts to strip dollar signs that happen when using the interpretter. It is quite fragile
   // and already broke once. In the early days, all funky dollar sign encrusted names coming out of
   // the interpreter started with "line". Now they don't, but in both cases they seemed to have at
   // least one "$iw$" in them. So now I leave the string alone unless I see a "$iw$" in it. Worst case
   // is sometimes people will get ugly strings coming out of the interpreter. -bv April 3, 2012
-  def stripDollars(s: String): String = {
+  private[scalatest] def stripDollars(s: String): String = {
     val lastDollarIndex = s.lastIndexOf('$')
     if (lastDollarIndex < s.length - 1)
       if (lastDollarIndex == -1 || !s.contains("$iw$")) s else s.substring(lastDollarIndex + 1)
@@ -1803,7 +2641,7 @@ private[scalatest] object Suite {
     }
   }
   
-  def diffStrings(s: String, t: String): Tuple2[String, String] = {
+  private[scalatest] def diffStrings(s: String, t: String): Tuple2[String, String] = {
     def findCommonPrefixLength(s: String, t: String): Int = {
       val max = s.length.min(t.length) // the maximum potential size of the prefix
       var i = 0
@@ -1842,7 +2680,7 @@ private[scalatest] object Suite {
   
   // If the objects are two strings, replace them with whatever is returned by diffStrings.
   // Otherwise, use the same objects.
-  def getObjectsForFailureMessage(a: Any, b: Any) = 
+  private[scalatest] def getObjectsForFailureMessage(a: Any, b: Any) = 
     a match {
       case aStr: String => {
         b match {
@@ -1855,24 +2693,22 @@ private[scalatest] object Suite {
       case _ => (a, b)
     }
 
-  def formatterForSuiteStarting(suite: Suite): Option[Formatter] =
+  private[scalatest] def formatterForSuiteStarting(suite: Suite): Option[Formatter] =
       Some(IndentedText(suite.suiteName + ":", suite.suiteName, 0))
 
-  def formatterForSuiteCompleted(suite: Suite): Option[Formatter] =
+  private[scalatest] def formatterForSuiteCompleted(suite: Suite): Option[Formatter] =
       Some(MotionToSuppress)
 
-  def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] =
+  private[scalatest] def formatterForSuiteAborted(suite: Suite, message: String): Option[Formatter] =
       Some(IndentedText(message, message, 0))
 
-/*
-  def simpleNameForTest(testName: String) =
+  private def simpleNameForTest(testName: String) =
     if (testName.endsWith(InformerInParens))
       testName.substring(0, testName.length - InformerInParens.length)
     else
       testName
-*/
 
-  def anErrorThatShouldCauseAnAbort(throwable: Throwable) =
+  private[scalatest] def anErrorThatShouldCauseAnAbort(throwable: Throwable) =
     throwable match {
       case _: AnnotationFormatError | 
            _: CoderMalfunctionError |
@@ -1892,13 +2728,6 @@ private[scalatest] object Suite {
     paramTypes.length == 1 && classOf[Informer].isAssignableFrom(paramTypes(0))
   }
 
-/* TODO: Delete me if not needed
-  def takesCommunicator(m: Method) = {
-    val paramTypes = m.getParameterTypes
-    paramTypes.length == 1 && classOf[Rep].isAssignableFrom(paramTypes(0))
-  }
-*/
-
   def isTestMethodGoodies(m: Method) = {
 
     val isInstanceMethod = !Modifier.isStatic(m.getModifiers())
@@ -1913,15 +2742,25 @@ private[scalatest] object Suite {
     // Discover testNames(Informer) because if we didn't it might be confusing when someone
     // actually wrote a testNames(Informer) method and it was silently ignored.
     val isTestNames = simpleName == "testNames"
-    val isTestTags = simpleName == "testTags"
-    val isTestDataFor = (simpleName == "testDataFor" && paramTypes.length == 2 && classOf[String].isAssignableFrom(paramTypes(0)) && classOf[ConfigMap].isAssignableFrom(paramTypes(1))) || 
-                        (simpleName == "testDataFor$default$2" && paramTypes.length == 0)
 
-    (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames, isTestTags, isTestDataFor)
+    (isInstanceMethod, simpleName, firstFour, paramTypes, hasNoParams, isTestNames)
   }
 
-  def testMethodTakesAnInformer(testName: String): Boolean = testName.endsWith(InformerInParens)
+  def testMethodTakesAnInformer(testName: String) = testName.endsWith(InformerInParens)
 
+  def checkRunTestParamsForNull(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
+    if (testName == null)
+      throw new NullPointerException("testName was null")
+    if (reporter == null)
+      throw new NullPointerException("reporter was null")
+    if (stopper == null)
+      throw new NullPointerException("stopper was null")
+    if (configMap == null)
+      throw new NullPointerException("configMap was null")
+    if (tracker == null)
+      throw new NullPointerException("tracker was null")
+  }
+ 
   /*
    For info and test names, the formatted text should have one level shaved off so that the text will
    line up correctly, and the icon is over to the left of that even with the enclosing level.
@@ -1989,35 +2828,16 @@ without icons.
 This should really be named getIndentedTextForTest maybe, because I think it is just
 used for test events like succeeded/failed, etc.
   */
-  def getIndentedTextForTest(testText: String, level: Int, includeIcon: Boolean) = {
-    val decodedTestText = NameTransformer.decode(testText)
+  def getIndentedText(testText: String, level: Int, includeIcon: Boolean) = {
     val formattedText =
       if (includeIcon) {
         val testSucceededIcon = Resources("testSucceededIconChar")
-        ("  " * (if (level == 0) 0 else (level - 1))) + Resources("iconPlusShortName", testSucceededIcon, decodedTestText)
+        ("  " * (if (level == 0) 0 else (level - 1))) + Resources("iconPlusShortName", testSucceededIcon, testText)
       }
       else {
-        ("  " * level) + decodedTestText
+        ("  " * level) + testText
       }
-    IndentedText(formattedText, decodedTestText, level)
-  }
-  
-  def getEscapedIndentedTextForTest(testText: String, level: Int, includeIcon: Boolean) = {
-    val decodedTestText = NameTransformer.decode(testText)
-    val escapedTestText = 
-      if (decodedTestText.startsWith("test: "))
-        decodedTestText.drop(6)
-      else
-        decodedTestText
-    val formattedText =
-      if (includeIcon) {
-        val testSucceededIcon = Resources("testSucceededIconChar")
-        ("  " * (if (level == 0) 0 else (level - 1))) + Resources("iconPlusShortName", testSucceededIcon, escapedTestText)
-      }
-      else {
-        ("  " * level) + escapedTestText
-      }
-    IndentedText(formattedText, decodedTestText, level)
+    IndentedText(formattedText, testText, level)
   }
 
   // The icon is not included for branch description text, but is included for things sent via info(), given(),
@@ -2057,21 +2877,12 @@ used for test events like succeeded/failed, etc.
       Resources("exceptionThrown", e.getClass.getName) // Say something like, "java.lang.Exception was thrown."
 
   def indentation(level: Int) = "  " * level
-  
-  def indentLines(level: Int, lines: GenTraversable[String]) = 
-    lines.map(line => line.split("\n").map(indentation(level) + _).mkString("\n"))
-    
-  def substituteHtmlSpace(value: String) = value.replaceAll(" ", "&nbsp;")
-    
-  def unparsedXml(value: String) = scala.xml.Unparsed(value)
-  
-  def xmlContent(value: String) = unparsedXml(substituteHtmlSpace(value))
 
   def reportTestFailed(theSuite: Suite, report: Reporter, throwable: Throwable, testName: String, testText: String,
-                       recordedEvents: collection.immutable.IndexedSeq[RecordableEvent], rerunnable: Option[String], tracker: Tracker, duration: Long, formatter: Formatter, location: Option[Location]) {
+      rerunnable: Option[Rerunner], tracker: Tracker, duration: Long, level: Int, includeIcon: Boolean) {
 
     val message = getMessageForException(throwable)
-    //val formatter = getEscapedIndentedTextForTest(testText, level, includeIcon)
+    val formatter = getIndentedText(testText, level, includeIcon)
     val payload = 
       throwable match {
         case optPayload: PayloadField => 
@@ -2079,70 +2890,25 @@ used for test events like succeeded/failed, etc.
         case _ => 
           None
       }
-    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testText, recordedEvents, Some(throwable), Some(duration), Some(formatter), location, theSuite.rerunner, payload))
+    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(throwable), Some(duration), Some(formatter), rerunnable, payload))
   }
 
-  // TODO: Possibly separate these out from method tests and function tests, because locations are different
-  // Update: Doesn't seems to need separation, to be confirmed with Bill.
-  def reportTestStarting(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, rerunnable: Option[String], location: Option[Location]) {
-    report(TestStarting(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testText, Some(MotionToSuppress),
-      location, rerunnable))
+  def reportTestStarting(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, rerunnable: Option[Rerunner]) {
+    report(TestStarting(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(MotionToSuppress), rerunnable))
   }
 
-  def reportTestPending(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, recordedEvents: collection.immutable.IndexedSeq[RecordableEvent], duration: Long, formatter: Formatter, location: Option[Location]) {
-    report(TestPending(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testText, recordedEvents, Some(duration), Some(formatter),
-      location))
+  def reportTestPending(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, formatter: Formatter) {
+    report(TestPending(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(formatter)))
   }
 
-/*
-  def reportTestCanceled(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, duration: Long, formatter: Formatter, location: Option[Location]) {
-    val message = getMessageForException(throwable)
-    report(TestCanceled(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, Some(duration), Some(formatter),
-      location))
-  }
-*/
-
-  def reportTestCanceled(theSuite: Suite, report: Reporter, throwable: Throwable, testName: String, testText: String,
-      recordedEvents: collection.immutable.IndexedSeq[RecordableEvent], rerunnable: Option[String], tracker: Tracker, duration: Long, formatter: Formatter, location: Option[Location]) {
-
-    val message = getMessageForException(throwable)
-    //val formatter = getEscapedIndentedTextForTest(testText, level, includeIcon)
-    report(TestCanceled(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testText, recordedEvents, Some(throwable), Some(duration), Some(formatter), location, rerunnable))
+  def reportTestSucceeded(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, duration: Long, formatter: Formatter, rerunnable: Option[Rerunner]) {
+    report(TestSucceeded(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(duration), Some(formatter), rerunnable))
   }
 
-  def reportTestSucceeded(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, recordedEvents: collection.immutable.IndexedSeq[RecordableEvent], duration: Long, formatter: Formatter, rerunnable: Option[String], location: Option[Location]) {
-    report(TestSucceeded(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testText, recordedEvents, Some(duration), Some(formatter),
-      location, rerunnable))
-  }
-
-  def reportTestIgnored(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, formatter: Formatter, location: Option[Location]) {
+  def reportTestIgnored(theSuite: Suite, report: Reporter, tracker: Tracker, testName: String, testText: String, level: Int) {
     val testSucceededIcon = Resources("testSucceededIconChar")
-    report(TestIgnored(tracker.nextOrdinal(), theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testText, Some(formatter),
-      location))
-  }
-  
-  def createInfoProvided(theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    testName: Option[String],
-    message: String,
-    payload: Option[Any], 
-    level: Int,
-    location: Option[Location],
-    includeNameInfo: Boolean,
-    includeIcon: Boolean = true) = {
-    InfoProvided(
-        tracker.nextOrdinal(),
-        message,
-        if (includeNameInfo)
-          Some(NameInfo(theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName))
-        else
-          None,
-        None,
-        Some(getIndentedTextForInfo(message, level, includeIcon, testName.isDefined)),
-        location,
-        payload
-      )
+    val formattedText = indentation(level - 1) + Resources("iconPlusShortName", testSucceededIcon, testText)
+    report(TestIgnored(tracker.nextOrdinal(), theSuite.suiteName, Some(theSuite.getClass.getName), testName, Some(IndentedText(formattedText, testText, level))))
   }
 
   // If not fired in the context of a test, then testName will be None
@@ -2154,160 +2920,27 @@ used for test events like succeeded/failed, etc.
     message: String,
     payload: Option[Any], 
     level: Int,
-    location: Option[Location],
     includeNameInfo: Boolean,
-    includeIcon: Boolean = true
+    includeIcon: Boolean = true,
+    aboutAPendingTest: Option[Boolean] = None
   ) {
     report(
-      createInfoProvided(
-        theSuite,
-        report,
-        tracker,
-        testName,
+      InfoProvided(
+        tracker.nextOrdinal(),
         message,
-        payload, 
-        level,
-        location,
-        includeNameInfo,
-        includeIcon
-      )
-    )
-  }
-  
-  def createMarkupProvided(
-    theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    testName: Option[String],
-    message: String,
-    level: Int,
-    location: Option[Location],
-    includeNameInfo: Boolean,
-    includeIcon: Boolean = true
-  ) = {
-    MarkupProvided(
-      tracker.nextOrdinal(),
-      message,
-      if (includeNameInfo)
-        Some(NameInfo(theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName))
-      else
+        if (includeNameInfo)
+          Some(NameInfo(theSuite.suiteName, Some(theSuite.getClass.getName), testName))
+        else
+          None,
+        aboutAPendingTest,
         None,
-      Some(getIndentedTextForInfo(message, level, includeIcon, testName.isDefined)),
-      location
-    )
-  }
-  
-
-  // If not fired in the context of a test, then testName will be None
-  def reportMarkupProvided(
-    theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    testName: Option[String],
-    message: String,
-    level: Int,
-    location: Option[Location],
-    includeNameInfo: Boolean,
-    includeIcon: Boolean = true
-  ) {
-    report(
-      createMarkupProvided(
-        theSuite,
-        report,
-        tracker,
-        testName,
-        message,
-        level,
-        location,
-        includeNameInfo
+        Some(getIndentedTextForInfo(message, level, includeIcon, testName.isDefined)), 
+        payload
       )
     )
   }
 
-  // If not fired in the context of a test, then testName will be None
-  def reportScopeOpened(
-    theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    message: String,
-    level: Int,
-    includeIcon: Boolean = true,
-    location: Option[Location]
-  ) {
-    report(
-      ScopeOpened(
-        tracker.nextOrdinal(),
-        message,
-        NameInfo(theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), None),
-        Some(getIndentedTextForInfo(message, level, includeIcon, false)),
-        location
-      )
-    )
-  }
-
-  // If not fired in the context of a test, then testName will be None
-  def reportScopeClosed(
-    theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    message: String,
-    level: Int,
-    includeIcon: Boolean = true,
-    location: Option[Location]
-  ) {
-    report(
-      ScopeClosed(
-        tracker.nextOrdinal(),
-        message,
-        NameInfo(theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), None),
-        Some(MotionToSuppress),
-        location
-      )
-    )
-  }
-  
-  def reportScopePending(
-    theSuite: Suite,
-    report: Reporter,
-    tracker: Tracker,
-    message: String,
-    level: Int,
-    includeIcon: Boolean = true,
-    location: Option[Location]
-  ) {
-    report(
-      ScopePending(
-        tracker.nextOrdinal(),
-        message,
-        NameInfo(theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), None),
-        Some(getIndentedTextForInfo(message, level, includeIcon, false)),
-        location
-      )
-    )
-  }
-  
-  /*def getLineInFile(stackTraceList:List[StackTraceElement], sourceFileName:String, methodName: String):Option[LineInFile] = {
-    val baseStackDepth = stackTraceList.takeWhile(stackTraceElement => sourceFileName != stackTraceElement.getFileName || stackTraceElement.getMethodName != methodName).length
-    val stackTraceOpt = stackTraceList.drop(baseStackDepth).find(stackTraceElement => stackTraceElement.getMethodName() == "<init>")
-    stackTraceOpt match {
-      case Some(stackTrace) => Some(LineInFile(stackTrace.getLineNumber, stackTrace.getFileName))
-      case None => None
-    }
-  }*/
-  
-  def getLineInFile(stackTraceList: Array[StackTraceElement], stackDepth: Int) = {
-    if(stackDepth >= 0 && stackDepth < stackTraceList.length) {
-      val stackTrace = stackTraceList(stackDepth)
-      if(stackTrace.getLineNumber >= 0 && stackTrace.getFileName != null)
-        Some(LineInFile(stackTrace.getLineNumber, stackTrace.getFileName))
-      else
-        None
-    }
-    else
-      None
-  }
-
-  def checkChosenStyles(configMap: ConfigMap, styleName: String) {
+  def checkChosenStyles(configMap: Map[String, Any], styleName: String) {
     val chosenStyleSet = 
         if (configMap.isDefinedAt("org.scalatest.ChosenStyles"))
           configMap("org.scalatest.ChosenStyles").asInstanceOf[Set[String]]
@@ -2340,137 +2973,6 @@ used for test events like succeeded/failed, etc.
         val (leading, trailing) = quotedWords.splitAt(quotedWords.length - 2)
         leading.mkString(", ") + ", " + Resources("leftCommaAndRight", trailing(0), trailing(1))
     }
-  }
-  
-  def autoTagClassAnnotations(tags: Map[String, Set[String]], theSuite: Suite) = {
-    val suiteTags = for { 
-      a <- theSuite.getClass.getDeclaredAnnotations
-      annotationClass = a.annotationType
-      if annotationClass.isAnnotationPresent(classOf[TagAnnotation])
-    } yield annotationClass.getName
-    
-    val autoTestTags = 
-      if (suiteTags.size > 0)
-        Map() ++ theSuite.testNames.map(tn => (tn, suiteTags.toSet))
-      else
-        Map.empty[String, Set[String]]
-    
-    Runner.mergeMap[String, Set[String]](List(tags, autoTestTags)) ( _ ++ _ )
-  }
-
-  def handleFailedTest(
-    theSuite: Suite,
-    throwable: Throwable,
-    testName: String,
-    recordedEvents: collection.immutable.IndexedSeq[RecordableEvent],
-    report: Reporter,
-    tracker: Tracker,
-    formatter: Formatter,
-    duration: Long
-  ) {
-    val message = getMessageForException(throwable)
-    //val formatter = getEscapedIndentedTextForTest(testName, 1, true)
-    val payload = 
-      throwable match {
-        case optPayload: PayloadField => 
-          optPayload.payload
-        case _ => 
-          None
-      }
-    report(TestFailed(tracker.nextOrdinal(), message, theSuite.suiteName, theSuite.suiteId, Some(theSuite.getClass.getName), testName, testName, recordedEvents, Some(throwable), Some(duration), Some(formatter), Some(SeeStackDepthException), theSuite.rerunner, payload))
-  }
-
-  def getTopOfClass(theSuite: Suite) = TopOfClass(theSuite.getClass.getName)
-  def getTopOfMethod(theSuite: Suite, method: Method) = TopOfMethod(theSuite.getClass.getName, method.toGenericString())
-  def getTopOfMethod(theSuite: Suite, testName: String) = TopOfMethod(theSuite.getClass.getName, getMethodForTestName(theSuite, testName).toGenericString())
-
-  // Factored out to share this with fixture.Suite.runTest
-  def getSuiteRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Method, Long) = {
-    val (stopRequested, report, testStartTime) = getRunTestGoodies(theSuite, stopper, reporter, testName)
-    val method = getMethodForTestName(theSuite, testName)
-    (stopRequested, report, method, testStartTime)
-  }
-
-  // Sharing this with FunSuite and fixture.FunSuite as well as Suite and fixture.Suite
-  def getRunTestGoodies(theSuite: Suite, stopper: Stopper, reporter: Reporter, testName: String): (Stopper, Reporter, Long) = {
-
-    val stopRequested = stopper
-    val report = wrapReporterIfNecessary(theSuite, reporter)
-
-    val testStartTime = System.currentTimeMillis
-
-    (stopRequested, report, testStartTime)
-  }
-
-  // Wrap any non-DispatchReporter, non-CatchReporter in a CatchReporter,
-  // so that exceptions are caught and transformed
-  // into error messages on the standard error stream.
-  def wrapReporterIfNecessary(theSuite: Suite, reporter: Reporter): Reporter = reporter match {
-    case cr: CatchReporter => cr
-    case _ => theSuite.createCatchReporter(reporter)
-  }
-
-  val FixtureAndInformerInParens = "(FixtureParam, Informer)"
-  val FixtureInParens = "(FixtureParam)"
-
-  def testMethodTakesAFixtureAndInformer(testName: String) = testName.endsWith(FixtureAndInformerInParens)
-  def testMethodTakesAFixture(testName: String) = testName.endsWith(FixtureInParens)
-
-  def simpleNameForTest(testName: String) =
-    if (testName.endsWith(FixtureAndInformerInParens))
-      testName.substring(0, testName.length - FixtureAndInformerInParens.length)
-    else if (testName.endsWith(FixtureInParens))
-      testName.substring(0, testName.length - FixtureInParens.length)
-    else if (testName.endsWith(InformerInParens))
-      testName.substring(0, testName.length - InformerInParens.length)
-    else
-      testName
-
-  def getMethodForTestName(theSuite: org.scalatest.Suite, testName: String): Method = {
-    val candidateMethods = theSuite.getClass.getMethods.filter(_.getName == Suite.simpleNameForTest(testName))
-    val found =
-      if (testMethodTakesAFixtureAndInformer(testName))
-        candidateMethods.find(
-          candidateMethod => {
-            val paramTypes = candidateMethod.getParameterTypes
-            paramTypes.length == 2 && paramTypes(1) == classOf[Informer]
-          }
-        )
-      else if (testMethodTakesAnInformer(testName))
-        candidateMethods.find(
-          candidateMethod => {
-            val paramTypes = candidateMethod.getParameterTypes
-            paramTypes.length == 1 && paramTypes(0) == classOf[Informer]
-          }
-        )
-      else if (testMethodTakesAFixture(testName))
-        candidateMethods.find(
-          candidateMethod => {
-            val paramTypes = candidateMethod.getParameterTypes
-            paramTypes.length == 1
-          }
-        )
-      else
-        candidateMethods.find(_.getParameterTypes.length == 0)
-
-     found match {
-       case Some(method) => method
-       case None =>
-         throw new IllegalArgumentException(Resources("testNotFound", testName))
-     }
-  }
-
-  // The substitution, if defined, indicates that the _1 string should be replace
-  // by _2. This may transform "FunSpec" into "path.FunSpec", for example.
-  def suiteToString(substitution: Option[(String, String)], theSuite: Suite): String = {
-    val candidate = getSimpleNameOfAnObjectsClass(theSuite)
-    val simpleName =
-      substitution match {
-        case Some((from, to)) if (candidate == from) => to
-        case None => candidate
-      }
-   if (theSuite.nestedSuites.isEmpty) simpleName
-   else simpleName + theSuite.nestedSuites.mkString("(", ", ", ")")
   }
 }
 

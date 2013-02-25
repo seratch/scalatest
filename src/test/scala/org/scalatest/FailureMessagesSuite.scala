@@ -21,7 +21,7 @@ import org.scalatest.matchers.ShouldMatchers
 
 class FailureMessagesSuite extends Suite with ShouldMatchers {
 
-  def `test: prettify arrays should handle null array element values` {
+  def testPrettifyArraysShouldHandleNullArrayElementValues() {
     assertResult("Array(1, null, 3)") {
       FailureMessages.prettifyArrays(Array(1, null, 3)) 
     }

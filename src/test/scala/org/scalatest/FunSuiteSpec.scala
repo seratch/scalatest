@@ -95,13 +95,13 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         }
       }
       val suite = new InvokedWhenNotRunningSuite
-      suite.run(None, Args(SilentReporter))
+      suite.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(suite.fromConstructorTestExecuted)
       assert(!suite.fromMethodTestExecuted)
       intercept[TestRegistrationClosedException] {
         suite.tryToRegisterATest()
       }
-      suite.run(None, Args(SilentReporter))
+      suite.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!suite.fromMethodTestExecuted)
 /*
       class InvokedWhenRunningSuite extends FunSuite {
@@ -136,7 +136,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
           testWasInvoked = true
         }
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.withFixtureWasInvoked)
       assert(a.testWasInvoked)
     }
@@ -149,19 +149,19 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         }
         test("something") {}
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.correctTestNameWasPassed)
     }
     it("should pass the correct config map in the NoArgTest passed to withFixture") {
       val a = new FunSuite {
         var correctConfigMapWasPassed = false
         override def withFixture(test: NoArgTest) {
-          correctConfigMapWasPassed = (test.configMap == ConfigMap("hi" -> 7))
+          correctConfigMapWasPassed = (test.configMap == Map("hi" -> 7))
           super.withFixture(test)
         }
         test("something") {}
       }
-      a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> 7), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker())
       assert(a.correctConfigMapWasPassed)
     }
 
@@ -202,7 +202,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         }
         val suite = new MySuite
         val myRep = new EventRecordingReporter
-        suite.run(None, Args(myRep))
+        suite.run(None, myRep, new Stopper {}, Filter(), Map(), None, new Tracker)
         intercept[IllegalStateException] {
           suite.callInfo()
         }
@@ -219,7 +219,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
       val suite = new MySuite
       val reporter = new EventRecordingReporter
-      suite.run(None, Args(reporter))
+      suite.run(None, reporter, new Stopper {}, Filter(), Map(), None, new Tracker)
 
       val indexedList = reporter.eventsReceived
 
@@ -274,7 +274,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
     it("should execute all tests when run is called with testName None") {
 
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(b.theTestThisCalled)
       assert(b.theTestThatCalled)
     }
@@ -282,7 +282,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
     it("should execute one test when run is called with a defined testName") {
 
       val a = new TestWasCalledSuite
-      a.run(Some("this"), Args(SilentReporter))
+      a.run(Some("this"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(a.theTestThisCalled)
       assert(!a.theTestThatCalled)
     }
@@ -297,7 +297,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -310,7 +310,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB))
+      b.run(None, repB, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repB.testIgnoredReceived)
       assert(repB.lastEvent.isDefined)
       assert(repB.lastEvent.get.testName endsWith "test this")
@@ -325,7 +325,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repC))
+      c.run(None, repC, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repC.testIgnoredReceived)
       assert(repC.lastEvent.isDefined)
       assert(repC.lastEvent.get.testName endsWith "test that", repC.lastEvent.get.testName)
@@ -342,7 +342,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD))
+      d.run(None, repD, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(repD.lastEvent.isDefined)
       assert(repD.lastEvent.get.testName endsWith "test that") // last because should be in order of appearance
@@ -359,7 +359,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val repE = new TestIgnoredTrackingReporter
-      e.run(Some("test this"), Args(repE))
+      e.run(Some("test this"), repE, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(!e.theTestThatCalled)
@@ -374,7 +374,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val repE = new TestIgnoredTrackingReporter
-      e.run(Some("test this"), Args(repE, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      e.run(Some("test this"), repE, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(!e.theTestThatCalled)
@@ -390,7 +390,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test that") { theTestThatCalled = true }
       }
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -403,7 +403,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test that") { theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      b.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repB.testIgnoredReceived)
       assert(b.theTestThisCalled)
       assert(!b.theTestThatCalled)
@@ -416,7 +416,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test that", mytags.SlowAsMolasses) { theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      c.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repC.testIgnoredReceived)
       assert(c.theTestThisCalled)
       assert(c.theTestThatCalled)
@@ -429,7 +429,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test that", mytags.SlowAsMolasses) { theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), ConfigMap.empty, None, new Tracker, Set.empty))
+      d.run(None, repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(!d.theTestThisCalled)
       assert(d.theTestThatCalled)
@@ -444,8 +444,8 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test the other") { theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
-      e.run(None, Args(repE, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      e.run(None, repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(e.theTestThatCalled)
@@ -461,8 +461,8 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test the other") { theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
-      f.run(None, Args(repF, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      f.run(None, repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repF.testIgnoredReceived)
       assert(!f.theTestThisCalled)
       assert(f.theTestThatCalled)
@@ -478,8 +478,8 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         ignore("test the other") { theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
-      g.run(None, Args(repG, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      g.run(None, repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repG.testIgnoredReceived)
       assert(!g.theTestThisCalled)
       assert(g.theTestThatCalled)
@@ -495,7 +495,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test the other") { theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
-      h.run(None, Args(repH, Stopper.default, Filter(None, Set("org.scalatest.FastAsLight")), ConfigMap.empty, None, new Tracker, Set.empty))
+      h.run(None, repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker)
       assert(!repH.testIgnoredReceived)
       assert(!h.theTestThisCalled)
       assert(h.theTestThatCalled)
@@ -511,7 +511,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test the other") { theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
-      i.run(None, Args(repI, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      i.run(None, repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!i.theTestThisCalled)
       assert(!i.theTestThatCalled)
@@ -527,7 +527,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("test the other") { theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
-      j.run(None, Args(repJ, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      j.run(None, repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!j.theTestThisCalled)
       assert(!j.theTestThatCalled)
@@ -543,7 +543,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         ignore("test the other") { theTestTheOtherCalled = true }
       }
       val repK = new TestIgnoredTrackingReporter
-      k.run(None, Args(repK, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), ConfigMap.empty, None, new Tracker, Set.empty))
+      k.run(None, repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repK.testIgnoredReceived)
       assert(!k.theTestThisCalled)
       assert(!k.theTestThatCalled)
@@ -609,7 +609,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
@@ -621,7 +621,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("throws Throwable") { throw new Throwable }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }
@@ -631,7 +631,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
         test("throws AssertionError") { throw new OutOfMemoryError }
       }
       intercept[OutOfMemoryError] {
-        a.run(None, Args(SilentReporter))
+        a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
     describe("(when a nesting rule has been violated)") {
@@ -697,7 +697,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
       val suite = new MySuite
       intercept[IllegalArgumentException] {
-        suite.run(Some("three"), Args(SilentReporter))
+        suite.run(Some("three"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       }
     }
 
@@ -710,22 +710,22 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
 
       val simpleSuite = new SimpleSuite()
-      simpleSuite.run(None, Args(SilentReporter))
-      simpleSuite.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSuite")), None, new Tracker, Set.empty))
+      simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map.empty, None, new Tracker)
+      simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSuite")), None, new Tracker)
       val caught =
         intercept[NotAllowedException] {
-          simpleSuite.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec")), None, new Tracker, Set.empty))
+          simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec")), None, new Tracker)
         }
       import OptionValues._
       assert(caught.message.value === Resources("notTheChosenStyle", "org.scalatest.FunSuite", "org.scalatest.FunSpec"))
       val caught2 =
         intercept[NotAllowedException] {
-          simpleSuite.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec")), None, new Tracker, Set.empty))
+          simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec")), None, new Tracker)
         }
       assert(caught2.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.FunSuite", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec"))))
       val caught3 =
         intercept[NotAllowedException] {
-          simpleSuite.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec")), None, new Tracker, Set.empty))
+          simpleSuite.run(None, SilentReporter, new Stopper {}, Filter(), Map("org.scalatest.ChosenStyles" -> Set("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec")), None, new Tracker)
         }
       assert(caught3.message.value === Resources("notOneOfTheChosenStyles", "org.scalatest.FunSuite", Suite.makeListForHumans(Vector("org.scalatest.FunSpec", "org.scalatest.FreeSpec", "org.scalatest.FlatSpec"))))
     }
@@ -740,7 +740,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
       val rep = new EventRecordingReporter
       val s1 = new TestSpec
-      s1.run(None, Args(rep))
+      s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(rep.testFailedEventsReceived.size === 1)
       assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "FunSuiteSpec.scala")
       assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 8)
@@ -767,7 +767,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       }
       val rep = new EventRecordingReporter
       val s = new TestSpec
-      s.run(None, Args(rep))
+      s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(s.registrationClosedThrown == true)
       val testFailedEvents = rep.testFailedEventsReceived
       assert(testFailedEvents.size === 1)
