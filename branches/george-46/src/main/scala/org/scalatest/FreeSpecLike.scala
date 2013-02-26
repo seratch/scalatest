@@ -28,8 +28,8 @@ import Suite.anErrorThatShouldCauseAnAbort
 /**
  * Implementation trait for class <code>FreeSpec</code>, which 
  * facilitates a &#8220;behavior-driven&#8221; style of development (BDD),
- * in which tests are combined with text that specifies the behavior the tests
- * verify.
+ * in which tests are nested inside text clauses denoted with the dash
+ * operator (<code>-</code>).
  * 
  * <p>
  * <a href="FreeSpec.html"><code>FreeSpec</code></a> is a class, not a trait,
