@@ -27,38 +27,38 @@ import org.scalatest.events._
 import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 
 /**
- * Implementation trait for class <code>fixture.WordSpec</code>, which 
- * is a sister class to <code>org.scalatest.WordSpec</code>, which
+ * Implementation trait for class <code>fixture.FreeSpec</code>, which 
+ * is a sister class to <code>org.scalatest.FreeSpec</code>, which
  * can pass a fixture object into its tests.
  * 
  * <p>
- * <a href="WordSpec.html"><code>fixture.WordSpec</code></a> is a class, not a
- * trait, to minimize compile time given there is a slight compiler overhead to
+ * <a href="FreeSpec.html"><code>fixture.FreeSpec</code></a> is a class, not a trait,
+ * to minimize compile time given there is a slight compiler overhead to
  * mixing in traits compared to extending classes. If you need to mix the
- * behavior of <code>fixture.WordSpec</code> into some other class, you can use
- * this trait instead, because class <code>fixture.WordSpec</code> does nothing
- * more than extend this trait.
+ * behavior of <code>fixture.FreeSpec</code> into some other class, you can use this
+ * trait instead, because class <code>fixture.FreeSpec</code> does nothing more than
+ * extend this trait.
  * </p>
  *
  * <p>
- * See the documentation of the class for a <a href="WordSpec.html">detailed
- * overview of <code>fixture.WordSpec</code></a>.
+ * See the documentation of the class for a <a href="FreeSpec.html">detailed
+ * overview of <code>fixture.FreeSpec</code></a>.
  * </p>
  *
  * @author Bill Venners
  */
-trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { thisSuite =>
+trait FreeSpecLike extends Suite { thisSuite =>
 
-  private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureWordSpecMod", "FixtureWordSpec")
+  private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFreeSpecMod", "FixtureFreeSpec")
   import engine._
   
-  private[scalatest] val sourceFileName = "WordSpecLike.scala"
+  private[scalatest] val sourceFileName = "FreeSpecLike.scala"
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
    * <code>apply</code> method to the current reporter. If invoked in a constructor, it
    * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>fixture.WordSpec</code> is being executed, such as from inside a test function, it will forward the information to
+   * <code>fixture.FreeSpec</code> is being executed, such as from inside a test function, it will forward the information to
    * the current reporter immediately. If invoked at any other time, it will
    * throw an exception. This method can be called safely by any thread.
    */
@@ -72,18 +72,19 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * methods. The name of the test will be a concatenation of the text of all surrounding describers,
    * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
    * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
-   * this <code>WordSpec</code> instance.
+   * this <code>FreeSpec</code> instance.
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
    * @param testTags the optional list of tags for this test
-   * @param methodName Caller's method name
+   * @param methodName caller's method name
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
+    // TODO: This is what was being used before but it is wrong
     registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 1, None, None, testTags: _*)
   }
 
@@ -95,12 +96,12 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * report will be sent that indicates the test was ignored. The name of the test will be a concatenation of the text of all surrounding describers,
    * from outside in, and the passed spec text, with one space placed between each item. (See the documenation
    * for <code>testNames</code> for an example.) The resulting test name must not have been registered previously on
-   * this <code>WordSpec</code> instance.
+   * this <code>FreeSpec</code> instance.
    *
    * @param specText the specification text, which will be combined with the descText of any surrounding describers
    * to form the test name
    * @param testTags the optional list of tags for this test
-   * @param methodName Caller's method name
+   * @param methodName caller's method name
    * @param testFun the test function
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
@@ -110,19 +111,19 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
     // TODO: This is how these were, but it needs attention. Mentions "it".
     registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 1, testTags: _*)
   }
-
-  private def registerBranch(description: String, childPrefix: Option[String], methodName: String, fun: () => Unit) {
+   /*
+  private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
 
     // TODO: Fix the resource name and method name
-    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", sourceFileName, methodName, 1)
-  }
+    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", sourceFileName, "describe")
+  }  */
 
   /**
    * Class that supports the registration of tagged tests.
    *
    * <p>
    * Instances of this class are returned by the <code>taggedAs</code> method of 
-   * class <code>WordSpecStringWrapper</code>.
+   * class <code>FreeSpecStringWrapper</code>.
    * </p>
    *
    * @author Bill Venners
@@ -142,7 +143,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
@@ -162,7 +163,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def in(testFun: () => Any) {
@@ -182,7 +183,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def is(testFun: => PendingNothing) {
@@ -202,7 +203,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
@@ -222,7 +223,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def ignore(testFun: () => Any) {
@@ -231,21 +232,28 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   }
 
   /**
-   * A class that via an implicit conversion (named <code>convertToWordSpecStringWrapper</code>) enables
-   * methods <code>when</code>, <code>which</code>, <code>in</code>, <code>is</code>, <code>taggedAs</code>
+   * A class that via an implicit conversion (named <code>convertToFreeSpecStringWrapper</code>) enables
+   * methods <code>when</code>, <code>that</code>, <code>in</code>, <code>is</code>, <code>taggedAs</code>
    * and <code>ignore</code> to be invoked on <code>String</code>s.
    *
    * <p>
-   * This class provides much of the syntax for <code>fixture.WordSpec</code>, however, it does not add
+   * This class provides much of the syntax for <code>fixture.FreeSpec</code>, however, it does not add
    * the verb methods (<code>should</code>, <code>must</code>, and <code>can</code>) to <code>String</code>.
    * Instead, these are added via the <code>ShouldVerb</code>, <code>MustVerb</code>, and <code>CanVerb</code>
-   * traits, which <code>fixture.WordSpec</code> mixes in, to avoid a conflict with implicit conversions provided
+   * traits, which <code>fixture.FreeSpec</code> mixes in, to avoid a conflict with implicit conversions provided
    * in <code>ShouldMatchers</code> and <code>MustMatchers</code>. 
    * </p>
    *
    * @author Bill Venners
    */
-  protected final class WordSpecStringWrapper(string: String) {
+  protected final class FreeSpecStringWrapper(string: String) {
+
+    // TODO: Fill in Scaladoc
+    def - (fun: => Unit) {
+      // registerBranch(string, None, testFun)
+      // TODO: Fix the resource name and method name
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 1)
+    }
 
     /**
      * Supports test registration.
@@ -260,7 +268,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def in(testFun: FixtureParam => Any) {
@@ -280,7 +288,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def in(testFun: () => Any) {
@@ -300,7 +308,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def is(testFun: => PendingNothing) {
@@ -320,7 +328,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def ignore(testFun: FixtureParam => Any) {
@@ -340,7 +348,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def ignore(testFun: () => Any) {
@@ -361,298 +369,25 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </pre>
      *
      * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
+     * For more information and examples of this method's use, see the <a href="FreeSpec.html">main documentation</a> for trait <code>FreeSpec</code>.
      * </p>
      */
     def taggedAs(firstTestTag: Tag, otherTestTags: Tag*) = {
       val tagList = firstTestTag :: otherTestTags.toList
       new ResultOfTaggedAsInvocationOnString(string, tagList)
     }
-
-    /**
-     * Registers a <code>when</code> clause.
-     *
-     * <p>
-     * For example, this method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "A Stack" when { ... }
-     *           ^
-     * </pre>
-     *
-     * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
-     * </p>
-     */
-    def when(f: => Unit) {
-      registerBranch(string, Some("when"), "when", f _)
-    }
-
-    /**
-     * Registers a <code>when</code> clause that is followed by an <em>after word</em>.
-     *
-     * <p>
-     * For example, this method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * val theUser = afterWord("the user")
-     *
-     * "A Stack" when theUser { ... }
-     *           ^
-     * </pre>
-     *
-     * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
-     * </p>
-     */
-    def when(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string, Some("when " + resultOfAfterWordApplication.text), "when", resultOfAfterWordApplication.f)
-    }
-
-    /**
-     * <b><code>that</code> has been deprecated and will be used for a different purpose in a future version of ScalaTest. Please
-     * use <code>which</code> instead. (Warning: this change will likely have a shorter than usual deprecation cycle: less than a year.)</b>
-     */
-    @deprecated("Please use \"which\" instead of \"that\".")
-    def that(f: => Unit) {
-      registerBranch(string + " that", None, "that", f _)
-    }
-    
-    /**
-     * Registers a <code>which</code> clause.
-     *
-     * <p>
-     * For example, this method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "a rerun button" which {
-     *                  ^
-     * </pre>
-     *
-     * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
-     * </p>
-     */
-    def which(f: => Unit) {
-      registerBranch(string + " which", None, "which", f _)
-    }
-
-    /**
-     * <b><code>that</code> has been deprecated and will be used for a different purpose in a future version of ScalaTest. Please
-     * use <code>which</code> instead. (Warning: this change will likely have a shorter than usual deprecation cycle: less than a year.)</b>
-     */
-    @deprecated("Please use \"which\" instead of \"that\".")
-    def that(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string + " that " + resultOfAfterWordApplication.text, None, "that", resultOfAfterWordApplication.f)
-    }
-    
-    /**
-     * Registers a <code>which</code> clause.
-     *
-     * <p>
-     * For example, this method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "a rerun button" which {
-     *                  ^
-     * </pre>
-     *
-     * <p>
-     * For more information and examples of this method's use, see the <a href="WordSpec.html">main documentation</a> for trait <code>fixture.WordSpec</code>.
-     * </p>
-     */
-    def which(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string + " which " + resultOfAfterWordApplication.text, None, "which", resultOfAfterWordApplication.f)
-    }
   }
 
   /**
-   * Class whose instances are <em>after word</em>s, which can be used to reduce text duplication.
-   *
-   * <p>
-   * If you are repeating a word or phrase at the beginning of each string inside
-   * a block, you can "move the word or phrase" out of the block with an after word.
-   * You create an after word by passing the repeated word or phrase to the <code>afterWord</code> method.
-   * Once created, you can place the after word after <code>when</code>, a verb
-   * (<code>should</code>, <code>must</code>, or <code>can</code>), or
-   * <code>which</code>. (You can't place one after <code>in</code> or <code>is</code>, the
-   * words that introduce a test.) Here's an example that has after words used in all three
-   * places:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * import org.scalatest.fixture
-   * import ConfigMapFixture
-   * 
-   * class ScalaTestGUISpec extends fixture.WordSpec with ConfigMapFixture {
-   * 
-   *   def theUser = afterWord("the user")
-   *   def display = afterWord("display")
-   *   def is = afterWord("is")
-   * 
-   *   "The ScalaTest GUI" when theUser {
-   *     "clicks on an event report in the list box" should display {
-   *       "a blue background in the clicked-on row in the list box" in { cm =&gt; }
-   *       "the details for the event in the details area" in { cm =&gt; }
-   *       "a rerun button," which is {
-   *         "enabled if the clicked-on event is rerunnable" in { cm =&gt; }
-   *         "disabled if the clicked-on event is not rerunnable" in { cm =&gt; }
-   *       }
-   *     }
-   *   }
-   * }
-   * </pre>
-   *
-   * <p>
-   * Running the previous <code>fixture.WordSpec</code> in the Scala interpreter would yield:
-   * </p>
-   *
-   * <pre class="stREPL">
-   * scala> (new ScalaTestGUISpec).run()
-   * <span class="stGreen">The ScalaTest GUI (when the user clicks on an event report in the list box) 
-   * - should display a blue background in the clicked-on row in the list box
-   * - should display the details for the event in the details area
-   * - should display a rerun button, which is enabled if the clicked-on event is rerunnable
-   * - should display a rerun button, which is disabled if the clicked-on event is not rerunnable</span>
-   * </pre>
-   */
-  protected final class AfterWord(text: String) {
-
-    /**
-     * Supports the use of <em>after words</em>.
-     *
-     * <p>
-     * This method transforms a block of code into a <code>ResultOfAfterWordApplication</code>, which
-     * is accepted by <code>when</code>, <code>should</code>, <code>must</code>, <code>can</code>, and <code>which</code>
-     * methods.  For more information, see the <a href="../WordSpec.html#AfterWords">main documentation</code></a> for trait <code>org.scalatest.WordSpec</code>.
-     * </p>
-     */
-    def apply(f: => Unit) = new ResultOfAfterWordApplication(text, f _)
-  }
-
-  /**
-   * Creates an <em>after word</em> that an be used to reduce text duplication.
-   *
-   * <p>
-   * If you are repeating a word or phrase at the beginning of each string inside
-   * a block, you can "move the word or phrase" out of the block with an after word.
-   * You create an after word by passing the repeated word or phrase to the <code>afterWord</code> method.
-   * Once created, you can place the after word after <code>when</code>, a verb
-   * (<code>should</code>, <code>must</code>, or <code>can</code>), or
-   * <code>which</code>. (You can't place one after <code>in</code> or <code>is</code>, the
-   * words that introduce a test.) Here's an example that has after words used in all three
-   * places:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * import org.scalatest.fixture
-   * import ConfigMapFixture
-   * 
-   * class ScalaTestGUISpec extends fixture.WordSpec with ConfigMapFixture {
-   * 
-   *   def theUser = afterWord("the user")
-   *   def display = afterWord("display")
-   *   def is = afterWord("is")
-   * 
-   *   "The ScalaTest GUI" when theUser {
-   *     "clicks on an event report in the list box" should display {
-   *       "a blue background in the clicked-on row in the list box" in { cm =&gt; }
-   *       "the details for the event in the details area" in { cm =&gt; }
-   *       "a rerun button," which is {
-   *         "enabled if the clicked-on event is rerunnable" in { cm =&gt; }
-   *         "disabled if the clicked-on event is not rerunnable" in { cm =&gt; }
-   *       }
-   *     }
-   *   }
-   * }
-   * </pre>
-   *
-   * <p>
-   * Running the previous <code>fixture.WordSpec</code> in the Scala interpreter would yield:
-   * </p>
-   *
-   * <pre class="stREPL">
-   * scala> (new ScalaTestGUISpec).run()
-   * <span class="stGreen">The ScalaTest GUI (when the user clicks on an event report in the list box) 
-   * - should display a blue background in the clicked-on row in the list box
-   * - should display the details for the event in the details area
-   * - should display a rerun button, which is enabled if the clicked-on event is rerunnable
-   * - should display a rerun button, which is disabled if the clicked-on event is not rerunnable</span>
-   * </pre>
-   */
-  protected def afterWord(text: String) = new AfterWord(text)
-
-  /**
-   * Implicitly converts <code>String</code>s to <code>WordSpecStringWrapper</code>, which enables
-   * methods <code>when</code>, <code>which</code>, <code>in</code>, <code>is</code>, <code>taggedAs</code>
+   * Implicitly converts <code>String</code>s to <code>FreeSpecStringWrapper</code>, which enables
+   * methods <code>when</code>, <code>that</code>, <code>in</code>, <code>is</code>, <code>taggedAs</code>
    * and <code>ignore</code> to be invoked on <code>String</code>s.
    */
-  protected implicit def convertToWordSpecStringWrapper(s: String) = new WordSpecStringWrapper(s)
+  protected implicit def convertToFreeSpecStringWrapper(s: String) = new FreeSpecStringWrapper(s)
 
   /**
-   * Supports the registration of subjects.
-   *
-   * <p>
-   * For example, this method enables syntax such as the following:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * "A Stack" should { ...
-   *           ^
-   * </pre>
-   *
-   * <p>
-   * This function is passed as an implicit parameter to a <code>should</code> method
-   * provided in <code>ShouldVerb</code>, a <code>must</code> method
-   * provided in <code>MustVerb</code>, and a <code>can</code> method
-   * provided in <code>CanVerb</code>. When invoked, this function registers the
-   * subject and executes the block.
-   * </p>
-   */
-  protected implicit val subjectRegistrationFunction: StringVerbBlockRegistration =
-    new StringVerbBlockRegistration {
-      def apply(left: String, verb: String, f: () => Unit) = registerBranch(left, Some(verb), "subjectRegistrationFunction", f)
-    }
-
-  /**
-   * Supports the registration of subject descriptions with after words.
-   *
-   * <p>
-   * For example, this method enables syntax such as the following:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * def provide = afterWord("provide")
-   *
-   * "The ScalaTest Matchers DSL" can provide { ... }
-   *                              ^
-   * </pre>
-   *
-   * <p>
-   * This function is passed as an implicit parameter to a <code>should</code> method
-   * provided in <code>ShouldVerb</code>, a <code>must</code> method
-   * provided in <code>MustVerb</code>, and a <code>can</code> method
-   * provided in <code>CanVerb</code>. When invoked, this function registers the
-   * subject and executes the block.
-   * </p>
-   */
-  protected implicit val subjectWithAfterWordRegistrationFunction: (String, String, ResultOfAfterWordApplication) => Unit = {
-    (left, verb, resultOfAfterWordApplication) => {
-      val afterWordFunction =
-        () => {
-          registerBranch(resultOfAfterWordApplication.text, None, "subjectWithAfterWordRegistrationFunction", resultOfAfterWordApplication.f)
-        }
-      registerBranch(left, Some(verb), "subjectWithAfterWordRegistrationFunction", afterWordFunction)
-    }
-  }
-
-  /**
-   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>WordSpec</code> belong, and values
-   * the <code>Set</code> of test names that belong to each tag. If this <code>fixture.WordSpec</code> contains no tags, this method returns an empty <code>Map</code>.
+   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>FreeSpec</code> belong, and values
+   * the <code>Set</code> of test names that belong to each tag. If this <code>FreeSpec</code> contains no tags, this method returns an empty <code>Map</code>.
    *
    * <p>
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to
@@ -670,7 +405,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * @param testName the name of one test to execute.
    * @param reporter the <code>Reporter</code> to which results will be reported
    * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param configMap a <code>Map</code> of properties that can be used by this <code>WordSpec</code>'s executing tests.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FreeSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
@@ -689,7 +424,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
 
   /**
    * <p>
-   * Run zero to many of this <code>WordSpec</code>'s tests.
+   * Run zero to many of this <code>FreeSpec</code>'s tests.
    * </p>
    *
    * <p>
@@ -736,12 +471,12 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * </ul>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
-   *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>WordSpec</code>.
+   *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>FreeSpec</code>.
    * @param reporter the <code>Reporter</code> to which results will be reported
    * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
-   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>WordSpec</code>
-   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>WordSpec</code>
-   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>WordSpec</code>'s executing tests.
+   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>FreeSpec</code>
+   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>FreeSpec</code>
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>FreeSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
    *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
@@ -752,7 +487,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   }
 
   /**
-   * An immutable <code>Set</code> of test names. If this <code>fixture.WordSpec</code> contains no tests, this method returns an
+   * An immutable <code>Set</code> of test names. If this <code>fixture.FreeSpec</code> contains no tests, this method returns an
    * empty <code>Set</code>.
    *
    * <p>
@@ -774,7 +509,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   }
 
   /**
-   * Supports shared test registration in <code>fixture.WordSpec</code>s.
+   * Supports shared test registration in <code>fixture.FreeSpec</code>s.
    *
    * <p>
    * This field enables syntax such as the following:
@@ -786,8 +521,8 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * </pre>
    *
    * <p>
-   * For more information and examples of the use of <cod>behave</code>, see the <a href="../WordSpec.html#SharedTests">Shared tests section</a>
-   * in the main documentation for trait <code>org.scalatest.WordSpec</code>.
+   * For more information and examples of the use of <cod>behave</code>, see the <a href="../FreeSpec.html#SharedTests">Shared tests section</a>
+   * in the main documentation for trait <code>FreeSpec</code>.
    * </p>
    */
   protected val behave = new BehaveWord
@@ -795,5 +530,5 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
   /**
    * Suite style name.
    */
-  final override val styleName: String = "org.scalatest.fixture.WordSpec"
+  final override val styleName: String = "org.scalatest.fixture.FreeSpec"
 }
