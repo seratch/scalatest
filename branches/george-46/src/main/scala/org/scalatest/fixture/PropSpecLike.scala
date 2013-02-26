@@ -30,12 +30,12 @@ import org.scalatest.Suite.checkRunTestParamsForNull
  * a fixture object into its tests.
  * 
  * <p>
- * <a href="PropSpec.html"><code>fixture.PropSpec</code></a> is a class, not a trait,
- * to minimize compile time given there is a slight compiler overhead to
- * mixing in traits compared to extending classes. If you need to mix the
- * behavior of <code>fixture.PropSpec</code> into some other class, you can use this
- * trait instead, because class <code>fixture.PropSpec</code> does nothing more than
- * extend this trait.
+ * <a href="PropSpec.html"><code>fixture.PropSpec</code></a> is a class,
+ * not a trait, to minimize compile time given there is a slight compiler
+ * overhead to mixing in traits compared to extending classes. If you need
+ * to mix the behavior of <code>fixture.PropSpec</code> into some other
+ * class, you can use this trait instead, because class <code>fixture.PropSpec
+ * </code> does nothing more than extend this trait.
  * </p>
  *
  * <p>

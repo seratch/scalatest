@@ -40,7 +40,7 @@ import org.scalatest.Suite.checkRunTestParamsForNull
  * <p>
  * Class <code>fixture.PropSpec</code> behaves similarly to class <code>org.scalatest.PropSpec</code>, except that tests may have a
  * fixture parameter. The type of the
- * fixture parameter is defined by the abstract <code>FixtureParam</code> type, which is declared as a member of this class.
+ * fixture parameter is defined by the abstract <code>FixtureParam</code> type, which is a member of this class.
  * This class also has an abstract <code>withFixture</code> method. This <code>withFixture</code> method
  * takes a <code>OneArgTest</code>, which is a nested trait defined as a member of this class.
  * <code>OneArgTest</code> has an <code>apply</code> method that takes a <code>FixtureParam</code>.
