@@ -26,22 +26,22 @@ import org.scalatest.events._
 import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 
 /**
- * Implementation trait for class <code>FunSpec</code>, which is
+ * Implementation trait for class <code>fixture.FlatSpec</code>, which is
  * a sister class to <code>org.scalatest.FlatSpec</code>, which can pass a
  * fixture object into its tests.
  * 
  * <p>
- * <a href="FunSpec.html"><code>FunSpec</code></a> is a class, not a trait,
- * to minimize compile time given there is a slight compiler overhead to
+ * <a href="FlatSpec.html"><code>fixture.FlatSpec</code></a> is a class, not a
+ * trait, to minimize compile time given there is a slight compiler overhead to
  * mixing in traits compared to extending classes. If you need to mix the
- * behavior of <code>FunSpec</code> into some other class, you can use this
- * trait instead, because class <code>FunSpec</code> does nothing more than
- * extend this trait.
+ * behavior of <code>fixture.FlatSpec</code> into some other class, you can use
+ * this trait instead, because class <code>fixture.FlatSpec</code> does nothing
+ * more than extend this trait.
  * </p>
  *
  * <p>
- * See the documentation of the class for a <a href="FunSpec.html">detailed
- * overview of <code>FunSpec</code></a>.
+ * See the documentation of the class for a <a href="FlatSpec.html">detailed
+ * overview of <code>fixture.FlatSpec</code></a>.
  * </p>
  *
  * @author Bill Venners
