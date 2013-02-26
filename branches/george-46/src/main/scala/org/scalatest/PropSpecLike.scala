@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2011 Artima, Inc.
+ * Copyright 2001-2008 Artima, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,65 +24,67 @@ import Suite.anErrorThatShouldCauseAnAbort
 import Suite.checkRunTestParamsForNull
 
 /**
- * Implementation trait for class <code>FunSuite</code>, which represents
- * a suite of tests in which each test is represented as a function value.
+ * Implementation trait for class <code>PropSpec</code>, which 
+ * facilitates a &#8220;behavior-driven&#8221; style of development (BDD),
+ * in which tests are combined with text that specifies the behavior the tests
+ * verify.
  * 
  * <p>
- * <a href="FunSuite.html"><code>FunSuite</code></a> is a class, not a trait,
+ * <a href="PropSpec.html"><code>PropSpec</code></a> is a class, not a trait,
  * to minimize compile time given there is a slight compiler overhead to
  * mixing in traits compared to extending classes. If you need to mix the
- * behavior of <code>FunSuite</code> into some other class, you can use this
- * trait instead, because class <code>FunSuite</code> does nothing more than
+ * behavior of <code>PropSpec</code> into some other class, you can use this
+ * trait instead, because class <code>PropSpec</code> does nothing more than
  * extend this trait.
  * </p>
  *
  * <p>
- * See the documentation of the class for a <a href="FunSuite.html">detailed
- * overview of <code>FunSuite</code></a>.
+ * See the documentation of the class for a <a href="PropSpec.html">detailed
+ * overview of <code>PropSpec</code></a>.
  * </p>
  *
  * @author Bill Venners
  */
-trait FunSuiteLike extends Suite { thisSuite =>
+trait PropSpecLike extends Suite { thisSuite =>
 
-  private final val engine = new Engine("concurrentFunSuiteMod", "FunSuite")
+  private final val engine = new Engine("concurrentPropSpecMod", "PropSpec")
   import engine._
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
    * <code>apply</code> method to the current reporter. If invoked in a constructor, it
    * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>FunSuite</code> is being executed, such as from inside a test function, it will forward the information to
+   * <code>PropSpec</code> is being executed, such as from inside a test function, it will forward the information to
    * the current reporter immediately. If invoked at any other time, it will
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
 
   /**
-   * Register a test with the specified name, optional tags, and function value that takes no arguments.
+   * Register a property-based test with the specified name, optional tags, and function value that takes no arguments.
    * This method will register the test for later execution via an invocation of one of the <code>run</code>
    * methods. The passed test name must not have been registered previously on
-   * this <code>FunSuite</code> instance.
+   * this <code>PropSpec</code> instance.
    *
-   * @param testName the name of the test
-   * @param testTags the optional list of tags for this test
-   * @param testFun the test function
+   * @param testName the name of the property
+   * @param testTags the optional list of tags for this property
+   * @param testFun the property function
    * @throws TestRegistrationClosedException if invoked after <code>run</code> has been invoked on this suite
    * @throws DuplicateTestNameException if a test with the same name has been registered previously
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    * @throws NullPointerException if <code>testName</code> or any passed test tag is <code>null</code>
    */
-  protected def test(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(testName, testFun _, "testCannotAppearInsideAnotherTest", "FunSuiteLike.scala", "test", 2, None, None, testTags: _*)
+  protected def property(testName: String, testTags: Tag*)(testFun: => Unit) {
+    registerTest(testName, testFun _, "propertyCannotAppearInsideAnotherProperty", "PropSpecLike.scala", "property", 2, None, None, testTags: _*)
   }
 
   /**
-   * Register a test to ignore, which has the specified name, optional tags, and function value that takes no arguments.
+   * Register a property-based test to ignore, which has the specified name, optional tags, and function value that takes no arguments.
    * This method will register the test for later ignoring via an invocation of one of the <code>run</code>
    * methods. This method exists to make it easy to ignore an existing test by changing the call to <code>test</code>
    * to <code>ignore</code> without deleting or commenting out the actual test code. The test will not be run, but a
    * report will be sent that indicates the test was ignored. The passed test name must not have been registered previously on
-   * this <code>FunSuite</code> instance.
+   * this <code>PropSpec</code> instance.
    *
    * @param testName the name of the test
    * @param testTags the optional list of tags for this test
@@ -92,11 +94,11 @@ trait FunSuiteLike extends Suite { thisSuite =>
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    */
   protected def ignore(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testName, testFun _, "ignoreCannotAppearInsideATest", "FunSuiteLike.scala", "ignore", 1, testTags: _*)
+    registerIgnoredTest(testName, testFun _, "ignoreCannotAppearInsideAProperty", "PropSpecLike.scala", "ignore", 1, testTags: _*)
   }
 
   /**
-  * An immutable <code>Set</code> of test names. If this <code>FunSuite</code> contains no tests, this method returns an empty <code>Set</code>.
+  * An immutable <code>Set</code> of test names. If this <code>PropSpec</code> contains no tests, this method returns an empty <code>Set</code>.
   *
   * <p>
   * This trait's implementation of this method will return a set that contains the names of all registered tests. The set's iterator will
@@ -115,7 +117,7 @@ trait FunSuiteLike extends Suite { thisSuite =>
    * @param reporter the <code>Reporter</code> to which results will be reported
    * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
    * @param configMap a <code>Map</code> of properties that can be used by the executing <code>Suite</code> of tests.
-   * @throws IllegalArgumentException if <code>testName</code> is defined but a test with that name does not exist on this <code>FunSuite</code>
+   * @throws IllegalArgumentException if <code>testName</code> is defined but a test with that name does not exist on this <code>PropSpec</code>
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
@@ -136,8 +138,8 @@ trait FunSuiteLike extends Suite { thisSuite =>
   }
 
   /**
-   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>FunSuite</code> belong, and values
-   * the <code>Set</code> of test names that belong to each tag. If this <code>FunSuite</code> contains no tags, this method returns an empty <code>Map</code>.
+   * A <code>Map</code> whose keys are <code>String</code> tag names to which tests in this <code>PropSpec</code> belong, and values
+   * the <code>Set</code> of test names that belong to each tag. If this <code>PropSpec</code> contains no tags, this method returns an empty <code>Map</code>.
    *
    * <p>
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to 
@@ -147,7 +149,7 @@ trait FunSuiteLike extends Suite { thisSuite =>
   override def tags: Map[String, Set[String]] = atomic.get.tagsMap
 
   /**
-   * Run zero to many of this <code>FunSuite</code>'s tests.
+   * Run zero to many of this <code>PropSpec</code>'s tests.
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
@@ -178,11 +180,11 @@ trait FunSuiteLike extends Suite { thisSuite =>
    * Registers shared tests.
    *
    * <p>
-   * This method enables the following syntax for shared tests in a <code>FunSuite</code>:
+   * This method enables the following syntax for shared tests in a <code>PropSpec</code>:
    * </p>
    *
    * <pre class="stHighlight">
-   * testsFor(nonEmptyStack(lastValuePushed))
+   * propertiesFor(nonEmptyStack(lastValuePushed))
    * </pre>
    *
    * <p>
@@ -193,10 +195,10 @@ trait FunSuiteLike extends Suite { thisSuite =>
    * <a href="#SharedTests">Shared tests section</a> in the main documentation for this trait.
    * </p>
    */
-  protected def testsFor(unit: Unit) {}
+  protected def propertiesFor(unit: Unit) {}
   
   /**
    * Suite style name.
    */
-  final override val styleName: String = "org.scalatest.FunSuite"
+  final override val styleName: String = "org.scalatest.PropSpec"
 }
