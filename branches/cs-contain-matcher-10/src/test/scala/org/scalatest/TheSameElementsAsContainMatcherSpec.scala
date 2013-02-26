@@ -16,9 +16,15 @@
 package org.scalatest
 
 import collection.mutable.LinkedHashMap
+import org.scalautils.Equality
+import org.scalautils.Explicitly
 
-class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with SharedHelpers {
+class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with SharedHelpers with Explicitly {
 
+  class NotEquality extends Equality[Int] {
+    def areEqual(left: Int, right: Any): Boolean = left != right
+  }
+  
   object `theSameElementsAs ` {
     
     def checkStackDepth(e: exceptions.StackDepthException, left: Any, right: Any, lineNumber: Int) {
@@ -36,6 +42,10 @@ class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with Shared
       
       Map(1 -> "one", 2 -> "two", 3 -> "three") should contain theSameElementsAs Map(1 -> "one", 2 -> "two", 3 -> "three")
       javaMap(1 -> "one", 2 -> "two", 3 -> "three") should contain theSameElementsAs Map(1 -> "one", 2 -> "two", 3 -> "three")
+      
+      implicit val equality = new NotEquality
+      List(1, 2, 3) should contain theSameElementsAs List(7, 8, 9)
+      (List(1, 2, 3) should contain theSameElementsAs List(7, 8, 9)) (equality)
     }
     
     val matcherRight = List(1, 2, 3)
