@@ -28,7 +28,7 @@ import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 
 /**
  * Implementation trait for class <code>fixture.FreeSpec</code>, which 
- * is a sister class to <code>org.scalatest.FreeSpec</code>, which
+ * is a sister class to <code>org.scalatest.FreeSpec</code> that
  * can pass a fixture object into its tests.
  * 
  * <p>
