@@ -29,7 +29,7 @@ import org.scalatest.exceptions.TestRegistrationClosedException
 
 /**
  * Implementation trait for class <code>fixture.FunSpec</code>, which 
- * is a sister class to <code>org.scalatest.FunSpec</code>, which can
+ * is a sister class to <code>org.scalatest.FunSpec</code> that can
  * pass a fixture object into its tests.
  * 
  * <p>

@@ -26,7 +26,7 @@ import org.scalatest.Suite.checkRunTestParamsForNull
 
 /**
  * Implementation trait for class <code>fixture.PropSpec</code>, which 
- * is a sister class to <code>org.scalatest.PropSpec</code>, which can pass
+ * is a sister class to <code>org.scalatest.PropSpec</code> that can pass
  * a fixture object into its tests.
  * 
  * <p>

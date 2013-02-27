@@ -28,7 +28,7 @@ import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 
 /**
  * Implementation trait for class <code>fixture.WordSpec</code>, which 
- * is a sister class to <code>org.scalatest.WordSpec</code>, which
+ * is a sister class to <code>org.scalatest.WordSpec</code> that
  * can pass a fixture object into its tests.
  * 
  * <p>
