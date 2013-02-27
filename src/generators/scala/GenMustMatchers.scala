@@ -22,6 +22,13 @@ import scala.io.Codec // for 2.8
 object Helper {
 
   implicit val codec = Codec.default // for 2.8
+
+  val deprecationLine =
+    "@deprecated(\"MustMatchers has been deprecated. Please use "  +
+    "ShouldMatchers instead. Sorry for this disruption, but we "   +
+    "want to reuse the \\\"must\\\" token in a future version of " +
+    "ScalaTest as a kind of matcher that will return a result "    +
+    "instead of throwing an exception.\")\n"
   
   def translateShouldToMust(shouldLine: String): String = {
     val temp1 = shouldLine.replaceAll("<code>must</code>", "<code>I_WAS_must_ORIGINALLY</code>")
@@ -46,6 +53,8 @@ object Helper {
       val shouldLines = Source.fromFile("src/main/scala/org/scalatest/" + srcFileName).getLines().toList // for 2.8
       for (shouldLine <- shouldLines) {
         val mustLine = translateShouldToMust(shouldLine)
+        if (mustLine.startsWith("trait MustMatchers extends Matchers"))
+          writer.write(deprecationLine)
         writer.write(mustLine)
         writer.newLine() // add for 2.8
       }
