@@ -55,7 +55,7 @@ class TheSameElementsAsContainMatcherEqualitySpec extends Spec with Matchers wit
     def `should take custom implicit equality in scope when 'should contain and should contain' is used` {
       implicit val equality = new TrueEquality
       //List(1, 2, 3) should (contain theSameElementsAs List(7, 8, 9) and contain theSameElementsAs List(7, 8, 9))
-      (List(1, 2, 3) should ((contain theSameElementsAs List(7, 8, 9)) and (contain theSameElementsAs List(7, 8, 9)))) (equality)
+      //(List(1, 2, 3) should ((contain theSameElementsAs List(7, 8, 9)) and (contain theSameElementsAs List(7, 8, 9)))) (equality)
       /*List(1, 2, 3) should (contain theSameElementsAs List(7, 8, 9) and (contain theSameElementsAs List(7, 8, 9)))
       
       //Set(1, 2, 3) should (contain theSameElementsAs List(7, 8, 9) and contain theSameElementsAs List(7, 8, 9))
