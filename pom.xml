@@ -35,7 +35,7 @@
 
   <scm>
     <url>http://code.google.com/p/scalatest/source/browse/</url>
-    <connection>scm:svn:https://scalatest.googlecode.com/svn/branches/maven-scalatest-plugin/</connection>
+    <connection>scm:svn:https://scalatest.googlecode.com/svn/tags/scalatest-maven-plugin-1.0-M4-SNAP1</connection>
     <developerConnection>scm:svn:https://scalatest.googlecode.com/svn/branches/maven-scalatest-plugin/</developerConnection>
   </scm>
 
