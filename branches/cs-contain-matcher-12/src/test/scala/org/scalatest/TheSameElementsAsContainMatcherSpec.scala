@@ -40,9 +40,9 @@ class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with Shared
     }
     
     val matcherRight = List(1, 2, 3)
-    val matcher = new TheSameElementsAsContainMatcher(matcherRight)
+    val matcher = new TheSameElementsAsContainMatcher(matcherRight, defaultEquality)
     val mapMatcherRight = Map(1 -> "one", 2 -> "two", 3 -> "three")
-    val mapMatcher = new TheSameElementsAsContainMatcher(mapMatcherRight)
+    val mapMatcher = new TheSameElementsAsContainMatcher(mapMatcherRight, defaultEquality)
     
     def `should work with ContainMatcher directly` {
       
@@ -473,9 +473,9 @@ class TheSameElementsAsContainMatcherSpec extends Spec with Matchers with Shared
     }
     
     val matcherRight = List(1, 2, 3)
-    val matcher = new TheSameElementsAsContainMatcher(matcherRight)
+    val matcher = new TheSameElementsAsContainMatcher(matcherRight, defaultEquality)
     val mapMatcherRight = Map(1 -> "one", 2 -> "two", 3 -> "three")
-    val mapMatcher = new TheSameElementsAsContainMatcher(mapMatcherRight)
+    val mapMatcher = new TheSameElementsAsContainMatcher(mapMatcherRight, defaultEquality)
     
     def `should work with ContainMatcher directly` {
       
