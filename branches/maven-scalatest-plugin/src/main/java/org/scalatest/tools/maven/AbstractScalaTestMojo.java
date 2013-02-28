@@ -79,6 +79,12 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     String suites;
 
     /**
+     * Comma separated list of tests to be executed
+     * @parameter expression="${tests}"
+     */
+    String tests;
+
+    /**
      * Comma separated list of tags to include
      * @parameter expression="${tagsToInclude}"
      */
@@ -373,6 +379,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
             addAll(tagsToExclude());
             addAll(parallel());
             addAll(suites());
+            addAll(tests());
             addAll(membersOnlySuites());
             addAll(wildcardSuites());
             addAll(testNGConfigFiles());
@@ -389,7 +396,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     }
 
     private List<String> runpath() {
-        return compoundArg("-p",
+        return compoundArg("-R",
                 outputDirectory.getAbsolutePath(),
                 testOutputDirectory.getAbsolutePath(),
                 runpath);
@@ -409,6 +416,10 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
 
     private List<String> suites() {
         return suiteArg("-s", suites);
+    }
+
+    private List<String> tests() {
+        return suiteArg("-z", tests);
     }
 
     private List<String> membersOnlySuites() {

@@ -45,7 +45,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   def testDefault {
     val config = configure(_ => ())
     config should contain("-o")
-    config should containCompoundArgs("-p", outputDirectory, testOutputDirectory)
+    config should containCompoundArgs("-R", outputDirectory, testOutputDirectory)
     config should have length (3)
   }
 
@@ -56,7 +56,7 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testRunpath {
-    configure(_.runpath = comma("http://foo.com/my.jar", "/some/where")) should containCompoundArgs("-p", outputDirectory, testOutputDirectory, "http://foo.com/my.jar", "/some/where")
+    configure(_.runpath = comma("http://foo.com/my.jar", "/some/where")) should containCompoundArgs("-R", outputDirectory, testOutputDirectory, "http://foo.com/my.jar", "/some/where")
   }
 
   def testFilereporters {
@@ -65,10 +65,19 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
     config should containSlice("-fYZT", new File(reportsDirectory, "some.txt").getAbsolutePath)
   }
 
+  def testHtmlreporters {
+    val config = configure(_.htmlreporters =
+      comma("target/htmldir", "target/myhtmldir src/resources/my.css"))
+
+    config should containSlice("-h", "target/htmldir")
+    config should containSlice("-h", "target/myhtmldir",
+                               "-Y", "src/resources/my.css")
+  }
+
   def testReporters {
     val config = configure(_.reporters = comma("YZT org.my.reporter", "org.your.reporter"))
-    config should containSlice("-rYZT", "org.my.reporter")
-    config should containSlice("-r", "org.your.reporter")
+    config should containSlice("-CYZT", "org.my.reporter")
+    config should containSlice("-C", "org.your.reporter")
   }
 
   def testJUnitXmlReporters {
@@ -100,6 +109,18 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
 
   def testSuites {
     configure(_.suites = comma("a", "b", "c")) should containSuiteArgs("-s", "a", "b", "c")
+  }
+
+  def testTests {
+    configure(_.tests = comma("a", "b", "c")) should containSuiteArgs("-z", "a", "b", "c")
+  }
+
+  //
+  // Verify that a comma can be escaped with a backslash in order to
+  // support a test name that contains a comma.
+  //
+  def testTestsWithCommas {
+    configure(_.tests = comma("a\\, bc", "b", "c")) should containSuiteArgs("-z", "a, bc", "b", "c")
   }
 
   def testMembers {

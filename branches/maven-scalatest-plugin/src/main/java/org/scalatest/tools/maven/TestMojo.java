@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.Collections;
 import static java.util.Collections.singletonList;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Provides a bridge between Maven and the command-line form of ScalaTest's Runner.
@@ -49,6 +50,21 @@ public class TestMojo extends AbstractScalaTestMojo {
      * @parameter expression="${filereports}"
      */
     String filereports;
+
+    /**
+     * Comma separated list of htmlreporters.  An htmlreporter
+     * consists of a mandatory directory and an optional css file
+     * name, separated by whitespace. E.g:
+     * <code>
+     *   &lt;htmlreporters&gt;
+     *     target/htmldir,
+     *     target/myhtmldir src/my.css
+     *   &lt;/htmlreporters&gt;
+     * </code>
+     * For more info on configuring reporters, see the scalatest documentation.
+     * @parameter expression="${htmlreporters}"
+     */
+    String htmlreporters;
 
     /**
      * Comma separated list of reporters. A reporter consist of an optional configuration
@@ -99,6 +115,7 @@ public class TestMojo extends AbstractScalaTestMojo {
                 stdout(),
                 stderr(),
                 filereports(),
+                htmlreporters(),
                 reporters(),
                 junitxml()
         );
@@ -118,8 +135,27 @@ public class TestMojo extends AbstractScalaTestMojo {
         return reporterArg("-f", filereports, fileRelativeTo(reportsDirectory));
     }
 
+    private List<String> htmlreporters() {
+        List<String> r = new ArrayList<String>();
+
+        for (String arg : splitOnComma(htmlreporters)) {
+            String[] split = arg.split("\\s+");
+
+            if (split.length > 0) {
+                r.add("-h");
+                r.add(split[0]);
+
+                if (split.length > 1) {
+                    r.add("-Y");
+                    r.add(split[1]);
+                }
+            }
+        }
+        return r;
+    }
+
     private List<String> reporters() {
-        return reporterArg("-r", reporters, passThrough);
+        return reporterArg("-C", reporters, passThrough);
     }
 
     private List<String> junitxml(){

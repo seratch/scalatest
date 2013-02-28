@@ -9,7 +9,7 @@
   <description>Runs the plugin against a basic Lift application.</description>
   
   <properties>
-    <lift.version>2.2</lift.version>
+    <lift.version>2.4</lift.version>
   </properties>
 
   <parent>
@@ -48,7 +48,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest</artifactId>
+      <artifactId>scalatest_${scala.version}</artifactId>
       <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>
