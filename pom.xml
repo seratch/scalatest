@@ -11,13 +11,13 @@
   <groupId>org.scalatest</groupId>
   <artifactId>scalatest-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
-  <version>1.0-M3-SNAPSHOT</version>
+  <version>1.0-M4-SNAP1</version>
   <name>ScalaTest Maven Plugin</name>
   <description>Integrates ScalaTest into Maven</description>
 
   <properties>
-    <scala.version>2.8.1</scala.version>
-    <scalatest.version>1.2</scalatest.version>
+    <scala.version>2.9.0</scala.version>
+    <scalatest.version>2.0.M5</scalatest.version>
     <maven.scala.plugin.version>2.14.1</maven.scala.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -79,7 +79,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest</artifactId>
+      <artifactId>scalatest_${scala.version}</artifactId>
       <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>

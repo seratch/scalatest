@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest</artifactId>
+      <artifactId>scalatest_${scala.version}</artifactId>
       <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>
@@ -80,7 +80,7 @@
               <goal>export</goal>
             </goals>
             <configuration>
-              <connectionUrl>scm:svn:http://scalatest.googlecode.com/svn/tags/release-${scalatest.version}/src/examples</connectionUrl>
+              <connectionUrl>scm:svn:http://scalatest.googlecode.com/svn/tags/release-2.0.M5-for-scala-2.9/src/examples</connectionUrl>
               <exportDirectory>${project.build.directory}/generated/src/test</exportDirectory>
               <excludes>scala/org/scalatestexamples/fixture/MultiFixtureFunSuite.scala</excludes>
             </configuration>
