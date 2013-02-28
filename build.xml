@@ -204,9 +204,9 @@
     <!--
       - Processes *.scala.preprocess source files.  Runs them through
       - support/CodeFilter.scala to create corresponding .scala
-      - file in target/preprocessed directory.  As of this writing,
-      - CodeFilter just processes blocks delimited by #ifndef SCALA_2_9
-      - and #endif, filtering them out or not based on scala version.
+      - file in target/preprocessed directory.  Here CodeFilter 
+      - removes blocks delimited by #ifndef SCALA_2_9 and #endif if
+      - scala version is 2.9.x.
       -->
     <target name="preprocess" depends="buildsupport">
       <apply executable="java" dest="${build.preprocessed.src}">
