@@ -43,14 +43,14 @@ object Helper {
     val temp7 = temp6.replaceAll("I_MUST_STAY_SHOULD", "should")
     temp7.replaceAll("I_WAS_Must_ORIGINALLY", "Should")
   }
-  def generateFile(srcFileName: String, targetFileName: String) {
+  def generateFile(topDir: String, srcFileName: String, targetFileName: String) {
     val matchersDir = new File("target/generated/src/main/scala/org/scalatest/matchers")
     matchersDir.mkdirs()
     val junitDir = new File("target/generated/src/main/scala/org/scalatest/junit")
     junitDir.mkdirs()
     val writer = new BufferedWriter(new FileWriter("target/generated/src/main/scala/org/scalatest/" + targetFileName))
     try {
-      val shouldLines = Source.fromFile("src/main/scala/org/scalatest/" + srcFileName).getLines().toList // for 2.8
+      val shouldLines = Source.fromFile(topDir + "/org/scalatest/" + srcFileName).getLines().toList // for 2.8
       for (shouldLine <- shouldLines) {
         val mustLine = translateShouldToMust(shouldLine)
         if (mustLine.startsWith("trait MustMatchers extends Matchers"))
@@ -68,8 +68,8 @@ object Helper {
 import Helper._
 
 object GenMustMatchers extends App {
-  generateFile("matchers/ShouldMatchers.scala", "matchers/MustMatchers.scala")
-  generateFile("junit/ShouldMatchersForJUnit.scala", "junit/MustMatchersForJUnit.scala")
+  generateFile("target/preprocessed", "matchers/ShouldMatchers.scala", "matchers/MustMatchers.scala")
+  generateFile("src/main/scala", "junit/ShouldMatchersForJUnit.scala", "junit/MustMatchersForJUnit.scala")
 }
 
 object GenMustMatchersTests extends App {

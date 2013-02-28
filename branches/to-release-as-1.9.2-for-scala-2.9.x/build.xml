@@ -11,6 +11,9 @@
 	<property name="for.scala" value="2.9.0" />
 	<property name="release" value="1.9.2" />
 
+    <condition property="is.2.9" value="SCALA_2_9">
+      <contains string="${scala.version}" substring="2.9"/>
+    </condition>
     <property name="scalasrc" value="src/main/scala" />
     <property name="javasrc" value="src/main/java" />
     <property name="scalasrc.test" value="src/test/scala" />
@@ -33,6 +36,9 @@
     <property name="build.examples" value="${build}/examples" />
     <property name="build.generators" value="${build}/generators" />
     <property name="build.coverage" value="${build}/coverage" />
+    <property name="build.preprocessed.src" value="${build}/preprocessed"/>
+    <property name="support" value="support"/>
+    <property name="support.classes" value="${build}/support"/>
     <property name="dist" value="${build}/dist" />
     <property name="instrumented" value="${build}/instrumented" />
     <property name="doc" value="${build}/doc" />
@@ -43,7 +49,7 @@
     <property name="demodoc" value="${demo}/example/javadoc" />
     <property name="example" value="${demo}/example" />
 
-    <property name="jvmargs" value="-Xmx2500M -Xss10M"/>
+    <property name="jvmargs" value="-Xmx4000M -Xss10M"/>
 
   <!--
   <property name="build.compiler" value="jikes"/>
@@ -123,6 +129,7 @@
         <path id="scaladoc.source.path">
             <pathelement location="${scalasrc}" />
             <pathelement location="${build.generated.src}" />
+            <pathelement location="${build.preprocessed.src}" />
         </path>
 
         <path id="cobertura.class.path">
@@ -179,16 +186,45 @@
         <java classname="GenDeprecatedShouldMatchersTests" classpathref="run.generators.class.path" fork="false" />
     </target>
 
-    <target name="gencode" depends="init, compile-codegenerators">
+    <target name="gencode" depends="init, compile-codegenerators, preprocess">
         <java classname="GenMustMatchers" classpathref="run.generators.class.path" fork="false" />
         <java classname="GenMustMatchersTests" classpathref="run.generators.class.path" fork="false" />
     	<java classname="GenTheyWord" classpathref="run.generators.class.path" fork="false" />
     </target>
 
+    <!--
+      - Compiles .scala files in support directory.
+      -->
+    <target name="buildsupport" depends="init">
+      <mkdir dir="${support.classes}"/>
+      <scalac srcdir="${support}" destdir="${support.classes}"
+              classpathref="lib.path" />
+    </target>
+
+    <!--
+      - Processes *.scala.preprocess source files.  Runs them through
+      - support/CodeFilter.scala to create corresponding .scala
+      - file in target/preprocessed directory.  As of this writing,
+      - CodeFilter just processes blocks delimited by #ifndef SCALA_2_9
+      - and #endif, filtering them out or not based on scala version.
+      -->
+    <target name="preprocess" depends="buildsupport">
+      <apply executable="java" dest="${build.preprocessed.src}">
+        <arg value="-cp" />
+        <arg value="${org.scala-lang:scala-library:jar}:${support.classes}" />
+        <arg value="CodeFilter" />
+        <arg value="-D${is.2.9}" />
+        <srcfile />
+        <targetfile />
+        <fileset dir="${scalasrc}" includes="**/*.scala.preprocess" />
+        <mapper from="*.scala.preprocess" to="*.scala" type="glob" />
+      </apply>
+    </target>
+
     <target name="compile" depends="compile-main, compile-tests, compile-examples"/>
 
     <!--<target name="compile-main" depends="init">-->
-    <target name="compile-main" depends="init, gentables, gengen">
+    <target name="compile-main" depends="init, gentables, gengen, preprocess">
 
         <!-- If ever want to see the typer output, add -Xprint:typer to the addparams like this: -->
         <!--<scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" classpathref="build.class.path" addparams="-no-specialization -Xprint:typer" fork="true" jvmargs="${jvmargs}" />-->
@@ -196,7 +232,7 @@
         <!-- Compile the Scala code from ${scalasrc} into ${classes}. Scalac will parse the referenced .java files. -->
         <!-- Compile the Scala code from ${build.generated.src} into ${classes}. Scalac will parse any referenced .java files. -->
         <!-- turn off deprecation warnings <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="yes" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" /> -->
-        <scalac srcdir="${scalasrc}:${build.generated.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="no" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
+        <scalac srcdir="${scalasrc}:${build.generated.src}:${build.preprocessed.src}:${javasrc}" destdir="${classes}" target="jvm-1.5" deprecation="no" classpathref="build.class.path" addparams="-no-specialization" fork="true" jvmargs="${jvmargs}" />
 
     	<!-- Compile the Java code from ${javasrc} into ${classes} -->
     	<javac srcdir="${javasrc}" destdir="${classes}" compiler="javac1.5" memoryMaximumSize="1500M" fork="true" classpathref="build.class.path" debug="yes">
