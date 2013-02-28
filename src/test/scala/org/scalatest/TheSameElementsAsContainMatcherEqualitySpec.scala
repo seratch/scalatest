@@ -241,14 +241,14 @@ class TheSameElementsAsContainMatcherEqualitySpec extends Spec with Matchers wit
       
     def `should take passed in custom explicit equality when 'should not contain' is used` {
       implicit val equality = new FalseEquality
-      (List(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3))) (equality)
-      (Set(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3))) (equality)
-      (Array(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3))) (equality)
-      (javaList(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3))) (equality)
+      List(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3)) (equality)
+      Set(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3)) (equality)
+      Array(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3)) (equality)
+      javaList(1, 2, 3) should not contain theSameElementsAs (List(1, 2, 3)) (equality)
         
       implicit val mapEquality = new MapFalseEquality
-      (Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain theSameElementsAs (Map(1 -> "one", 2 -> "two", 3 -> "three"))) (mapEquality)
-      (javaMap(1 -> "one", 2 -> "two", 3 -> "three") should not contain theSameElementsAs (Map(1 -> "one", 2 -> "two", 3 -> "three"))) (mapEquality)
+      Map(1 -> "one", 2 -> "two", 3 -> "three") should not contain theSameElementsAs (Map(1 -> "one", 2 -> "two", 3 -> "three")) (mapEquality)
+      javaMap(1 -> "one", 2 -> "two", 3 -> "three") should not contain theSameElementsAs (Map(1 -> "one", 2 -> "two", 3 -> "three")) (mapEquality)
     }
       
     def `should throw TestFailedException with correct stack depth and message when 'should contain custom matcher' failed with custom explicit equality` {
@@ -305,28 +305,28 @@ class TheSameElementsAsContainMatcherEqualitySpec extends Spec with Matchers wit
       val left1 = List(1, 2, 3)
       val right1 = List(7, 8, 9)
       val e1 = intercept[exceptions.TestFailedException] {
-        (left1 should not contain theSameElementsAs (right1)) (equality)
+        left1 should not contain theSameElementsAs (right1) (equality)
       }
       checkShouldNotContainStackDepth(e1, left1, right1, thisLineNumber - 2)
         
       val left2 = Set(1, 2, 3)
       val right2 = List(7, 8, 9)
       val e2 = intercept[exceptions.TestFailedException] {
-        (left2 should not contain theSameElementsAs (right2)) (equality)
+        left2 should not contain theSameElementsAs (right2) (equality)
       }
       checkShouldNotContainStackDepth(e2, left2, right2, thisLineNumber - 2)
         
       val left3 = Array(1, 2, 3)
       val right3 = List(7, 8, 9)
       val e3 = intercept[exceptions.TestFailedException] {
-        (left3 should not contain theSameElementsAs (right3)) (equality)
+        left3 should not contain theSameElementsAs (right3) (equality)
       }
       checkShouldNotContainStackDepth(e3, left3, right3, thisLineNumber - 2)
         
       val left4 = javaList(1, 2, 3)
       val right4 = List(7, 8, 9)
       val e4 = intercept[exceptions.TestFailedException] {
-        (left4 should not contain theSameElementsAs (right4)) (equality)
+        left4 should not contain theSameElementsAs (right4) (equality)
       }
       checkShouldNotContainStackDepth(e4, left4, right4, thisLineNumber - 2)
         
@@ -335,14 +335,14 @@ class TheSameElementsAsContainMatcherEqualitySpec extends Spec with Matchers wit
       val left5 = Map(1 -> "one", 2 -> "two", 3 -> "three")
       val right5 = Map(7 -> "seven", 8 -> "eight", 9 -> "nine")
       val e5 = intercept[exceptions.TestFailedException] {
-        (left5 should not contain theSameElementsAs (right5)) (mapEquality)
+        left5 should not contain theSameElementsAs (right5) (mapEquality)
       }
       checkShouldNotContainStackDepth(e5, left5, right5, thisLineNumber - 2)
         
       val left6 = Map(1 -> "one", 2 -> "two", 3 -> "three")
       val right6 = Map(7 -> "seven", 8 -> "eight", 9 -> "nine")
       val e6 = intercept[exceptions.TestFailedException] {
-        (left6 should not contain theSameElementsAs (right6)) (mapEquality)
+        left6 should not contain theSameElementsAs (right6) (mapEquality)
       }
       checkShouldNotContainStackDepth(e6, left6, right6, thisLineNumber - 2)
     }
