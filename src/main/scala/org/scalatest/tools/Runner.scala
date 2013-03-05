@@ -598,7 +598,7 @@ object Runner {
   private val RUNNER_JFRAME_START_X: Int = 150
   private val RUNNER_JFRAME_START_Y: Int = 100
   
-  private val SELECTED_TAG = "org.scalatest.Selected"
+  private[scalatest] val SELECTED_TAG = "org.scalatest.Selected"
   
   @volatile private[scalatest] var spanScaleFactor: Double = 1.0
 
