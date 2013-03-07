@@ -4856,6 +4856,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
      *                       ^
      * </pre>
      */
+    @deprecated("Please use shouldEqual, should be, or should equal, in " +
+                "place of should be ===.")
     def ===(right: Any): Matcher[Any] =
       new Matcher[Any] {
         def apply(left: Any): MatchResult = {
@@ -7067,6 +7069,8 @@ class ResultOfHaveWordForArray[T](left: Array[T], shouldBeTrue: Boolean) {
    *                   ^
    * </pre>
    */
+  @deprecated("Please use should not be, or should not equal, in " +
+              "place of should not be ===.")
   def === (right: Any): ResultOfTripleEqualsApplication =
     new ResultOfTripleEqualsApplication(right)
 
