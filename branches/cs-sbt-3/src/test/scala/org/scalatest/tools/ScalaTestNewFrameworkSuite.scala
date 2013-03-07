@@ -9,7 +9,7 @@ import org.scalasbt.testing.SuiteSelector
 import org.scalasbt.testing.NestedSuiteSelector
 import org.scalasbt.testing.Status
 
-class ScalaTestFramework2Suite extends FunSuite {
+class ScalaTestNewFrameworkSuite extends FunSuite {
   
   class TestEventHandler extends EventHandler {
     
@@ -66,12 +66,12 @@ class ScalaTestFramework2Suite extends FunSuite {
   }
 
   test("framework name") {
-    assert(new ScalaTestFramework2().name() === "ScalaTest")
+    assert(new ScalaTestFramework().name === "ScalaTest")
   }
   
   test("tests contains 3 test fingerprint, they are SubclassFingerprint for org.scalatest.Suite, AnnotatedFingerprint for org.scalatest.WrapWith, " +
   		"and DoNotDiscoverFingerprint for org.scalatest.DoNotDiscover"){
-    val framework = new ScalaTestFramework2
+    val framework = new ScalaTestFramework
     val fingerprints = framework.fingerprints
     assert(fingerprints.size === 3)
 
@@ -96,7 +96,7 @@ class ScalaTestFramework2Suite extends FunSuite {
                               def isModule = false
                             }
   
-  val framework = new ScalaTestFramework2
+  val framework = new ScalaTestFramework
   
   def assertSuiteSuccessEvent(event: Event, suiteClassName: String, testName: String) {
     assert(Status.Success === event.status)
