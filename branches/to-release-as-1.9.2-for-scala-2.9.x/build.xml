@@ -8,6 +8,7 @@
 
     <!-- set global properties for this build -->
     <property name="scala.version" value="2.10.0" />
+    <property name="deploy.scala.version" value="2.10" />
 	<property name="for.scala" value="2.10.x" />
 	<property name="release" value="1.9.2" />
 
@@ -80,6 +81,12 @@
           <filterset>
             <filter token="RELEASE" value="${release}" />
             <filter token="SCALA_VERSION" value="${scala.version}" />
+            <!--
+              -  DEPLOY_SCALA_VERSION is used in the artifact name, e.g.
+              -  it's "2.10" when scala version is "2.10.0"
+              -->
+            <filter token="DEPLOY_SCALA_VERSION"
+                    value="${deploy.scala.version}" />
           </filterset>
         </copy>
 
