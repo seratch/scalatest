@@ -267,4 +267,160 @@ class ShouldEqualSpec extends FunSpec with ShouldMatchers with Checkers with Ret
       }
     }
   }
+
+  // Checking for equality with "shouldEqual"
+  describe("The shouldEqual token") {
+
+    it("should do nothing when equal") {
+      1 shouldEqual (1)
+      1 shouldEqual 1
+      1 shouldEqual 1.toShort
+      1 shouldEqual 1.toByte
+
+      val string: String = "hi"
+      string shouldEqual "hi"
+
+      val aFloat: Float = 3.3f
+      aFloat shouldEqual 3.3f
+
+      val aDouble: Double = 8.8
+      aDouble shouldEqual 8.8
+
+      val map = Map(1 -> "one", 2 -> "two")
+      map shouldEqual Map(1 -> "one", 2 -> "two")
+
+      val traversable = Set(1, 2, 3)
+      traversable shouldEqual Set(1, 2, 3)
+
+      val javaSet1 = new java.util.HashSet[Int]
+      javaSet1.add(1)
+      javaSet1.add(2)
+
+      val javaSet2 = new java.util.HashSet[Int]
+      javaSet2.add(1)
+      javaSet2.add(2)
+
+      javaSet1 shouldEqual javaSet2
+
+      val javaMap = new java.util.HashMap[Int, String]
+      javaMap.put(1, "one")
+      javaMap.put(2, "two")
+
+      val someJavaMap = new java.util.HashMap[Int, String]
+      someJavaMap.put(1, "one")
+      someJavaMap.put(2, "two")
+
+      javaMap shouldEqual someJavaMap
+
+      val seq: Seq[Int] = List(1, 2, 3)
+      seq shouldEqual List(1, 2, 3)
+
+      val array: Array[String] = Array("one", "two")
+      array shouldEqual Array("one", "two")
+
+      val list: List[Int] = List(1, 2, 3)
+      list shouldEqual List(1, 2, 3)
+
+      val javaList: java.util.List[Int] = new java.util.ArrayList[Int]
+      javaList.add(1)
+      javaList.add(2)
+
+      val someOtherJavaList: java.util.List[Int] = new java.util.ArrayList[Int]
+      someOtherJavaList.add(1)
+      someOtherJavaList.add(2)
+
+      javaList shouldEqual someOtherJavaList
+
+      case class Classy(i: Int)
+      val obj = Classy(23)
+      obj shouldEqual Classy(23)
+
+      // objects should equal themselves
+      check((s: String) => returnsNormally(s shouldEqual (s)))
+      check((i: Int) => returnsNormally(i shouldEqual (i)))
+      check((i: Short) => returnsNormally(i shouldEqual (i)))
+      check((i: Byte) => returnsNormally(i shouldEqual (i)))
+      check((i: Map[Int, String]) => returnsNormally(i shouldEqual (i)))
+      check((i: Array[String]) => returnsNormally(i shouldEqual (i)))
+      check((i: List[Int]) => returnsNormally(i shouldEqual (i)))
+
+      // a string should equal another string with the same value
+      check((s: String) => returnsNormally(s shouldEqual (new String(s))))
+    }
+
+    it("should throw a TFE when not equal") {
+      val caught1 = intercept[TestFailedException] {
+        1 shouldEqual 2
+      }
+      assert(caught1.getMessage === "1 did not equal 2")
+
+      // unequal objects used with "a shouldEqual (b)" should throw a TestFailedException
+      check((s: String, t: String) => s != t ==>
+        throwsTestFailedException(s shouldEqual t))
+    }
+
+    it("should put string differences in square bracket") {
+      val caught1 = intercept[TestFailedException] { "dummy" shouldEqual "dunny" }
+      caught1.getMessage should equal ("\"du[mm]y\" did not equal \"du[nn]y\"")
+    }
+    
+    it("should be usable when the left expression results in null") {
+      val npe = new NullPointerException
+      npe.getMessage shouldEqual null
+    }
+
+    it("should compare arrays structurally") {
+      val a1 = Array(1, 2, 3)
+      val a2 = Array(1, 2, 3)
+      val a3 = Array(4, 5, 6)
+      a1 should not be theSameInstanceAs (a2)
+      a1 shouldEqual a2
+      intercept[TestFailedException] {
+        a1 shouldEqual a3
+      }
+    }
+
+    it("should compare arrays deeply") {
+      val a1 = Array(1, Array("a", "b"), 3)
+      val a2 = Array(1, Array("a", "b"), 3)
+      val a3 = Array(1, Array("c", "d"), 3)
+      a1 should not be theSameInstanceAs (a2)
+      a1 shouldEqual a2
+      intercept[TestFailedException] {
+        a1 shouldEqual a3
+      }
+    }
+
+    it("should compare arrays containing nulls fine") {
+      val a1 = Array(1, Array("a", null), 3)
+      val a2 = Array(1, Array("a", null), 3)
+      val a3 = Array(1, Array("c", "d"), 3)
+      a1 shouldEqual a2
+      intercept[TestFailedException] {
+        a1 shouldEqual a3
+      }
+      intercept[TestFailedException] {
+        a3 shouldEqual a1
+      }
+    }
+
+    it("should compare nulls in a satisfying manner") {
+      val n1: String = null
+      val n2: String = null
+      n1 shouldEqual n2
+      intercept[TestFailedException] {
+        n1 shouldEqual "hi"
+      }
+      intercept[TestFailedException] {
+        "hi" shouldEqual n1
+      }
+      val a1 = Array(1, 2, 3)
+      intercept[TestFailedException] {
+        n1 shouldEqual a1
+      }
+      intercept[TestFailedException] {
+        a1 shouldEqual n1
+      }
+    }
+  }
 }
