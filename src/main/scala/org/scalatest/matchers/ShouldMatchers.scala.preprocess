@@ -916,6 +916,18 @@ trait ShouldMatchers extends Matchers with ShouldVerb {
      * This method enables syntax such as the following:
      *
      * <pre class="stHighlight">
+     * result shouldEqual 3
+     *        ^
+     * </pre>
+     */
+    def shouldEqual(right: Any) {
+      ShouldMethodHelper.shouldMatcher(left, equal(right))
+    }
+
+    /**
+     * This method enables syntax such as the following:
+     *
+     * <pre class="stHighlight">
      * result should not equal (3)
      *        ^
      * </pre>
