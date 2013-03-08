@@ -57,9 +57,9 @@ trait ScalaTestNewFramework extends Framework {
         def annotationName = "org.scalatest.DoNotDiscover"
       })
       
-  class ScalaTestTask(fullyQualifiedName: String, loader: ClassLoader, dispatchReporter: Option[DispatchReporter], tracker: Tracker, eventHandler: EventHandler, 
+  class ScalaTestTask(fullyQualifiedName: String, loader: ClassLoader, dispatchReporter: DispatchReporter, tracker: Tracker, eventHandler: EventHandler, 
                       tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
-                      summaryCounter: SummaryCounter) extends Task {
+                      summaryCounter: SummaryCounter, initListener: String => Unit) extends Task {
     
     def tags = {
       // TODO: map scalatest tags to sbt tags.
@@ -95,6 +95,7 @@ trait ScalaTestNewFramework extends Framework {
           constructor.get.newInstance(suiteClass).asInstanceOf[Suite]
         }
         
+        initListener(suite.suiteId)
         val report = new SbtReporter(suite.suiteId, fullyQualifiedName, eventHandler, dispatchReporter, summaryCounter)
         val formatter = formatterForSuiteStarting(suite)
         
@@ -175,102 +176,161 @@ trait ScalaTestNewFramework extends Framework {
     var suitesAbortedCount = 0
     var scopesPendingCount = 0
   }
-      
-  class ScalaTestRunner(loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
-                        dispatchReporter: Option[DispatchReporter], eventHandler: EventHandler, useSbtLogInfoReporter: Boolean) 
-                        extends org.scalasbt.testing.Runner {
+  
+  class SbtLogInfoReporter(loggers: Array[Logger], presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) 
+    extends StringReporter(presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, false) {
     
+    protected def printPossiblyInColor(text: String, ansiColor: String) {
+      loggers.foreach { logger =>
+        logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
+      }
+    }
+
+    def dispose() = ()
+  }
+    
+  class SbtLogInfoDispatchReporter extends org.scalatest.ResourcefulReporter {
+    import java.util.concurrent.atomic.AtomicReference
+    import java.util.ConcurrentModificationException
+    import org.scalatest.events._
+    
+    
+    private final val atomic = new AtomicReference[Map[String, SbtLogInfoReporter]](Map.empty)
+    
+    def updateAtomic(oldMap: Map[String, SbtLogInfoReporter], newMap: Map[String, SbtLogInfoReporter]) {
+      val shouldBeOldMap = atomic.getAndSet(newMap)
+      if (!(shouldBeOldMap eq oldMap))
+        throw new ConcurrentModificationException("Two threads attempted to modify SbtLogInfoDispatchReporter, which should only be modified by the thread that constructs ScalaTestRunner.")
+    }
+      
+    def apply(event: Event) {
+      val suiteId = 
+        event match {
+          case t: TestStarting => Some(t.suiteId)
+          case t: TestSucceeded => Some(t.suiteId)
+          case t: TestPending => Some(t.suiteId)
+          case t: TestFailed => Some(t.suiteId)
+          case t: TestIgnored => Some(t.suiteId)
+          case t: TestCanceled => Some(t.suiteId)
+          case s: SuiteStarting => Some(s.suiteId)
+          case s: SuiteCompleted => Some(s.suiteId)
+          case s: SuiteAborted => Some(s.suiteId)
+          case s: ScopeOpened => Some(s.nameInfo.suiteId)
+          case s: ScopeClosed => Some(s.nameInfo.suiteId)
+          case s: ScopePending => Some(s.nameInfo.suiteId)
+          case i: InfoProvided => 
+            i.nameInfo match {
+              case Some(nameInfo) => Some(nameInfo.suiteId)
+              case None => None
+            }
+          case m: MarkupProvided => 
+            m.nameInfo match {
+              case Some(nameInfo) => Some(nameInfo.suiteId)
+              case None => None
+            }
+          case _ => None // RunCompleted, RunStarting, RunStopped should not get fired.
+        }
+      suiteId match {
+        case Some(suiteId) => atomic.get().apply(suiteId).apply(event)
+        case None => // Do nothing
+      }
+      
+    }
+    
+    def registerSbtLogInfoReporter(suiteId: String, reporter: SbtLogInfoReporter) {
+      val oldMap = atomic.get
+      val newMap = oldMap ++ Map(suiteId -> reporter)
+      updateAtomic(oldMap, newMap)
+    }
+    
+    def dispose() = ()
+  }
+  
+  class ScalaTestRunner(loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
+                        repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean) 
+                        extends org.scalasbt.testing.Runner {  
     var isDone = false
     val tracker = new Tracker
     val summaryCounter = new SummaryCounter
     val runStartTime = System.currentTimeMillis
-    dispatchReporter match {
-      case Some(dispatchReporter) => 
-        dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
-      case None => 
-        // Do nothing.
+    
+    val sbtLogInfoDispatchReporter = new SbtLogInfoDispatchReporter
+    
+    object SbtReporterFactory extends ReporterFactory {
+      override def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = 
+        if (configSetMinusNonFilterParams(configSet).isEmpty)
+          sbtLogInfoDispatchReporter
+        else
+          new FilterReporter(sbtLogInfoDispatchReporter, configSet)
     }
     
-    def task(fullyQualifiedName: String, fingerprint: Fingerprint) = {
-      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, eventHandler, tagsToInclude, tagsToExclude, Array.empty, configMap, summaryCounter)
+    val dispatchReporter = SbtReporterFactory.getDispatchReporter(repConfig, None, None, loader, Some(resultHolder))
+    
+    
+    dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
+    
+    private def createSbtLogInfoReporter(loggers: Array[Logger]) = {
+      val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) = 
+      repConfig.standardOutReporterConfiguration match {
+        case Some(stdoutConfig) =>
+          val configSet = stdoutConfig.configSet
+          (
+            configSet.contains(PresentAllDurations),
+            !configSet.contains(PresentWithoutColor),
+            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
+            configSet.contains(PresentFullStackTraces)    
+          )
+        case None => 
+          (false, true, false, false)
+      }
+      new SbtLogInfoReporter(
+        loggers, 
+        presentAllDurations,
+        presentInColor,
+        presentShortStackTraces,
+        presentFullStackTraces // If they say both S and F, F overrules
+      )
     }
     
-    def task(fullyQualifiedName: String, isModule: Boolean, selectors: Array[Selector]) = {
-      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, eventHandler, Set(SELECTED_TAG), Set.empty, selectors, configMap, summaryCounter)
+    def task(fullyQualifiedName: String, fingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger]) = {
+      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, eventHandler, tagsToInclude, tagsToExclude, Array.empty, configMap, summaryCounter, 
+                        sbtLogInfoDispatchReporter.registerSbtLogInfoReporter(_, createSbtLogInfoReporter(loggers)))
+    }
+    
+    def task(fullyQualifiedName: String, isModule: Boolean, selectors: Array[Selector], eventHandler: EventHandler, loggers: Array[Logger]) = {
+      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, eventHandler, Set(SELECTED_TAG), Set.empty, selectors, configMap, summaryCounter, 
+                        sbtLogInfoDispatchReporter.registerSbtLogInfoReporter(_, createSbtLogInfoReporter(loggers)))
     }
     
     def done = {
       if (!isDone) {
-        dispatchReporter match {
-          case Some(dispatchReporter) => 
-            val duration = System.currentTimeMillis - runStartTime
-            val summary = new Summary(summaryCounter.testsSucceededCount, summaryCounter.testsFailedCount, summaryCounter.testsIgnoredCount, summaryCounter.testsPendingCount, 
-                                      summaryCounter.testsCanceledCount, summaryCounter.suitesCompletedCount, summaryCounter.suitesAbortedCount, summaryCounter.scopesPendingCount)
-            dispatchReporter(RunCompleted(tracker.nextOrdinal(), Some(duration), Some(summary)))
-            dispatchReporter.dispatchDisposeAndWaitUntilDone()
-            isDone = true
-            useSbtLogInfoReporter
-          case None => 
-            false
-        }
+        val duration = System.currentTimeMillis - runStartTime
+        val summary = new Summary(summaryCounter.testsSucceededCount, summaryCounter.testsFailedCount, summaryCounter.testsIgnoredCount, summaryCounter.testsPendingCount, 
+                                  summaryCounter.testsCanceledCount, summaryCounter.suitesCompletedCount, summaryCounter.suitesAbortedCount, summaryCounter.scopesPendingCount)
+        dispatchReporter(RunCompleted(tracker.nextOrdinal(), Some(duration), Some(summary)))
+        dispatchReporter.dispatchDisposeAndWaitUntilDone()
+        isDone = true
+        useSbtLogInfoReporter
       }
       else
         throw new IllegalStateException("done method is called twice")
     }
   }
       
-  def runner(args: Array[String], testClassLoader: ClassLoader, eventHandler: EventHandler, loggers: Array[Logger]) = {
-    
-    class SbtLogInfoReporter(presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) 
-      extends StringReporter(presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, false) {
-    
-      protected def printPossiblyInColor(text: String, ansiColor: String) {
-          loggers.foreach { logger =>
-            logger.info(if (logger.ansiCodesSupported && presentInColor) colorizeLinesIndividually(text, ansiColor) else text)
-          }
-      }
-
-      def dispose() = ()
-    }
+  def runner(args: Array[String], testClassLoader: ClassLoader) = {
     
     val translator = new FriendlyParamsTranslator()
-    //val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
-    //        suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
-    //val configMap: Map[String, String] = parsePropertiesArgsIntoMap(propertiesArgsList)
     val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
                suiteList, junitList, testngList) = translator.parsePropsAndTags(args.filter(!_.equals("")))
     val configMap = parsePropertiesArgsIntoMap(propertiesArgsList)
     val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
     val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
-    object SbtReporterFactory extends ReporterFactory {
-          
-      override def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = {
-        if (configSetMinusNonFilterParams(configSet).isEmpty)
-          new SbtLogInfoReporter(
-            configSet.contains(PresentAllDurations),
-            !configSet.contains(PresentWithoutColor),
-            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-            configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
-          )
-        else
-          new FilterReporter(
-            new SbtLogInfoReporter(
-              configSet.contains(PresentAllDurations),
-              !configSet.contains(PresentWithoutColor),
-              configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-              configSet.contains(PresentFullStackTraces) // If they say both S and F, F overrules
-            ),
-            configSet
-          )
-      }
-    }
-        
+    
     // If no reporters specified, just give them a default stdout reporter
     val fullReporterConfigurations: ReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
-    val dispatchReporter = Some(SbtReporterFactory.getDispatchReporter(fullReporterConfigurations, None, None, testClassLoader, Some(resultHolder)))
     val useSbtLogInfoReporter = fullReporterConfigurations.find(repConfig => repConfig.isInstanceOf[StandardOutReporterConfiguration]).isDefined
     
-    new ScalaTestRunner(testClassLoader, tagsToInclude, tagsToExclude, configMap, dispatchReporter, eventHandler, useSbtLogInfoReporter)
+    new ScalaTestRunner(testClassLoader, tagsToInclude, tagsToExclude, configMap, fullReporterConfigurations, useSbtLogInfoReporter)
   }
   
   private case class ScalaTestSbtEvent(
@@ -280,7 +340,7 @@ trait ScalaTestNewFramework extends Framework {
       status: Status, 
       throwable: Throwable) extends SbtEvent
   
-  private class SbtReporter(suiteId: String, fullyQualifiedName: String, eventHandler: EventHandler, report: Option[Reporter], summaryCounter: SummaryCounter) extends Reporter {
+  private class SbtReporter(suiteId: String, fullyQualifiedName: String, eventHandler: EventHandler, report: Reporter, summaryCounter: SummaryCounter) extends Reporter {
       
       import org.scalatest.events._
       
@@ -299,38 +359,28 @@ trait ScalaTestNewFramework extends Framework {
       }
       
       override def apply(event: Event) {
-        report match {
-          case Some(report) => report(event)
-          case None =>
-        }
-        
+        report(event)
         event match {
           // the results of running an actual test
           case t: TestPending => 
             summaryCounter.testsPendingCount += 1
-            //eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
             eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
           case t: TestFailed => 
             summaryCounter.testsFailedCount += 1
-            //eventHandler.handle(new FailureEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), t.throwable.getOrElse(null)))
             eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Failure, t.throwable.getOrElse(null)))
           case t: TestSucceeded => 
             summaryCounter.testsSucceededCount += 1
-            //eventHandler.handle(new SuccessEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
             eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Success, null))
           case t: TestIgnored => 
             summaryCounter.testsIgnoredCount += 1
-            //eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
             eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
           case t: TestCanceled =>
             summaryCounter.testsCanceledCount += 1
-            //eventHandler.handle(new SkippedEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName)))
             eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
           case t: SuiteCompleted => 
             summaryCounter.suitesCompletedCount += 1
           case t: SuiteAborted => 
             summaryCounter.suitesAbortedCount += 1
-            //eventHandler.handle(new ErrorEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), t.throwable.getOrElse(null)))
             eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), Status.Error, t.throwable.getOrElse(null)))
           case t: ScopePending => 
             summaryCounter.scopesPendingCount += 1
