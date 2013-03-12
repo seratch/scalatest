@@ -200,7 +200,7 @@ trait ScalaTestNewFramework extends Framework {
     def updateAtomic(oldMap: Map[String, SbtLogInfoReporter], newMap: Map[String, SbtLogInfoReporter]) {
       val shouldBeOldMap = atomic.getAndSet(newMap)
       if (!(shouldBeOldMap eq oldMap))
-        throw new ConcurrentModificationException("Two threads attempted to modify SbtLogInfoDispatchReporter, which should only be modified by the thread that constructs ScalaTestRunner.")
+        throw new ConcurrentModificationException("Two threads attempted to modify SbtLogInfoDispatchReporter, which should be called only in a synchronized block.")
     }
       
     def apply(event: Event) {
@@ -238,9 +238,11 @@ trait ScalaTestNewFramework extends Framework {
     }
     
     def registerSbtLogInfoReporter(suiteId: String, reporter: SbtLogInfoReporter) {
-      val oldMap = atomic.get
-      val newMap = oldMap ++ Map(suiteId -> reporter)
-      updateAtomic(oldMap, newMap)
+      synchronized {
+        val oldMap = atomic.get
+        val newMap = oldMap ++ Map(suiteId -> reporter)
+        updateAtomic(oldMap, newMap)
+      }
     }
     
     def dispose() = ()
