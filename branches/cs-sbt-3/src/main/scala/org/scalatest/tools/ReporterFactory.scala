@@ -162,8 +162,8 @@ private[scalatest] class ReporterFactory {
     new DashboardReporter(directory, numFilesToArchive)
   }
   
-  protected def createSocketReporter(host: String, port: Int) = {
-    new SocketReporter(host, port)
+  protected def createXmlSocketReporter(host: String, port: Int) = {
+    new XmlSocketReporter(host, port)
   }
   
   private[scalatest] def getDispatchReporter(reporterSpecs: ReporterConfigurations, graphicReporter: Option[Reporter], passFailReporter: Option[Reporter], loader: ClassLoader, resultHolder: Option[SuiteResultHolder]) = {
@@ -180,7 +180,7 @@ private[scalatest] class ReporterFactory {
         case HtmlReporterConfiguration(configSet, directory, cssFile) => createHtmlReporter(configSet, directory, cssFile, resultHolder)
         case CustomReporterConfiguration(configSet, reporterClassName) => createCustomReporter(configSet, reporterClassName, loader) 
         case GraphicReporterConfiguration(configSet) => throw new RuntimeException("Should never happen.")
-        case SocketReporterConfiguration(host, port) => createSocketReporter(host, port)
+        case XmlSocketReporterConfiguration(host, port) => createXmlSocketReporter(host, port)
     }
 
     val reporterSeq =
