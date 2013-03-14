@@ -29,7 +29,6 @@ import org.scalasbt.testing.TestSelector
 import org.scalasbt.testing.SuiteSelector
 import org.scalasbt.testing.NestedTestSelector
 import org.scalasbt.testing.NestedSuiteSelector
-import org.scalasbt.testing.Fork
 import org.scalatest.DynaTags
 import org.scalatest.tools.Runner.SELECTED_TAG
 import org.scalatest.tools.Runner.mergeMap
@@ -321,7 +320,9 @@ trait ScalaTestNewFramework extends Framework {
     
     def args = runArgs
     
-    def fork: Fork = null
+    def startSkeleton: Array[String] = Array.empty[String]
+    
+    def disposeSkeletons() {  }
   }
       
   def runner(args: Array[String], remoteArgs: Array[String], testClassLoader: ClassLoader) = {
@@ -333,8 +334,17 @@ trait ScalaTestNewFramework extends Framework {
     val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
     val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
     
-    // If no reporters specified, just give them a default stdout reporter
-    val fullReporterConfigurations: ReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
+    val fullReporterConfigurations: ReporterConfigurations = 
+      if (remoteArgs.isEmpty) {
+        // Creating the normal/main runner, should create reporters as specified by args.
+        // If no reporters specified, just give them a default stdout reporter
+        Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
+      }
+      else {
+        // Creating a sub-process runner, should just create stdout reporter and socket reporter
+        Runner.parseReporterArgsIntoConfigurations("-o" :: Nil)  // TODO: Add socket reporter here.
+      }
+        
     val useSbtLogInfoReporter = fullReporterConfigurations.find(repConfig => repConfig.isInstanceOf[StandardOutReporterConfiguration]).isDefined
     
     new ScalaTestRunner(args, testClassLoader, tagsToInclude, tagsToExclude, configMap, fullReporterConfigurations, useSbtLogInfoReporter)
