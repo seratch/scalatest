@@ -29,6 +29,7 @@ import org.scalasbt.testing.TestSelector
 import org.scalasbt.testing.SuiteSelector
 import org.scalasbt.testing.NestedTestSelector
 import org.scalasbt.testing.NestedSuiteSelector
+import org.scalasbt.testing.Fork
 import org.scalatest.DynaTags
 import org.scalatest.tools.Runner.SELECTED_TAG
 import org.scalatest.tools.Runner.mergeMap
@@ -248,7 +249,7 @@ trait ScalaTestNewFramework extends Framework {
     def dispose() = ()
   }
   
-  class ScalaTestRunner(loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
+  class ScalaTestRunner(runArgs: Array[String], loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
                         repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean) 
                         extends org.scalasbt.testing.Runner {  
     var isDone = false
@@ -317,9 +318,13 @@ trait ScalaTestNewFramework extends Framework {
       else
         throw new IllegalStateException("done method is called twice")
     }
+    
+    def args = runArgs
+    
+    def fork: Fork = null
   }
       
-  def runner(args: Array[String], testClassLoader: ClassLoader) = {
+  def runner(args: Array[String], remoteArgs: Array[String], testClassLoader: ClassLoader) = {
     
     val translator = new FriendlyParamsTranslator()
     val (propertiesArgsList, includesArgsList, excludesArgsList, repoArgsList, concurrentList, memberOnlyList, wildcardList, 
@@ -332,7 +337,7 @@ trait ScalaTestNewFramework extends Framework {
     val fullReporterConfigurations: ReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
     val useSbtLogInfoReporter = fullReporterConfigurations.find(repConfig => repConfig.isInstanceOf[StandardOutReporterConfiguration]).isDefined
     
-    new ScalaTestRunner(testClassLoader, tagsToInclude, tagsToExclude, configMap, fullReporterConfigurations, useSbtLogInfoReporter)
+    new ScalaTestRunner(args, testClassLoader, tagsToInclude, tagsToExclude, configMap, fullReporterConfigurations, useSbtLogInfoReporter)
   }
   
   private case class ScalaTestSbtEvent(

@@ -199,7 +199,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("ScalaTestRunner should return task that run whole suite when valid class name is passed to task(fullyQualifiedName: String, fingerprint: Fingerprint)") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     
     val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", subClassFingerprint, testEventHandler, Array(new TestLogger))
     assert(task != null)
@@ -217,7 +217,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   test("ScalaTestRunner should return task that run whole suite when valid class name is passed to task(fullyQualifiedName: String, fingerprint: Fingerprint), " +
   	   "even if the suite class is marked as @DoNotDiscover") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     
     val task = runner.task("org.scalatest.tools.scalasbt.DoNotDiscoverSuite", subClassFingerprint, testEventHandler, Array(new TestLogger))
     assert(task != null)
@@ -234,7 +234,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("When suite is neither subclass of org.scalatest.Suite or annotated with WrapWith, IllegalArgumentException will be thrown") {
     intercept[IllegalArgumentException] {
-      val runner = framework.runner(Array.empty, testClassLoader)
+      val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
       val notASuiteTask = runner.task("org.scalatest.tools.scalasbt.NotASuite", null, new TestEventHandler, Array(new TestLogger))
       notASuiteTask.execute()
     }
@@ -243,7 +243,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   test("When an invalid suite class name is passed into to task(fullyQualifiedName: String, fingerprint: Fingerprint), IllegalArgumentException " +
   	   "will be thrown") {
     intercept[IllegalArgumentException] {
-      val runner = framework.runner(Array.empty, testClassLoader)
+      val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
       val doesNotExistTask = runner.task("org.scalatest.tools.scalasbt.DoesNotExist", null, new TestEventHandler, Array(new TestLogger))
       doesNotExistTask.execute()
     }
@@ -251,7 +251,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("Nested suites will be included in task returned from task(fullyQualifiedName: String, fingerprint: Fingerprint)") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", subClassFingerprint, testEventHandler, Array(new TestLogger))
     assert(task != null)
     task.execute()
@@ -273,7 +273,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("Ignore, pending, failed, canceled, suite aborted events should be translated and reported correctly for the suite and its nested suites") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", subClassFingerprint, testEventHandler, Array(new TestLogger))
     assert(task != null)
     task.execute()
@@ -309,7 +309,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("SuiteSelector should select and run test(s) in selected suite") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()), testEventHandler, Array(new TestLogger))
     task.execute()
     val successEvents = testEventHandler.successEventsReceived
@@ -323,7 +323,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("TestSelector should select and run selected test(s) in suite, excluding nested suites") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new TestSelector("test 1"), new TestSelector("test 3")), testEventHandler, Array(new TestLogger))
     task.execute()
     val successEvents = testEventHandler.successEventsReceived
@@ -335,7 +335,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
     assert(testEventHandler.skippedEventsReceived.length === 0)
     
     val testEventHandler2 = new TestEventHandler
-    val runner2 = framework.runner(Array.empty, testClassLoader)
+    val runner2 = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task2 = runner2.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new TestSelector("test 2")), testEventHandler2, Array(new TestLogger))
     task2.execute()
     val successEvents2 = testEventHandler2.successEventsReceived
@@ -348,7 +348,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("NestedSuiteSelector should select and run test(s) in selected nested suite") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new NestedSuiteSelector("nested 1")), testEventHandler, Array(new TestLogger))
     task.execute()
     val successEvents = testEventHandler.successEventsReceived
@@ -363,7 +363,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("NestedTestSelector should select and run selected test(s) in selected nested suite") {
     val testEventHandler = new TestEventHandler
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new NestedTestSelector("nested 1", "nested 1 test 1"), new NestedTestSelector("nested 2", "nested 2 test 3")), testEventHandler, Array(new TestLogger))
     task.execute()
     val successEvents = testEventHandler.successEventsReceived
@@ -377,7 +377,7 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
   
   test("ScalaTestRunner should print summary and return true when SbtLogInfoReporter is used, and throw IllegalStateException if 'done' method is called twice.") {
     val testLogger = new TestLogger
-    val runner = framework.runner(Array.empty, testClassLoader)
+    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()), new TestEventHandler, Array(testLogger))
     task.execute()
     assert(runner.done === true)

@@ -788,7 +788,7 @@ object Runner {
             fullReporterConfigurations.standardErrReporterConfiguration,
             fullReporterConfigurations.htmlReporterConfigurationList,
             fullReporterConfigurations.customReporterConfigurationList, 
-            fullReporterConfigurations.socketReporterConfigurationList
+            fullReporterConfigurations.xmlSocketReporterConfigurationList
           )
         }
       }
@@ -1563,9 +1563,9 @@ object Runner {
     }
     val customReporterConfigurationList = buildCustomReporterConfigurationList(args)
 
-    def buildSocketReporterConfigurationList(args: List[String]) = {
+    def buildXmlSocketReporterConfigurationList(args: List[String]) = {
       val it = args.iterator
-      val lb = new ListBuffer[SocketReporterConfiguration]
+      val lb = new ListBuffer[XmlSocketReporterConfiguration]
       while (it.hasNext) {
         val arg = it.next
         if (arg.startsWith("-k")) {
@@ -1575,12 +1575,12 @@ object Runner {
           if (!it.hasNext)
             throw new IllegalArgumentException("-k must be followed by host and port")
           val port = it.next.toInt
-          lb += new SocketReporterConfiguration(host, port)
+          lb += new XmlSocketReporterConfiguration(host, port)
         }
       }
       lb.toList
     }
-    val socketReporterConfigurationList = buildSocketReporterConfigurationList(args)
+    val xmlSocketReporterConfigurationList = buildXmlSocketReporterConfigurationList(args)
     
     // Here instead of one loop, i go through the loop several times.
     new ReporterConfigurations(
@@ -1593,7 +1593,7 @@ object Runner {
       standardErrReporterConfigurationOption,
       htmlReporterConfigurationList,
       customReporterConfigurationList, 
-      socketReporterConfigurationList
+      xmlSocketReporterConfigurationList
     )
   }
 
