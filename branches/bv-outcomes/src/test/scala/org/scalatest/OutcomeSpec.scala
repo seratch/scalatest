@@ -19,7 +19,7 @@ import exceptions.TestCanceledException
 import exceptions.TestPendingException
 import exceptions.TestOmittedException
 
-class OutcomesSpec extends Spec with Outcomes with OptionValues {
+class OutcomeSpec extends Spec with OptionValues with OutcomeOf {
   object `An Outcome` {
     def `can be Succeeded` {
       assert(Succeeded.isSucceeded)
@@ -138,7 +138,7 @@ class OutcomesSpec extends Spec with Outcomes with OptionValues {
       assert(res4.toOption.value eq ex4)
       assert(res5.toOption.value eq ex5)
     }
-    def `can be implicitly converted to an Iterable` {
+    def `can be implicitly converted to an Iterable so it can be flattened` {
       assert(res1.iterator.size === 0)
       assert(res2.iterator.size === 1)
       assert(res3.iterator.size === 1)
@@ -147,6 +147,7 @@ class OutcomesSpec extends Spec with Outcomes with OptionValues {
       assert(Vector(res1, res2, res3, res4, res5).flatten === Vector(ex2, ex3, ex4, ex5))
     }
   }
+
   object `The outcomeOf method` {
     def `must transform expression evaluations into the appropriate Outcome class` {
       assert(outcomeOf { 99 } == Succeeded)
