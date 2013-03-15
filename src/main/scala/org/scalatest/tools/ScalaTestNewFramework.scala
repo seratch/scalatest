@@ -231,7 +231,10 @@ trait ScalaTestNewFramework extends Framework {
           case _ => None // RunCompleted, RunStarting, RunStopped should not get fired.
         }
       suiteId match {
-        case Some(suiteId) => atomic.get().apply(suiteId).apply(event)
+        case Some(suiteId) => atomic.get().get(suiteId) match {
+          case Some(sbtLogInfoReporter) => sbtLogInfoReporter(event)
+          case None => // Could happen when the suite is run in sub process, just do nothing as logger stub in sub proccess will write to skeleton, and skeleton will log it out.
+        }
         case None => // Do nothing
       }
       
@@ -267,7 +270,6 @@ trait ScalaTestNewFramework extends Framework {
     }
     
     val dispatchReporter = SbtReporterFactory.getDispatchReporter(repConfig, None, None, loader, Some(resultHolder))
-    
     
     dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
     
@@ -320,9 +322,64 @@ trait ScalaTestNewFramework extends Framework {
     
     def args = runArgs
     
-    def startSkeleton: Array[String] = Array.empty[String]
-    
-    def disposeSkeletons() {  }
+    def remoteArgs: Array[String] = {
+      import java.net.{ServerSocket, InetAddress}
+      import java.io.{ObjectInputStream, ObjectOutputStream}
+      import org.scalatest.events._
+      
+      class Skeleton extends Runnable {
+        
+        val server = new ServerSocket(0)
+        
+        def run() {
+          val socket = server.accept()
+          val is = new ObjectInputStream(socket.getInputStream)
+
+          try {
+			(new React(is)).react()
+          } 
+          finally {
+            is.close()	
+            socket.close()
+		  }
+        }
+        
+        class React(is: ObjectInputStream) {
+          @annotation.tailrec 
+          final def react() { 
+            val event = is.readObject
+            event match {
+              case e: TestStarting => dispatchReporter(e); react()
+              case e: TestSucceeded => dispatchReporter(e); react()
+              case e: TestFailed => dispatchReporter(e); react()
+              case e: TestIgnored => dispatchReporter(e); react()
+              case e: TestPending => dispatchReporter(e); react()
+              case e: TestCanceled => dispatchReporter(e); react()
+              case e: SuiteStarting => dispatchReporter(e); react()
+              case e: SuiteCompleted => dispatchReporter(e); react()
+              case e: SuiteAborted => dispatchReporter(e); react()
+              case e: ScopeOpened => dispatchReporter(e); react()
+              case e: ScopeClosed => dispatchReporter(e); react()
+              case e: ScopePending => dispatchReporter(e); react()
+              case e: InfoProvided => dispatchReporter(e); react()
+              case e: MarkupProvided => dispatchReporter(e); react()
+              case e: RunStarting => react() // just ignore test starting and continue
+              case e: RunCompleted => // Sub-process completed, just let the thread terminate
+              case e: RunStopped => dispatchReporter(e)
+              case e: RunAborted => dispatchReporter(e)
+	        }
+          }
+        }
+        
+        def host: String = server.getLocalSocketAddress.toString
+        def port: Int = server.getLocalPort
+      }
+      
+      val skeleton = new Skeleton()
+      val thread = new Thread(skeleton)
+      thread.start()
+      Array(InetAddress.getLocalHost.getHostAddress, skeleton.port.toString)
+    }
   }
       
   def runner(args: Array[String], remoteArgs: Array[String], testClassLoader: ClassLoader) = {
@@ -342,7 +399,7 @@ trait ScalaTestNewFramework extends Framework {
       }
       else {
         // Creating a sub-process runner, should just create stdout reporter and socket reporter
-        Runner.parseReporterArgsIntoConfigurations("-o" :: Nil)  // TODO: Add socket reporter here.
+        Runner.parseReporterArgsIntoConfigurations("-o" :: "-K" :: remoteArgs(0) :: remoteArgs(1) :: Nil)
       }
         
     val useSbtLogInfoReporter = fullReporterConfigurations.find(repConfig => repConfig.isInstanceOf[StandardOutReporterConfiguration]).isDefined
