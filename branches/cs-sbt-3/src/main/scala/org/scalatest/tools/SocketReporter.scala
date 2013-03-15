@@ -9,11 +9,13 @@ import java.io.BufferedOutputStream
 private[scalatest] class SocketReporter(host: String, port: Int) extends ResourcefulReporter {
 
   private val socket = new Socket(host, port)
-  private val out = new ObjectOutputStream(new BufferedOutputStream(socket.getOutputStream))
+  private val out = new ObjectOutputStream(socket.getOutputStream)
   
   def apply(event: Event) {
-    out.writeObject(event)
-    out.flush()
+    synchronized {
+      out.writeObject(event)
+      out.flush()
+    }
   }
 
   def dispose() {
