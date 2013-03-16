@@ -89,7 +89,7 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(Resources("scenario", specText.trim), testFun _, "scenarioCannotAppearInsideAnotherScenario", "FeatureSpecLike.scala", "scenario", 4, -2, None, None, None, testTags: _*)
+    registerTest(Resources("scenario", specText.trim), Transformer(testFun _), "scenarioCannotAppearInsideAnotherScenario", "FeatureSpecLike.scala", "scenario", 4, -2, None, None, None, testTags: _*)
   }
 
   /**
@@ -111,7 +111,7 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(specText: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(Resources("scenario", specText), testFun _, "ignoreCannotAppearInsideAScenario", "FeatureSpecLike.scala", "ignore", 4, -2, None, testTags: _*)
+    registerIgnoredTest(Resources("scenario", specText), Transformer(testFun _), "ignoreCannotAppearInsideAScenario", "FeatureSpecLike.scala", "ignore", 4, -2, None, testTags: _*)
   }
   
   /**
@@ -165,7 +165,7 @@ trait FeatureSpecLike extends Suite { thisSuite =>
       withFixture(
         new NoArgTest {
           val name = testData.name
-          def apply() { theTest.testFun() }
+          def apply(): Outcome = { theTest.testFun() }
           val configMap = testData.configMap
           val scopes = testData.scopes
           val text = testData.text

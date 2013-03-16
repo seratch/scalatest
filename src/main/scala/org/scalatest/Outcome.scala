@@ -15,13 +15,10 @@
  */
 package org.scalatest
 
-import exceptions.TestCanceledException
-import exceptions.TestOmittedException
-
 // Note no Ignored outcome, because ignore is done with a tag and is known
 // before a test is executed. Outcome is only modeling the outcomes of
 // executing a test body.
-trait FailedOrCanceled
+// trait FailedOrCanceled
 
 sealed abstract class Outcome {
   def isSucceeded: Boolean = false
@@ -32,27 +29,44 @@ sealed abstract class Outcome {
   def isDefined: Boolean = true
   def isEmpty: Boolean = false
   def toOption: Option[Throwable] = None
+  // def map[Z <: Throwable](fn: E => Z): Outcome[Z] 
 }
+
 abstract class Exceptional(ex: Throwable) extends Outcome {
   override def toOption: Option[Throwable] = Some(ex)
+  // def map[Z <: Throwable](fn: E => Z): Exceptional[Z]
 }
 case object Succeeded extends Outcome {
   override def isSucceeded: Boolean = true
   override def isDefined: Boolean = false
   override def isEmpty: Boolean = true
+  // def map[Z <: Throwable](fn: E => Z): Succeeded = this
 }
-case class Failed(ex: Throwable) extends Exceptional(ex) with FailedOrCanceled {
+case class Failed(ex: Throwable) extends Exceptional(ex) {
   override def isFailed: Boolean = true
+  // def map[Z <: Throwable](fn: E => Z): Failed[Z] = Failed(fn(ex))
 }
-case class Canceled(ex: TestCanceledException) extends Exceptional(ex) with FailedOrCanceled {
+case class Canceled(ex: exceptions.TestCanceledException) extends Exceptional(ex) {
   override def isCanceled: Boolean = true
+  // def map[Z <: Throwable](fn: E => Z): Canceled[Z] = Canceled(fn(ex))
 }
-case class Pending(ex: TestPendingException) extends Exceptional(ex) {
+object Canceled {
+  def apply(message: String): Canceled = {
+    if (message == null)
+      throw new NullPointerException("message was null")
+    val e = new exceptions.TestCanceledException(message, 0) // TODO: Verify this is hte correct stack depth.
+    e.fillInStackTrace()
+    Canceled(e)
+  }
+}
+case class Pending(ex: Option[String] = None) extends Outcome {
   override def isPending: Boolean = true
+  // def map[Z <: Throwable](fn: E => Z): Pending = this
 }
-case class Omitted(ex: TestOmittedException) extends Exceptional(ex) {
+case object Omitted extends Outcome {
   override def isOmitted: Boolean = true
 }
+/*
 object FailedOrCanceled {
   def unapply(res: Outcome): Option[Throwable] = 
     res match {
@@ -61,25 +75,33 @@ object FailedOrCanceled {
       case _ => None
     }
 }
+*/
 object Exceptional {
+
+  def apply(e: Throwable): Exceptional = 
+    e match {
+      case tce: exceptions.TestCanceledException => Canceled(tce)
+      case _ => Failed(e)
+    }
+
   def unapply(res: Outcome): Option[Throwable] = 
     res match {
       case Failed(ex) => Some(ex)
       case Canceled(ex) => Some(ex)
-      case Pending(ex) => Some(ex)
-      case Omitted(ex) => Some(ex)
       case _ => None
     }
 }
 
 object Outcome {
 
+/*
   implicit def convertOutcomeToIterable(res: Outcome): scala.collection.immutable.Iterable[Throwable] = {
     res match {
       case Exceptional(ex) => Vector(ex)
       case _ => Vector.empty
     }
   }
+*/
 }
 
 trait OutcomeOf {
@@ -89,9 +111,10 @@ trait OutcomeOf {
       Succeeded
     }                                             
     catch {                                       
-      case ex: TestCanceledException => Canceled(ex)                           
-      case ex: TestPendingException => Pending(ex)                           
-      case ex: TestOmittedException => Omitted(ex)                           
+      case ex: exceptions.TestCanceledException => Canceled(ex)                           
+      case exceptions.TestPendingException(reason) => Pending(reason)                           
+      case ex: exceptions.TestOmittedException => Omitted                           
+      case tfe: exceptions.TestFailedException => Failed(tfe)
       case ex: Throwable if !Suite.anErrorThatShouldCauseAnAbort(ex) => Failed(ex)                           
     }
   }
