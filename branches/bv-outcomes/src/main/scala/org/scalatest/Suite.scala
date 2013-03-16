@@ -68,6 +68,7 @@ import collection.mutable.ListBuffer
 import collection.GenTraversable
 import annotation.tailrec
 import collection.immutable
+import OutcomeOf.outcomeOf
 
 /*
  * <h2>Using <code>info</code> and <code>markup</code></h2>
@@ -571,12 +572,12 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    * <code>NoArgTest</code> instance passed to <code>withFixture</code>.
    * </p>
    */
-  protected trait NoArgTest extends (() => Unit) with TestData {
+  protected trait NoArgTest extends (() => Outcome) with TestData {
     
     /**
      * Runs the code of the test.
      */
-    def apply()
+    def apply(): Outcome
   }
 
   /**
@@ -1103,7 +1104,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
    *
    * @param test the no-arg test function to run with a fixture
    */
-  protected def withFixture(test: NoArgTest) {
+  protected def withFixture(test: NoArgTest): Outcome = {
     test()
   }
 
@@ -1188,7 +1189,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
       withFixture(
         new NoArgTest {
           val name = testData.name
-          def apply() { method.invoke(thisSuite, argsArray: _*) }
+          def apply(): Outcome = { outcomeOf { method.invoke(thisSuite, argsArray: _*) } }
           val configMap = testData.configMap
           val scopes = testData.scopes
           val text = testData.text

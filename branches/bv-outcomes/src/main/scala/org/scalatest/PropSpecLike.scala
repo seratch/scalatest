@@ -79,7 +79,7 @@ trait PropSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>testName</code> or any passed test tag is <code>null</code>
    */
   protected def property(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerTest(testName, testFun _, "propertyCannotAppearInsideAnotherProperty", "PropSpecLike.scala", "property", 4, -2, None, None, None, testTags: _*)
+    registerTest(testName, Transformer(testFun _), "propertyCannotAppearInsideAnotherProperty", "PropSpecLike.scala", "property", 4, -2, None, None, None, testTags: _*)
   }
 
   /**
@@ -98,7 +98,7 @@ trait PropSpecLike extends Suite { thisSuite =>
    * @throws NotAllowedException if <code>testName</code> had been registered previously
    */
   protected def ignore(testName: String, testTags: Tag*)(testFun: => Unit) {
-    registerIgnoredTest(testName, testFun _, "ignoreCannotAppearInsideAProperty", "PropSpecLike.scala", "ignore", 4, -2, None, testTags: _*)
+    registerIgnoredTest(testName, Transformer(testFun _), "ignoreCannotAppearInsideAProperty", "PropSpecLike.scala", "ignore", 4, -2, None, testTags: _*)
   }
 
   /**
@@ -133,7 +133,7 @@ trait PropSpecLike extends Suite { thisSuite =>
       withFixture(
         new NoArgTest {
           val name = testData.name
-          def apply() { theTest.testFun() }
+          def apply(): Outcome = { theTest.testFun() }
           val configMap = testData.configMap
           val scopes = testData.scopes
           val text = testData.text
