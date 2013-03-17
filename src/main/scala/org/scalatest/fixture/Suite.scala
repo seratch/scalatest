@@ -233,7 +233,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
             method.invoke(thisSuite, args: _*)
           }
         }
-        withFixture(new TestFunAndConfigMap(testName, testFun, configMap))
+        withFixture(new TestFunAndConfigMap(testName, testFun, configMap)).toUnit
       }
       else { // Test method does not take a fixture
         val testFun: () => Unit = {
@@ -247,7 +247,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
             method.invoke(this, args: _*)
           }
         }
-        withFixture(new FixturelessTestFunAndConfigMap(testName, testFun, configMap))
+        withFixture(new FixturelessTestFunAndConfigMap(testName, testFun, configMap)).toUnit
       }
 
       val duration = System.currentTimeMillis - testStartTime
@@ -270,13 +270,13 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
             // testWasCanceled = true so info's printed out in the finally clause show up yellow
             report(TestCanceled(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), testName, testName, messageRecorderForThisTest.recordedEvents(false, true), Some(e), Some(duration), Some(formatter), Some(getTopOfMethod(thisSuite, method)), thisSuite.rerunner))
             SucceededStatus
-          case e if !anErrorThatShouldCauseAnAbort(e) =>
+          case e if !anExceptionThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
             handleFailedTest(thisSuite, t, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
             FailedStatus
           case e => throw e
         }
-      case e if !anErrorThatShouldCauseAnAbort(e) =>
+      case e if !anExceptionThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
         handleFailedTest(thisSuite, e, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
         FailedStatus

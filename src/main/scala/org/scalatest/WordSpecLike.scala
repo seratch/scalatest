@@ -22,7 +22,7 @@ import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
 import org.scalatest.events._
-import Suite.anErrorThatShouldCauseAnAbort
+import Suite.anExceptionThatShouldCauseAnAbort
 import Suite.autoTagClassAnnotations
 
 /**
@@ -911,7 +911,7 @@ one error found
    */
   protected override def runTest(testName: String, args: Args): Status = {
 
-    def invokeWithFixture(theTest: TestLeaf) {
+    def invokeWithFixture(theTest: TestLeaf): Outcome = {
       val theConfigMap = args.configMap
       val testData = testDataFor(testName, theConfigMap)
       withFixture(
