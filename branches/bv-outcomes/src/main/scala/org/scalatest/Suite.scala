@@ -32,7 +32,7 @@ import Suite.formatterForSuiteCompleted
 import Suite.checkForPublicNoArgConstructor
 import Suite.checkChosenStyles
 import Suite.formatterForSuiteAborted
-import Suite.anErrorThatShouldCauseAnAbort
+import Suite.anExceptionThatShouldCauseAnAbort
 import Suite.getSimpleNameOfAnObjectsClass
 import Suite.takesInformer
 import Suite.handleFailedTest
@@ -1195,7 +1195,7 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
           val text = testData.text
           val tags = testData.tags
         }
-      )
+      ).toUnit
       val duration = System.currentTimeMillis - testStartTime
       reportTestSucceeded(this, report, tracker, testName, testName, messageRecorderForThisTest.recordedEvents(false, false), duration, formatter, rerunner, Some(getTopOfMethod(thisSuite, method)))
       SucceededStatus
@@ -1217,13 +1217,13 @@ trait Suite extends Assertions with AbstractSuite with Serializable { thisSuite 
             report(TestCanceled(tracker.nextOrdinal(), message, thisSuite.suiteName, thisSuite.suiteId, Some(thisSuite.getClass.getName), 
                                 testName, testName, messageRecorderForThisTest.recordedEvents(false, true), Some(e), Some(duration), Some(formatter), Some(TopOfMethod(thisSuite.getClass.getName, method.toGenericString())), rerunner))
             SucceededStatus                 
-          case e if !anErrorThatShouldCauseAnAbort(e) =>
+          case e if !anExceptionThatShouldCauseAnAbort(e) =>
             val duration = System.currentTimeMillis - testStartTime
             handleFailedTest(thisSuite, t, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
             FailedStatus
           case e => throw e
         }
-      case e if !anErrorThatShouldCauseAnAbort(e) =>
+      case e if !anExceptionThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
         handleFailedTest(thisSuite, e, testName, messageRecorderForThisTest.recordedEvents(false, false), report, tracker, getEscapedIndentedTextForTest(testName, 1, true), duration)
         FailedStatus
@@ -1873,9 +1873,12 @@ private[scalatest] object Suite {
       testName
 */
 
-  def anErrorThatShouldCauseAnAbort(throwable: Throwable) =
+  def anExceptionThatShouldCauseAnAbort(throwable: Throwable): Boolean =
     throwable match {
       case _: AnnotationFormatError | 
+           _: org.scalatest.TestRegistrationClosedException |
+           _: org.scalatest.DuplicateTestNameException |
+           _: org.scalatest.NotAllowedException |
            _: CoderMalfunctionError |
            _: FactoryConfigurationError | 
            _: LinkageError | 

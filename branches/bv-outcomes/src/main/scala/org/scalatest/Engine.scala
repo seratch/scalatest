@@ -188,7 +188,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
     testName: String,
     args: Args,
     includeIcon: Boolean,
-    invokeWithFixture: TestLeaf => Unit
+    invokeWithFixture: TestLeaf => Outcome
   ): Status = {
 
     if (testName == null)
@@ -231,7 +231,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
 
     try {
 
-      invokeWithFixture(theTest)
+      invokeWithFixture(theTest).toUnit
 
       val duration = System.currentTimeMillis - testStartTime
       val durationToReport = theTest.recordedDuration.getOrElse(duration)
@@ -243,7 +243,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
       reportTestSucceeded(theSuite, report, tracker, testName, theTest.testText, recordEvents, durationToReport, formatter, theSuite.rerunner, theTest.location)
       SucceededStatus
     }
-    catch { // XXX
+    catch {
       case _: TestPendingException =>
         val duration = System.currentTimeMillis - testStartTime
         // testWasPending = true so info's printed out in the finally clause show up yellow
@@ -264,7 +264,7 @@ private[scalatest] sealed abstract class SuperEngine[T](concurrentBundleModResou
                              Vector.empty)
         reportTestCanceled(theSuite, report, e, testName, theTest.testText, recordEvents, theSuite.rerunner, tracker, duration, formatter, theTest.location)
         SucceededStatus
-      case e if !anErrorThatShouldCauseAnAbort(e) =>
+      case e if !anExceptionThatShouldCauseAnAbort(e) =>
         val duration = System.currentTimeMillis - testStartTime
         val durationToReport = theTest.recordedDuration.getOrElse(duration)
         val recordEvents = messageRecorderForThisTest.recordedEvents(false, false) ++ 

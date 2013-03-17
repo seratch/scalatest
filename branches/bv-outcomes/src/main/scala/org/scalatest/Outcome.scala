@@ -30,6 +30,14 @@ sealed abstract class Outcome {
   def isEmpty: Boolean = false
   def toOption: Option[Throwable] = None
   // def map[Z <: Throwable](fn: E => Z): Outcome[Z] 
+  private[scalatest] def toUnit {
+    this match {
+      case Succeeded =>
+      case Exceptional(e) => throw e
+      case Pending(_) => throw new exceptions.TestPendingException
+      case Omitted => throw new exceptions.TestOmittedException
+    }
+  }
 }
 
 abstract class Exceptional(ex: Throwable) extends Outcome {
@@ -115,7 +123,7 @@ trait OutcomeOf {
       case exceptions.TestPendingException(reason) => Pending(reason)                           
       case ex: exceptions.TestOmittedException => Omitted                           
       case tfe: exceptions.TestFailedException => Failed(tfe)
-      case ex: Throwable if !Suite.anErrorThatShouldCauseAnAbort(ex) => Failed(ex)                           
+      case ex: Throwable if !Suite.anExceptionThatShouldCauseAnAbort(ex) => Failed(ex)                           
     }
   }
 }

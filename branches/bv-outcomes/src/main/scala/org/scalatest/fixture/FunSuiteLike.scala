@@ -120,7 +120,7 @@ trait FunSuiteLike extends Suite { thisSuite =>
    */
   protected override def runTest(testName: String, args: Args): Status = {
 
-    def invokeWithFixture(theTest: TestLeaf) {
+    def invokeWithFixture(theTest: TestLeaf): Outcome = {
       theTest.testFun match {
         case wrapper: NoArgTestWrapper[_] =>
           withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
