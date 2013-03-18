@@ -59,7 +59,7 @@ trait ScalaTestNewFramework extends Framework {
       
   class ScalaTestTask(fullyQualifiedName: String, loader: ClassLoader, dispatchReporter: DispatchReporter, tracker: Tracker, eventHandler: EventHandler, 
                       tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
-                      summaryCounter: SummaryCounter, initListener: String => Unit) extends Task {
+                      summaryCounter: SummaryCounter) extends Task {
     
     def tags = {
       // TODO: map scalatest tags to sbt tags.
@@ -95,7 +95,6 @@ trait ScalaTestNewFramework extends Framework {
           constructor.get.newInstance(suiteClass).asInstanceOf[Suite]
         }
         
-        initListener(suite.suiteId)
         val report = new SbtReporter(suite.suiteId, fullyQualifiedName, eventHandler, dispatchReporter, summaryCounter)
         val formatter = formatterForSuiteStarting(suite)
         
@@ -189,7 +188,7 @@ trait ScalaTestNewFramework extends Framework {
     def dispose() = ()
   }
     
-  class SbtLogInfoDispatchReporter extends org.scalatest.ResourcefulReporter {
+  /*class SbtLogInfoDispatchReporter extends org.scalatest.ResourcefulReporter {
     import java.util.concurrent.atomic.AtomicReference
     import java.util.ConcurrentModificationException
     import org.scalatest.events._
@@ -249,7 +248,7 @@ trait ScalaTestNewFramework extends Framework {
     }
     
     def dispose() = ()
-  }
+  }*/
   
   class ScalaTestRunner(runArgs: Array[String], loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
                         repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean) 
@@ -259,7 +258,7 @@ trait ScalaTestNewFramework extends Framework {
     val summaryCounter = new SummaryCounter
     val runStartTime = System.currentTimeMillis
     
-    val sbtLogInfoDispatchReporter = new SbtLogInfoDispatchReporter
+    /*val sbtLogInfoDispatchReporter = new SbtLogInfoDispatchReporter
     
     object SbtReporterFactory extends ReporterFactory {
       override def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = 
@@ -267,14 +266,11 @@ trait ScalaTestNewFramework extends Framework {
           sbtLogInfoDispatchReporter
         else
           new FilterReporter(sbtLogInfoDispatchReporter, configSet)
-    }
+    }*/
     
-    val dispatchReporter = SbtReporterFactory.getDispatchReporter(repConfig, None, None, loader, Some(resultHolder))
+    val dispatchReporter = ReporterFactory.getDispatchReporter(repConfig, None, None, loader, Some(resultHolder))
     
-    dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
-    
-    private def createSbtLogInfoReporter(loggers: Array[Logger]) = {
-      val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) = 
+    val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) = 
       repConfig.standardOutReporterConfiguration match {
         case Some(stdoutConfig) =>
           val configSet = stdoutConfig.configSet
@@ -287,27 +283,37 @@ trait ScalaTestNewFramework extends Framework {
         case None => 
           (false, true, false, false)
       }
-      new SbtLogInfoReporter(
-        loggers, 
-        presentAllDurations,
-        presentInColor,
-        presentShortStackTraces,
-        presentFullStackTraces // If they say both S and F, F overrules
-      )
+    
+    dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
+    
+    private def createTaskDispatchReporter(loggers: Array[Logger]) = {
+      if (useSbtLogInfoReporter) {
+        val sbtLogInfoReporter = 
+          new SbtLogInfoReporter(
+            loggers, 
+            presentAllDurations,
+            presentInColor,
+            presentShortStackTraces,
+            presentFullStackTraces // If they say both S and F, F overrules
+          )
+        ReporterFactory.getDispatchReporter(Seq(dispatchReporter, sbtLogInfoReporter), None, None, loader, Some(resultHolder))
+      }
+      else 
+        dispatchReporter
     }
     
     def task(fullyQualifiedName: String, fingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger]) = {
-      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, eventHandler, tagsToInclude, tagsToExclude, Array.empty, configMap, summaryCounter, 
-                        sbtLogInfoDispatchReporter.registerSbtLogInfoReporter(_, createSbtLogInfoReporter(loggers)))
+      new ScalaTestTask(fullyQualifiedName, loader, createTaskDispatchReporter(loggers), tracker, eventHandler, tagsToInclude, tagsToExclude, Array.empty, configMap, summaryCounter)
     }
     
     def task(fullyQualifiedName: String, isModule: Boolean, selectors: Array[Selector], eventHandler: EventHandler, loggers: Array[Logger]) = {
-      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, eventHandler, Set(SELECTED_TAG), Set.empty, selectors, configMap, summaryCounter, 
-                        sbtLogInfoDispatchReporter.registerSbtLogInfoReporter(_, createSbtLogInfoReporter(loggers)))
+      new ScalaTestTask(fullyQualifiedName, loader, createTaskDispatchReporter(loggers), tracker, eventHandler, Set(SELECTED_TAG), Set.empty, selectors, configMap, summaryCounter)
     }
     
     def done = {
       if (!isDone) {
+        
+        
         val duration = System.currentTimeMillis - runStartTime
         val summary = new Summary(summaryCounter.testsSucceededCount, summaryCounter.testsFailedCount, summaryCounter.testsIgnoredCount, summaryCounter.testsPendingCount, 
                                   summaryCounter.testsCanceledCount, summaryCounter.suitesCompletedCount, summaryCounter.suitesAbortedCount, summaryCounter.scopesPendingCount)
@@ -391,18 +397,20 @@ trait ScalaTestNewFramework extends Framework {
     val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
     val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
     
-    val fullReporterConfigurations: ReporterConfigurations = 
+    val (fullReporterConfigurations, useSbtLogInfoReporter) = 
       if (remoteArgs.isEmpty) {
         // Creating the normal/main runner, should create reporters as specified by args.
         // If no reporters specified, just give them a default stdout reporter
-        Runner.parseReporterArgsIntoConfigurations(if(repoArgsList.isEmpty) "-o" :: Nil else repoArgsList)
+        val useStdout = repoArgsList.find(_.startsWith("-o")) match {
+          case Some(dashO) => true
+          case None => repoArgsList.isEmpty // If no reporters specified, just give them a default stdout reporter
+        }
+        (Runner.parseReporterArgsIntoConfigurations(repoArgsList.filter(!_.startsWith("-o"))), useStdout)
       }
       else {
         // Creating a sub-process runner, should just create stdout reporter and socket reporter
-        Runner.parseReporterArgsIntoConfigurations("-o" :: "-K" :: remoteArgs(0) :: remoteArgs(1) :: Nil)
+        (Runner.parseReporterArgsIntoConfigurations("-K" :: remoteArgs(0) :: remoteArgs(1) :: Nil), true)
       }
-        
-    val useSbtLogInfoReporter = fullReporterConfigurations.find(repConfig => repConfig.isInstanceOf[StandardOutReporterConfiguration]).isDefined
     
     new ScalaTestRunner(args, testClassLoader, tagsToInclude, tagsToExclude, configMap, fullReporterConfigurations, useSbtLogInfoReporter)
   }
