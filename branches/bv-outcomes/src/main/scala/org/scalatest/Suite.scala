@@ -1876,9 +1876,11 @@ private[scalatest] object Suite {
   def anExceptionThatShouldCauseAnAbort(throwable: Throwable): Boolean =
     throwable match {
       case _: AnnotationFormatError | 
+/*
            _: org.scalatest.TestRegistrationClosedException |
            _: org.scalatest.DuplicateTestNameException |
            _: org.scalatest.NotAllowedException |
+*/
            _: CoderMalfunctionError |
            _: FactoryConfigurationError | 
            _: LinkageError | 
