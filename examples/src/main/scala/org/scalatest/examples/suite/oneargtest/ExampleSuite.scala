@@ -1,5 +1,6 @@
 package org.scalatest.examples.suite.oneargtest
 
+import org.scalatest.Outcome
 import org.scalatest.fixture
 import java.io._
 
@@ -8,7 +9,7 @@ class ExampleSuite extends fixture.Suite {
   case class F(file: File, writer: FileWriter)
   type FixtureParam = F
 
-  def withFixture(test: OneArgTest) {
+  def withFixture(test: OneArgTest): Outcome = {
 
     // create the fixture
     val file = File.createTempFile("hello", "world")
