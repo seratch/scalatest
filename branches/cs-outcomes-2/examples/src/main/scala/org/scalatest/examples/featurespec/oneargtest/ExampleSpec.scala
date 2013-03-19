@@ -1,5 +1,6 @@
 package org.scalatest.examples.featurespec.oneargtest
 
+import org.scalatest.Outcome
 import org.scalatest.fixture
 import java.io._
 
@@ -7,7 +8,7 @@ class ExampleSpec extends fixture.FeatureSpec {
 
   case class FixtureParam(file: File, writer: FileWriter)
 
-  def withFixture(test: OneArgTest) {
+  def withFixture(test: OneArgTest): Outcome = {
 
     // create the fixture
     val file = File.createTempFile("hello", "world")

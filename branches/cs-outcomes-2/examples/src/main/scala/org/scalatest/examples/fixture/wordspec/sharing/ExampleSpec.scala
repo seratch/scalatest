@@ -1,5 +1,6 @@
 package org.scalatest.examples.fixture.wordspec.sharing
 
+import org.scalatest.Outcome
 import java.util.concurrent.ConcurrentHashMap
 import org.scalatest.fixture
 import DbServer._
@@ -26,7 +27,7 @@ trait DbFixture { this: fixture.Suite =>
   // it is created
   def populateDb(db: Db) {}
 
-  def withFixture(test: OneArgTest) {
+  def withFixture(test: OneArgTest): Outcome = {
     val dbName = randomUUID.toString
     val db = createDb(dbName) // create the fixture
     try {
