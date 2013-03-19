@@ -944,14 +944,13 @@ class FunSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with Sh
           }
         }
         override def withFixture(test: OneArgTest): Outcome = {
-          try {
-            test.apply("hi")
-          }
-          catch {
-            case e: TestRegistrationClosedException => 
+          val outcome = test.apply("hi")
+          outcome match {
+            case Exceptional(ex: TestRegistrationClosedException) => 
               registrationClosedThrown = true
-              throw e
+            case _ =>
           }
+          outcome
         }
       }
       val rep = new EventRecordingReporter
@@ -963,7 +962,7 @@ class FunSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with Sh
       assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
       val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
       assert("FunSpecSpec.scala" === trce.failedCodeFileName.get)
-      assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
     }
   }
 }

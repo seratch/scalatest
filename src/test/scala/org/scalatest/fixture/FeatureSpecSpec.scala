@@ -1022,14 +1022,13 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
             }
           }
           def withFixture(test: OneArgTest): Outcome = {
-            try {
-              test("a string")
-            }
-            catch {
-              case e: TestRegistrationClosedException => 
+            val outcome = test.apply("a string")
+            outcome match {
+              case Exceptional(ex: TestRegistrationClosedException) => 
                 registrationClosedThrown = true
-                throw e
+              case _ =>
             }
+            outcome
           }
         }
         val rep = new EventRecordingReporter
@@ -1041,7 +1040,7 @@ class FeatureSpecSpec extends org.scalatest.FunSpec with SharedHelpers {
         assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
         val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
         assert("FeatureSpecSpec.scala" === trce.failedCodeFileName.get)
-        assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
+        assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
       }
   }
   
