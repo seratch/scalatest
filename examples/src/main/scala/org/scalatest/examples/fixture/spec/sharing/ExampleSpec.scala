@@ -26,7 +26,7 @@ trait DbFixture { this: fixture.Suite =>
   // it is created
   def populateDb(db: Db) {}
  
-  def withFixture(test: OneArgTest) {
+  def withFixture(test: OneArgTest) = {
     val dbName = randomUUID.toString
     val db = createDb(dbName) // create the fixture
     try {

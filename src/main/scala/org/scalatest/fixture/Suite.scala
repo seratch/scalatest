@@ -95,7 +95,7 @@ trait Suite extends org.scalatest.Suite { thisSuite =>
      * </p>
      *
      * <pre class="stHighlight">
-     * def withFixture(test: OneArgTest) {
+     * def withFixture(test: OneArgTest) = {
      *   withFixture(test.toNoArgTest(new StringBuilder))
      * }
      * </pre>

@@ -958,14 +958,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           }
         }
         override def withFixture(test: NoArgTest): Outcome = {
-          try {
-            test.apply()
-          }
-          catch {
-            case e: TestRegistrationClosedException => 
+          val outcome = test.apply()
+          outcome match {
+            case Exceptional(ex: TestRegistrationClosedException) => 
               registrationClosedThrown = true
-              throw e
+            case _ =>
           }
+          outcome
         }
       }
       val rep = new EventRecordingReporter
@@ -977,7 +976,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
       val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
       assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-      assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
     }
   }
   
@@ -1417,14 +1416,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -1436,7 +1434,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
         }
         
@@ -1449,14 +1447,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -1468,7 +1465,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
         }
         
@@ -1481,14 +1478,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -1500,7 +1496,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
         }
         
@@ -1513,14 +1509,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -1532,7 +1527,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
         }
         
@@ -1973,14 +1968,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -1992,7 +1986,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
         }
         
@@ -2005,14 +1999,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -2024,7 +2017,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
         }
         
@@ -2037,14 +2030,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -2056,7 +2048,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
         }
         
@@ -2069,14 +2061,13 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
               }
             }
             override def withFixture(test: NoArgTest): Outcome = {
-              try {
-                test.apply()
-              }
-              catch {
-                case e: exceptions.NotAllowedException => 
+              val outcome = test.apply()
+              outcome match {
+                case Exceptional(ex: exceptions.NotAllowedException) => 
                   notAllowedThrown = true
-                  throw e
+                case _ =>
               }
+              outcome
             }
           }
           val rep = new EventRecordingReporter
@@ -2088,7 +2079,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
           assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
           val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
           assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
           assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
         }
       }
