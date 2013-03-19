@@ -102,7 +102,7 @@ import org.scalatest.exceptions.TestRegistrationClosedException
  *   case class F(file: File, writer: FileWriter)
  *   type FixtureParam = F
  * 
- *   def withFixture(test: OneArgTest) {
+ *   def withFixture(test: OneArgTest) = {
  * 
  *     // create the fixture
  *     val file = File.createTempFile("hello", "world")
@@ -176,7 +176,7 @@ import org.scalatest.exceptions.TestRegistrationClosedException
  *   // it is created
  *   def populateDb(db: Db) {}
  * 
- *   def withFixture(test: OneArgTest) {
+ *   def withFixture(test: OneArgTest) = {
  *     val dbName = randomUUID.toString
  *     val db = createDb(dbName) // create the fixture
  *     try {

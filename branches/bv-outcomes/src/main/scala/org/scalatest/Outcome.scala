@@ -26,8 +26,8 @@ sealed abstract class Outcome {
   def isCanceled: Boolean = false
   def isPending: Boolean = false
   def isOmitted: Boolean = false
-  def isDefined: Boolean = true
-  def isEmpty: Boolean = false
+  def isDefined: Boolean = false
+  def isEmpty: Boolean = true
   def toOption: Option[Throwable] = None
   // def map[Z <: Throwable](fn: E => Z): Outcome[Z] 
   private[scalatest] def toUnit {
@@ -41,13 +41,13 @@ sealed abstract class Outcome {
 }
 
 abstract class Exceptional(ex: Throwable) extends Outcome {
+  override def isDefined: Boolean = true
+  override def isEmpty: Boolean = false
   override def toOption: Option[Throwable] = Some(ex)
   // def map[Z <: Throwable](fn: E => Z): Exceptional[Z]
 }
 case object Succeeded extends Outcome {
   override def isSucceeded: Boolean = true
-  override def isDefined: Boolean = false
-  override def isEmpty: Boolean = true
   // def map[Z <: Throwable](fn: E => Z): Succeeded = this
 }
 case class Failed(ex: Throwable) extends Exceptional(ex) {

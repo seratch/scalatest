@@ -30,7 +30,7 @@ package org.scalatest
  * import concurrent.Eventually._
  * 
  * trait RetriedTests extends AbstractSuite { Suite =&gt;
- *   abstract override def withFixture(test: NoArgTest) {
+ *   abstract override def withFixture(test: NoArgTest) = {
  *     eventually { super.withFixture(test) }
  *   }
  * }
@@ -45,7 +45,7 @@ package org.scalatest
  * import concurrent.Eventually._
  * 
  * trait RetriedTests extends SuiteMixin { Suite =&gt;
- *   abstract override def withFixture(test: NoArgTest) {
+ *   abstract override def withFixture(test: NoArgTest) = {
  *     eventually { super.withFixture(test) }
  *   }
  * }

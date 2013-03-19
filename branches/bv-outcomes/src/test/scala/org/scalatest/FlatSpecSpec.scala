@@ -989,14 +989,13 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
             }
           }
           override def withFixture(test: NoArgTest): Outcome = {
-            try {
-              test.apply()
-            }
-            catch {
-              case e: TestRegistrationClosedException => 
+            val outcome = test.apply()
+            outcome match {
+              case Exceptional(ex: TestRegistrationClosedException) => 
                 registrationClosedThrown = true
-                throw e
+              case _ =>
             }
+            outcome
           }
         }
         val a = new ApplicationSpec
@@ -1008,7 +1007,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
         assertResult(classOf[TestRegistrationClosedException])(testFailedEvents(0).throwable.get.getClass())
         val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
         assertResult("FlatSpecSpec.scala")(trce.failedCodeFileName.get)
-        assertResult(thisLineNumber - 26)(trce.failedCodeLineNumber.get)
+        assertResult(thisLineNumber - 25)(trce.failedCodeLineNumber.get)
     }
   }
   
@@ -1044,14 +1043,13 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
           }
         }
         override def withFixture(test: NoArgTest): Outcome = {
-          try {
-            test.apply()
-          }
-          catch {
-            case e: TestRegistrationClosedException => 
+          val outcome = test.apply()
+          outcome match {
+            case Exceptional(ex: TestRegistrationClosedException) => 
               registrationClosedThrown = true
-              throw e
+            case _ =>
           }
+          outcome
         }
       }
       val rep = new EventRecordingReporter
@@ -1063,7 +1061,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
       assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
       val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
       assert("FlatSpecSpec.scala" === trce.failedCodeFileName.get)
-      assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
     }
   }
 }

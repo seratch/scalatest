@@ -755,14 +755,13 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
           }
         }
         override def withFixture(test: NoArgTest): Outcome = {
-          try {
-            test.apply()
-          }
-          catch {
-            case e: TestRegistrationClosedException => 
+          val outcome = test.apply()
+          outcome match {
+            case Exceptional(ex: TestRegistrationClosedException) => 
               registrationClosedThrown = true
-              throw e
+            case _ =>
           }
+          outcome
         }
       }
       val rep = new EventRecordingReporter
@@ -774,7 +773,7 @@ class FunSuiteSpec extends FunSpec with SharedHelpers {
       assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
       val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
       assert("FunSuiteSpec.scala" === trce.failedCodeFileName.get)
-      assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
     }
   }
 }

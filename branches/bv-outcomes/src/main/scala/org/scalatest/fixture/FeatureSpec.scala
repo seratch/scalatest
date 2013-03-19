@@ -100,7 +100,7 @@ import org.scalatest.exceptions.NotAllowedException
  *   case class F(file: File, writer: FileWriter)
  *   type FixtureParam = F
  * 
- *   def withFixture(test: OneArgTest) {
+ *   def withFixture(test: OneArgTest) = {
  * 
  *     // create the fixture
  *     val file = File.createTempFile("hello", "world")
