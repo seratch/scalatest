@@ -723,9 +723,6 @@ class SuiteSuite extends Suite with PrivateMethodTester with SharedHelpers with 
     assertResult(true) { Suite.anExceptionThatShouldCauseAnAbort(new TransformerFactoryConfigurationError) }
     assertResult(true) { Suite.anExceptionThatShouldCauseAnAbort(new VirtualMachineError {}) }
     assertResult(true) { Suite.anExceptionThatShouldCauseAnAbort(new OutOfMemoryError) }
-    assertResult(true) { Suite.anExceptionThatShouldCauseAnAbort(new org.scalatest.exceptions.TestRegistrationClosedException("no msg", 0)) }
-    assertResult(true) { Suite.anExceptionThatShouldCauseAnAbort(new org.scalatest.exceptions.DuplicateTestNameException("no msg", 0)) }
-    assertResult(true) { Suite.anExceptionThatShouldCauseAnAbort(new org.scalatest.exceptions.NotAllowedException("no msg", 0)) }
     assertResult(false) { Suite.anExceptionThatShouldCauseAnAbort(new AssertionError) }
     assertResult(false) { Suite.anExceptionThatShouldCauseAnAbort(new RuntimeException) }
   }
