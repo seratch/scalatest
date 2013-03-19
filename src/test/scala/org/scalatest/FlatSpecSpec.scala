@@ -105,7 +105,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
       val a = new FlatSpec {
         var withFixtureWasInvoked = false
         var testWasInvoked = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest): Outcome = {
           withFixtureWasInvoked = true
           super.withFixture(test)
         }
@@ -120,7 +120,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
     it("should pass the correct test name in the NoArgTest passed to withFixture") {
       val a = new FlatSpec {
         var correctTestNameWasPassed = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest): Outcome = {
           correctTestNameWasPassed = test.name == "should do something"
           super.withFixture(test)
         }
@@ -132,7 +132,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
     it("should pass the correct config map in the NoArgTest passed to withFixture") {
       val a = new FlatSpec {
         var correctConfigMapWasPassed = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest): Outcome = {
           correctConfigMapWasPassed = (test.configMap == ConfigMap("hi" -> 7))
           super.withFixture(test)
         }
@@ -988,7 +988,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
             it should "render a feature JSON on feature request" in {
             }
           }
-          override def withFixture(test: NoArgTest) {
+          override def withFixture(test: NoArgTest): Outcome = {
             try {
               test.apply()
             }
@@ -1043,7 +1043,7 @@ class FlatSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen with Sh
             assert(1 === 2)
           }
         }
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest): Outcome = {
           try {
             test.apply()
           }
