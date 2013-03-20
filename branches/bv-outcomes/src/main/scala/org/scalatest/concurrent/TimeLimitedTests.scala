@@ -131,14 +131,16 @@ trait TimeLimitedTests extends SuiteMixin { this: Suite =>
    * @param test the test on which to enforce a time limit
    */
   abstract override def withFixture(test: NoArgTest): Outcome = {
-    val outcome =
+    try {
       failAfter(timeLimit) {
         super.withFixture(test)
       } (defaultTestInterruptor)
-    outcome match {
-      case Exceptional(e: org.scalatest.exceptions.ModifiableMessage[_] with TimeoutField) =>
+    }
+    catch {
+      case e: org.scalatest.exceptions.ModifiableMessage[_] with TimeoutField => 
         Exceptional(e.modifyMessage(opts => Some(Resources("testTimeLimitExceeded", e.timeout.prettyString))))
-      case other => other
+      case t: Throwable => 
+        Exceptional(t)
     }
   }
 
