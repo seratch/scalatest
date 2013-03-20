@@ -44,13 +44,15 @@ trait CancelAfterFailure extends SuiteMixin { this: Suite =>
    * any previous test run in this <code>Suite</code> instance has failed.
    */
   abstract override def withFixture(test: NoArgTest): Outcome = {
-    if (cancelRemaining) Canceled("Canceled by CancelOnFailure because a test failed previously")
-    super.withFixture(test) match {
-      case failed: Failed =>
-        cancelRemaining = true
-        failed
-      case outcome => outcome
-    }
+    if (cancelRemaining) 
+      Canceled("Canceled by CancelOnFailure because a test failed previously")
+    else
+      super.withFixture(test) match {
+        case failed: Failed =>
+          cancelRemaining = true
+          failed
+        case outcome => outcome
+      }
   }
 
   /**
