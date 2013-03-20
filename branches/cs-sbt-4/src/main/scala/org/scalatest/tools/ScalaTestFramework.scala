@@ -125,9 +125,9 @@ class ScalaTestFramework extends Framework {
           
         val dispatchReporter = 
           if (useStdout)
-            ReporterFactory.getDispatchReporter(reporter.reporters :+ createSbtLogInfoReporter(loggers), None, None, testLoader, Some(resultHolder))
+            ReporterFactory.getDispatchReporter(Seq(reporter, createSbtLogInfoReporter(loggers)), None, None, testLoader, Some(resultHolder))
           else
-            ReporterFactory.getDispatchReporter(reporter.reporters, None, None, testLoader, Some(resultHolder))
+            reporter
           
         (dispatchReporter, filter, configMap)
       }
