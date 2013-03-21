@@ -192,68 +192,6 @@ class ScalaTestNewFramework extends Framework {
 
     def dispose() = ()
   }
-    
-  /*class SbtLogInfoDispatchReporter extends org.scalatest.ResourcefulReporter {
-    import java.util.concurrent.atomic.AtomicReference
-    import java.util.ConcurrentModificationException
-    import org.scalatest.events._
-    
-    
-    private final val atomic = new AtomicReference[Map[String, SbtLogInfoReporter]](Map.empty)
-    
-    def updateAtomic(oldMap: Map[String, SbtLogInfoReporter], newMap: Map[String, SbtLogInfoReporter]) {
-      val shouldBeOldMap = atomic.getAndSet(newMap)
-      if (!(shouldBeOldMap eq oldMap))
-        throw new ConcurrentModificationException("Two threads attempted to modify SbtLogInfoDispatchReporter, which should be called only in a synchronized block.")
-    }
-      
-    def apply(event: Event) {
-      val suiteId = 
-        event match {
-          case t: TestStarting => Some(t.suiteId)
-          case t: TestSucceeded => Some(t.suiteId)
-          case t: TestPending => Some(t.suiteId)
-          case t: TestFailed => Some(t.suiteId)
-          case t: TestIgnored => Some(t.suiteId)
-          case t: TestCanceled => Some(t.suiteId)
-          case s: SuiteStarting => Some(s.suiteId)
-          case s: SuiteCompleted => Some(s.suiteId)
-          case s: SuiteAborted => Some(s.suiteId)
-          case s: ScopeOpened => Some(s.nameInfo.suiteId)
-          case s: ScopeClosed => Some(s.nameInfo.suiteId)
-          case s: ScopePending => Some(s.nameInfo.suiteId)
-          case i: InfoProvided => 
-            i.nameInfo match {
-              case Some(nameInfo) => Some(nameInfo.suiteId)
-              case None => None
-            }
-          case m: MarkupProvided => 
-            m.nameInfo match {
-              case Some(nameInfo) => Some(nameInfo.suiteId)
-              case None => None
-            }
-          case _ => None // RunCompleted, RunStarting, RunStopped should not get fired.
-        }
-      suiteId match {
-        case Some(suiteId) => atomic.get().get(suiteId) match {
-          case Some(sbtLogInfoReporter) => sbtLogInfoReporter(event)
-          case None => // Could happen when the suite is run in sub process, just do nothing as logger stub in sub proccess will write to skeleton, and skeleton will log it out.
-        }
-        case None => // Do nothing
-      }
-      
-    }
-    
-    def registerSbtLogInfoReporter(suiteId: String, reporter: SbtLogInfoReporter) {
-      synchronized {
-        val oldMap = atomic.get
-        val newMap = oldMap ++ Map(suiteId -> reporter)
-        updateAtomic(oldMap, newMap)
-      }
-    }
-    
-    def dispose() = ()
-  }*/
   
   class ScalaTestRunner(runArgs: Array[String], loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
                         repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean) 
@@ -262,16 +200,6 @@ class ScalaTestNewFramework extends Framework {
     val tracker = new Tracker
     val summaryCounter = new SummaryCounter
     val runStartTime = System.currentTimeMillis
-    
-    /*val sbtLogInfoDispatchReporter = new SbtLogInfoDispatchReporter
-    
-    object SbtReporterFactory extends ReporterFactory {
-      override def createStandardOutReporter(configSet: Set[ReporterConfigParam]) = 
-        if (configSetMinusNonFilterParams(configSet).isEmpty)
-          sbtLogInfoDispatchReporter
-        else
-          new FilterReporter(sbtLogInfoDispatchReporter, configSet)
-    }*/
     
     val dispatchReporter = ReporterFactory.getDispatchReporter(repConfig, None, None, loader, Some(resultHolder))
     
