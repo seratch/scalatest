@@ -22,7 +22,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.exceptions._
 
 @RunWith(classOf[JUnitRunner])
-class ScalaTestOldFrameworkSuite extends FunSuite{
+class ScalaTestFrameworkSuite extends FunSuite{
 
   test("framework name"){
     assert(new ScalaTestFramework().name === "ScalaTest")

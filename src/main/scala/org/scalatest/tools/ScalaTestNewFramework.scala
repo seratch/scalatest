@@ -39,7 +39,12 @@ import org.scalatest.events.Summary
 import org.scalasbt.testing.Status
 import org.scalatest.ConfigMap
 
-trait ScalaTestNewFramework extends Framework {
+class ScalaTestNewFramework extends Framework {
+  
+  /**
+   * Test framework name.
+   */
+  def name = "ScalaTest"
     
   private val resultHolder = new SuiteResultHolder()
     
