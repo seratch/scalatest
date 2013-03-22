@@ -1,11 +1,6 @@
 package org.scalatest.tools
 
-import org.scalasbt.testing.Framework
-import org.scalasbt.testing.Logger
-import org.scalasbt.testing.EventHandler
-import org.scalasbt.testing.Fingerprint
-import org.scalasbt.testing.Selector
-import org.scalasbt.testing.Task
+import org.scalasbt.testing.{Event => SbtEvent, Framework => SbtFramework, _}
 import org.scalatest.Reporter
 import SuiteDiscoveryHelper._
 import StringReporter.colorizeLinesIndividually
@@ -24,11 +19,6 @@ import org.scalatest.events.SeeStackDepthException
 import org.scalatest.Filter
 import org.scalatest.tools.Runner.parsePropertiesArgsIntoMap
 import org.scalatest.tools.Runner.parseCompoundArgIntoSet
-import org.scalasbt.testing.{Event => SbtEvent}
-import org.scalasbt.testing.TestSelector
-import org.scalasbt.testing.SuiteSelector
-import org.scalasbt.testing.NestedTestSelector
-import org.scalasbt.testing.NestedSuiteSelector
 import org.scalatest.DynaTags
 import org.scalatest.tools.Runner.SELECTED_TAG
 import org.scalatest.tools.Runner.mergeMap
@@ -40,7 +30,7 @@ import org.scalasbt.testing.Status
 import org.scalatest.ConfigMap
 import java.io.{StringWriter, PrintWriter}
 
-class ScalaTestNewFramework extends Framework {
+class Framework extends SbtFramework {
   
   /**
    * Test framework name.
