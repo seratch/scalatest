@@ -375,12 +375,18 @@ class ScalaTestNewFrameworkSuite extends FunSuite {
     assert(testEventHandler.skippedEventsReceived.length === 0)
   }
   
-  test("ScalaTestRunner should print summary and return true when SbtLogInfoReporter is used, and throw IllegalStateException if 'done' method is called twice.") {
+  test("ScalaTestRunner should return summary when 'done' is called, and throw IllegalStateException if 'done' method is called twice.") {
     val testLogger = new TestLogger
-    val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
+    val runner = framework.runner(Array("-oW"), Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()), new TestEventHandler, Array(testLogger))
     task.execute()
-    assert(runner.done === true)
+    val summaryText = runner.done
+    assert(summaryText.size === 5)
+    assert(summaryText(0).startsWith("Run completed in "))
+    assert(summaryText(1) === "Total number of tests run: 3")
+    assert(summaryText(2) === "Suites: completed 1, aborted 0")
+    assert(summaryText(3) === "Tests: succeeded 3, failed 0, canceled 0, ignored 0, pending 0")
+    assert(summaryText(4) === "All tests passed.")
     intercept[IllegalStateException] {
       runner.done()
     }
