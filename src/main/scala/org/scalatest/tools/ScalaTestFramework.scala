@@ -110,11 +110,6 @@ class ScalaTestFramework extends Framework {
           val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
           val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
           filter = org.scalatest.Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
-        
-          repoArgsList.find(_.startsWith("-o")) match {
-            case Some(dashO) => useStdout = true
-            case None => useStdout = repoArgsList.isEmpty 
-          }
           
           val fullReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(repoArgsList)
           
