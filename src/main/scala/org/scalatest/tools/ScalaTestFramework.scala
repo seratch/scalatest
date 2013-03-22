@@ -17,10 +17,59 @@ import org.scalatest._
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
 
+/**
+ * Class that makes ScalaTest tests visible to sbt.
+ *
+ * <p>
+ * To use ScalaTest from within sbt, simply add a line like this to your project file (for sbt 0.1.0 or higher):
+ * </p>
+ *
+ * <pre class="stExamples">
+ * libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test"
+ * </pre>
+ *
+ * <p>
+ * The above line of code will work for any version of Scala 2.9 (for example, it works for Scala 2.9.0-1).
+ * </p>
+ *
+ * <pre class="stExamples">
+ * libraryDependencies += "org.scalatest" % "scalatest_2.8.1" % "1.5.1" % "test"
+ * </pre>
+ *
+ * <p>
+ * You can configure the output shown when running with sbt in four ways: 1) turn off color, 2) show
+ * short stack traces, 3) full stack traces, and 4) show durations for everything. To do that
+ * you need to add test options, like this:
+ * </p>
+ *
+ * <pre class="stExamples">
+ * override def testOptions = super.testOptions ++
+ *   Seq(TestArgument(TestFrameworks.ScalaTest, "-oD"))
+ * </pre>
+ *
+ * <p>
+ * After the -o, place any combination of:
+ * </p>
+ *
+ * <ul>
+ * <li>D - show durations</li>
+ * <li>S - show short stack traces</li>
+ * <li>F - show full stack traces</li>
+ * <li>W - without color</li>
+ * </ul>
+ *
+ * <p>
+ * For example, "-oDF" would show full stack traces and durations (the amount
+ * of time spent in each test).
+ * </p>
+ *
+ * @author Bill Venners
+ * @author Josh Cough
+ */
 class ScalaTestFramework extends SbtFramework {
   
   /**
-   * Test framework name.
+   * Returns <code>"ScalaTest"</code>, the human readable name for this test framework.
    */
   def name = "ScalaTest"
 
@@ -45,7 +94,7 @@ class ScalaTestFramework extends SbtFramework {
     
     private var reporter: DispatchReporter = null
     private var reporterConfigs: ReporterConfigurations = null
-    private var useStdout = false
+    private var useStdout, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces = false
     private var filter: Filter = null
     private var configMap: ConfigMap = null
     private val resultHolder = new SuiteResultHolder()
@@ -64,10 +113,28 @@ class ScalaTestFramework extends SbtFramework {
         
           repoArgsList.find(_.startsWith("-o")) match {
             case Some(dashO) => useStdout = true
-            case None => useStdout = repoArgsList.isEmpty // If no reporters specified, just give them a default stdout reporter
+            case None => useStdout = repoArgsList.isEmpty 
           }
           
-          reporterConfigs = Runner.parseReporterArgsIntoConfigurations(repoArgsList.filter(!_.startsWith("-o")))
+          val fullReporterConfigurations = Runner.parseReporterArgsIntoConfigurations(repoArgsList)
+          
+          fullReporterConfigurations.standardOutReporterConfiguration match {
+            case Some(stdoutConfig) =>
+              val configSet = stdoutConfig.configSet
+              useStdout = true
+              presentAllDurations = configSet.contains(PresentAllDurations)
+              presentInColor = !configSet.contains(PresentWithoutColor)
+              presentShortStackTraces = configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces)
+              presentFullStackTraces = configSet.contains(PresentFullStackTraces)
+            case None => 
+              useStdout = repoArgsList.isEmpty  // If no reporters specified, just give them a default stdout reporter
+              presentAllDurations = false
+              presentInColor = true
+              presentShortStackTraces = false
+              presentFullStackTraces = false
+          }
+          
+          reporterConfigs = fullReporterConfigurations.copy(standardOutReporterConfiguration = None) //Runner.parseReporterArgsIntoConfigurations(repoArgsList.filter(!_.startsWith("-o")))
         }
         
         if (reporter == null || reporter.isDisposed) {
@@ -107,19 +174,6 @@ class ScalaTestFramework extends SbtFramework {
     }
     
     def createSbtLogInfoReporter(loggers: Array[Logger]) = {
-      val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) = 
-      reporterConfigs.standardOutReporterConfiguration match {
-        case Some(stdoutConfig) =>
-          val configSet = stdoutConfig.configSet
-          (
-            configSet.contains(PresentAllDurations),
-            !configSet.contains(PresentWithoutColor),
-            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-            configSet.contains(PresentFullStackTraces)    
-          )
-        case None => 
-          (false, true, false, false)
-      }
       new SbtLogInfoReporter(
           loggers, 
           presentAllDurations,
@@ -294,5 +348,4 @@ Tags to include and exclude: -n "CheckinTests FunctionalTests" -l "SlowTests Net
       }
     }
   }
-  
 }
