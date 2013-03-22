@@ -38,6 +38,7 @@ import org.scalatest.events.RunStarting
 import org.scalatest.events.Summary
 import org.scalasbt.testing.Status
 import org.scalatest.ConfigMap
+import java.io.{StringWriter, PrintWriter}
 
 class ScalaTestNewFramework extends Framework {
   
@@ -194,7 +195,8 @@ class ScalaTestNewFramework extends Framework {
   }
   
   class ScalaTestRunner(runArgs: Array[String], loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
-                        repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean) 
+                        repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, 
+                        presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) 
                         extends org.scalasbt.testing.Runner {  
     var isDone = false
     val tracker = new Tracker
@@ -202,20 +204,6 @@ class ScalaTestNewFramework extends Framework {
     val runStartTime = System.currentTimeMillis
     
     val dispatchReporter = ReporterFactory.getDispatchReporter(repConfig, None, None, loader, Some(resultHolder))
-    
-    val (presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces) = 
-      repConfig.standardOutReporterConfiguration match {
-        case Some(stdoutConfig) =>
-          val configSet = stdoutConfig.configSet
-          (
-            configSet.contains(PresentAllDurations),
-            !configSet.contains(PresentWithoutColor),
-            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
-            configSet.contains(PresentFullStackTraces)    
-          )
-        case None => 
-          (false, true, false, false)
-      }
     
     dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
     
@@ -245,15 +233,17 @@ class ScalaTestNewFramework extends Framework {
     
     def done = {
       if (!isDone) {
-        
-        
         val duration = System.currentTimeMillis - runStartTime
         val summary = new Summary(summaryCounter.testsSucceededCount, summaryCounter.testsFailedCount, summaryCounter.testsIgnoredCount, summaryCounter.testsPendingCount, 
                                   summaryCounter.testsCanceledCount, summaryCounter.suitesCompletedCount, summaryCounter.suitesAbortedCount, summaryCounter.scopesPendingCount)
         dispatchReporter(RunCompleted(tracker.nextOrdinal(), Some(duration), Some(summary)))
         dispatchReporter.dispatchDisposeAndWaitUntilDone()
         isDone = true
-        useSbtLogInfoReporter
+        val stringWriter = new StringWriter
+        val printReporter = new PrintReporter(new PrintWriter(stringWriter), presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted) {}
+        printReporter.makeFinalReport("runCompleted", Some(duration), Some(summary))
+        stringWriter.flush() // just to make sure everything is flushed
+        stringWriter.toString.split("\n")
       }
       else
         throw new IllegalStateException("done method is called twice")
@@ -330,22 +320,37 @@ class ScalaTestNewFramework extends Framework {
     val tagsToInclude: Set[String] = parseCompoundArgIntoSet(includesArgsList, "-n")
     val tagsToExclude: Set[String] = parseCompoundArgIntoSet(excludesArgsList, "-l")
     
-    val (fullReporterConfigurations, useSbtLogInfoReporter) = 
+    val fullReporterConfigurations: ReporterConfigurations = 
       if (remoteArgs.isEmpty) {
         // Creating the normal/main runner, should create reporters as specified by args.
         // If no reporters specified, just give them a default stdout reporter
-        val useStdout = repoArgsList.find(_.startsWith("-o")) match {
-          case Some(dashO) => true
-          case None => repoArgsList.isEmpty // If no reporters specified, just give them a default stdout reporter
-        }
-        (Runner.parseReporterArgsIntoConfigurations(repoArgsList.filter(!_.startsWith("-o"))), useStdout)
+        Runner.parseReporterArgsIntoConfigurations(repoArgsList/*.filter(!_.startsWith("-o"))*/)
       }
       else {
         // Creating a sub-process runner, should just create stdout reporter and socket reporter
-        (Runner.parseReporterArgsIntoConfigurations("-K" :: remoteArgs(0) :: remoteArgs(1) :: Nil), true)
+        Runner.parseReporterArgsIntoConfigurations("-K" :: remoteArgs(0) :: remoteArgs(1) :: Nil)
       }
     
-    new ScalaTestRunner(args, testClassLoader, tagsToInclude, tagsToExclude, configMap, fullReporterConfigurations, useSbtLogInfoReporter)
+    val (useStdout, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted) = 
+      fullReporterConfigurations.standardOutReporterConfiguration match {
+        case Some(stdoutConfig) =>
+          val configSet = stdoutConfig.configSet
+          (
+            true, 
+            configSet.contains(PresentAllDurations),
+            !configSet.contains(PresentWithoutColor),
+            configSet.contains(PresentShortStackTraces) || configSet.contains(PresentFullStackTraces),
+            configSet.contains(PresentFullStackTraces), 
+            configSet.contains(PresentUnformatted)
+          )
+        case None => 
+          (!remoteArgs.isEmpty, false, true, false, false, false)
+      }
+    
+    val reporterConfigs = fullReporterConfigurations.copy(standardOutReporterConfiguration = None)
+    
+    new ScalaTestRunner(args, testClassLoader, tagsToInclude, tagsToExclude, configMap, reporterConfigs, useStdout, 
+                        presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
   }
   
   private case class ScalaTestSbtEvent(
