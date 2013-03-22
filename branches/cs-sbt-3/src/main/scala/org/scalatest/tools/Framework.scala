@@ -314,7 +314,7 @@ class Framework extends SbtFramework {
       if (remoteArgs.isEmpty) {
         // Creating the normal/main runner, should create reporters as specified by args.
         // If no reporters specified, just give them a default stdout reporter
-        Runner.parseReporterArgsIntoConfigurations(repoArgsList/*.filter(!_.startsWith("-o"))*/)
+        Runner.parseReporterArgsIntoConfigurations(repoArgsList)
       }
       else {
         // Creating a sub-process runner, should just create stdout reporter and socket reporter
@@ -334,7 +334,7 @@ class Framework extends SbtFramework {
             configSet.contains(PresentUnformatted)
           )
         case None => 
-          (!remoteArgs.isEmpty, false, true, false, false, false)
+          (!remoteArgs.isEmpty || repoArgsList.isEmpty, false, true, false, false, false)
       }
     
     val reporterConfigs = fullReporterConfigurations.copy(standardOutReporterConfiguration = None)
