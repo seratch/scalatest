@@ -1,6 +1,6 @@
 package org.scalatest.tools
 
-import org.scalatools.testing._
+import org.scalatools.testing.{Framework => SbtFramework, _}
 import org.scalatest.tools.Runner.parsePropertiesArgsIntoMap
 import org.scalatest.tools.Runner.parseCompoundArgIntoSet
 import SuiteDiscoveryHelper._
@@ -17,7 +17,7 @@ import org.scalatest._
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CountDownLatch
 
-class ScalaTestFramework extends Framework {
+class ScalaTestFramework extends SbtFramework {
   
   /**
    * Test framework name.
