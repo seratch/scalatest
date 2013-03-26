@@ -16,6 +16,7 @@ import java.io.{StringWriter, PrintWriter}
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
+import org.scalatest.tags.{CPU, Disk, Network, SbtTag}
 
 class Framework extends SbtFramework {
   
@@ -195,11 +196,6 @@ class Framework extends SbtFramework {
                       summaryCounter: SummaryCounter, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, 
                       presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) extends Task {
     
-    def tags = {
-      // TODO: map scalatest tags to sbt tags.
-      Array.empty[String]
-    }
-    
     def loadSuiteClass = {
       try {
         Class.forName(fullyQualifiedName, true, loader)
@@ -210,8 +206,18 @@ class Framework extends SbtFramework {
       }
     }
     
+    lazy val suiteClass = loadSuiteClass
+    
+    def tags = 
+      suiteClass.getAnnotations flatMap { 
+        case cpu: CPU => List("cpu")
+        case network: Network => List("network")
+        case disk: Disk => List("disk")
+        case sbtTag: SbtTag => List(sbtTag.value)
+        case _ => List.empty
+      }
+    
     def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {
-      val suiteClass = loadSuiteClass
       if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
         val wrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith])
         val suite = 

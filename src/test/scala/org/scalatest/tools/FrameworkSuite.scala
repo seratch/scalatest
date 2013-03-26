@@ -505,4 +505,40 @@ class FrameworkSuite extends FunSuite {
       runner.done()
     }
   }
+  
+  test("ScalaTest Task's tags method should return 'cpu' when suite class is annotated with @CPU") {
+    val testLogger = new TestLogger
+    val runner = framework.runner(Array("-oW"), Array.empty, testClassLoader)
+    val task = runner.task("org.scalatest.tools.scalasbt.CPUTaggedSuite", subClassFingerprint)
+    val taskTags = task.tags
+    assert(taskTags.size === 1)
+    assert(taskTags(0) === "cpu")
+  }
+  
+  test("ScalaTest Task's tags method should return 'cpu' when suite class is annotated with @Network") {
+    val testLogger = new TestLogger
+    val runner = framework.runner(Array("-oW"), Array.empty, testClassLoader)
+    val task = runner.task("org.scalatest.tools.scalasbt.NetworkTaggedSuite", subClassFingerprint)
+    val taskTags = task.tags
+    assert(taskTags.size === 1)
+    assert(taskTags(0) === "network")
+  }
+  
+  test("ScalaTest Task's tags method should return 'cpu' when suite class is annotated with @Disk") {
+    val testLogger = new TestLogger
+    val runner = framework.runner(Array("-oW"), Array.empty, testClassLoader)
+    val task = runner.task("org.scalatest.tools.scalasbt.DiskTaggedSuite", subClassFingerprint)
+    val taskTags = task.tags
+    assert(taskTags.size === 1)
+    assert(taskTags(0) === "disk")
+  }
+  
+  test("ScalaTest Task's tags method should return 'cpu' when suite class is annotated with @SbtTag") {
+    val testLogger = new TestLogger
+    val runner = framework.runner(Array("-oW"), Array.empty, testClassLoader)
+    val task = runner.task("org.scalatest.tools.scalasbt.SbtTaggedSuite", subClassFingerprint)
+    val taskTags = task.tags
+    assert(taskTags.size === 1)
+    assert(taskTags(0) === "custom")
+  }
 }
