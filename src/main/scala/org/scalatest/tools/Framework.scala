@@ -1,34 +1,21 @@
 package org.scalatest.tools
 
-import org.scalasbt.testing.{Event => SbtEvent, Framework => SbtFramework, _}
-import org.scalatest.Reporter
+import org.scalasbt.testing.{Event => SbtEvent, Framework => SbtFramework, Status => SbtStatus, _}
+import org.scalatest._
 import SuiteDiscoveryHelper._
 import StringReporter.colorizeLinesIndividually
-import org.scalatest.Tracker
-import org.scalatest.WrapWith
-import org.scalatest.Suite
-import org.scalatest.Suite.formatterForSuiteStarting
-import org.scalatest.Suite.formatterForSuiteCompleted
-import org.scalatest.Suite.formatterForSuiteAborted
-import org.scalatest.events.SuiteStarting
-import org.scalatest.events.TopOfClass
-import org.scalatest.Stopper
-import org.scalatest.events.SuiteCompleted
-import org.scalatest.events.SuiteAborted
-import org.scalatest.events.SeeStackDepthException
-import org.scalatest.Filter
-import org.scalatest.tools.Runner.parsePropertiesArgsIntoMap
-import org.scalatest.tools.Runner.parseCompoundArgIntoSet
-import org.scalatest.DynaTags
-import org.scalatest.tools.Runner.SELECTED_TAG
-import org.scalatest.tools.Runner.mergeMap
-import org.scalatest.DispatchReporter
-import org.scalatest.events.RunCompleted
-import org.scalatest.events.RunStarting
-import org.scalatest.events.Summary
-import org.scalasbt.testing.Status
-import org.scalatest.ConfigMap
+import Suite.formatterForSuiteStarting
+import Suite.formatterForSuiteCompleted
+import Suite.formatterForSuiteAborted
+import org.scalatest.events._
+import Runner.parsePropertiesArgsIntoMap
+import Runner.parseCompoundArgIntoSet
+import Runner.SELECTED_TAG
+import Runner.mergeMap
 import java.io.{StringWriter, PrintWriter}
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.JavaConverters._
 
 class Framework extends SbtFramework {
   
@@ -53,9 +40,160 @@ class Framework extends SbtFramework {
         def annotationName = "org.scalatest.DoNotDiscover"
       })
       
-  class ScalaTestTask(fullyQualifiedName: String, loader: ClassLoader, dispatchReporter: DispatchReporter, tracker: Tracker, eventHandler: EventHandler, 
+  class RecordingDistributor(fullyQualifiedName: String, rerunSuiteId: String, args: Args, loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
+                             summaryCounter: SummaryCounter, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, 
+                             presentFullStackTraces: Boolean, presentUnformatted: Boolean) extends Distributor {
+    
+    private val taskQueue = new LinkedBlockingQueue[Task]()
+    
+    def apply(suite: Suite, tracker: Tracker) {
+      apply(suite, args.copy(tracker = tracker))
+    }
+    
+    def apply(suite: Suite, args: Args): Status = {
+      if (suite == null)
+        throw new NullPointerException("suite is null")
+      if (args == null)
+        throw new NullPointerException("args is null")
+      val status = new ScalaTestStatefulStatus
+      val nestedTask = new ScalaTestNestedTask(fullyQualifiedName, rerunSuiteId, suite, loader, args.reporter, args.tracker, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, status, useSbtLogInfoReporter, 
+                                               presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
+      taskQueue.put(nestedTask)
+      status
+    }
+    
+    def nestedTasks: Array[Task] = 
+      taskQueue.asScala.toArray
+  }
+  
+  private def createTaskDispatchReporter(reporter: Reporter, loggers: Array[Logger], loader: ClassLoader, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, 
+                                         presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) = {
+    if (useSbtLogInfoReporter) {
+      val sbtLogInfoReporter = 
+        new SbtLogInfoReporter(
+          loggers, 
+          presentAllDurations,
+          presentInColor,
+          presentShortStackTraces,
+          presentFullStackTraces // If they say both S and F, F overrules
+        )
+      ReporterFactory.getDispatchReporter(Seq(reporter, sbtLogInfoReporter), None, None, loader, Some(resultHolder))
+    }
+    else 
+      reporter
+  }
+      
+  def runSuite(fullyQualifiedName: String, rerunSuiteId: String, suite: Suite, loader: ClassLoader, reporter: Reporter, tracker: Tracker, eventHandler: EventHandler, 
+               tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, summaryCounter: SummaryCounter, statefulStatus: Option[ScalaTestStatefulStatus], 
+               loggers: Array[Logger], useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, 
+               presentUnformatted: Boolean): Array[Task] = {
+    val suiteStartTime = System.currentTimeMillis
+    val suiteClass = suite.getClass
+    val taskReporter = createTaskDispatchReporter(reporter, loggers, loader, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, 
+                                                  presentFullStackTraces, presentUnformatted)
+    val report = new SbtReporter(rerunSuiteId, fullyQualifiedName, eventHandler, taskReporter, summaryCounter)
+    val formatter = formatterForSuiteStarting(suite)
+        
+    val filter = 
+      if (selectors.length == 0)
+        Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
+      else {
+        var suiteTags = Map[String, Set[String]]()
+        var testTags = Map[String, Map[String, Set[String]]]()
+        var hasTest = false
+        var hasNested = false
+            
+        selectors.foreach { selector => 
+          selector match {
+            case suiteSelector: SuiteSelector => 
+              suiteTags = mergeMap[String, Set[String]](List(suiteTags, Map(suite.suiteId -> Set(SELECTED_TAG)))) { _ ++ _ }
+            case testSelector: TestSelector =>
+              testTags = mergeMap[String, Map[String, Set[String]]](List(testTags, Map(suite.suiteId -> Map(testSelector.getTestName() -> Set(SELECTED_TAG))))) { (testMap1, testMap2) => 
+                mergeMap[String, Set[String]](List(testMap1, testMap2)) { _ ++ _}
+              }
+              hasTest = true
+            case nestedSuiteSelector: NestedSuiteSelector => 
+              suiteTags = mergeMap[String, Set[String]](List(suiteTags, Map(nestedSuiteSelector.getSuiteId -> Set(SELECTED_TAG)))) { _ ++ _ }
+              hasNested = true
+            case nestedTestSelector: NestedTestSelector => 
+              testTags = mergeMap[String, Map[String, Set[String]]](List(testTags, Map(nestedTestSelector.getSuiteId -> Map(nestedTestSelector.getTestName -> Set(SELECTED_TAG))))) { (testMap1, testMap2) => 
+                mergeMap[String, Set[String]](List(testMap1, testMap2)) { _ ++ _}
+              }
+              hasNested = true
+          }
+        }
+        // Only exclude nested suites when using -s XXX -t XXXX, same behaviour with Runner.
+        val excludeNestedSuites = hasTest && !hasNested 
+        Filter(if (tagsToInclude.isEmpty) Some(Set(SELECTED_TAG)) else Some(tagsToInclude + SELECTED_TAG), tagsToExclude, false, new DynaTags(suiteTags.toMap, testTags.toMap))
+      }
+
+    report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), formatter, Some(TopOfClass(suiteClass.getName))))
+
+    val args = Args(report, Stopper.default, filter, configMap, None, tracker, Set.empty)
+    val distributor = new RecordingDistributor(fullyQualifiedName, rerunSuiteId, args, loader, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, 
+                                               presentFullStackTraces, presentUnformatted)
+    
+    try {
+      
+      val status = suite.run(None, args.copy(distributor = Some(distributor)))
+      val formatter = formatterForSuiteCompleted(suite)
+      val duration = System.currentTimeMillis - suiteStartTime
+
+      report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), Some(duration), formatter, Some(TopOfClass(suiteClass.getName))))
+      
+      statefulStatus match {
+        case Some(s) => 
+          s.setFailed()
+        case None => // Do nothing
+      }
+    }
+    catch {       
+      case e: Exception => {
+
+        // TODO: Could not get this from Resources. Got:
+        // java.util.MissingResourceException: Can't find bundle for base name org.scalatest.ScalaTestBundle, locale en_US
+        // TODO Chee Seng, I wonder why we couldn't access resources, and if that's still true. I'd rather get this stuff
+        // from the resource file so we can later localize.
+        val rawString = "Exception encountered when attempting to run a suite with class name: " + suiteClass.getName
+        val formatter = formatterForSuiteAborted(suite, rawString)
+
+        val duration = System.currentTimeMillis - suiteStartTime
+        report(SuiteAborted(tracker.nextOrdinal(), rawString, suite.suiteName, suite.suiteId, Some(suiteClass.getName), Some(e), Some(duration), formatter, Some(SeeStackDepthException)))
+        
+        statefulStatus match {
+          case Some(s) => s.setFailed()
+          case None => // Do nothing
+        }
+      }
+    }
+    finally {
+      statefulStatus match {
+        case Some(s) => s.setCompleted()
+        case None => // Do nothing
+      }
+    }
+    
+    distributor.nestedTasks
+  }
+  
+  class ScalaTestNestedTask(fullyQualifiedName: String, rerunSuiteId: String, suite: Suite, loader: ClassLoader, reporter: Reporter, tracker: Tracker, tagsToInclude: Set[String], tagsToExclude: Set[String], 
+                            selectors: Array[Selector], configMap: ConfigMap, summaryCounter: SummaryCounter, statefulStatus: ScalaTestStatefulStatus, useSbtLogInfoReporter: Boolean, 
+                            presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) extends Task {
+    
+    def tags = {
+      // TODO: map scalatest tags to sbt tags.
+      Array.empty[String]
+    }
+    
+    def execute(eventHandler: EventHandler, loggers: Array[Logger]) = 
+      runSuite(fullyQualifiedName, rerunSuiteId, suite, loader, reporter, tracker, eventHandler, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, Some(statefulStatus), 
+               loggers, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
+  }
+      
+  class ScalaTestTask(fullyQualifiedName: String, loader: ClassLoader, reporter: Reporter, tracker: Tracker, 
                       tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
-                      summaryCounter: SummaryCounter) extends Task {
+                      summaryCounter: SummaryCounter, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, 
+                      presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) extends Task {
     
     def tags = {
       // TODO: map scalatest tags to sbt tags.
@@ -72,11 +210,9 @@ class Framework extends SbtFramework {
       }
     }
     
-    def execute = {
+    def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {
       val suiteClass = loadSuiteClass
       if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
-        val suiteStartTime = System.currentTimeMillis
-
         val wrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith])
         val suite = 
         if (wrapWithAnnotation == null)
@@ -91,70 +227,8 @@ class Framework extends SbtFramework {
           constructor.get.newInstance(suiteClass).asInstanceOf[Suite]
         }
         
-        val report = new SbtReporter(suite.suiteId, fullyQualifiedName, eventHandler, dispatchReporter, summaryCounter)
-        val formatter = formatterForSuiteStarting(suite)
-        
-        val filter = 
-          if (selectors.length == 0)
-            Filter(if (tagsToInclude.isEmpty) None else Some(tagsToInclude), tagsToExclude)
-          else {
-            var suiteTags = Map[String, Set[String]]()
-            var testTags = Map[String, Map[String, Set[String]]]()
-            var hasTest = false
-            var hasNested = false
-            
-            selectors.foreach { selector => 
-              selector match {
-                case suiteSelector: SuiteSelector => 
-                  suiteTags = mergeMap[String, Set[String]](List(suiteTags, Map(suite.suiteId -> Set(SELECTED_TAG)))) { _ ++ _ }
-                case testSelector: TestSelector =>
-                  testTags = mergeMap[String, Map[String, Set[String]]](List(testTags, Map(suite.suiteId -> Map(testSelector.getTestName() -> Set(SELECTED_TAG))))) { (testMap1, testMap2) => 
-                    mergeMap[String, Set[String]](List(testMap1, testMap2)) { _ ++ _}
-                  }
-                  hasTest = true
-                case nestedSuiteSelector: NestedSuiteSelector => 
-                  suiteTags = mergeMap[String, Set[String]](List(suiteTags, Map(nestedSuiteSelector.getSuiteId -> Set(SELECTED_TAG)))) { _ ++ _ }
-                  hasNested = true
-                case nestedTestSelector: NestedTestSelector => 
-                  testTags = mergeMap[String, Map[String, Set[String]]](List(testTags, Map(nestedTestSelector.getSuiteId -> Map(nestedTestSelector.getTestName -> Set(SELECTED_TAG))))) { (testMap1, testMap2) => 
-                    mergeMap[String, Set[String]](List(testMap1, testMap2)) { _ ++ _}
-                  }
-                  hasNested = true
-              }
-            }
-            // Only exclude nested suites when using -s XXX -t XXXX, same behaviour with Runner.
-            val excludeNestedSuites = hasTest && !hasNested 
-            Filter(if (tagsToInclude.isEmpty) Some(Set(SELECTED_TAG)) else Some(tagsToInclude + SELECTED_TAG), tagsToExclude, false, new DynaTags(suiteTags.toMap, testTags.toMap))
-          }
-
-        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), formatter, Some(TopOfClass(suiteClass.getName))))
-
-        try {
-          suite.run(None, report, Stopper.default, filter, configMap, None, tracker)
-
-          val formatter = formatterForSuiteCompleted(suite)
-
-          val duration = System.currentTimeMillis - suiteStartTime
-
-          report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), Some(duration), formatter, Some(TopOfClass(suiteClass.getName))))
-
-        }
-        catch {       
-          case e: Exception => {
-
-            // TODO: Could not get this from Resources. Got:
-            // java.util.MissingResourceException: Can't find bundle for base name org.scalatest.ScalaTestBundle, locale en_US
-            // TODO Chee Seng, I wonder why we couldn't access resources, and if that's still true. I'd rather get this stuff
-            // from the resource file so we can later localize.
-            val rawString = "Exception encountered when attempting to run a suite with class name: " + suiteClass.getName
-            val formatter = formatterForSuiteAborted(suite, rawString)
-
-            val duration = System.currentTimeMillis - suiteStartTime
-            report(SuiteAborted(tracker.nextOrdinal(), rawString, suite.suiteName, suite.suiteId, Some(suiteClass.getName), Some(e), Some(duration), formatter, Some(SeeStackDepthException)))
-          }
-        }
-        
-        Array.empty[Task]
+        runSuite(fullyQualifiedName, suite.suiteId, suite, loader, reporter, tracker, eventHandler, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, None, 
+                 loggers, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
       }
        else 
          throw new IllegalArgumentException("Class " + fullyQualifiedName + " is neither accessible accesible org.scalatest.Suite nor runnable.")
@@ -162,14 +236,39 @@ class Framework extends SbtFramework {
   }
   
   private[tools] class SummaryCounter {
-    var testsSucceededCount = 0
-    var testsFailedCount = 0
-    var testsIgnoredCount = 0
-    var testsPendingCount = 0
-    var testsCanceledCount = 0
-    var suitesCompletedCount = 0
-    var suitesAbortedCount = 0
-    var scopesPendingCount = 0
+    val testsSucceededCount, testsFailedCount, testsIgnoredCount, testsPendingCount, testsCanceledCount, suitesCompletedCount, suitesAbortedCount, scopesPendingCount = new AtomicInteger
+    
+    def incrementTestsSucceededCount() { 
+      testsSucceededCount.incrementAndGet() 
+    }
+    
+    def incrementTestsFailedCount() {
+      testsFailedCount.incrementAndGet()
+    }
+    
+    def incrementTestsIgnoredCount() {
+      testsIgnoredCount.incrementAndGet()
+    }
+    
+    def incrementTestsPendingCount() {
+      testsPendingCount.incrementAndGet()
+    }
+    
+    def incrementTestsCanceledCount() {
+      testsCanceledCount.incrementAndGet()
+    }
+    
+    def incrementSuitesCompletedCount() {
+      suitesCompletedCount.incrementAndGet()
+    }
+    
+    def incrementSuitesAbortedCount() {
+      suitesAbortedCount.incrementAndGet()
+    }
+    
+    def incrementScopesPendingCount() {
+      scopesPendingCount.incrementAndGet()
+    }
   }
   
   class SbtLogInfoReporter(loggers: Array[Logger], presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean) 
@@ -197,35 +296,19 @@ class Framework extends SbtFramework {
     
     dispatchReporter(RunStarting(tracker.nextOrdinal(), 0, configMap))
     
-    private def createTaskDispatchReporter(loggers: Array[Logger]) = {
-      if (useSbtLogInfoReporter) {
-        val sbtLogInfoReporter = 
-          new SbtLogInfoReporter(
-            loggers, 
-            presentAllDurations,
-            presentInColor,
-            presentShortStackTraces,
-            presentFullStackTraces // If they say both S and F, F overrules
-          )
-        ReporterFactory.getDispatchReporter(Seq(dispatchReporter, sbtLogInfoReporter), None, None, loader, Some(resultHolder))
-      }
-      else 
-        dispatchReporter
-    }
+    def task(fullyQualifiedName: String, fingerprint: Fingerprint) = 
+      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, tagsToInclude, tagsToExclude, Array.empty, configMap, summaryCounter, 
+                        useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
     
-    def task(fullyQualifiedName: String, fingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger]) = {
-      new ScalaTestTask(fullyQualifiedName, loader, createTaskDispatchReporter(loggers), tracker, eventHandler, tagsToInclude, tagsToExclude, Array.empty, configMap, summaryCounter)
-    }
-    
-    def task(fullyQualifiedName: String, isModule: Boolean, selectors: Array[Selector], eventHandler: EventHandler, loggers: Array[Logger]) = {
-      new ScalaTestTask(fullyQualifiedName, loader, createTaskDispatchReporter(loggers), tracker, eventHandler, Set(SELECTED_TAG), Set.empty, selectors, configMap, summaryCounter)
-    }
+    def task(fullyQualifiedName: String, isModule: Boolean, selectors: Array[Selector]) = 
+      new ScalaTestTask(fullyQualifiedName, loader, dispatchReporter, tracker, Set(SELECTED_TAG), Set.empty, selectors, configMap, summaryCounter, 
+                        useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
     
     def done = {
       if (!isDone) {
         val duration = System.currentTimeMillis - runStartTime
-        val summary = new Summary(summaryCounter.testsSucceededCount, summaryCounter.testsFailedCount, summaryCounter.testsIgnoredCount, summaryCounter.testsPendingCount, 
-                                  summaryCounter.testsCanceledCount, summaryCounter.suitesCompletedCount, summaryCounter.suitesAbortedCount, summaryCounter.scopesPendingCount)
+        val summary = new Summary(summaryCounter.testsSucceededCount.get, summaryCounter.testsFailedCount.get, summaryCounter.testsIgnoredCount.get, summaryCounter.testsPendingCount.get, 
+                                  summaryCounter.testsCanceledCount.get, summaryCounter.suitesCompletedCount.get, summaryCounter.suitesAbortedCount.get, summaryCounter.scopesPendingCount.get)
         dispatchReporter(RunCompleted(tracker.nextOrdinal(), Some(duration), Some(summary)))
         dispatchReporter.dispatchDisposeAndWaitUntilDone()
         isDone = true
@@ -268,18 +351,46 @@ class Framework extends SbtFramework {
           final def react() { 
             val event = is.readObject
             event match {
-              case e: TestStarting => dispatchReporter(e); react()
-              case e: TestSucceeded => dispatchReporter(e); react()
-              case e: TestFailed => dispatchReporter(e); react()
-              case e: TestIgnored => dispatchReporter(e); react()
-              case e: TestPending => dispatchReporter(e); react()
-              case e: TestCanceled => dispatchReporter(e); react()
-              case e: SuiteStarting => dispatchReporter(e); react()
-              case e: SuiteCompleted => dispatchReporter(e); react()
-              case e: SuiteAborted => dispatchReporter(e); react()
+              case e: TestStarting => 
+                dispatchReporter(e) 
+                react()
+              case e: TestSucceeded => 
+                dispatchReporter(e) 
+                summaryCounter.incrementTestsSucceededCount()
+                react()
+              case e: TestFailed => 
+                dispatchReporter(e) 
+                summaryCounter.incrementTestsFailedCount()
+                react()
+              case e: TestIgnored => 
+                dispatchReporter(e)
+                summaryCounter.incrementTestsIgnoredCount()
+                react()
+              case e: TestPending => 
+                dispatchReporter(e)
+                summaryCounter.incrementTestsPendingCount()
+                react()
+              case e: TestCanceled => 
+                dispatchReporter(e)
+                summaryCounter.incrementTestsCanceledCount()
+                react()
+              case e: SuiteStarting => 
+                dispatchReporter(e)
+                react()
+              case e: SuiteCompleted => 
+                dispatchReporter(e)
+                summaryCounter.incrementSuitesCompletedCount()
+                react()
+              case e: SuiteAborted => 
+                dispatchReporter(e)
+                summaryCounter.incrementSuitesAbortedCount()
+                react()
               case e: ScopeOpened => dispatchReporter(e); react()
               case e: ScopeClosed => dispatchReporter(e); react()
-              case e: ScopePending => dispatchReporter(e); react()
+              case e: ScopePending => 
+                dispatchReporter(e)
+                summaryCounter.incrementScopesPendingCount()
+                react()
               case e: InfoProvided => dispatchReporter(e); react()
               case e: MarkupProvided => dispatchReporter(e); react()
               case e: RunStarting => react() // just ignore test starting and continue
@@ -347,7 +458,7 @@ class Framework extends SbtFramework {
       fullyQualifiedName: String, 
       isModule: Boolean, 
       selector: Selector, 
-      status: Status, 
+      status: SbtStatus, 
       throwable: Throwable) extends SbtEvent
   
   private class SbtReporter(suiteId: String, fullyQualifiedName: String, eventHandler: EventHandler, report: Reporter, summaryCounter: SummaryCounter) extends Reporter {
@@ -373,27 +484,27 @@ class Framework extends SbtFramework {
         event match {
           // the results of running an actual test
           case t: TestPending => 
-            summaryCounter.testsPendingCount += 1
-            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
+            summaryCounter.incrementTestsPendingCount()
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), SbtStatus.Skipped, null))
           case t: TestFailed => 
-            summaryCounter.testsFailedCount += 1
-            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Failure, t.throwable.getOrElse(null)))
+            summaryCounter.incrementTestsFailedCount()
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), SbtStatus.Failure, t.throwable.getOrElse(null)))
           case t: TestSucceeded => 
-            summaryCounter.testsSucceededCount += 1
-            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Success, null))
+            summaryCounter.incrementTestsSucceededCount()
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), SbtStatus.Success, null))
           case t: TestIgnored => 
-            summaryCounter.testsIgnoredCount += 1
-            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
+            summaryCounter.incrementTestsIgnoredCount()
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), SbtStatus.Skipped, null))
           case t: TestCanceled =>
-            summaryCounter.testsCanceledCount += 1
-            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), Status.Skipped, null))
+            summaryCounter.incrementTestsCanceledCount()
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getTestSelector(t.suiteId, t.testName), SbtStatus.Skipped, null))
           case t: SuiteCompleted => 
-            summaryCounter.suitesCompletedCount += 1
+            summaryCounter.incrementSuitesCompletedCount()
           case t: SuiteAborted => 
-            summaryCounter.suitesAbortedCount += 1
-            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), Status.Error, t.throwable.getOrElse(null)))
+            summaryCounter.incrementSuitesAbortedCount()
+            eventHandler.handle(ScalaTestSbtEvent(fullyQualifiedName, false, getSuiteSelector(t.suiteId), SbtStatus.Error, t.throwable.getOrElse(null)))
           case t: ScopePending => 
-            summaryCounter.scopesPendingCount += 1
+            summaryCounter.incrementScopesPendingCount()
           case _ => 
         }
       }

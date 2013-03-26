@@ -201,9 +201,9 @@ class FrameworkSuite extends FunSuite {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     
-    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", subClassFingerprint, testEventHandler, Array(new TestLogger))
+    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", subClassFingerprint)
     assert(task != null)
-    task.execute()
+    task.execute(testEventHandler, Array(new TestLogger))
     val successEvents = testEventHandler.successEventsReceived
     assert(successEvents.length === 3)
     assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SampleSuite", "test 1")
@@ -219,9 +219,9 @@ class FrameworkSuite extends FunSuite {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     
-    val task = runner.task("org.scalatest.tools.scalasbt.DoNotDiscoverSuite", subClassFingerprint, testEventHandler, Array(new TestLogger))
+    val task = runner.task("org.scalatest.tools.scalasbt.DoNotDiscoverSuite", subClassFingerprint)
     assert(task != null)
-    task.execute()
+    task.execute(testEventHandler, Array(new TestLogger))
     val successEvents = testEventHandler.successEventsReceived
     assert(successEvents.length === 3)
     assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.DoNotDiscoverSuite", "test 1")
@@ -235,8 +235,8 @@ class FrameworkSuite extends FunSuite {
   test("When suite is neither subclass of org.scalatest.Suite or annotated with WrapWith, IllegalArgumentException will be thrown") {
     intercept[IllegalArgumentException] {
       val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-      val notASuiteTask = runner.task("org.scalatest.tools.scalasbt.NotASuite", null, new TestEventHandler, Array(new TestLogger))
-      notASuiteTask.execute()
+      val notASuiteTask = runner.task("org.scalatest.tools.scalasbt.NotASuite", null)
+      notASuiteTask.execute(new TestEventHandler, Array(new TestLogger))
     }
   }
   
@@ -244,74 +244,146 @@ class FrameworkSuite extends FunSuite {
   	   "will be thrown") {
     intercept[IllegalArgumentException] {
       val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-      val doesNotExistTask = runner.task("org.scalatest.tools.scalasbt.DoesNotExist", null, new TestEventHandler, Array(new TestLogger))
-      doesNotExistTask.execute()
+      val doesNotExistTask = runner.task("org.scalatest.tools.scalasbt.DoesNotExist", null)
+      doesNotExistTask.execute(new TestEventHandler, Array(new TestLogger))
     }
   }
   
-  test("Nested suites will be included in task returned from task(fullyQualifiedName: String, fingerprint: Fingerprint)") {
+  test("Nested suites will be included in tasks returned from task(fullyQualifiedName: String, fingerprint: Fingerprint)") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", subClassFingerprint, testEventHandler, Array(new TestLogger))
+    
+    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", subClassFingerprint)
     assert(task != null)
-    task.execute()
+    val nestedTasks = task.execute(testEventHandler, Array(new TestLogger))
     val successEvents = testEventHandler.successEventsReceived
-    assert(successEvents.length === 9)
-    assertNestedSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 1")
-    assertNestedSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 2")
-    assertNestedSuiteSuccessEvent(successEvents(2), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 3")
-    assertNestedSuiteSuccessEvent(successEvents(3), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 1")
-    assertNestedSuiteSuccessEvent(successEvents(4), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 2")
-    assertNestedSuiteSuccessEvent(successEvents(5), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 3")
-    assertSuiteSuccessEvent(successEvents(6), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 1")
-    assertSuiteSuccessEvent(successEvents(7), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 2")
-    assertSuiteSuccessEvent(successEvents(8), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 3")
+    assert(successEvents.length === 3)
+    assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 1")
+    assertSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 2")
+    assertSuiteSuccessEvent(successEvents(2), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 3")
     assert(testEventHandler.errorEventsReceived.length === 0)
     assert(testEventHandler.failureEventsReceived.length === 0)
     assert(testEventHandler.skippedEventsReceived.length === 0)
+    assert(nestedTasks.size === 2)
+    
+    val nestedTask1 = nestedTasks(0)
+    val nestedTask1TestEventHandler = new TestEventHandler
+    val nestedTask1NestedTasks = nestedTask1.execute(nestedTask1TestEventHandler, Array(new TestLogger))
+    assert(nestedTask1NestedTasks.size === 0)
+    val nestedTask1SuccessEvents = nestedTask1TestEventHandler.successEventsReceived
+    assert(nestedTask1SuccessEvents.length === 3)
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 1")
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 2")
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(2), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 3")
+    assert(nestedTask1TestEventHandler.errorEventsReceived.length === 0)
+    assert(nestedTask1TestEventHandler.failureEventsReceived.length === 0)
+    assert(nestedTask1TestEventHandler.skippedEventsReceived.length === 0)
+    
+    val nestedTask2 = nestedTasks(1)
+    val nestedTask2TestEventHandler = new TestEventHandler
+    val nestedTask2NestedTasks = nestedTask2.execute(nestedTask2TestEventHandler, Array(new TestLogger))
+    assert(nestedTask2NestedTasks.size === 0)
+    val nestedTask2SuccessEvents = nestedTask2TestEventHandler.successEventsReceived
+    assert(nestedTask2SuccessEvents.length === 3)
+    assertNestedSuiteSuccessEvent(nestedTask2SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 1")
+    assertNestedSuiteSuccessEvent(nestedTask2SuccessEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 2")
+    assertNestedSuiteSuccessEvent(nestedTask2SuccessEvents(2), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 3")
+    assert(nestedTask2TestEventHandler.errorEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.failureEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.skippedEventsReceived.length === 0)
   }
   
   test("Ignore, pending, failed, canceled, suite aborted events should be translated and reported correctly for the suite and its nested suites") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", subClassFingerprint, testEventHandler, Array(new TestLogger))
+    
+    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", subClassFingerprint)
     assert(task != null)
-    task.execute()
+    val nestedTasks = task.execute(testEventHandler, Array(new TestLogger))
+    assert(nestedTasks.size == 3)
     
     val successEvents = testEventHandler.successEventsReceived
-    assert(successEvents.length === 3)
-    assertNestedSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 success")
-    assertNestedSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 success")
-    assertSuiteSuccessEvent(successEvents(2), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "success")
+    assert(successEvents.length === 1)
+    assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "success")
     
     val failureEvents = testEventHandler.failureEventsReceived
-    assert(failureEvents.length === 3)
-    assertNestedSuiteFailureEvent(failureEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 failed")
-    assertNestedSuiteFailureEvent(failureEvents(1), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 failed")
-    assertSuiteFailureEvent(failureEvents(2), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "failed")
+    assert(failureEvents.length === 1)
+    assertSuiteFailureEvent(failureEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "failed")
     
     val errorEvents = testEventHandler.errorEventsReceived
-    assert(errorEvents.length === 1)
-    assertNestedSuiteErrorEvent(errorEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 3")
+    assert(errorEvents.length === 0)
     
     val skippedEvents = testEventHandler.skippedEventsReceived
-    assert(skippedEvents.length === 9)
-    assertNestedSuiteSkippedEvent(skippedEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 ignored")
-    assertNestedSuiteSkippedEvent(skippedEvents(1), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 pending")
-    assertNestedSuiteSkippedEvent(skippedEvents(2), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 canceled")
-    assertNestedSuiteSkippedEvent(skippedEvents(3), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 ignored")
-    assertNestedSuiteSkippedEvent(skippedEvents(4), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 pending")
-    assertNestedSuiteSkippedEvent(skippedEvents(5), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 canceled")
-    assertSuiteSkippedEvent(skippedEvents(6), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "ignored")
-    assertSuiteSkippedEvent(skippedEvents(7), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "pending")
-    assertSuiteSkippedEvent(skippedEvents(8), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "canceled")
+    assert(skippedEvents.length === 3)
+    assertSuiteSkippedEvent(skippedEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "ignored")
+    assertSuiteSkippedEvent(skippedEvents(1), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "pending")
+    assertSuiteSkippedEvent(skippedEvents(2), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "canceled")
+    
+    val nestedTask1TestEventHandler = new TestEventHandler
+    val nestedTask1 = nestedTasks(0)
+    val nestedTask1NestedTask = nestedTask1.execute(nestedTask1TestEventHandler, Array(new TestLogger))
+    
+    val nestedTask1SuccessEvents = nestedTask1TestEventHandler.successEventsReceived
+    assert(nestedTask1SuccessEvents.length === 1)
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 success")
+    
+    val nestedTask1FailureEvents = nestedTask1TestEventHandler.failureEventsReceived
+    assert(nestedTask1FailureEvents.length === 1)
+    assertNestedSuiteFailureEvent(nestedTask1FailureEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 failed")
+    
+    val nestedTask1ErrorEvents = nestedTask1TestEventHandler.errorEventsReceived
+    assert(nestedTask1ErrorEvents.length === 0)
+    
+    val nestedTask1SkippedEvents = nestedTask1TestEventHandler.skippedEventsReceived
+    assert(nestedTask1SkippedEvents.length === 3)
+    assertNestedSuiteSkippedEvent(nestedTask1SkippedEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 ignored")
+    assertNestedSuiteSkippedEvent(nestedTask1SkippedEvents(1), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 pending")
+    assertNestedSuiteSkippedEvent(nestedTask1SkippedEvents(2), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 1", "nested 1 canceled")
+    
+    val nestedTask2TestEventHandler = new TestEventHandler
+    val nestedTask2 = nestedTasks(1)
+    val nestedTask2NestedTask = nestedTask2.execute(nestedTask2TestEventHandler, Array(new TestLogger))
+    
+    val nestedTask2SuccessEvents = nestedTask2TestEventHandler.successEventsReceived
+    assert(nestedTask2SuccessEvents.length === 1)
+    assertNestedSuiteSuccessEvent(nestedTask2SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 success")
+    
+    val nestedTask2FailureEvents = nestedTask2TestEventHandler.failureEventsReceived
+    assert(nestedTask2FailureEvents.length === 1)
+    assertNestedSuiteFailureEvent(nestedTask2FailureEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 failed")
+    
+    val nestedTask2ErrorEvents = nestedTask2TestEventHandler.errorEventsReceived
+    assert(nestedTask2ErrorEvents.length === 0)
+    
+    val nestedTask2SkippedEvents = nestedTask2TestEventHandler.skippedEventsReceived
+    assert(nestedTask2SkippedEvents.length === 3)
+    assertNestedSuiteSkippedEvent(nestedTask2SkippedEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 ignored")
+    assertNestedSuiteSkippedEvent(nestedTask2SkippedEvents(1), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 pending")
+    assertNestedSuiteSkippedEvent(nestedTask2SkippedEvents(2), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 2", "nested 2 canceled")
+    
+    val nestedTask3TestEventHandler = new TestEventHandler
+    val nestedTask3 = nestedTasks(2)
+    val nestedTask3NestedTask = nestedTask3.execute(nestedTask3TestEventHandler, Array(new TestLogger))
+    
+    val nestedTask3SuccessEvents = nestedTask3TestEventHandler.successEventsReceived
+    assert(nestedTask3SuccessEvents.length === 0)
+    
+    val nestedTask3FailureEvents = nestedTask3TestEventHandler.failureEventsReceived
+    assert(nestedTask3FailureEvents.length === 0)
+    
+    val nestedTask3ErrorEvents = nestedTask3TestEventHandler.errorEventsReceived
+    assert(nestedTask3ErrorEvents.length === 1)
+    assertNestedSuiteErrorEvent(nestedTask3ErrorEvents(0), "org.scalatest.tools.scalasbt.SuiteWithFailedSkippedTests", "nested 3")
+    
+    val nestedTask3SkippedEvents = nestedTask3TestEventHandler.skippedEventsReceived
+    assert(nestedTask3SkippedEvents.length === 0)
   }
   
   test("SuiteSelector should select and run test(s) in selected suite") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()), testEventHandler, Array(new TestLogger))
-    task.execute()
+    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()))
+    task.execute(testEventHandler, Array(new TestLogger))
     val successEvents = testEventHandler.successEventsReceived
     assert(successEvents.length === 3)
     assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SampleSuite", "test 1")
@@ -324,8 +396,8 @@ class FrameworkSuite extends FunSuite {
   test("TestSelector should select and run selected test(s) in suite, excluding nested suites") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new TestSelector("test 1"), new TestSelector("test 3")), testEventHandler, Array(new TestLogger))
-    task.execute()
+    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new TestSelector("test 1"), new TestSelector("test 3")))
+    task.execute(testEventHandler, Array(new TestLogger))
     val successEvents = testEventHandler.successEventsReceived
     assert(successEvents.length === 2)
     assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SampleSuite", "test 1")
@@ -336,8 +408,8 @@ class FrameworkSuite extends FunSuite {
     
     val testEventHandler2 = new TestEventHandler
     val runner2 = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task2 = runner2.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new TestSelector("test 2")), testEventHandler2, Array(new TestLogger))
-    task2.execute()
+    val task2 = runner2.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new TestSelector("test 2")))
+    task2.execute(testEventHandler2, Array(new TestLogger))
     val successEvents2 = testEventHandler2.successEventsReceived
     assert(successEvents2.length === 1)
     assertSuiteSuccessEvent(successEvents2(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "test 2")
@@ -349,37 +421,79 @@ class FrameworkSuite extends FunSuite {
   test("NestedSuiteSelector should select and run test(s) in selected nested suite") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new NestedSuiteSelector("nested 1")), testEventHandler, Array(new TestLogger))
-    task.execute()
+    
+    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new NestedSuiteSelector("nested 1")))
+    val nestedTasks = task.execute(testEventHandler, Array(new TestLogger))
+    assert(nestedTasks.size === 2)
+    
     val successEvents = testEventHandler.successEventsReceived
-    assert(successEvents.length === 3)
-    assertNestedSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 1")
-    assertNestedSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 2")
-    assertNestedSuiteSuccessEvent(successEvents(2), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 3")
+    assert(successEvents.length === 0)
     assert(testEventHandler.errorEventsReceived.length === 0)
     assert(testEventHandler.failureEventsReceived.length === 0)
     assert(testEventHandler.skippedEventsReceived.length === 0)
+    
+    val nestedTask1 = nestedTasks(0)
+    val nestedTask1TestEventHandler = new TestEventHandler
+    val nestedTask1NestedTasks = nestedTask1.execute(nestedTask1TestEventHandler, Array(new TestLogger))
+    assert(nestedTask1NestedTasks.size === 0)
+    val nestedTask1SuccessEvents = nestedTask1TestEventHandler.successEventsReceived
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 1")
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 2")
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(2), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 3")
+    assert(nestedTask1TestEventHandler.errorEventsReceived.length === 0)
+    assert(nestedTask1TestEventHandler.failureEventsReceived.length === 0)
+    assert(nestedTask1TestEventHandler.skippedEventsReceived.length === 0)
+    
+    val nestedTask2 = nestedTasks(1)
+    val nestedTask2TestEventHandler = new TestEventHandler
+    val nestedTask2NestedTasks = nestedTask2.execute(nestedTask2TestEventHandler, Array(new TestLogger))
+    assert(nestedTask2NestedTasks.size === 0)
+    assert(nestedTask2TestEventHandler.successEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.errorEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.failureEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.skippedEventsReceived.length === 0)
   }
   
   test("NestedTestSelector should select and run selected test(s) in selected nested suite") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new NestedTestSelector("nested 1", "nested 1 test 1"), new NestedTestSelector("nested 2", "nested 2 test 3")), testEventHandler, Array(new TestLogger))
-    task.execute()
-    val successEvents = testEventHandler.successEventsReceived
-    assert(successEvents.length === 2)
-    assertNestedSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 1")
-    assertNestedSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 3")
+    
+    val task = runner.task("org.scalatest.tools.scalasbt.SuiteWithNestedSuites", false, Array(new NestedTestSelector("nested 1", "nested 1 test 1"), new NestedTestSelector("nested 2", "nested 2 test 3")))
+    val nestedTasks = task.execute(testEventHandler, Array(new TestLogger))
+    assert(nestedTasks.size === 2)
+    assert(testEventHandler.successEventsReceived.length === 0)
     assert(testEventHandler.errorEventsReceived.length === 0)
     assert(testEventHandler.failureEventsReceived.length === 0)
     assert(testEventHandler.skippedEventsReceived.length === 0)
+    
+    val nestedTask1 = nestedTasks(0)
+    val nestedTask1TestEventHandler = new TestEventHandler
+    val nestedTask1NestedTasks = nestedTask1.execute(nestedTask1TestEventHandler, Array(new TestLogger))
+    assert(nestedTask1NestedTasks.size === 0)
+    val nestedTask1SuccessEvents = nestedTask1TestEventHandler.successEventsReceived
+    assert(nestedTask1SuccessEvents.size === 1)
+    assertNestedSuiteSuccessEvent(nestedTask1SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 1", "nested 1 test 1")
+    assert(nestedTask1TestEventHandler.errorEventsReceived.length === 0)
+    assert(nestedTask1TestEventHandler.failureEventsReceived.length === 0)
+    assert(nestedTask1TestEventHandler.skippedEventsReceived.length === 0)
+    
+    val nestedTask2 = nestedTasks(1)
+    val nestedTask2TestEventHandler = new TestEventHandler
+    val nestedTask2NestedTasks = nestedTask2.execute(nestedTask2TestEventHandler, Array(new TestLogger))
+    assert(nestedTask2NestedTasks.size === 0)
+    val nestedTask2SuccessEvents = nestedTask2TestEventHandler.successEventsReceived
+    assert(nestedTask2SuccessEvents.size === 1)
+    assertNestedSuiteSuccessEvent(nestedTask2SuccessEvents(0), "org.scalatest.tools.scalasbt.SuiteWithNestedSuites", "nested 2", "nested 2 test 3")
+    assert(nestedTask2TestEventHandler.errorEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.failureEventsReceived.length === 0)
+    assert(nestedTask2TestEventHandler.skippedEventsReceived.length === 0)
   }
   
   test("ScalaTestRunner should return summary when 'done' is called, and throw IllegalStateException if 'done' method is called twice.") {
     val testLogger = new TestLogger
     val runner = framework.runner(Array("-oW"), Array.empty, testClassLoader)
-    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()), new TestEventHandler, Array(testLogger))
-    task.execute()
+    val task = runner.task("org.scalatest.tools.scalasbt.SampleSuite", false, Array(new SuiteSelector()))
+    task.execute(new TestEventHandler, Array(testLogger))
     val summaryText = runner.done
     assert(summaryText.size === 5)
     assert(summaryText(0).startsWith("Run completed in "))
