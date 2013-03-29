@@ -41,7 +41,7 @@ class Framework extends SbtFramework {
         def annotationName = "org.scalatest.DoNotDiscover"
       })
       
-  class RecordingDistributor(fullyQualifiedName: String, rerunSuiteId: String, args: Args, loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
+  class RecordingDistributor(fullyQualifiedName: String, rerunSuiteId: String, originalReporter: Reporter, args: Args, loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
                              summaryCounter: SummaryCounter, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, 
                              presentFullStackTraces: Boolean, presentUnformatted: Boolean) extends Distributor {
     
@@ -57,7 +57,7 @@ class Framework extends SbtFramework {
       if (args == null)
         throw new NullPointerException("args is null")
       val status = new ScalaTestStatefulStatus
-      val nestedTask = new ScalaTestNestedTask(fullyQualifiedName, rerunSuiteId, suite, loader, args.reporter, args.tracker, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, status, useSbtLogInfoReporter, 
+      val nestedTask = new ScalaTestNestedTask(fullyQualifiedName, rerunSuiteId, suite, loader, originalReporter, args.tracker, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, status, useSbtLogInfoReporter, 
                                                presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
       taskQueue.put(nestedTask)
       status
@@ -90,9 +90,7 @@ class Framework extends SbtFramework {
                presentUnformatted: Boolean): Array[Task] = {
     val suiteStartTime = System.currentTimeMillis
     val suiteClass = suite.getClass
-    val taskReporter = createTaskDispatchReporter(reporter, loggers, loader, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, 
-                                                  presentFullStackTraces, presentUnformatted)
-    val report = new SbtReporter(rerunSuiteId, fullyQualifiedName, eventHandler, taskReporter, summaryCounter)
+    val report = new SbtReporter(rerunSuiteId, fullyQualifiedName, eventHandler, reporter, summaryCounter)
     val formatter = formatterForSuiteStarting(suite)
         
     val filter = 
@@ -131,7 +129,7 @@ class Framework extends SbtFramework {
     report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suiteClass.getName), formatter, Some(TopOfClass(suiteClass.getName))))
 
     val args = Args(report, Stopper.default, filter, configMap, None, tracker, Set.empty)
-    val distributor = new RecordingDistributor(fullyQualifiedName, rerunSuiteId, args, loader, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, 
+    val distributor = new RecordingDistributor(fullyQualifiedName, rerunSuiteId, reporter, args, loader, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, 
                                                presentFullStackTraces, presentUnformatted)
     
     try {
@@ -186,9 +184,10 @@ class Framework extends SbtFramework {
       Array.empty[String]
     }
     
-    def execute(eventHandler: EventHandler, loggers: Array[Logger]) = 
+    def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {
       runSuite(fullyQualifiedName, rerunSuiteId, suite, loader, reporter, tracker, eventHandler, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, Some(statefulStatus), 
                loggers, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
+    }
   }
       
   class ScalaTestTask(fullyQualifiedName: String, loader: ClassLoader, reporter: Reporter, tracker: Tracker, 
@@ -233,7 +232,9 @@ class Framework extends SbtFramework {
           constructor.get.newInstance(suiteClass).asInstanceOf[Suite]
         }
         
-        runSuite(fullyQualifiedName, suite.suiteId, suite, loader, reporter, tracker, eventHandler, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, None, 
+        val taskReporter = createTaskDispatchReporter(reporter, loggers, loader, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, 
+                                                      presentFullStackTraces, presentUnformatted)
+        runSuite(fullyQualifiedName, suite.suiteId, suite, loader, taskReporter, tracker, eventHandler, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, None, 
                  loggers, useSbtLogInfoReporter, presentAllDurations, presentInColor, presentShortStackTraces, presentFullStackTraces, presentUnformatted)
       }
        else 
