@@ -1,13 +1,13 @@
 package org.scalatest.tools
 import org.scalatest.FunSuite
-import org.scalasbt.testing.EventHandler
-import org.scalasbt.testing.Event
-import org.scalasbt.testing.Logger
-import org.scalasbt.testing.TestSelector
-import org.scalasbt.testing.NestedTestSelector
-import org.scalasbt.testing.SuiteSelector
-import org.scalasbt.testing.NestedSuiteSelector
-import org.scalasbt.testing.Status
+import sbt.testing.EventHandler
+import sbt.testing.Event
+import sbt.testing.Logger
+import sbt.testing.TestSelector
+import sbt.testing.NestedTestSelector
+import sbt.testing.SuiteSelector
+import sbt.testing.NestedSuiteSelector
+import sbt.testing.Status
 
 class FrameworkSuite extends FunSuite {
   
@@ -76,22 +76,22 @@ class FrameworkSuite extends FunSuite {
     assert(fingerprints.size === 3)
 
     val testFingerprint =
-      fingerprints(0).asInstanceOf[org.scalasbt.testing.SubclassFingerprint]
+      fingerprints(0).asInstanceOf[sbt.testing.SubclassFingerprint]
     assert(testFingerprint.isModule === false)
     assert(testFingerprint.superclassName === "org.scalatest.Suite")
     
     val annotatedFingerprint = 
-      fingerprints(1).asInstanceOf[org.scalasbt.testing.AnnotatedFingerprint]
+      fingerprints(1).asInstanceOf[sbt.testing.AnnotatedFingerprint]
     assert(annotatedFingerprint.isModule === false)
     assert(annotatedFingerprint.annotationName === "org.scalatest.WrapWith")
     
     val doNotDiscoverFingerprint = 
-      fingerprints(2).asInstanceOf[org.scalasbt.testing.DoNotDiscoverFingerprint]
+      fingerprints(2).asInstanceOf[sbt.testing.DoNotDiscoverFingerprint]
     assert(doNotDiscoverFingerprint.annotationName == "org.scalatest.DoNotDiscover")
   }
   
   val testClassLoader = getClass.getClassLoader
-  val subClassFingerprint = new org.scalasbt.testing.SubclassFingerprint {
+  val subClassFingerprint = new sbt.testing.SubclassFingerprint {
                               def superclassName = "org.scalatest.Suite"
                               def isModule = false
                             }

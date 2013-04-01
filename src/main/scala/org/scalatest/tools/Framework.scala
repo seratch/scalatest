@@ -1,6 +1,6 @@
 package org.scalatest.tools
 
-import org.scalasbt.testing.{Event => SbtEvent, Framework => SbtFramework, Status => SbtStatus, _}
+import sbt.testing.{Event => SbtEvent, Framework => SbtFramework, Status => SbtStatus, _}
 import org.scalatest._
 import SuiteDiscoveryHelper._
 import StringReporter.colorizeLinesIndividually
@@ -29,15 +29,15 @@ class Framework extends SbtFramework {
     
   def fingerprints = 
     Array(
-      new org.scalasbt.testing.SubclassFingerprint {
+      new sbt.testing.SubclassFingerprint {
         def superclassName = "org.scalatest.Suite"
         def isModule = false
       }, 
-      new org.scalasbt.testing.AnnotatedFingerprint {
+      new sbt.testing.AnnotatedFingerprint {
         def annotationName = "org.scalatest.WrapWith"
         def isModule = false
       }, 
-      new org.scalasbt.testing.DoNotDiscoverFingerprint {
+      new sbt.testing.DoNotDiscoverFingerprint {
         def annotationName = "org.scalatest.DoNotDiscover"
       })
       
@@ -293,7 +293,7 @@ class Framework extends SbtFramework {
   class ScalaTestRunner(runArgs: Array[String], loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], configMap: ConfigMap, 
                         repConfig: ReporterConfigurations, useSbtLogInfoReporter: Boolean, presentAllDurations: Boolean, presentInColor: Boolean, 
                         presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) 
-                        extends org.scalasbt.testing.Runner {  
+                        extends sbt.testing.Runner {  
     var isDone = false
     val tracker = new Tracker
     val summaryCounter = new SummaryCounter
