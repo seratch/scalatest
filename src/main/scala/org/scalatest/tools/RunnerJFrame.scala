@@ -384,6 +384,8 @@ private[scalatest] class RunnerJFrame(
 
             val name =
               holder.event match {
+                case event: DiscoveryStarting => None
+                case event: DiscoveryCompleted => None
                 case event: RunStarting => None
                 case event: RunStopped => None
                 case event: RunAborted => None
@@ -413,6 +415,8 @@ private[scalatest] class RunnerJFrame(
             
             val suiteId = 
               holder.event match {
+                case event: DiscoveryStarting => None
+                case event: DiscoveryCompleted => None
                 case event: RunStarting => None
                 case event: RunStopped => None
                 case event: RunAborted => None
@@ -435,6 +439,8 @@ private[scalatest] class RunnerJFrame(
 
             val duration =
               holder.event match {
+                case event: DiscoveryStarting => None
+                case event: DiscoveryCompleted => event.duration
                 case event: RunStarting => None
                 case event: RunStopped => event.duration
                 case event: RunAborted => event.duration
@@ -879,6 +885,10 @@ private[scalatest] class RunnerJFrame(
 
     override def apply(event: Event) {
       event match {
+        case _: DiscoveryStarting =>
+        System.out.println("gcbx Doing Disco [" + "]\n");
+        case _: DiscoveryCompleted => 
+        System.out.println("gcbx Done doing disco [" + "]\n");
 
         case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) =>
 
@@ -1331,6 +1341,9 @@ private[scalatest] class RunnerJFrame(
     def apply(event: Event) {
 
       event match {
+        case _: DiscoveryStarting => None
+        case _: DiscoveryCompleted => None
+
         case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) =>
 
           // Create the Report outside of the event handler thread, because otherwise
