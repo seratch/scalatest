@@ -1896,8 +1896,6 @@ final case class ScopePending (
     </ScopePending>
 }
 
-/*
-
 /**
  * Event that indicates a runner is about run a suite of tests.
  *
@@ -1919,20 +1917,16 @@ final case class ScopePending (
  *
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
- * @param testCount the number of tests expected during this run
  * @param configMap a <code>ConfigMap</code> of key-value pairs that can be used by custom <code>Reporter</code>s
  * @param payload an optional object that can be used to pass custom information to the reporter about the <code>RunStarting</code> event
  * @param threadName a name for the <code>Thread</code> about whose activity this event was reported
  * @param timeStamp a <code>Long</code> indicating the time this event was reported, expressed in terms of the
  *        number of milliseconds since the standard base time known as "the epoch":  January 1, 1970, 00:00:00 GMT
  *
- * @throws IllegalArgumentException if <code>testCount</code> is less than zero.
- *
  * @author Bill Venners
  */
 final case class DiscoveryStarting (
   ordinal: Ordinal,
-  testCount: Int,
   configMap: ConfigMap,
   payload: Option[Any] = None,
   threadName: String = Thread.currentThread.getName,
@@ -1941,8 +1935,6 @@ final case class DiscoveryStarting (
  
   if (ordinal == null)
     throw new NullPointerException("ordinal was null")
-  if (testCount < 0)
-    throw new IllegalArgumentException("testCount was less than zero: " + testCount)
   if (configMap == null)
     throw new NullPointerException("configMap was null")
   if (payload == null)
@@ -1959,6 +1951,26 @@ final case class DiscoveryStarting (
    * Formatter in a <code>DiscoveryStarting</code> is always set to <code>None</code>.
    */
   val formatter: Option[Formatter] = None
+
+  import EventXmlHelper._
+  private [scalatest] def toXml = 
+    <DiscoveryStarting>
+      <ordinal>
+        <runStamp>{ ordinal.runStamp }</runStamp>
+      </ordinal>
+      <configMap>
+        { 
+          for ((key, value) <- configMap) yield {
+            <entry>
+              <key>{ key }</key>
+              <value>{ value }</value>
+            </entry>
+          }
+        }
+      </configMap>
+      <threadName>{ threadName }</threadName>
+      <timeStamp>{ timeStamp }</timeStamp>
+    </DiscoveryStarting>
 }
 
 /**
@@ -2036,9 +2048,18 @@ final case class DiscoveryCompleted (
    * Formatter in a <code>DiscoveryCompleted</code> is always set to <code>None</code>.
    */
   val formatter: Option[Formatter] = None
+  
+  import EventXmlHelper._
+  private [scalatest] def toXml = 
+    <DiscoveryCompleted>
+      <ordinal>
+        <runStamp>{ ordinal.runStamp }</runStamp>
+      </ordinal>
+      <duration>{ longOption(duration) }</duration>
+      <threadName>{ threadName }</threadName>
+      <timeStamp>{ timeStamp }</timeStamp>
+    </DiscoveryCompleted>
 }
-
-*/
 
 /**
  * Deprecated singleton object for the <a href="TestStarting.html"><code>TestStarting</code></a> event, which contains overloaded factory methods

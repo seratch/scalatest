@@ -2083,12 +2083,12 @@ object Runner {
             }
             else {
               println("DEBUG: Discovery Starting")
-              // dispatch(DiscoveryStarting)
+              dispatch(DiscoveryStarting(tracker.nextOrdinal(), configMap))
               val discoveryStartTime = System.currentTimeMillis
               val accessibleSuites = discoverSuiteNames(runpath, loader, suffixes)
               val discoveryDuration = System.currentTimeMillis - discoveryStartTime
               println("DEBUG: Discovery Completed: " + discoveryDuration + " milliseconds")
-              // dispatch(DiscoveryCompleted(discoveryDuration))
+              dispatch(DiscoveryCompleted(tracker.nextOrdinal(), Some(discoveryDuration)))
 
               if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
                 // In this case, they didn't specify any -w, -m, -s, -j or -b on the command line, so the default

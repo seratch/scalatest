@@ -336,6 +336,8 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
   def apply(event: Event) {
 
     event match {
+      case _: DiscoveryStarting =>
+      case _: DiscoveryCompleted =>
 
       case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) => 
 
