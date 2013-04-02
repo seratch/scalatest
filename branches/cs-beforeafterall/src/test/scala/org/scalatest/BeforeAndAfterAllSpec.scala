@@ -42,7 +42,43 @@ class BeforeAndAfterAllSpec extends FunSpec with ShouldMatchers {
     override protected def afterAll(configMap: ConfigMap) {
       afterAllTime = System.currentTimeMillis
     }
-  } 
+  }
+  
+  class BeforeAfterAllCounter {
+    
+    import java.util.concurrent.atomic.AtomicInteger
+    
+    @volatile var beforeAll = new AtomicInteger
+    @volatile var afterAll = new AtomicInteger
+    
+    def incrementBeforeAllCount() {
+      beforeAll.incrementAndGet()
+    }
+    
+    def incrementAfterAllCount() {
+      afterAll.incrementAndGet()
+    }
+    
+    def beforeAllCount = beforeAll.get
+    def afterAllCount = afterAll.get
+  }
+  
+  class ExampleBeforeAndAfterAllWithParallelTestExecutionSuite(counter: BeforeAfterAllCounter) extends FunSuite with BeforeAndAfterAll 
+    with OneInstancePerTest {
+    
+    override protected def beforeAll(configMap: ConfigMap) {
+      counter.incrementBeforeAllCount()
+    } 
+    override protected def afterAll(configMap: ConfigMap) {
+      counter.incrementAfterAllCount()
+    }
+    
+    test("test 1") { Thread.sleep(100) }
+    test("test 2") { Thread.sleep(100) }
+    test("test 3") { Thread.sleep(100) }
+    
+    override def newInstance: Suite with OneInstancePerTest = new ExampleBeforeAndAfterAllWithParallelTestExecutionSuite(counter)
+  }
 
   describe("BeforeAndAfterAll") {
     it ("should call beforeAll before any test starts, and call afterAll after all tests completed") {
@@ -90,6 +126,15 @@ class BeforeAndAfterAllSpec extends FunSpec with ShouldMatchers {
       testSucceededEvents.foreach { testSucceeded =>
         afterAllTime should be >= testSucceeded.timeStamp
       }
+    }
+    it ("should be called once for beforeAll and afterAll when used with OneInstancePerTest") {
+      val counter = new BeforeAfterAllCounter
+      val suite = new ExampleBeforeAndAfterAllWithParallelTestExecutionSuite(counter)
+      val rep = new EventRecordingReporter
+      suite.run(None, Args(reporter = rep))
+      
+      counter.beforeAllCount should be (1)
+      counter.afterAllCount should be (1)
     }
   }
 }
