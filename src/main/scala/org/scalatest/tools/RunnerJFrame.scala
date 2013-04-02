@@ -885,10 +885,8 @@ private[scalatest] class RunnerJFrame(
 
     override def apply(event: Event) {
       event match {
-        case _: DiscoveryStarting =>
-        System.out.println("gcbx Doing Disco [" + "]\n");
-        case _: DiscoveryCompleted => 
-        System.out.println("gcbx Done doing disco [" + "]\n");
+        case _: DiscoveryStarting  => statusJPanel.discoveryStarting()
+        case _: DiscoveryCompleted => statusJPanel.discoveryCompleted()
 
         case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) =>
 
