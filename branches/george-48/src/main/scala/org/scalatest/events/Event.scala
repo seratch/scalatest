@@ -1897,23 +1897,7 @@ final case class ScopePending (
 }
 
 /**
- * Event that indicates a runner is about run a suite of tests.
- *
- * <p>
- * For example, object <code>Runner</code> reports <code>RunStarting</code> to indicate
- * that the first <code>execute</code> method of a run's initial <code>Suite</code>
- * is about to be invoked.
- * </p>
- *
- * <p>
- * To create instances of this class you may
- * use the factory method provided in its <a href="RunStarting$.html">companion object</a>. For example, given a
- * report function named <code>report</code>, you could fire a <code>RunStarting</code> event like this:
- * </p>
- *
- * <pre class="stHighlight">
- * report(RunStarting(ordinal, testCount))
- * </pre>
+ * Event that indicates a runner is beginning search for suites to run.
  *
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
@@ -1974,44 +1958,11 @@ final case class DiscoveryStarting (
 }
 
 /**
- * Event that indicates a runner has completed running a suite of tests.
- *
- * <p>
- * <code>Suite</code>'s <code>execute</code> method takes a <code>Stopper</code>, whose <code>stopRequested</code>
- * method indicates a stop was requested. If <code>true</code> is returned by
- * <code>stopRequested</code> while a suite of tests is running, the
- * <code>execute</code> method should promptly
- * return even if that suite hasn't finished running all of its tests.
- * </p>
- *
- * <p>If a stop was requested via the <code>Stopper</code>.
- * <code>Runner</code> will report <code>RunStopped</code>
- * when the <code>execute</code> method of the run's starting <code>Suite</code> returns.
- * If a stop is not requested, <code>Runner</code> will report <code>RunCompleted</code>
- * when the last <code>execute</code> method of the run's starting <code>Suite</code>s returns.
- * </p>
- *
- * <p>
- * ScalaTest's <code>Runner</code> fires a <code>RunCompleted</code> report with an empty <code>summary</code>, because
- * the reporter is responsible for keeping track of the total number of tests reported as succeeded, failed, ignored, and pending.
- * ScalaTest's internal reporter replaces the <code>RunCompleted</code> with a new one that is identical except that is
- * has a defined <code>summary</code>.
- * </p>
- *
- * <p>
- * To create instances of this class you may
- * use the factory method provided in its <a href="RunCompleted$.html">companion object</a>. For example, given a
- * report function named <code>report</code>, you could fire a <code>RunCompleted</code> event like this:
- * </p>
- *
- * <pre class="stHighlight">
- * report(RunCompleted(ordinal))
- * </pre>
+ * Event that indicates a runner has completed searching for suites.
  *
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
  * @param duration an optional amount of time, in milliseconds, that was required by the run that has completed
- * @param summary an optional summary of the number of tests that were reported as succeeded, failed, ignored, and pending
  * @param payload an optional object that can be used to pass custom information to the reporter about the <code>RunCompleted</code> event
  * @param threadName a name for the <code>Thread</code> about whose activity this event was reported
  * @param timeStamp a <code>Long</code> indicating the time this event was reported, expressed in terms of the
@@ -2022,7 +1973,6 @@ final case class DiscoveryStarting (
 final case class DiscoveryCompleted (
   ordinal: Ordinal,
   duration: Option[Long] = None,
-  summary: Option[Summary] = None,
   payload: Option[Any] = None,
   threadName: String = Thread.currentThread.getName,
   timeStamp: Long = (new Date).getTime
@@ -2032,8 +1982,6 @@ final case class DiscoveryCompleted (
     throw new NullPointerException("ordinal was null")
   if (duration == null)
     throw new NullPointerException("duration was null")
-  if (summary == null)
-    throw new NullPointerException("summary was null")
   if (payload == null)
     throw new NullPointerException("payload was null")
   if (threadName == null)
