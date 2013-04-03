@@ -885,8 +885,15 @@ private[scalatest] class RunnerJFrame(
 
     override def apply(event: Event) {
       event match {
-        case _: DiscoveryStarting  => statusJPanel.discoveryStarting()
-        case _: DiscoveryCompleted => statusJPanel.discoveryCompleted()
+        case _: DiscoveryStarting  =>
+          usingEventDispatchThread {
+            statusJPanel.discoveryStarting()
+          }
+
+        case _: DiscoveryCompleted =>
+          usingEventDispatchThread {
+            statusJPanel.discoveryCompleted()
+          }
 
         case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) =>
 
@@ -1583,6 +1590,8 @@ private[tools] object RunnerJFrame {
 
   def getUpperCaseName(eventToPresent: EventToPresent) =
     eventToPresent match {
+      case PresentDiscoveryStarting => "DISCOVERY_STARTING"
+      case PresentDiscoveryCompleted => "DISCOVERY_COMPLETED"
       case PresentRunStarting => "RUN_STARTING"
       case PresentTestStarting => "TEST_STARTING"
       case PresentTestFailed => "TEST_FAILED"
