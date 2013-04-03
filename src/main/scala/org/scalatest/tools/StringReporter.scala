@@ -337,7 +337,23 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
 
     event match {
       case _: DiscoveryStarting =>
-      case _: DiscoveryCompleted =>
+        val stringToPrint =
+          stringToPrintWhenNoError("discoveryStarting", None, "", None, None)
+
+        stringToPrint match {
+          case Some(string) => printPossiblyInColor(string, ansiGreen)
+          case None =>
+        }
+
+      case DiscoveryCompleted(_, duration, _, _, _) => 
+        val stringToPrint = 
+          stringToPrintWhenNoError("discoveryCompleted", None, "", None,
+                                   duration, None)
+
+        stringToPrint match {
+          case Some(string) => printPossiblyInColor(string, ansiGreen)
+          case None =>
+        }
 
       case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) => 
 

@@ -2082,12 +2082,10 @@ object Runner {
               (Nil, Nil) // No DiscoverySuites in this case. Just run Suites named with -s or -j or -b
             }
             else {
-              println("DEBUG: Discovery Starting")
               dispatch(DiscoveryStarting(tracker.nextOrdinal(), configMap))
               val discoveryStartTime = System.currentTimeMillis
               val accessibleSuites = discoverSuiteNames(runpath, loader, suffixes)
               val discoveryDuration = System.currentTimeMillis - discoveryStartTime
-              println("DEBUG: Discovery Completed: " + discoveryDuration + " milliseconds")
               dispatch(DiscoveryCompleted(tracker.nextOrdinal(), Some(discoveryDuration)))
 
               if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
