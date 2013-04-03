@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.scalatest.TagAnnotation;
 
-@TagAnnotation
+@TagAnnotation("cpu")
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface CPU {}

@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.scalatest.TagAnnotation;
 
-@TagAnnotation
+@TagAnnotation("disk")
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface Disk {}
