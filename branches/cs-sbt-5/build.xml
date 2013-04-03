@@ -303,7 +303,6 @@
 	        <include name="org/scalatest/tags/CPU.java" />
     		<include name="org/scalatest/tags/Disk.java" />
     		<include name="org/scalatest/tags/Network.java" />
-    		<include name="org/scalatest/tags/SbtTag.java" />
     	    <include name="org/scalatest/DoNotDiscover.java" />
     	    <include name="org/scalatest/tools/ScalaTestTask.java" />
     	    <include name="org/scalatest/WrapWith.java" />

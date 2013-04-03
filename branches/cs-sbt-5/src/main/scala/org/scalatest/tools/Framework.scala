@@ -16,7 +16,6 @@ import java.io.{StringWriter, PrintWriter}
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
-import org.scalatest.tags.{CPU, Disk, Network, SbtTag}
 
 class Framework extends SbtFramework {
   
@@ -179,10 +178,22 @@ class Framework extends SbtFramework {
                             selectors: Array[Selector], configMap: ConfigMap, summaryCounter: SummaryCounter, statefulStatus: ScalaTestStatefulStatus, useSbtLogInfoReporter: Boolean, 
                             presentAllDurations: Boolean, presentInColor: Boolean, presentShortStackTraces: Boolean, presentFullStackTraces: Boolean, presentUnformatted: Boolean) extends Task {
     
-    def tags = {
-      // TODO: map scalatest tags to sbt tags.
-      Array.empty[String]
-    }
+    def tags = 
+      for { 
+        a <- suite.getClass.getDeclaredAnnotations
+        annotationClass = a.annotationType
+        if (annotationClass.isAnnotationPresent(classOf[TagAnnotation]) || annotationClass.isAssignableFrom(classOf[TagAnnotation])) 
+      } yield {
+        val value = 
+          if (a.isInstanceOf[TagAnnotation])
+            a.asInstanceOf[TagAnnotation].value
+          else
+            annotationClass.getAnnotation(classOf[TagAnnotation]).value
+        if (value == "")
+          annotationClass.getName
+        else
+          value
+      }
     
     def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {
       runSuite(fullyQualifiedName, rerunSuiteId, suite, loader, reporter, tracker, eventHandler, tagsToInclude, tagsToExclude, selectors, configMap, summaryCounter, Some(statefulStatus), 
@@ -208,12 +219,20 @@ class Framework extends SbtFramework {
     lazy val suiteClass = loadSuiteClass
     
     def tags = 
-      suiteClass.getAnnotations flatMap { 
-        case cpu: CPU => List("cpu")
-        case network: Network => List("network")
-        case disk: Disk => List("disk")
-        case sbtTag: SbtTag => List(sbtTag.value)
-        case _ => List.empty
+      for { 
+        a <- suiteClass.getDeclaredAnnotations
+        annotationClass = a.annotationType
+        if (annotationClass.isAnnotationPresent(classOf[TagAnnotation]) || annotationClass.isAssignableFrom(classOf[TagAnnotation])) 
+      } yield {
+        val value = 
+          if (a.isInstanceOf[TagAnnotation])
+            a.asInstanceOf[TagAnnotation].value
+          else
+            annotationClass.getAnnotation(classOf[TagAnnotation]).value
+        if (value == "")
+          annotationClass.getName
+        else
+          value
       }
     
     def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {

@@ -1,10 +1,10 @@
 package org.scalatest.tools.scalasbt
 
 import org.scalatest.FunSuite
-import org.scalatest.tags.SbtTag
+import org.scalatest.TagAnnotation
 
-@SbtTag("custom")
-class SbtTaggedSuite extends FunSuite {
+@TagAnnotation("custom")
+class CustomTaggedSuite extends FunSuite {
 
   test("test 1") {
     
