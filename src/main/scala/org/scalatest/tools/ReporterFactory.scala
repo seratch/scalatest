@@ -182,7 +182,7 @@ private[scalatest] class ReporterFactory {
       case CustomReporterConfiguration(configSet, reporterClassName) => createCustomReporter(configSet, reporterClassName, loader) 
       case GraphicReporterConfiguration(configSet) => throw new RuntimeException("Should never happen.")
       case SocketReporterConfiguration(host, port) => createSocketReporter(host, port)
-      case XmlSocketReporterConfiguration(host, port) => createSocketReporter(host, port)
+      case XmlSocketReporterConfiguration(host, port) => createXmlSocketReporter(host, port)
   }
   
   private[scalatest] def createReportersFromConfigurations(reporterSpecs: ReporterConfigurations, loader: ClassLoader, resultHolder: Option[SuiteResultHolder]) = 
