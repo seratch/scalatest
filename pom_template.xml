@@ -79,7 +79,7 @@
     <dependency>
       <groupId>org.scala-tools.testing</groupId>
       <artifactId>test-interface</artifactId>
-      <version>0.5</version>
+      <version>1.0</version>
       <optional>true</optional>
     </dependency>
 
