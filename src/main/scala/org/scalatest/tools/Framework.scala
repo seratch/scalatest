@@ -28,16 +28,13 @@ class Framework extends SbtFramework {
     
   def fingerprints = 
     Array(
-      new sbt.testing.SubclassFingerprint {
+      new SubclassFingerprint {
         def superclassName = "org.scalatest.Suite"
         def isModule = false
       }, 
-      new sbt.testing.AnnotatedFingerprint {
+      new AnnotatedFingerprint {
         def annotationName = "org.scalatest.WrapWith"
         def isModule = false
-      }, 
-      new sbt.testing.DoNotDiscoverFingerprint {
-        def annotationName = "org.scalatest.DoNotDiscover"
       })
       
   class RecordingDistributor(fullyQualifiedName: String, rerunSuiteId: String, originalReporter: Reporter, args: Args, loader: ClassLoader, tagsToInclude: Set[String], tagsToExclude: Set[String], selectors: Array[Selector], configMap: ConfigMap, 
@@ -236,7 +233,9 @@ class Framework extends SbtFramework {
       }
     
     def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {
-      if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
+      if (!isDiscoverableSuite(suiteClass))  // Do nothing if it is annotated with @DoNotDiscover
+        Array.empty[Task]
+      else if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
         val wrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith])
         val suite = 
         if (wrapWithAnnotation == null)
