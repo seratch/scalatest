@@ -1912,7 +1912,6 @@ final case class ScopePending (
 final case class DiscoveryStarting (
   ordinal: Ordinal,
   configMap: ConfigMap,
-  payload: Option[Any] = None,
   threadName: String = Thread.currentThread.getName,
   timeStamp: Long = (new Date).getTime
 ) extends Event {
@@ -1921,8 +1920,6 @@ final case class DiscoveryStarting (
     throw new NullPointerException("ordinal was null")
   if (configMap == null)
     throw new NullPointerException("configMap was null")
-  if (payload == null)
-    throw new NullPointerException("payload was null")
   if (threadName == null)
     throw new NullPointerException("threadName was null")
 
@@ -1930,6 +1927,11 @@ final case class DiscoveryStarting (
    * Location in a <code>DiscoveryStarting</code> is always set to <code>None</code>.
    */
   val location: Option[Location] = None
+
+  /**
+   * Payload in a <code>DiscoveryStarting</code> is always set to <code>None</code>.
+   */
+  val payload: Option[Any] = None
 
   /**
    * Formatter in a <code>DiscoveryStarting</code> is always set to <code>None</code>.
@@ -1981,8 +1983,6 @@ final case class DiscoveryCompleted (
     throw new NullPointerException("ordinal was null")
   if (duration == null)
     throw new NullPointerException("duration was null")
-  if (payload == null)
-    throw new NullPointerException("payload was null")
   if (threadName == null)
     throw new NullPointerException("threadName was null")
 
@@ -1990,6 +1990,10 @@ final case class DiscoveryCompleted (
    * Location in a <code>DiscoveryCompleted</code> is always set to <code>None</code>.
    */
   val location: Option[Location] = None
+
+  /**
+   * Payload in a <code>DiscoveryCompleted</code> is always set to <code>None</code>.
+   */
   val payload: Option[Any] = None
 
   /**
