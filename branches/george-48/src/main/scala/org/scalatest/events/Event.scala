@@ -1973,7 +1973,6 @@ final case class DiscoveryStarting (
 final case class DiscoveryCompleted (
   ordinal: Ordinal,
   duration: Option[Long] = None,
-  payload: Option[Any] = None,
   threadName: String = Thread.currentThread.getName,
   timeStamp: Long = (new Date).getTime
 ) extends Event {
@@ -1991,6 +1990,7 @@ final case class DiscoveryCompleted (
    * Location in a <code>DiscoveryCompleted</code> is always set to <code>None</code>.
    */
   val location: Option[Location] = None
+  val payload: Option[Any] = None
 
   /**
    * Formatter in a <code>DiscoveryCompleted</code> is always set to <code>None</code>.

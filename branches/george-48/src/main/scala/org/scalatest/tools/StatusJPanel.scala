@@ -111,7 +111,15 @@ private[scalatest] class StatusJPanel extends JPanel {
     remove(runPanel)
     add(discoPanel)
 
-    discoJLabel.setText("Doing discovery...")
+    discoJLabel.setText(Resources("doingDiscovery"))
+  }
+
+  //
+  // Restores run panel.
+  //
+  def runAborted() {
+    remove(discoPanel)
+    add(runPanel)
   }
 
   //

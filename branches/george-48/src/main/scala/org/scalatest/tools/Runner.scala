@@ -2074,6 +2074,9 @@ object Runner {
             else
               Nil
 
+          val discoveryStartTime = System.currentTimeMillis
+          dispatch(DiscoveryStarting(tracker.nextOrdinal(), configMap))
+
           val (membersOnlySuiteInstances, wildcardSuiteInstances) = {
 
             val membersOnlyAndWildcardListsAreEmpty = membersOnlyList.isEmpty && wildcardList.isEmpty // They didn't specify any -m's or -w's on the command line
@@ -2082,11 +2085,7 @@ object Runner {
               (Nil, Nil) // No DiscoverySuites in this case. Just run Suites named with -s or -j or -b
             }
             else {
-              dispatch(DiscoveryStarting(tracker.nextOrdinal(), configMap))
-              val discoveryStartTime = System.currentTimeMillis
               val accessibleSuites = discoverSuiteNames(runpath, loader, suffixes)
-              val discoveryDuration = System.currentTimeMillis - discoveryStartTime
-              dispatch(DiscoveryCompleted(tracker.nextOrdinal(), Some(discoveryDuration)))
 
               if (membersOnlyAndWildcardListsAreEmpty && suitesList.isEmpty && junitsList.isEmpty && testNGList.isEmpty) {
                 // In this case, they didn't specify any -w, -m, -s, -j or -b on the command line, so the default
@@ -2124,6 +2123,9 @@ object Runner {
             }
 
           val expectedTestCount = sumInts(testCountList)
+
+          val discoveryDuration = System.currentTimeMillis - discoveryStartTime
+          dispatch(DiscoveryCompleted(tracker.nextOrdinal(), Some(discoveryDuration)))
 
           dispatch(RunStarting(tracker.nextOrdinal(), expectedTestCount, configMap))
           

@@ -939,6 +939,7 @@ private[scalatest] class RunnerJFrame(
         case RunAborted(ordinal, message, throwable, duration, summary, formatter, location, payload, threadName, timeStamp) => 
 
           usingEventDispatchThread {
+            statusJPanel.runAborted()
             progressBar.setRed()
             registerEvent(event)
             // Must do this here, not in RunningState.runFinished, because the runFinished
@@ -1379,6 +1380,7 @@ private[scalatest] class RunnerJFrame(
         case RunAborted(ordinal, message, throwable, duration, summary, formatter, location, payload, threadName, timeStamp) => 
 
           usingEventDispatchThread {
+            statusJPanel.runAborted()
             rerunColorBox.setRed()
             val eventHolder = registerRerunEvent(event)
             if (!anErrorHasOccurredAlready) {
