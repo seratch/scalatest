@@ -233,7 +233,7 @@ class Framework extends SbtFramework {
       }
     
     def execute(eventHandler: EventHandler, loggers: Array[Logger]) = {
-      if (!isDiscoverableSuite(suiteClass))  // Do nothing if it is annotated with @DoNotDiscover
+      if (!isDiscoverableSuite(suiteClass) && selectors.isEmpty)  // Do nothing if it is annotated with @DoNotDiscover and in discovery
         Array.empty[Task]
       else if (isAccessibleSuite(suiteClass) || isRunnable(suiteClass)) {
         val wrapWithAnnotation = suiteClass.getAnnotation(classOf[WrapWith])

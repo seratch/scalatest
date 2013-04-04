@@ -384,15 +384,18 @@ class FrameworkSuite extends FunSuite {
     assert(testEventHandler.failureEventsReceived.length === 0)
   }
   
-  test("SuiteSelector should not select and run test(s) in selected suite, when the selected suite is annotated with @DoNotDiscover") {
+  test("SuiteSelector should select and run test(s) in selected suite, even when the selected suite is annotated with @DoNotDiscover") {
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.DoNotDiscoverSuite", false, Array(new SuiteSelector()))
     task.execute(testEventHandler, Array(new TestLogger))
-    assert(testEventHandler.successEventsReceived.length === 0)
+    val successEvents = testEventHandler.successEventsReceived
+    assert(successEvents.length === 3)
+    assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.DoNotDiscoverSuite", "test 1")
+    assertSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.DoNotDiscoverSuite", "test 2")
+    assertSuiteSuccessEvent(successEvents(2), "org.scalatest.tools.scalasbt.DoNotDiscoverSuite", "test 3")
     assert(testEventHandler.errorEventsReceived.length === 0)
     assert(testEventHandler.failureEventsReceived.length === 0)
-    assert(testEventHandler.skippedEventsReceived.length === 0)
   }
   
   test("TestSelector should select and run selected test(s) in suite, excluding nested suites") {
@@ -420,12 +423,15 @@ class FrameworkSuite extends FunSuite {
     assert(testEventHandler2.skippedEventsReceived.length === 0)
   }
   
-  test("TestSelector should not select and run selected test(s) in suite, when the suite is annotated with @DoNotDiscover") {
+  test("TestSelector should select and run selected test(s) in suite, even when the suite is annotated with @DoNotDiscover") {    
     val testEventHandler = new TestEventHandler
     val runner = framework.runner(Array.empty, Array.empty, testClassLoader)
     val task = runner.task("org.scalatest.tools.scalasbt.DoNotDiscoverSuite", false, Array(new TestSelector("test 1"), new TestSelector("test 3")))
     task.execute(testEventHandler, Array(new TestLogger))
-    assert(testEventHandler.successEventsReceived.length === 0)
+    val successEvents = testEventHandler.successEventsReceived
+    assert(successEvents.length === 2)
+    assertSuiteSuccessEvent(successEvents(0), "org.scalatest.tools.scalasbt.DoNotDiscoverSuite", "test 1")
+    assertSuiteSuccessEvent(successEvents(1), "org.scalatest.tools.scalasbt.DoNotDiscoverSuite", "test 3")
     assert(testEventHandler.errorEventsReceived.length === 0)
     assert(testEventHandler.failureEventsReceived.length === 0)
     assert(testEventHandler.skippedEventsReceived.length === 0)
