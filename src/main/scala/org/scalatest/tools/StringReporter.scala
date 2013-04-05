@@ -345,7 +345,7 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
           case None =>
         }
 
-      case DiscoveryCompleted(_, duration, _, _, _) => 
+      case DiscoveryCompleted(_, duration, _, _) => 
         val stringToPrint =
           duration match {
             case Some(milliseconds) => 
@@ -353,7 +353,6 @@ org.scalatest.prop.TableDrivenPropertyCheckFailedException: TestFailedException 
             case None =>
               Resources("discoveryCompleted")
           }
-
         printPossiblyInColor(stringToPrint, ansiCyan)
 
       case RunStarting(ordinal, testCount, configMap, formatter, location, payload, threadName, timeStamp) => 

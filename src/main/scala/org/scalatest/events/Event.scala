@@ -1902,7 +1902,6 @@ final case class ScopePending (
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
  * @param configMap a <code>ConfigMap</code> of key-value pairs that can be used by custom <code>Reporter</code>s
- * @param payload an optional object that can be used to pass custom information to the reporter about the <code>RunStarting</code> event
  * @param threadName a name for the <code>Thread</code> about whose activity this event was reported
  * @param timeStamp a <code>Long</code> indicating the time this event was reported, expressed in terms of the
  *        number of milliseconds since the standard base time known as "the epoch":  January 1, 1970, 00:00:00 GMT
@@ -1965,7 +1964,6 @@ final case class DiscoveryStarting (
  * @param ordinal an <code>Ordinal</code> that can be used to place this event in order in the context of
  *        other events reported during the same run
  * @param duration an optional amount of time, in milliseconds, that was required by the run that has completed
- * @param payload an optional object that can be used to pass custom information to the reporter about the <code>RunCompleted</code> event
  * @param threadName a name for the <code>Thread</code> about whose activity this event was reported
  * @param timeStamp a <code>Long</code> indicating the time this event was reported, expressed in terms of the
  *        number of milliseconds since the standard base time known as "the epoch":  January 1, 1970, 00:00:00 GMT
