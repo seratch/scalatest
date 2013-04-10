@@ -85,6 +85,12 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     String tests;
 
     /**
+     * Regex of suffixes to filter discovered suites
+     * @parameter expression="${suffixes}"
+     */
+    String suffixes;
+
+    /**
      * Comma separated list of tags to include
      * @parameter expression="${tagsToInclude}"
      */
@@ -380,6 +386,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
             addAll(parallel());
             addAll(suites());
             addAll(tests());
+            addAll(suffixes());
             addAll(membersOnlySuites());
             addAll(wildcardSuites());
             addAll(testNGConfigFiles());
@@ -420,6 +427,10 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
 
     private List<String> tests() {
         return suiteArg("-z", tests);
+    }
+
+    private List<String> suffixes() {
+       return compoundArg("-q", suffixes);
     }
 
     private List<String> membersOnlySuites() {
