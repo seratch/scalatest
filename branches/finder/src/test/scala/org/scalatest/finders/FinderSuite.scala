@@ -27,10 +27,10 @@ import org.scalatest.PropSpec
 trait FinderSuite extends FunSuite {
   
   def expectSelection(selection: Selection, expectedClassName: String, expectedDisplayName: String, expectedTestNames: Array[String]) {
-    assert(selection != null, "Test is null, expected className=" + expectedClassName + ", displayName=" + expectedDisplayName + ", testNames=" + expectedTestNames.deepToString)
+    assert(selection != null, "Test is null, expected className=" + expectedClassName + ", displayName=" + expectedDisplayName + ", testNames=" + expectedTestNames.deep.toString)
     expect(expectedClassName)(selection.className)
     expect(expectedDisplayName)(selection.displayName)
-    expect(expectedTestNames.deepToString)(selection.testNames.deepToString)
+    expect(expectedTestNames.deep.toString)(selection.testNames.deep.toString)
   }
   
 }
