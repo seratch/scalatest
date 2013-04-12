@@ -60,6 +60,46 @@ class WordSpecFinderSuite extends FinderSuite {
     expectSelection(nestedSelection, suiteClass.getName, "A Stack should throw NoSuchElementException if an empty stack is popped", Array("A Stack should throw NoSuchElementException if an empty stack is popped"))
   }
   
+  test("WordSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using must and in") {
+    
+    class TestingWordSpec1 extends WordSpec {
+
+      "A Stack" must {
+
+        "pop values in last-in-first-out order" in { 
+         
+        }
+
+        "throw NoSuchElementException if an empty stack is popped" in { 
+          println("nested") 
+        } 
+      } 
+    }
+    
+    val suiteClass = classOf[TestingWordSpec1]
+    val finders = LocationUtils.getFinders(suiteClass)
+    assert(finders.size == 1, "org.scalatest.WordSpec should have 1 finder, but we got: " + finders.size)
+    val finder = finders.get(0)
+    assert(finder.getClass == classOf[WordSpecFinder], "Suite that uses org.scalatest.WordSpec should use WordSpecFinder.")
+    
+    val classDef = new ClassDefinition(suiteClass.getName, null, Array.empty, "TestingWordSpec1")
+    val constructorBlock = new ConstructorBlock(suiteClass.getName, classDef, Array.empty)
+    val aStack = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "A Stack"), constructorBlock, Array.empty, "must", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val popValuesInLifo = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "pop values in last-in-first-out order"), aStack, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val throwNsee = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "throw NoSuchElementException if an empty stack is popped"), aStack, Array.empty, "in", new ToStringTarget(suiteClass.getName, null, Array.empty, "{}"))
+    val nested = new MethodInvocation(suiteClass.getName, new ToStringTarget(suiteClass.getName, null, Array.empty, "{Predef}"), throwNsee, Array.empty, "println", new StringLiteral(suiteClass.getName, null, "nested"))
+    List[AstNode](constructorBlock, aStack, popValuesInLifo, throwNsee, nested).foreach(_.parent)
+    
+    val aStackSelection = finder.find(aStack)
+    expectSelection(aStackSelection, suiteClass.getName, "A Stack", Array("A Stack must pop values in last-in-first-out order", "A Stack must throw NoSuchElementException if an empty stack is popped"))
+    val popValuesInLifoSelection = finder.find(popValuesInLifo)
+    expectSelection(popValuesInLifoSelection, suiteClass.getName, "A Stack must pop values in last-in-first-out order", Array("A Stack must pop values in last-in-first-out order"))
+    val throwNseeSelection = finder.find(throwNsee)
+    expectSelection(throwNseeSelection, suiteClass.getName, "A Stack must throw NoSuchElementException if an empty stack is popped", Array("A Stack must throw NoSuchElementException if an empty stack is popped"))
+    val nestedSelection = finder.find(nested)
+    expectSelection(nestedSelection, suiteClass.getName, "A Stack must throw NoSuchElementException if an empty stack is popped", Array("A Stack must throw NoSuchElementException if an empty stack is popped"))
+  }
+  
   test("WordSpecFinder should find test name for tests written in test suite that extends org.scalatest.FeatureSpec, using when, must, can and in") {
     class TestingWordSpec2 extends WordSpec {
       "A Stack" when {

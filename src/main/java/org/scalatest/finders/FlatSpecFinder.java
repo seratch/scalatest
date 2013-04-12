@@ -33,7 +33,7 @@ public class FlatSpecFinder implements Finder {
         result = getAllTestSelection(node.className(), node.children());
       else if (node instanceof MethodInvocation) {
         MethodInvocation invocation = (MethodInvocation) node;
-        if (invocation.name().equals("of") || invocation.name().equals("in") || invocation.name().equals("should")) {
+        if (invocation.name().equals("of") || invocation.name().equals("in") || invocation.name().equals("should") || invocation.name().equals("must")) {
           ConstructorBlock constructor = getParentOfType(node, ConstructorBlock.class);
           if (constructor != null) {
             AstNode scopeNode = getScopeNode(node, constructor.children());
@@ -76,7 +76,7 @@ public class FlatSpecFinder implements Finder {
       else {
         if (invocation.target() instanceof MethodInvocation) {
           MethodInvocation invocationTarget = (MethodInvocation) invocation.target();
-          if (invocationTarget.name().equals("should"))
+          if (invocationTarget.name().equals("should") || invocationTarget.name().equals("must"))
             invocation = invocationTarget;
           else
             result = invocation.target().toString();
@@ -135,7 +135,7 @@ public class FlatSpecFinder implements Finder {
   }
   
   private boolean isScopeShould(MethodInvocation invocation) {
-    return invocation.name().equals("should") && invocation.args().length > 0 && invocation.target() != null && !invocation.target().toString().equals("it"); 
+    return (invocation.name().equals("should") || invocation.name().equals("must")) && invocation.args().length > 0 && invocation.target() != null && !invocation.target().toString().equals("it"); 
   }
     
   private Selection getNodeTestSelection(AstNode node, String prefix, AstNode[] constructorChildren) {
@@ -164,7 +164,7 @@ public class FlatSpecFinder implements Finder {
         else
           return null;
       }
-      else if (name.equals("should")) {
+      else if (name.equals("should") || name.equals("must")) {
         AstNode parent = invocation.parent();
         if (parent instanceof MethodInvocation && parent.name().equals("in")) {
           String testName = getTestName(prefix, (MethodInvocation) parent);
@@ -203,6 +203,8 @@ public class FlatSpecFinder implements Finder {
     else {
       if (target instanceof MethodInvocation && ((MethodInvocation) target).name().equals("should")) 
         return "should " + ((MethodInvocation) target).args()[0];
+      else if (target instanceof MethodInvocation && ((MethodInvocation) target).name().equals("must")) 
+        return "must " + ((MethodInvocation) target).args()[0];
       else
         return target.toString();
     } 
