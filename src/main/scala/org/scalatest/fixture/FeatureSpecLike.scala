@@ -22,22 +22,21 @@ import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepthFun
 import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
 import org.scalatest.events._
-import org.scalatest.Suite.anExceptionThatShouldCauseAnAbort
-import org.scalatest.Suite.autoTagClassAnnotations
+import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 import org.scalatest.exceptions.NotAllowedException
 
 /**
- * Implementation trait for class <code>fixture.FeatureSpec</code>, which is
- * a sister class to <code>org.scalatest.FeatureSpec</code> that can pass a
- * fixture object into its tests.
+ * Implementation trait for class <code>fixture.FeatureSpec</code>, which 
+ * is a sister class to <code>org.scalatest.FeatureSpec</code> that
+ * can pass a fixture object into its tests.
  * 
  * <p>
  * <a href="FeatureSpec.html"><code>fixture.FeatureSpec</code></a> is a class,
  * not a trait, to minimize compile time given there is a slight compiler
- * overhead to mixing in traits compared to extending classes. If you need
- * to mix the behavior of <code>fixture.FeatureSpec</code> into some other
- * class, you can use this trait instead, because class
- * <code>fixture.FeatureSpec</code> does nothing more than extend this trait.
+ * overhead to mixing in traits compared to extending classes. If you need to
+ * mix the behavior of <code>fixture.FeatureSpec</code> into some other class,
+ * you can use this trait instead, because class <code>fixture.FeatureSpec
+ * </code> does nothing more than extend this trait.
  * </p>
  *
  * <p>
@@ -47,7 +46,6 @@ import org.scalatest.exceptions.NotAllowedException
  *
  * @author Bill Venners
  */
-@Finders(Array("org.scalatest.finders.FeatureSpecFinder"))
 trait FeatureSpecLike extends Suite { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFeatureSpecMod", "FixtureFeatureSpec")
@@ -84,7 +82,8 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def scenario(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerTest(Resources("scenario", specText.trim), Transformer(testFun), "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 4, -2, None, None, None, testTags: _*)
+
+    registerTest(Resources("scenario", specText), testFun, "scenarioCannotAppearInsideAnotherScenario", sourceFileName, "scenario", 2, None, None, testTags: _*)
   }
 
   /**
@@ -106,7 +105,7 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   protected def ignore(specText: String, testTags: Tag*)(testFun: FixtureParam => Any) {
-    registerIgnoredTest(Resources("scenario", specText), Transformer(testFun), "ignoreCannotAppearInsideAScenario", sourceFileName, "ignore", 4, -2, None, testTags: _*)
+    registerIgnoredTest(Resources("scenario", specText), testFun , "ignoreCannotAppearInsideAScenario", sourceFileName, "ignore", 2, testTags: _*)
   }
 
   /**
@@ -120,7 +119,7 @@ trait FeatureSpecLike extends Suite { thisSuite =>
     if (!currentBranchIsTrunk)
       throw new NotAllowedException(Resources("cantNestFeatureClauses"), getStackDepthFun(sourceFileName, "feature"))
 
-    registerNestedBranch(Resources("feature", description.trim), None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 4, -2, None)
+    registerNestedBranch(description, None, fun, "featureCannotAppearInsideAScenario", sourceFileName, "feature", 1)
   }
 
   /**
@@ -131,13 +130,8 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to
    * methods <code>test</code> and <code>ignore</code>.
    * </p>
-   * 
-   * <p>
-   * In addition, this trait's implementation will also auto-tag tests with class level annotations.  
-   * For example, if you annotate @Ignore at the class level, all test methods in the class will be auto-annotated with @Ignore.
-   * </p>
    */
-  override def tags: Map[String, Set[String]] = autoTagClassAnnotations(atomic.get.tagsMap, this)
+  override def tags: Map[String, Set[String]] = atomic.get.tagsMap
 
   /**
    * Run a test. This trait's implementation runs the test registered with the name specified by
@@ -146,33 +140,24 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FeatureSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
 
-    def invokeWithFixture(theTest: TestLeaf): Outcome = {
-
+    def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
-        case transformer: org.scalatest.fixture.Transformer[_] => 
-          transformer.exceptionalTestFun match {
-            case wrapper: NoArgTestWrapper[_] =>
-              withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-            case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
-          }
-        case other => 
-          other match {
-            case wrapper: NoArgTestWrapper[_] =>
-              withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-            case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
-          }
+        case wrapper: NoArgTestWrapper[_] =>
+          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
+        case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
       }
     }
 
-    runTestImpl(thisSuite, testName, args, false, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, false, invokeWithFixture)
   }
 
   /**
@@ -225,12 +210,18 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>FeatureSpec</code>.
-   * @param args the <code>Args</code> for this run
-   *
-   * @throws NullPointerException if any of <code>testName</code> or <code>args</code> is <code>null</code>.
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>FeatureSpec</code>
+   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>FeatureSpec</code>
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>FeatureSpec</code>'s executing tests.
+   * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
+   *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
-    runTestsImpl(thisSuite, testName, args, info, false, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, false, runTest)
   }
 
   /**
@@ -250,8 +241,10 @@ trait FeatureSpecLike extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**
@@ -305,7 +298,5 @@ trait FeatureSpecLike extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.fixture.FeatureSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
 

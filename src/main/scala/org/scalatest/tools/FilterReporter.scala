@@ -32,40 +32,19 @@ private[tools] class FilterReporter(reporter: Reporter, configSet: Set[ReporterC
   override def apply(event: Event) {
     val report = reporter
     event match {
-      case event: DiscoveryStarting => report(event)
-      case event: DiscoveryCompleted => report(event)
       case event: RunStarting => report(event)
       case event: RunCompleted => report(event)
       case event: RunAborted => report(event)
       case event: RunStopped => report(event)
       case event: SuiteAborted => report(event)
-      case event: TestFailed => report(event.copy(recordedEvents = event.recordedEvents.filter(filterInfoMarkupProvided(_))))
+      case event: TestFailed =>report(event)
       case event: SuiteCompleted => if (!configSet.contains(FilterSuiteCompleted)) report(event)
       case event: SuiteStarting => if (!configSet.contains(FilterSuiteStarting)) report(event)
       case event: TestStarting => if (!configSet.contains(FilterTestStarting)) report(event)
-      case event: TestSucceeded => 
-        if (!configSet.contains(FilterTestSucceeded)) 
-          report(event.copy(recordedEvents = event.recordedEvents.filter(filterInfoMarkupProvided(_))))
+      case event: TestSucceeded => if (!configSet.contains(FilterTestSucceeded)) report(event)
       case event: TestIgnored => if (!configSet.contains(FilterTestIgnored)) report(event)
-      case event: TestCanceled => 
-        if (!configSet.contains(FilterTestCanceled)) 
-          report(event.copy(recordedEvents = event.recordedEvents.filter(filterInfoMarkupProvided(_))))
-      case event: TestPending => 
-        if (!configSet.contains(FilterTestPending)) 
-          report(event.copy(recordedEvents = event.recordedEvents.filter(filterInfoMarkupProvided(_))))
+      case event: TestPending => if (!configSet.contains(FilterTestPending)) report(event)
       case event: InfoProvided => if (!configSet.contains(FilterInfoProvided)) report(event)
-      case event: ScopeOpened => if (!configSet.contains(FilterScopeOpened)) report(event)
-      case event: ScopeClosed => if (!configSet.contains(FilterScopeClosed)) report(event)
-      case event: ScopePending => if (!configSet.contains(FilterScopePending)) report(event)
-      case event: MarkupProvided => if (!configSet.contains(FilterMarkupProvided)) report(event)
-    }
-  }
-  
-  private def filterInfoMarkupProvided(event: Event): Boolean = {
-    event match {
-      case infoProvided: InfoProvided => !configSet.contains(FilterInfoProvided)
-      case markupProvided: MarkupProvided => !configSet.contains(FilterMarkupProvided)
-      case _ => true
     }
   }
 
