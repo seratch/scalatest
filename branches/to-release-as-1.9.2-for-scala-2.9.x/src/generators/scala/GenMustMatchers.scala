@@ -29,6 +29,12 @@ object Helper {
     "want to reuse the \\\"must\\\" token in a future version of " +
     "ScalaTest as a kind of matcher that will return a result "    +
     "instead of throwing an exception.\")\n"
+
+  val deprecationLineForJUnit =
+    "@deprecated(\"Please use ShouldMatchersForJUnit instead.  Sorry for "  +
+    "this disruption, but we want to reuse the \\\"must\\\" token in a "    +
+    "future version of ScalaTest as a kind of matcher that will return a "  +
+    "result instead of throwing an exception.\")\n"
   
   def translateShouldToMust(shouldLine: String): String = {
     val temp1 = shouldLine.replaceAll("<code>must</code>", "<code>I_WAS_must_ORIGINALLY</code>")
@@ -55,6 +61,9 @@ object Helper {
         val mustLine = translateShouldToMust(shouldLine)
         if (mustLine.startsWith("trait MustMatchers extends Matchers"))
           writer.write(deprecationLine)
+        else if (mustLine.startsWith("trait MustMatchersForJUnit extends ") ||
+                 mustLine.startsWith("object MustMatchersForJUnit extends "))
+          writer.write(deprecationLineForJUnit)
         writer.write(mustLine)
         writer.newLine() // add for 2.8
       }
