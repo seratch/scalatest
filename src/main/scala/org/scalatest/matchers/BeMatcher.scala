@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2013 Artima, Inc.
+ * Copyright 2001-2008 Artima, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.scalatest.matchers
+
+import org.scalatest._
 
 /**
  * Trait extended by matcher objects, which may appear after the word <code>be</code>, that can match a value of the specified type.
@@ -105,7 +107,7 @@ package org.scalatest.matchers
  * For more information on <code>MatchResult</code> and the meaning of its fields, please
  * see the documentation for <a href="MatchResult.html"><code>MatchResult</code></a>. To understand why <code>BeMatcher</code>
  * is contravariant in its type parameter, see the section entitled "Matcher's variance" in the
- * documentation for <a href="../Matcher.html"><code>Matcher</code></a>.
+ * documentation for <a href="Matcher.html"><code>Matcher</code></a>.
  * </p>
  *
  * @author Bill Venners
@@ -122,7 +124,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
    * num should be (odd)
    * </pre>
    *
-   * The <code>be (odd)</code> expression results in a regular <a href="../Matcher.html"><code>Matcher</code></a> that holds
+   * The <code>be (odd)</code> expression results in a regular <a href="Matcher.html"><code>Matcher</code></a> that holds
    * a reference to <code>odd</code>, the
    * <code>BeMatcher</code> passed to <code>be</code>. The <code>should</code> method invokes <code>apply</code>
    * on this matcher, passing in <code>num</code>, which is therefore the "<code>left</code>" value. The
@@ -196,7 +198,7 @@ trait BeMatcher[-T] extends Function1[T, MatchResult] { thisBeMatcher =>
 /**
  * Companion object for trait <code>BeMatcher</code> that provides a
  * factory method that creates a <code>BeMatcher[T]</code> from a
- * passed function of type <code>(T =&gt; MatchResult)</code>.
+ * passed function of type <code>(T => MatchResult)</code>.
  *
  * @author Bill Venners
  */
@@ -204,7 +206,7 @@ object BeMatcher {
 
   /**
    * Factory method that creates a <code>BeMatcher[T]</code> from a
-   * passed function of type <code>(T =&gt; MatchResult)</code>.
+   * passed function of type <code>(T => MatchResult)</code>.
    *
    * @author Bill Venners
    */

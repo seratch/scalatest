@@ -304,19 +304,3 @@ private[scalatest] object StackDepthExceptionHelper {
     getStackDepth(sde.getStackTrace, fileName, methodName, adjustment)
   }
 }
-
-private[scalatest] object StackDepthException {
-
-  /**
-   * If message or message contents are null, throw a null exception, otherwise
-   * create a function that returns the option.
-   */
-  def toExceptionFunction(message: Option[String]): StackDepthException => Option[String] = {
-    message match {
-        case null => throw new NullPointerException("message was null")
-        case Some(null) => throw new NullPointerException("message was a Some(null)")
-        case _ => { e => message }
-    }
-  }
-}
-

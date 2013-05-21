@@ -18,16 +18,16 @@ package org.scalatest.matchers
 import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
-class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
+class ShouldBeASymbolSpec extends FunSpec with ShouldMatchers with FileMocks {
 
-  object `The be a ('symbol) syntax` {
+  describe("The be a ('symbol) syntax") {
 
-    def `should do nothing if the object has an appropriately named method, which returns true` {
+    it("should do nothing if the object has an appropriately named method, which returns true") {
       fileMock should be a ('file)
       isFileMock should be a ('file)
     }
 
-    def `should throw TestFailedException if no <symbol> or is<Symbol> method exists` {
+    it("should throw TestFailedException if no <symbol> or is<Symbol> method exists") {
       val ex1 = intercept[TestFailedException] {
         noPredicateMock should be a ('apple)
       }
@@ -39,14 +39,14 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       ex2.getMessage should equal ("NoPredicateMock has neither a file nor an isFile method")
     }
 
-    def `should do nothing if the object has an appropriately named method, which returns false when used with not` {
+    it("should do nothing if the object has an appropriately named method, which returns false when used with not") {
       notFileMock should not { be a ('file) }
       notFileMock should not be a ('file)
       isNotFileMock should not { be a ('file) }
       isNotFileMock should not be a ('file)
     }
 
-    def `should throw TestFailedException if no <symbol> or is<Symbol> method exists, when used with not` {
+    it("should throw TestFailedException if no <symbol> or is<Symbol> method exists, when used with not") {
       val ex1 = intercept[TestFailedException] {
         noPredicateMock should not { be a ('apple) }
       }
@@ -65,7 +65,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       ex4.getMessage should equal ("NoPredicateMock has neither a directory nor an isDirectory method")
     }
 
-    def `should do nothing if the object has an appropriately named method, which returns true, when used in a logical-and expression` {
+    it("should do nothing if the object has an appropriately named method, which returns true, when used in a logical-and expression") {
       fileMock should ((be a ('file)) and (be a ('file)))
       fileMock should (be a ('file) and (be a ('file)))
       fileMock should (be a ('file) and be a ('file))
@@ -74,7 +74,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       isFileMock should (be a ('file) and be a ('file))
     }
 
-    def `should do nothing if the object has an appropriately named method, which returns true, when used in a logical-or expression` {
+    it("should do nothing if the object has an appropriately named method, which returns true, when used in a logical-or expression") {
 
       fileMock should ((be a ('directory)) or (be a ('file)))
       fileMock should (be a ('directory) or (be a ('file)))
@@ -91,7 +91,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       isFileMock should (be a ('file) or be a ('directory))
     }
 
-    def `should do nothing if the object has an appropriately named method, which returns false, when used in a logical-and expression with not` {
+    it("should do nothing if the object has an appropriately named method, which returns false, when used in a logical-and expression with not") {
 
       notFileMock should (not (be a ('file)) and not (be a ('file)))
       notFileMock should ((not be a ('file)) and (not be a ('file)))
@@ -102,7 +102,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       isNotFileMock should (not be a ('file) and not be a ('file))
     }
 
-    def `should do nothing if the object has an appropriately named method, which returns false, when used in a logical-or expression with not` {
+    it("should do nothing if the object has an appropriately named method, which returns false, when used in a logical-or expression with not") {
 
       notFileMock should (not (be a ('file)) or not (be a ('file)))
       notFileMock should ((not be a ('file)) or (not be a ('file)))
@@ -121,7 +121,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       isNotFileMock should (not be a ('directory) or not be a ('file))
     }
 
-    def `should throw TestFailedException if the object has an appropriately named method, which returns false` {
+    it("should throw TestFailedException if the object has an appropriately named method, which returns false") {
       val caught1 = intercept[TestFailedException] {
         notFileMock should be a ('file)
       }
@@ -132,7 +132,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       assert(caught2.getMessage === "IsNotFileMock was not a file")
     }
 
-    def `should throw TestFailedException if the object has an appropriately named method, which returns true when used with not` {
+    it("should throw TestFailedException if the object has an appropriately named method, which returns true when used with not") {
       val caught1 = intercept[TestFailedException] {
         fileMock should not { be a ('file) }
       }
@@ -151,7 +151,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       assert(caught4.getMessage === "IsFileMock was a file")
     }
 
-    def `should throw TestFailedException if the object has an appropriately named method, which returns false, when used in a logical-and expression` {
+    it("should throw TestFailedException if the object has an appropriately named method, which returns false, when used in a logical-and expression") {
       val caught1 = intercept[TestFailedException] {
         fileMock should ((be a ('file)) and (be a ('directory)))
       }
@@ -178,7 +178,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       assert(caught6.getMessage === "IsFileMock was a file, but IsFileMock was not a directory")
     }
 
-    def `should throw TestFailedException if the object has an appropriately named method, which returns false, when used in a logical-or expression` {
+    it("should throw TestFailedException if the object has an appropriately named method, which returns false, when used in a logical-or expression") {
 
       val caught1 = intercept[TestFailedException] {
         notFileMock should ((be a ('file)) or (be a ('file)))
@@ -206,7 +206,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       assert(caught6.getMessage === "IsNotFileMock was not a file, and IsNotFileMock was not a file")
     }
 
-    def `should throw TestFailedException if the object has an appropriately named method, which returns true, when used in a logical-and expression with not` {
+    it("should throw TestFailedException if the object has an appropriately named method, which returns true, when used in a logical-and expression with not") {
 
       val caught1 = intercept[TestFailedException] {
         fileMock should (not (be a ('directory)) and not (be a ('file)))
@@ -239,7 +239,7 @@ class ShouldBeASymbolSpec extends Spec with ShouldMatchers with FileMocks {
       assert(caught7.getMessage === "FileMock was a file")
     }
 
-    def `should throw TestFailedException if the object has an appropriately named method, which returns true, when used in a logical-or expression with not` {
+    it("should throw TestFailedException if the object has an appropriately named method, which returns true, when used in a logical-or expression with not") {
 
       val caught1 = intercept[TestFailedException] {
         fileMock should (not (be a ('file)) or not (be a ('file)))
