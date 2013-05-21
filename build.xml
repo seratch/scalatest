@@ -12,9 +12,9 @@
 	<property name="for.scala" value="2.10.0-RC3" />
 -->
 
-    <property name="scala.version" value="2.9.0" />
+    <property name="scala.version" value="2.10.0" />
 	<property name="for.scala" value="2.9.x" />
-    <property name="release" value="2.0.M6-SNAP2" />
+    <property name="release" value="1.8" />
 
     <property name="scalasrc" value="src/main/scala" />
     <property name="javasrc" value="src/main/java" />
@@ -837,23 +837,27 @@
       - 
       -->
     <target name="deploy" depends="jar,jartests,jarsrc,jartestsrc,jardoc">
-      <property name="deploy.main"
-                value="${dist}/lib/scalatest.jar"/>
-      <property name="deploy.tests" 
-                value="${build.tests.jar}"/>
-      <property name="deploy.sources" 
-                value="${build}/scalatest-sources.jar"/>
-      <property name="deploy.test-sources" 
-                value="${build}/scalatest-test-sources.jar"/>
-      <property name="deploy.scaladoc" 
-                value="${build}/scalatest-scaladoc.jar"/>
-      <property name="deploy.javadoc" 
-                value="${build}/scalatest-javadoc.jar"/>
-      <property name="deploy.release"
-                value="${release}"/>
+      <antcall target="deploy-scalatest"/>
+      <antcall target="deploy-scalautils"/>
+    </target>
 
-      <antcall target="deploy-jars"/>
-      <antcall target="deploy-utils"/>
+    <target name="deploy-scalatest">
+      <antcall target="deploy-jars">
+        <param name="deploy.main"
+               value="${dist}/lib/scalatest.jar"/>
+        <param name="deploy.tests" 
+               value="${build.tests.jar}"/>
+        <param name="deploy.sources" 
+               value="${build}/scalatest-sources.jar"/>
+        <param name="deploy.test-sources" 
+               value="${build}/scalatest-test-sources.jar"/>
+        <param name="deploy.scaladoc" 
+               value="${build}/scalatest-scaladoc.jar"/>
+        <param name="deploy.javadoc" 
+               value="${build}/scalatest-javadoc.jar"/>
+        <param name="deploy.release"
+               value="${release}"/>
+      </antcall>
     </target>
 
     <!--
@@ -899,17 +903,8 @@
 
     <!--
       - Deploys scalautils jars.
-      -
-      - The deploy-utils target depends on jar, jardoc, and jarsrc
-      - being run previously, either on the command line or by the
-      - task that calls deploy-utils using antcall.
-      -
-      - (It doesn't use the depends attribute since it is intended to
-      - be run using <antcall>, which causes it to run in its own project.
-      - If it had its own depends attribute those prereqs would get run
-      - even if they had already been run in the calling project.)
       -->
-    <target name="deploy-utils">
+    <target name="deploy-scalautils">
       <copy file="scalautils-pom_template.xml" tofile="${build}/pom.xml"
             overwrite="true">
         <filterset>
@@ -932,7 +927,6 @@
         <param name="deploy.release"
                value="${release}"/>
       </antcall>
-
     </target>
 
     <!--
@@ -998,7 +992,7 @@
             unless="scalatest.version"  />
 
       <antcall target="redeploy-scalatest"/>
-      <antcall target="redeploy-utils"/>
+      <antcall target="redeploy-scalautils"/>
     </target>
 
     <target name="redeploy-scalatest">
@@ -1050,25 +1044,25 @@
         <globmapper from="scalatest_${old.scala.version}*" to="scalatest*"/>
       </move>
 
-      <property name="deploy.main"
-                value="target/redeploy/scalatest.jar"/>
-      <property name="deploy.tests" 
-                value="target/redeploy/scalatest-tests.jar"/>
-      <property name="deploy.sources" 
-                value="target/redeploy/scalatest-sources.jar"/>
-      <property name="deploy.test-sources" 
-                value="target/redeploy/scalatest-test-sources.jar"/>
-      <property name="deploy.scaladoc" 
-                value="target/redeploy/scalatest-scaladoc.jar"/>
-      <property name="deploy.javadoc" 
-                value="target/redeploy/scalatest-javadoc.jar"/>
-      <property name="deploy.release"
-                value="${scalatest.version}"/>
-
-      <antcall target="deploy-jars"/>
+      <antcall target="deploy-jars">
+        <param name="deploy.main"
+               value="target/redeploy/scalatest.jar"/>
+        <param name="deploy.tests" 
+               value="target/redeploy/scalatest-tests.jar"/>
+        <param name="deploy.sources" 
+               value="target/redeploy/scalatest-sources.jar"/>
+        <param name="deploy.test-sources" 
+               value="target/redeploy/scalatest-test-sources.jar"/>
+        <param name="deploy.scaladoc" 
+               value="target/redeploy/scalatest-scaladoc.jar"/>
+        <param name="deploy.javadoc" 
+               value="target/redeploy/scalatest-javadoc.jar"/>
+        <param name="deploy.release"
+               value="${scalatest.version}"/>
+      </antcall>
     </target>
 
-    <target name="redeploy-utils">
+    <target name="redeploy-scalautils">
       <artifact:dependencies filesetId="old.scala.fileset"
                              versionsId="dependency.versions">
         <dependency groupId="org.scalautils"
@@ -1130,14 +1124,12 @@
     <!--
       - For internal use by targets 'deploy' and 'redeploy'.  Deploys jars
       - specified by following properties:
-      -   
       -    deploy.main
       -    deploy.tests
       -    deploy.sources
       -    deploy.test-sources
       -    deploy.scaladoc
       -    deploy.javadoc
-      -
       -->
     <target name="deploy-jars">
       <artifact:pom id="pom" file="${build}/pom.xml" />
