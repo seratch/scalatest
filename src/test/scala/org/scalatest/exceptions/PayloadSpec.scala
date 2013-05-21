@@ -86,7 +86,7 @@ class PayloadSpec extends FlatSpec with SharedHelpers with ShouldMatchers with T
   it should "forward the payload to be carried in TestFailed event" in {
     forAll (examples) { e =>
       val a = 
-        new FunSpec {
+        new Spec {
           it("should do something") {
             withPayload("a payload") {
               throw e
@@ -94,7 +94,7 @@ class PayloadSpec extends FlatSpec with SharedHelpers with ShouldMatchers with T
           }
         }
       val rep = new EventRecordingReporter()
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       rep.testFailedEventsReceived.length should be (1)
       rep.testFailedEventsReceived(0).payload should be (Some("a payload"))
     }

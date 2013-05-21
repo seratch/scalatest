@@ -19,17 +19,17 @@ import org.scalatest.matchers.ShouldMatchers
 
 class SeveredStackTracesFailureSpec extends FunSpec with ShouldMatchers with SeveredStackTraces {
 
-  override def withFixture(test: NoArgTest): Outcome = {
-    super.withFixture(test) match {
-      case Failed(e: TestFailedException) => 
+  override def withFixture(test: NoArgTest) {
+    try {
+      super.withFixture(test)
+    }
+    catch {
+      case e: TestFailedException => 
         e.failedCodeStackDepth should equal (0)
         e.failedCodeFileNameAndLineNumberString match {
-          case Some(s) =>
-            checkFileNameAndLineNumber(e, s)
+          case Some(s) => checkFileNameAndLineNumber(e, s)
           case None => fail("TestFailedException didn't contain file name and line number string", e)
         }
-        Succeeded
-      case other => other
     }
   }
 
@@ -67,12 +67,12 @@ class SeveredStackTracesFailureSpec extends FunSpec with ShouldMatchers with Sev
       assert(1 === 2, "some message")
     }
 
-    it("should be properly severed on assertResult(1) { 2 }") {
-      assertResult(1) { 2 }
+    it("should be properly severed on expect(1) { 2 }") {
+      expect(1) { 2 }
     }
 
-    it("should be properly severed on assertResult(1, \"some message\") { 2 }") {
-      assertResult(1, "some message") { 2 }
+    it("should be properly severed on expect(1, \"some message\") { 2 }") {
+      expect(1, "some message") { 2 }
     }
 
     it("should be properly severed on intercept[IllegalArgumentException] {}") {
