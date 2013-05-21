@@ -592,6 +592,11 @@ object Runner {
     runOptionallyWithPassFailReporter(args, true)
   }
 
+  private def exit(status: Int): Nothing = {
+    java.lang.System.exit(status)
+    throw new Throwable()
+  }
+
   private def runOptionallyWithPassFailReporter(args: Array[String], runWithPassFailReporter: Boolean): Boolean = {
 
     checkArgsForValidity(args) match {
