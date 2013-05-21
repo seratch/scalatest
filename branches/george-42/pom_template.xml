@@ -188,4 +188,16 @@
     
   </dependencies>
 
+  <distributionManagement>
+    <repository>
+      <id>nexus-poppy</id>
+      <url>http://poppy:8081/nexus/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>nexus-poppy</id>
+      <url>http://poppy:8081/nexus/content/repositories/snapshots/</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
+
 </project>
