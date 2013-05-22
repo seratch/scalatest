@@ -16,6 +16,7 @@
 package org.scalatest.tools
 
 import org.scalatest._
+import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Future
@@ -25,24 +26,15 @@ import java.util.concurrent.Future
  *
  * @author Bill Venners
  */
-private[scalatest] class ConcurrentDistributor(args: Args, execSvc: ExecutorService) extends Distributor {
+private[scalatest] class ConcurrentDistributor(reporter: Reporter, stopper: Stopper, filter: Filter,
+    configMap: Map[String, Any], execSvc: ExecutorService) extends Distributor {
 
   private val futureQueue = new LinkedBlockingQueue[Future[T] forSome { type T }]
 
   def apply(suite: Suite, tracker: Tracker) {
-    apply(suite, args.copy(tracker = tracker))
-  }
- 
-  def apply(suite: Suite, args: Args): Status = {
-    if (suite == null)
-      throw new NullPointerException("suite is null")
-    if (args == null)
-      throw new NullPointerException("args is null")
-    val status = new ScalaTestStatefulStatus
-    val suiteRunner = new SuiteRunner(suite, args, status)
+    val suiteRunner = new SuiteRunner(suite, reporter, stopper, filter, configMap, Some(this), tracker)
     val future: Future[_] = execSvc.submit(suiteRunner)
     futureQueue.put(future)
-    status
   }
 
   def poll() = None
@@ -52,3 +44,4 @@ private[scalatest] class ConcurrentDistributor(args: Args, execSvc: ExecutorServ
       futureQueue.poll().get()
   }
 }
+

@@ -16,7 +16,6 @@
 package org.scalatest.tools {
 
 import org.scalatest.FunSuite
-import org.scalatest.Outcome
 import org.scalatools.testing.{Event, EventHandler, Result, Logger, Runner => TestingRunner}
 
   // testing runner.run:
@@ -130,12 +129,14 @@ import org.scalatools.testing.{Event, EventHandler, Result, Logger, Runner => Te
       assert(results(0).result === Result.Skipped)
     }
 
-    def runner: TestingRunner = {
-      new ScalaTestFramework().testRunner(Thread.currentThread.getContextClassLoader, Array(new TestLogger))
+    val framework = new ScalaTestFramework
+
+    val runner: TestingRunner = {
+      framework.testRunner(Thread.currentThread.getContextClassLoader, Array(new TestLogger))
     }
 
     val fingerprint = {
-      val fingerprints = new ScalaTestFramework().tests
+      val fingerprints = framework.tests
       fingerprints(0).
                     asInstanceOf[org.scalatools.testing.TestFingerprint]
     }
@@ -179,7 +180,7 @@ import org.scalatools.testing.{Event, EventHandler, Result, Logger, Runner => Te
     import org.scalatest.fixture
     private class TestWithConfigMap extends fixture.FunSuite {
       type FixtureParam = String
-      override def withFixture(test: OneArgTest): Outcome = {
+      override def withFixture(test: OneArgTest) {
         test(test.configMap("josh").toString)
       }
       test("get config"){ conf => assert(conf === "cool") }
@@ -188,7 +189,7 @@ import org.scalatools.testing.{Event, EventHandler, Result, Logger, Runner => Te
 
     private class TestWithConfigMap2 extends fixture.FunSuite {
       type FixtureParam = Map[String,Any]
-      override def withFixture(test: OneArgTest): Outcome = {
+      override def withFixture(test: OneArgTest) {
         test(test.configMap)
       }
       test("get config"){ conf => assert(conf === Map("a" -> "z", "b" -> "y", "c" -> "x")) }

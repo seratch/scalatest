@@ -19,18 +19,15 @@ import org.scalatest._
 import events.TestFailed
 import org.scalatest.exceptions.DuplicateTestNameException
 import org.scalatest.exceptions.TestRegistrationClosedException
-import org.scalatest.events.InfoProvided
-import org.scalatest.events.MotionToSuppress
-import org.scalatest.events.IndentedText
 
 class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with SharedHelpers {
 
-  describe("A fixture.WordSpec") {
+  describe("A WordSpec") {
 
     it("should return the test names in order of registration from testNames") {
       val a = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "Something" should {
           "do that" in { fixture =>
           }
@@ -39,22 +36,22 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
 
-      assertResult(List("Something should do that", "Something should do this")) {
+      expect(List("Something should do that", "Something should do this")) {
         a.testNames.iterator.toList
       }
 
       val b = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
       }
 
-      assertResult(List[String]()) {
+      expect(List[String]()) {
         b.testNames.iterator.toList
       }
 
       val c = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "Something" should {
           "do this" in { fixture =>
           }
@@ -63,7 +60,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
 
-      assertResult(List("Something should do this", "Something should do that")) {
+      expect(List("Something should do this", "Something should do that")) {
         c.testNames.iterator.toList
       }
     }
@@ -73,7 +70,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[DuplicateTestNameException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "should test this" in { fixture => }
           "should test this" in { fixture => }
         }
@@ -81,7 +78,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[DuplicateTestNameException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "should test this" in { fixture => }
           "should test this" ignore { fixture => }
         }
@@ -89,7 +86,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[DuplicateTestNameException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "should test this" ignore { fixture => }
           "should test this" ignore { fixture => }
         }
@@ -97,7 +94,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[DuplicateTestNameException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "should test this" ignore { fixture => }
           "should test this" in { fixture => }
         }
@@ -108,7 +105,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val a = new WordSpec {
         type FixtureParam = String
         val hello = "Hello, world!"
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test(hello)
         }
         "Something" should {
@@ -121,7 +118,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(!rep.eventsReceived.exists(_.isInstanceOf[TestFailed]))
     }
     it("should throw NullPointerException if a null test tag is provided") {
@@ -129,14 +126,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[NullPointerException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "hi" taggedAs(null) in { fixture => }
         }
       }
       val caught = intercept[NullPointerException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "hi" taggedAs(mytags.SlowAsMolasses, null) in { fixture => }
         }
       }
@@ -144,7 +141,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[NullPointerException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "hi" taggedAs(mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) in { fixture => }
         }
       }
@@ -152,14 +149,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[NullPointerException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "hi" taggedAs(null) ignore { fixture => }
         }
       }
       val caught2 = intercept[NullPointerException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "hi" taggedAs(mytags.SlowAsMolasses, null) ignore { fixture => }
         }
       }
@@ -167,7 +164,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       intercept[NullPointerException] {
         new WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = Succeeded
+          def withFixture(test: OneArgTest) {}
           "hi" taggedAs(mytags.SlowAsMolasses, null, mytags.WeakAsAKitten) ignore { fixture => }
         }
       }
@@ -176,77 +173,77 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val a = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" ignore { fixture => }
         "test that" is (pending)
       }
-      assertResult(Map("test this" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"))) {
         a.tags
       }
 
       val b = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" is (pending)
         "test that" ignore { fixture => }
       }
-      assertResult(Map("test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test that" -> Set("org.scalatest.Ignore"))) {
         b.tags
       }
 
       val c = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" ignore { fixture => }
         "test that" ignore { fixture => }
       }
-      assertResult(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
+      expect(Map("test this" -> Set("org.scalatest.Ignore"), "test that" -> Set("org.scalatest.Ignore"))) {
         c.tags
       }
 
       val d = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" taggedAs(mytags.SlowAsMolasses) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) ignore { fixture => }
       }
-      assertResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses"), "test that" -> Set("org.scalatest.Ignore", "org.scalatest.SlowAsMolasses"))) {
         d.tags
       }
 
       val e = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" is (pending)
         "test that" is (pending)
       }
-      assertResult(Map()) {
+      expect(Map()) {
         e.tags
       }
 
       val f = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) is (pending)
       }
-      assertResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         f.tags
       }
 
       val g = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = Succeeded
+        def withFixture(test: OneArgTest) {}
         "test this" taggedAs(mytags.SlowAsMolasses, mytags.WeakAsAKitten) is (pending)
         "test that" taggedAs(mytags.SlowAsMolasses) is (pending)
       }
-      assertResult(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
+      expect(Map("test this" -> Set("org.scalatest.SlowAsMolasses", "org.scalatest.WeakAsAKitten"), "test that" -> Set("org.scalatest.SlowAsMolasses"))) {
         g.tags
       }
     }
     class TestWasCalledSuite extends WordSpec {
       type FixtureParam = String
-      def withFixture(test: OneArgTest): Outcome = { test("hi") }
+      def withFixture(test: OneArgTest) { test("hi") }
       var theTestThisCalled = false
       var theTestThatCalled = false
       "run this" in { fixture => theTestThisCalled = true }
@@ -256,7 +253,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
     it("should execute all tests when run is called with testName None") {
 
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(b.theTestThisCalled)
       assert(b.theTestThatCalled)
     }
@@ -264,7 +261,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
     it("should execute one test when run is called with a defined testName") {
 
       val a = new TestWasCalledSuite
-      a.run(Some("run this"), Args(SilentReporter))
+      a.run(Some("run this"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(a.theTestThisCalled)
       assert(!a.theTestThatCalled)
     }
@@ -273,7 +270,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val a = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" in { fixture => theTestThisCalled = true }
@@ -281,14 +278,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
 
       val b = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" ignore { fixture => theTestThisCalled = true }
@@ -296,7 +293,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB))
+      b.run(None, repB, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repB.testIgnoredReceived)
       assert(repB.lastEvent.isDefined)
       assert(repB.lastEvent.get.testName endsWith "test this")
@@ -305,7 +302,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val c = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" in { fixture => theTestThisCalled = true }
@@ -313,7 +310,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repC))
+      c.run(None, repC, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repC.testIgnoredReceived)
       assert(repC.lastEvent.isDefined)
       assert(repC.lastEvent.get.testName endsWith "test that", repC.lastEvent.get.testName)
@@ -324,7 +321,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // Will try and implement that tomorrow. Subtypes will be able to change the order.
       val d = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" ignore { fixture => theTestThisCalled = true }
@@ -332,7 +329,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD))
+      d.run(None, repD, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(repD.lastEvent.isDefined)
       assert(repD.lastEvent.get.testName endsWith "test that") // last because should be in order of appearance
@@ -345,7 +342,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // method and actually invoke it.
       val e = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" ignore { fixture => theTestThisCalled = true }
@@ -353,7 +350,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val repE = new TestIgnoredTrackingReporter
-      e.run(Some("test this"), Args(repE))
+      e.run(Some("test this"), repE, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(!e.theTestThatCalled)
@@ -364,14 +361,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // Nothing is excluded
       val a = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThisCalled = true }
         "test that" in { fixture => theTestThatCalled = true }
       }
       val repA = new TestIgnoredTrackingReporter
-      a.run(None, Args(repA))
+      a.run(None, repA, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(!repA.testIgnoredReceived)
       assert(a.theTestThisCalled)
       assert(a.theTestThatCalled)
@@ -379,14 +376,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // SlowAsMolasses is included, one test should be excluded
       val b = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThisCalled = true }
         "test that" in { fixture => theTestThatCalled = true }
       }
       val repB = new TestIgnoredTrackingReporter
-      b.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      b.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repB.testIgnoredReceived)
       assert(b.theTestThisCalled)
       assert(!b.theTestThatCalled)
@@ -394,14 +391,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // SlowAsMolasses is included, and both tests should be included
       val c = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThisCalled = true }
         "test that" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThatCalled = true }
       }
       val repC = new TestIgnoredTrackingReporter
-      c.run(None, Args(repB, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      c.run(None, repB, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!repC.testIgnoredReceived)
       assert(c.theTestThisCalled)
       assert(c.theTestThatCalled)
@@ -409,14 +406,14 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // SlowAsMolasses is included. both tests should be included but one ignored
       val d = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         "test this" taggedAs(mytags.SlowAsMolasses) ignore { fixture => theTestThisCalled = true }
         "test that" taggedAs(mytags.SlowAsMolasses) in { fixture => theTestThatCalled = true }
       }
       val repD = new TestIgnoredTrackingReporter
-      d.run(None, Args(repD, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), ConfigMap.empty, None, new Tracker, Set.empty))
+      d.run(None, repD, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repD.testIgnoredReceived)
       assert(!d.theTestThisCalled)
       assert(d.theTestThatCalled)
@@ -424,7 +421,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // SlowAsMolasses included, FastAsLight excluded
       val e = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -433,8 +430,8 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repE = new TestIgnoredTrackingReporter
-      e.run(None, Args(repE, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      e.run(None, repE, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repE.testIgnoredReceived)
       assert(!e.theTestThisCalled)
       assert(e.theTestThatCalled)
@@ -443,7 +440,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // An Ignored test that was both included and excluded should not generate a TestIgnored event
       val f = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -452,8 +449,8 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repF = new TestIgnoredTrackingReporter
-      f.run(None, Args(repF, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      f.run(None, repF, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repF.testIgnoredReceived)
       assert(!f.theTestThisCalled)
       assert(f.theTestThatCalled)
@@ -462,7 +459,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // An Ignored test that was not included should not generate a TestIgnored event
       val g = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -471,8 +468,8 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" ignore { fixture => theTestTheOtherCalled = true }
       }
       val repG = new TestIgnoredTrackingReporter
-      g.run(None, Args(repG, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
-                ConfigMap.empty, None, new Tracker, Set.empty))
+      g.run(None, repG, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set("org.scalatest.FastAsLight")),
+                Map(), None, new Tracker)
       assert(!repG.testIgnoredReceived)
       assert(!g.theTestThisCalled)
       assert(g.theTestThatCalled)
@@ -481,7 +478,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // No tagsToInclude set, FastAsLight excluded
       val h = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -490,7 +487,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repH = new TestIgnoredTrackingReporter
-      h.run(None, Args(repH, Stopper.default, Filter(None, Set("org.scalatest.FastAsLight")), ConfigMap.empty, None, new Tracker, Set.empty))
+      h.run(None, repH, new Stopper {}, Filter(None, Set("org.scalatest.FastAsLight")), Map(), None, new Tracker)
       assert(!repH.testIgnoredReceived)
       assert(!h.theTestThisCalled)
       assert(h.theTestThatCalled)
@@ -499,7 +496,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // No tagsToInclude set, SlowAsMolasses excluded
       val i = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -508,7 +505,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repI = new TestIgnoredTrackingReporter
-      i.run(None, Args(repI, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      i.run(None, repI, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!i.theTestThisCalled)
       assert(!i.theTestThatCalled)
@@ -517,7 +514,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // No tagsToInclude set, SlowAsMolasses excluded, TestIgnored should not be received on excluded ones
       val j = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -526,7 +523,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" in { fixture => theTestTheOtherCalled = true }
       }
       val repJ = new TestIgnoredTrackingReporter
-      j.run(None, Args(repJ, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses")), ConfigMap.empty, None, new Tracker, Set.empty))
+      j.run(None, repJ, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses")), Map(), None, new Tracker)
       assert(!repI.testIgnoredReceived)
       assert(!j.theTestThisCalled)
       assert(!j.theTestThatCalled)
@@ -535,7 +532,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       // Same as previous, except Ignore specifically mentioned in excludes set
       val k = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var theTestThisCalled = false
         var theTestThatCalled = false
         var theTestTheOtherCalled = false
@@ -544,7 +541,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         "test the other" ignore { fixture => theTestTheOtherCalled = true }
       }
       val repK = new TestIgnoredTrackingReporter
-      k.run(None, Args(repK, Stopper.default, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), ConfigMap.empty, None, new Tracker, Set.empty))
+      k.run(None, repK, new Stopper {}, Filter(None, Set("org.scalatest.SlowAsMolasses", "org.scalatest.Ignore")), Map(), None, new Tracker)
       assert(repK.testIgnoredReceived)
       assert(!k.theTestThisCalled)
       assert(!k.theTestThatCalled)
@@ -555,7 +552,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val a = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         "test this" in { fixture => }
         "test that" in { fixture => }
       }
@@ -563,7 +560,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val b = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         "test this" ignore { fixture => }
         "test that" in { fixture => }
       }
@@ -571,7 +568,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val c = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         "test this" taggedAs(mytags.FastAsLight) in { fixture => }
         "test that" in { fixture => }
       }
@@ -580,7 +577,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val d = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         "test this" taggedAs(mytags.FastAsLight, mytags.SlowAsMolasses) in { fixture => }
         "test that" taggedAs(mytags.SlowAsMolasses) in { fixture => }
         "test the other thing" in { fixture => }
@@ -592,7 +589,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       val e = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         "test this" taggedAs(mytags.FastAsLight, mytags.SlowAsMolasses) in { fixture => }
         "test that" taggedAs(mytags.SlowAsMolasses) in { fixture => }
         "test the other thing" ignore { fixture => }
@@ -610,7 +607,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val a = new WordSpec {
         type FixtureParam = String
         val hello = "Hello, world!"
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test(hello)
         }
 
@@ -625,7 +622,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tp = rep.testPendingEventsReceived
       assert(tp.size === 2)
     }
@@ -634,7 +631,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val a = new WordSpec {
         type FixtureParam = String
         val hello = "Hello, world!"
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test(hello)
         }
         "This WordSpec" should {
@@ -644,7 +641,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }
@@ -653,7 +650,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val a = new WordSpec {
         type FixtureParam = String
         val hello = "Hello, world!"
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test(hello)
         }
         "This WordSpec" should {
@@ -661,46 +658,32 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
       intercept[OutOfMemoryError] {
-        a.run(None, Args(SilentReporter))
+        a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       }
     }
-/*
     it("should send InfoProvided events with aboutAPendingTest set to true for info " +
             "calls made from a test that is pending") {
       val a = new WordSpec with GivenWhenThen {
         type FixtureParam = String
         val hello = "Hello, world!"
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test(hello)
         }
         "A WordSpec" should {
           "do something" in { s =>
-            given("two integers")
-            when("one is subracted from the other")
-            then("the result is the difference between the two numbers")
+            Given("two integers")
+            When("one is subracted from the other")
+            Then("the result is the difference between the two numbers")
             pending
           }
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testPending = rep.testPendingEventsReceived
-      assert(testPending.size === 1)
-      val recordedEvents = testPending(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && ip.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 4)
+      for (event <- ip) {
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && event.aboutAPendingTest.get)
       }
     }
     it("should send InfoProvided events with aboutAPendingTest set to false for info " +
@@ -708,45 +691,31 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val a = new WordSpec with GivenWhenThen {
         type FixtureParam = String
         val hello = "Hello, world!"
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test(hello)
         }
         "A WordSpec" should {
           "do something" in { s =>
-            given("two integers")
-            when("one is subracted from the other")
-            then("the result is the difference between the two numbers")
+            Given("two integers")
+            When("one is subracted from the other")
+            Then("the result is the difference between the two numbers")
             assert(1 + 1 === 2)
           }
         }
       }
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
-      val testSucceeded = rep.testSucceededEventsReceived
-      assert(testSucceeded.size === 1)
-      val recordedEvents = testSucceeded(0).recordedEvents
-      assert(recordedEvents.size === 3)
-      for (event <- recordedEvents) {
-        val ip = event.asInstanceOf[InfoProvided]
-        assert(ip.aboutAPendingTest.isDefined && !ip.aboutAPendingTest.get)
-      }
-      val so = rep.scopeOpenedEventsReceived
-      assert(so.size === 1)
-      for (event <- so) {
-        assert(event.message == "A WordSpec")
-      }
-      val sc = rep.scopeClosedEventsReceived
-      assert(so.size === 1)
-      for (event <- sc) {
-        assert(event.message == "A WordSpec")
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
+      val ip = rep.infoProvidedEventsReceived
+      assert(ip.size === 4)
+      for (event <- ip) {
+        assert(event.message == "A WordSpec" || event.aboutAPendingTest.isDefined && !event.aboutAPendingTest.get)
       }
     }
-*/
     it("should allow both tests that take fixtures and tests that don't") {
       val a = new WordSpec {
 
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test("Hello, world!")
         }
 
@@ -759,7 +728,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         }
       }
 
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.testNames.size === 2, a.testNames)
       assert(a.takesNoArgsInvoked)
       assert(a.takesAFixtureInvoked)
@@ -768,7 +737,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       val a = new WordSpec {
 
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           test("Hello, world!")
         }
 
@@ -782,7 +751,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
       assert(!a.takesNoArgsInvoked)
       assert(!a.takesAFixtureInvoked)
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.testNames.size === 2, a.testNames)
       assert(a.takesNoArgsInvoked)
       assert(a.takesAFixtureInvoked)
@@ -790,7 +759,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
     it("should work with ignored tests whose inferred result type is not Unit") {
       val a = new WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         var takeNoArgsInvoked = false
         var takeAFixtureInvoked = false
         "A WordSpec" should {
@@ -802,7 +771,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       assert(!a.takeNoArgsInvoked)
       assert(!a.takeAFixtureInvoked)
       val reporter = new EventRecordingReporter
-      a.run(None, Args(reporter))
+      a.run(None, reporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(reporter.testIgnoredEventsReceived.size === 2)
       assert(!a.takeNoArgsInvoked)
       assert(!a.takeAFixtureInvoked)
@@ -812,13 +781,11 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         type FixtureParam = String
         var aNoArgTestWasPassed = false
         var aOneArgTestWasPassed = false
-        override def withFixture(test: NoArgTest): Outcome = {
+        override def withFixture(test: NoArgTest) {
           aNoArgTestWasPassed = true
-          Succeeded
         }
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           aOneArgTestWasPassed = true
-          Succeeded
         }
         "do something" in { () =>
           assert(1 + 1 === 2)
@@ -826,7 +793,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val s = new MySpec
-      s.run(None, Args(SilentReporter))
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(s.aNoArgTestWasPassed)
       assert(!s.aOneArgTestWasPassed)
     }
@@ -835,13 +802,11 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         type FixtureParam = String
         var aNoArgTestWasPassed = false
         var aOneArgTestWasPassed = false
-        override def withFixture(test: NoArgTest): Outcome = {
+        override def withFixture(test: NoArgTest) {
           aNoArgTestWasPassed = true
-          Succeeded
         }
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           aOneArgTestWasPassed = true
-          Succeeded
         }
         "do something" in { fixture =>
           assert(1 + 1 === 2)
@@ -849,7 +814,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val s = new MySpec
-      s.run(None, Args(SilentReporter))
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(!s.aNoArgTestWasPassed)
       assert(s.aOneArgTestWasPassed)
     }
@@ -859,9 +824,8 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       class MySpec extends WordSpec {
         type FixtureParam = String
         var theNoArgTestWasInvoked = false
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           // Shouldn't be called, but just in case don't invoke a OneArgTest
-          Succeeded
         }
         "do something" in { () =>
           theNoArgTestWasInvoked = true
@@ -869,33 +833,33 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
 
       val s = new MySpec
-      s.run(None, Args(SilentReporter))
+      s.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(s.theNoArgTestWasInvoked)
     }
     it("should pass the correct test name in the OneArgTest passed to withFixture") {
       val a = new WordSpec {
         type FixtureParam = String
         var correctTestNameWasPassed = false
-        def withFixture(test: OneArgTest): Outcome = {
+        def withFixture(test: OneArgTest) {
           correctTestNameWasPassed = test.name == "do something"
           test("hi")
         }
         "do something" in { fixture => }
       }
-      a.run(None, Args(SilentReporter))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker())
       assert(a.correctTestNameWasPassed)
     }
     it("should pass the correct config map in the OneArgTest passed to withFixture") {
       val a = new WordSpec {
         type FixtureParam = String
         var correctConfigMapWasPassed = false
-        def withFixture(test: OneArgTest): Outcome = {
-          correctConfigMapWasPassed = (test.configMap == ConfigMap("hi" -> 7))
+        def withFixture(test: OneArgTest) {
+          correctConfigMapWasPassed = (test.configMap == Map("hi" -> 7))
           test("hi")
         }
         "do something" in { fixture => }
       }
-      a.run(None, Args(SilentReporter, Stopper.default, Filter(), ConfigMap("hi" -> 7), None, new Tracker(), Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(), Map("hi" -> 7), None, new Tracker())
       assert(a.correctConfigMapWasPassed)
     }
     describe("(when a nesting rule has been violated)") {
@@ -904,7 +868,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "in the wrong place, at the wrong time" should {
             }
@@ -918,7 +882,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "in the wrong place, at the wrong time" should {
               "should never run" in { fixture =>
@@ -935,7 +899,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "should never run" in { fixture =>
               assert(1 === 1)
@@ -950,7 +914,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "should never run" taggedAs(mytags.SlowAsMolasses) in { fixture =>
               assert(1 === 1)
@@ -965,7 +929,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "in the wrong place, at the wrong time" should {
               "should never run" ignore { fixture =>
@@ -982,7 +946,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "should never run" ignore { fixture =>
               assert(1 === 1)
@@ -997,7 +961,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
 
         class MySpec extends WordSpec {
           type FixtureParam = String
-          def withFixture(test: OneArgTest): Outcome = { test("hi") }
+          def withFixture(test: OneArgTest) { test("hi") }
           "should blow up" in { fixture =>
             "should never run" taggedAs(mytags.SlowAsMolasses) ignore { fixture =>
               assert(1 === 1)
@@ -1009,67 +973,6 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
         ensureTestFailedEventReceived(spec, "should blow up")
       }
     }
-    
-    it("should contains correct formatter for TestStarting, TestSucceeded, TestFailed, TestPending, TestCanceled and TestIgnored") {
-      class TestSpec extends WordSpec with StringFixture {
-        "a feature" should {
-          "succeeded here" in { fixture => }
-          "failed here" in { fixture =>  fail }
-          "pending here" in { fixture =>  pending }
-          "cancel here" in { fixture =>  cancel }
-          "ignore here" ignore { fixture => }
-        }
-      }
-      val rep = new EventRecordingReporter
-      val s = new TestSpec
-      s.run(None, Args(rep))
-      val testStartingList = rep.testStartingEventsReceived
-      assert(testStartingList.size === 4)
-      assert(testStartingList(0).formatter === Some(MotionToSuppress), "Expected testStartingList(0).formatter to be Some(MotionToSuppress), but got: " + testStartingList(0).formatter.getClass.getName)
-      assert(testStartingList(1).formatter === Some(MotionToSuppress), "Expected testStartingList(1).formatter to be Some(MotionToSuppress), but got: " + testStartingList(1).formatter.getClass.getName)
-      assert(testStartingList(2).formatter === Some(MotionToSuppress), "Expected testStartingList(2).formatter to be Some(MotionToSuppress), but got: " + testStartingList(2).formatter.getClass.getName)
-      assert(testStartingList(3).formatter === Some(MotionToSuppress), "Expected testStartingList(3).formatter to be Some(MotionToSuppress), but got: " + testStartingList(3).formatter.getClass.getName)
-      
-      val testSucceededList = rep.testSucceededEventsReceived
-      assert(testSucceededList.size === 1)
-      assert(testSucceededList(0).formatter.isDefined, "Expected testSucceededList(0).formatter to be defined, but it is not.")
-      assert(testSucceededList(0).formatter.get.isInstanceOf[IndentedText], "Expected testSucceededList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testSucceededFormatter = testSucceededList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testSucceededFormatter.formattedText === "- should succeeded here")
-      assert(testSucceededFormatter.rawText === "should succeeded here")
-      
-      val testFailedList = rep.testFailedEventsReceived
-      assert(testFailedList.size === 1)
-      assert(testFailedList(0).formatter.isDefined, "Expected testFailedList(0).formatter to be defined, but it is not.")
-      assert(testFailedList(0).formatter.get.isInstanceOf[IndentedText], "Expected testFailedList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testFailedFormatter = testFailedList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testFailedFormatter.formattedText === "- should failed here")
-      assert(testFailedFormatter.rawText === "should failed here")
-      
-      val testPendingList = rep.testPendingEventsReceived
-      assert(testPendingList.size === 1)
-      assert(testPendingList(0).formatter.isDefined, "Expected testPendingList(0).formatter to be defined, but it is not.")
-      assert(testPendingList(0).formatter.get.isInstanceOf[IndentedText], "Expected testPendingList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testPendingFormatter = testPendingList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testPendingFormatter.formattedText === "- should pending here")
-      assert(testPendingFormatter.rawText === "should pending here")
-      
-      val testCanceledList = rep.testCanceledEventsReceived
-      assert(testCanceledList.size === 1)
-      assert(testCanceledList(0).formatter.isDefined, "Expected testCanceledList(0).formatter to be defined, but it is not.")
-      assert(testCanceledList(0).formatter.get.isInstanceOf[IndentedText], "Expected testCanceledList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testCanceledFormatter = testCanceledList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testCanceledFormatter.formattedText === "- should cancel here")
-      assert(testCanceledFormatter.rawText === "should cancel here")
-      
-      val testIgnoredList = rep.testIgnoredEventsReceived
-      assert(testIgnoredList.size === 1)
-      assert(testIgnoredList(0).formatter.isDefined, "Expected testIgnoredList(0).formatter to be defined, but it is not.")
-      assert(testIgnoredList(0).formatter.get.isInstanceOf[IndentedText], "Expected testIgnoredList(0).formatter to be Some(IndentedText), but got: " + testSucceededList(0).formatter)
-      val testIgnoredFormatter = testIgnoredList(0).formatter.get.asInstanceOf[IndentedText]
-      assert(testIgnoredFormatter.formattedText === "- should ignore here")
-      assert(testIgnoredFormatter.rawText === "should ignore here")
-    }
   }
   
   describe("when failure happens") {
@@ -1077,7 +980,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
     it("should fire TestFailed event with correct stack depth info when test failed") {
       class TestSpec extends WordSpec {
         type FixtureParam = String
-        def withFixture(test: OneArgTest): Outcome = { test("hi") }
+        def withFixture(test: OneArgTest) { test("hi") }
         "A Stack" should {
           "chill out" in { fixture =>
             assert(1 === 2)
@@ -1086,7 +989,7 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
       }
       val rep = new EventRecordingReporter
       val s1 = new TestSpec
-      s1.run(None, Args(rep))
+      s1.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(rep.testFailedEventsReceived.size === 1)
       assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeFileName.get === "WordSpecSpec.scala")
       assert(rep.testFailedEventsReceived(0).throwable.get.asInstanceOf[TestFailedException].failedCodeLineNumber.get === thisLineNumber - 9)
@@ -1103,1215 +1006,27 @@ class WordSpecSpec extends org.scalatest.FunSpec with PrivateMethodTester with S
             }
           }
         }
-        def withFixture(test: OneArgTest): Outcome = {
-          val outcome = test.apply("hi")
-          outcome match {
-            case Exceptional(ex: TestRegistrationClosedException) => 
-              registrationClosedThrown = true
-            case _ =>
+        def withFixture(test: OneArgTest) {
+          try {
+            test.apply("hi")
           }
-          outcome
+          catch {
+            case e: TestRegistrationClosedException => 
+              registrationClosedThrown = true
+              throw e
+          }
         }
       }
       val rep = new EventRecordingReporter
       val s = new TestSpec
-      s.run(None, Args(rep))
+      s.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(s.registrationClosedThrown == true)
       val testFailedEvents = rep.testFailedEventsReceived
       assert(testFailedEvents.size === 1)
       assert(testFailedEvents(0).throwable.get.getClass() === classOf[TestRegistrationClosedException])
       val trce = testFailedEvents(0).throwable.get.asInstanceOf[TestRegistrationClosedException]
       assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-      assert(trce.failedCodeLineNumber.get === thisLineNumber - 24)
-    }
-  }
-  
-  describe("shorthand syntax") {
-    
-    describe("'it'") {
-      
-      describe("under top level") {
-        
-        it("should work with subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            } 
-
-            it should { 
-              "do something interesting 1" in { fixture => } 
-            }
-        
-            it can {
-              "do something interesting 2" in { fixture => }
-            }
-        
-            it must {
-              "do something interesting 3" in { fixture => }
-            }
-        
-            it when {
-              "do something interesting 4" in { fixture => }
-            }
-          }
-      
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-      
-          val testStartingList = rep.testStartingEventsReceived
-          assert(testStartingList.size === 5)
-          assert(testStartingList(0).testName === "A Stack when empty should be empty")
-          assert(testStartingList(1).testName === "A Stack should do something interesting 1")
-          assert(testStartingList(2).testName === "A Stack can do something interesting 2")
-          assert(testStartingList(3).testName === "A Stack must do something interesting 3")
-          assert(testStartingList(4).testName === "A Stack when do something interesting 4")
-      
-          val testSucceededList = rep.testSucceededEventsReceived
-          assert(testSucceededList.size === 5)
-          assert(testSucceededList(0).testName === "A Stack when empty should be empty")
-          assert(testSucceededList(1).testName === "A Stack should do something interesting 1")
-          assert(testSucceededList(2).testName === "A Stack can do something interesting 2")
-          assert(testSucceededList(3).testName === "A Stack must do something interesting 3")
-          assert(testSucceededList(4).testName === "A Stack when do something interesting 4")
-        }
-    
-        it("should throw NotAllowedException with correct stack depth and message when 'it should' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            it should {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it can' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            it can {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it must' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            it must {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it when' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            it when {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it should' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            it should {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it can' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            it can {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it must' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            it must {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it when' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            it when {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-      }
-      
-      describe("under inner level") {
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it should' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              it should {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it can' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              it can {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it must' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              it must {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it when' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              it when {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it should' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              it should {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it can' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              it can {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it must' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              it must {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it when' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              it when {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it should' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              it should {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it can' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              it can {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it must' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              it must {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it when' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              it when {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "An it clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-      }
-      
-      describe("under 'in' clause") {
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it should' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              it should {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it can' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              it can {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it must' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              it must {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'it when' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              it when {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "An it clause must only appear after a top level subject clause.")
-        }
-        
-      }
-    }
-    
-    describe("'they'") {
-      
-      describe("under top level") {
-        
-        it("should work with subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            } 
-
-            they should { 
-              "do something interesting 1" in { fixture => } 
-            }
-        
-            they can {
-              "do something interesting 2" in { fixture => }
-            }
-        
-            they must {
-              "do something interesting 3" in { fixture => }
-            }
-        
-            they when {
-              "do something interesting 4" in { fixture => }
-            }
-          }
-      
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-      
-          val testStartingList = rep.testStartingEventsReceived
-          assert(testStartingList.size === 5)
-          assert(testStartingList(0).testName === "A Stack when empty should be empty")
-          assert(testStartingList(1).testName === "A Stack should do something interesting 1")
-          assert(testStartingList(2).testName === "A Stack can do something interesting 2")
-          assert(testStartingList(3).testName === "A Stack must do something interesting 3")
-          assert(testStartingList(4).testName === "A Stack when do something interesting 4")
-      
-          val testSucceededList = rep.testSucceededEventsReceived
-          assert(testSucceededList.size === 5)
-          assert(testSucceededList(0).testName === "A Stack when empty should be empty")
-          assert(testSucceededList(1).testName === "A Stack should do something interesting 1")
-          assert(testSucceededList(2).testName === "A Stack can do something interesting 2")
-          assert(testSucceededList(3).testName === "A Stack must do something interesting 3")
-          assert(testSucceededList(4).testName === "A Stack when do something interesting 4")
-        }
-    
-        it("should throw NotAllowedException with correct stack depth and message when 'they should' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            they should {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they can' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            they can {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they must' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            they must {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they when' is called without subject") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            they when {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they should' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            they should {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they can' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            they can {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they must' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            they must {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they when' is called after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              } 
-            }
-            
-            "Other do something special" in { fixture => }
-            
-            they when {
-              "do something interesting" in { fixture => }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 9))
-        }
-      }
-      
-      describe("under inner level") {
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they should' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              they should {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they can' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              they can {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they must' is called with inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              they must {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they when' is called with inner branch") {
-          class TestSpec extends WordSpec {
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              they when {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they should' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              they should {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they can' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              they can {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they must' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              they must {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they when' is called without inner branch") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              they when {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they should' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              they should {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they can' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              they can {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they must' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              they must {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they when' is called with inner branch but after an 'in' clause") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            def withFixture(test: OneArgTest): Outcome = { test("hi") }
-            "A Stack" when { 
-              "empty" should { 
-                "be empty" in { fixture => } 
-              }
-              "do something" in { fixture => }
-              they when {
-                "do something interesting" in { fixture => }
-              }
-            }
-          }
-          val e = intercept[exceptions.NotAllowedException] {
-            new TestSpec
-          }
-          assert(e.getMessage === "A they clause must only appear after a top level subject clause.")
-          assert(e.failedCodeFileName === Some("WordSpecSpec.scala"))
-          assert(e.failedCodeLineNumber === Some(thisLineNumber - 10))
-        }
-      }
-      
-      describe("under 'in' clause") {
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they should' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              they should {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they can' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              they can {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they must' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              they must {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
-        }
-        
-        it("should throw NotAllowedException with correct stack depth and message when 'they when' is called") {
-          class TestSpec extends WordSpec { 
-            type FixtureParam = String
-            var notAllowedThrown = false
-            "Something special" in { fixture => 
-              they when {
-                "do something interesting" in { fixture => }
-              }
-            }
-            def withFixture(test: OneArgTest): Outcome = {
-              val outcome = test.apply("hi")
-              outcome match {
-                case Exceptional(ex: exceptions.NotAllowedException) => 
-                  notAllowedThrown = true
-                case _ =>
-              }
-              outcome
-            }
-          }
-          val rep = new EventRecordingReporter
-          val s = new TestSpec
-          s.run(None, Args(rep))
-          assert(s.notAllowedThrown == true)
-          val testFailedEvents = rep.testFailedEventsReceived
-          assert(testFailedEvents.size === 1)
-          assert(testFailedEvents(0).throwable.get.getClass() === classOf[exceptions.NotAllowedException])
-          val trce = testFailedEvents(0).throwable.get.asInstanceOf[exceptions.NotAllowedException]
-          assert("WordSpecSpec.scala" === trce.failedCodeFileName.get)
-          assert(trce.failedCodeLineNumber.get === thisLineNumber - 23)
-          assert(trce.getMessage === "A they clause must only appear after a top level subject clause.")
-        }
-        
-      }
+      assert(trce.failedCodeLineNumber.get === thisLineNumber - 25)
     }
   }
 }

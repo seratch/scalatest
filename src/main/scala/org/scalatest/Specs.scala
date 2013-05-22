@@ -25,13 +25,13 @@ package org.scalatest
  * </p>
  *
  * <pre class="stHighlight">
- * class StepsSpec extends Specs(
+ * class StepsSpec extends Specs {
  *   new Step1Spec,
  *   new Step2Spec,
  *   new Step3Spec,
  *   new Step4Spec,
  *   new Step5Spec
- * )
+ * }
  * </pre>
  *
  * <p>
@@ -40,15 +40,14 @@ package org.scalatest
  * <code>Step3Spec</code>, <code>Step4Spec</code>, and <code>Step5Spec</code>.
  * </p>
  *
- * @param specsToNest a sequence of <code>Suite</code>s to nest.
+ * @param suitesToNest a sequence of <code>Suite</code>s to nest.
  *
  * @throws NullPointerException if <code>suitesToNest</code>, or any suite
  * it contains, is <code>null</code>.
  *
  * @author Bill Venners
  */
-@deprecated("Specs has been deprecated and will be removed in a future version of ScalaTest. Please use Suites instead.")
-class Specs(specsToNest: Suite*) extends Suite { thisSuite => 
+class Specs(specsToNest: Suite*) extends Suite {
 
   for (s <- specsToNest) {
     if (s == null)
@@ -56,20 +55,10 @@ class Specs(specsToNest: Suite*) extends Suite { thisSuite =>
   }
 
   /**
-   * Returns an immutable <code>IndexedSeq</code> containing the suites passed to the constructor in
+   * Returns a list containing the suites passed to the constructor in
    * the order they were passed.
    */
-  override val nestedSuites: collection.immutable.IndexedSeq[Suite] = Vector.empty ++ specsToNest
-
-  /**
-   * Returns a user friendly string for this suite, composed of the
-   * simple name of the class (possibly simplified further by removing dollar signs if added by the Scala interpeter) and, if this suite
-   * contains nested suites, the result of invoking <code>toString</code> on each
-   * of the nested suites, separated by commas and surrounded by parentheses.
-   *
-   * @return a user-friendly string for this suite
-   */
-  override def toString: String = Suite.suiteToString(None, thisSuite)
+  override val nestedSuites = specsToNest.toList
 }
 
 /**
@@ -84,7 +73,6 @@ class Specs(specsToNest: Suite*) extends Suite { thisSuite =>
  * scala> Specs(new MyFirstSpec, new MyNextSpec).execute()
  * </pre>
  */
-@deprecated("Specs has been deprecated and will be removed in a future version of ScalaTest. Please use Suites instead.")
 object Specs {
 
   /**

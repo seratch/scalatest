@@ -16,58 +16,8 @@
 package org.scalatest
 
 /**
- * Trait that contains methods named <code>given</code>, <code>when</code>, <code>then</code>, and <code>and</code>,
+ * Trait that contains methods named <code>Given</code>, <code>When</code>, <code>Then</code>, and <code>And</code>,
  * which take a string message and implicit <code>Informer</code>, and forward the message to the informer.
- *
- * <p>
- * Here's an example:
- * </p>
- * 
- * <pre class="stHighlight">
- * package org.scalatest.examples.flatspec.info
- * 
- * import collection.mutable
- * import org.scalatest._
- * 
- * class SetSpec extends FlatSpec with GivenWhenThen {
- *   
- *   "A mutable Set" should "allow an element to be added" in {
- *     Given("an empty mutable Set")
- *     val set = mutable.Set.empty[String]
- * 
- *     When("an element is added")
- *     set += "clarity"
- * 
- *     Then("the Set should have size 1")
- *     assert(set.size === 1)
- * 
- *     And("the Set should contain the added element")
- *     assert(set.contains("clarity"))
- * 
- *     info("That's all folks!")
- *   }
- * }
- * </pre>
- *
- * <p>
- * If you run this <code>FlatSpec</code> from the interpreter, you will see the following output:
- * </p>
- *
- * <pre class="stREPL">
- * scala&gt; new SetSpec execute
- * <span class="stGreen">A mutable Set
- * - should allow an element to be added
- *   + Given an empty mutable Set 
- *   + When an element is added 
- *   + Then the Set should have size 1 
- *   + And the Set should contain the added element 
- *   + That's all folks! </span>
- * </pre>
- *
- * <p>
- * <strong>Note: The lower case forms of <code>given</code>, <code>when</code>, <code>then</code> and <code>and</code> were
- * deprecated in ScalaTest because using <code>then</code> as an identifier was deprecated in Scala 2.10.</strong>
- * <p>
  *
  * @author Bill Venners
  */
@@ -82,7 +32,7 @@ trait GivenWhenThen {
    */
   @deprecated("Please use Given(message: String)(implicit info: Informer) instead.")
   def given(message: String)(implicit info: Informer) {
-    Given(message)
+    info(Resources("givenMessage", message))
   }
   
   /**
@@ -104,7 +54,7 @@ trait GivenWhenThen {
    */
   @deprecated("Please use When(message: String)(implicit info: Informer) instead.")
   def when(message: String)(implicit info: Informer) {
-    When(message)
+    info(Resources("whenMessage", message))
   }
   
   /**
@@ -126,7 +76,7 @@ trait GivenWhenThen {
    */
   @deprecated("Please use Then(message: String)(implicit info: Informer) instead.")
   def then(message: String)(implicit info: Informer) {
-    Then(message)
+    info(Resources("thenMessage", message))
   }
   
   /**
@@ -148,10 +98,11 @@ trait GivenWhenThen {
    */
   @deprecated("Please use And(message: String)(implicit info: Informer) instead.")
   def and(message: String)(implicit info: Informer) {
-    And(message)
+    info(Resources("andMessage", message))
   }
   
-   /**
+  
+  /**
    * Forwards a message to an implicit <code>Informer</code>, preceded by "And ".
    *
    * @param message the message to forward to the passed informer

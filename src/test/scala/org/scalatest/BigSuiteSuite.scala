@@ -61,7 +61,7 @@ class BigSuiteSuite extends FunSuite with SharedHelpers {
   }
   def ensureTestFailedEventReceivedOrNot(suite: Suite, shouldReceiveCount: Int) {
     val reporter = new EventRecordingReporter
-    suite.run(None, Args(reporter))
+    suite.run(None, reporter, new Stopper {}, Filter(), Map(), None, new Tracker)
     val testFailedEvents = reporter.testFailedEventsReceived
     assert(testFailedEvents.size === shouldReceiveCount)
     if (shouldReceiveCount > 0)

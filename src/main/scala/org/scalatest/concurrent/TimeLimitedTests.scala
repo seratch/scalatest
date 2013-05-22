@@ -15,15 +15,13 @@
  */
 package org.scalatest.concurrent
 
-import org.scalatest.SuiteMixin
+import org.scalatest.AbstractSuite
 import org.scalatest.Suite
 import Timeouts._
 import org.scalatest.exceptions.ModifiableMessage
 import org.scalatest.Resources
 import org.scalatest.time.Span
 import org.scalatest.exceptions.TimeoutField
-import org.scalatest.Outcome
-import org.scalatest.Exceptional
 
 /**
  * Trait that when mixed into a suite class establishes a time limit for its tests.
@@ -55,14 +53,11 @@ import org.scalatest.Exceptional
  * <pre class="stHighlight">
  * import org.scalatest.FunSpec
  * import org.scalatest.concurrent.TimeLimitedTests
- * import org.scalatest.time.SpanSugar._
+ * import org.scalatest.time.Span
  * 
  * class ExampleSpec extends FunSpec with TimeLimitedTests {
  *
- *   // Note: You may need to either write 200.millis or (200 millis), or
- *   // place a semicolon or blank line after plain old 200 millis, to
- *   // avoid the semicolon inference problems of postfix operator notation.
- *   val timeLimit = 200 millis
+ *   val timeLimit = Span(200, Millis)
  *
  *   describe("A time-limited test") {
  *     it("should succeed if it completes within the time limit") {
@@ -83,6 +78,16 @@ import org.scalatest.Exceptional
  * <code>The test did not complete within the specified 200 millisecond time limit.</code>
  * </p>
  * 
+ * <p>
+ * If you prefer, you can mix in or import the members of <a href="../time/SpanSugar.html"><code>SpanSugar</code></a> and place units on the time limit, for example:
+ * </p>
+ *
+ * <pre class="stHighlight">
+ * import org.scalatest.time.SpanSugar._
+ *
+ * val timeLimit = 200 millis
+ * </pre>
+ *
  * <p>
  * The <code>failAfter</code> method uses an <code>Interruptor</code> to attempt to interrupt the main test thread if the timeout
  * expires. The default <code>Interruptor</code> returned by the <code>defaultTestInterruptor</code> method is a
@@ -122,7 +127,7 @@ import org.scalatest.Exceptional
  * to run.
  * </p>
  */
-trait TimeLimitedTests extends SuiteMixin { this: Suite =>
+trait TimeLimitedTests extends AbstractSuite { this: Suite =>
 
   /**
    * A stackable implementation of <code>withFixture</code> that wraps a call to <code>super.withFixture</code> in a 
@@ -130,17 +135,15 @@ trait TimeLimitedTests extends SuiteMixin { this: Suite =>
    * 
    * @param test the test on which to enforce a time limit
    */
-  abstract override def withFixture(test: NoArgTest): Outcome = {
+  abstract override def withFixture(test: NoArgTest) {
     try {
       failAfter(timeLimit) {
         super.withFixture(test)
       } (defaultTestInterruptor)
     }
     catch {
-      case e: org.scalatest.exceptions.ModifiableMessage[_] with TimeoutField => 
-        Exceptional(e.modifyMessage(opts => Some(Resources("testTimeLimitExceeded", e.timeout.prettyString))))
-      case t: Throwable => 
-        Exceptional(t)
+      case e: org.scalatest.exceptions.ModifiableMessage[_] with TimeoutField =>
+        throw e.modifyMessage(opts => Some(Resources("testTimeLimitExceeded", e.timeout.prettyString)))
     }
   }
 
