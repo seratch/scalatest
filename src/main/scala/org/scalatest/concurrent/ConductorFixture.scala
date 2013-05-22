@@ -17,7 +17,6 @@ package org.scalatest.concurrent
 
 import org.scalatest._
 import org.scalatest.fixture
-import org.scalatest.OutcomeOf.outcomeOf
 
 /**
  * Trait that can pass a new <code>Conductor</code> fixture into tests.
@@ -85,7 +84,7 @@ import org.scalatest.OutcomeOf.outcomeOf
  *
  * @author Bill Venners
  */
-trait ConductorFixture extends SuiteMixin with Conductors { this: fixture.Suite =>
+trait ConductorFixture extends AbstractSuite with Conductors { this: fixture.Suite =>
 
   /**
    * Defines type <code>Fixture</code> to be <code>Conductor</code>.
@@ -112,12 +111,10 @@ trait ConductorFixture extends SuiteMixin with Conductors { this: fixture.Suite 
    * function to <code>withFixture(NoArgTest)</code>.
    * </p>
    */
-  def withFixture(test: OneArgTest): Outcome = {
+  def withFixture(test: OneArgTest) {
     val conductor = new Conductor
-    withFixture(test.toNoArgTest(conductor)) match {
-      case Succeeded if !conductor.conductingHasBegun =>
-        outcomeOf { conductor.conduct() }
-      case other => other
-    }
+    withFixture(test.toNoArgTest(conductor))
+    if (!conductor.conductingHasBegun)
+      conductor.conduct()
   }
 }

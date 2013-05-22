@@ -201,8 +201,8 @@ class CheckersSuite extends Suite with Checkers {
   }
   
   def expectFileNameLineNumber(ex: GeneratorDrivenPropertyCheckFailedException, expectedFileName: String, expectedLineNumber: Int) {
-      assertResult(expectedFileName)(ex.failedCodeFileName.getOrElse(null))
-      assertResult(expectedLineNumber)(ex.failedCodeLineNumber.getOrElse(-1))
+      expect(expectedFileName)(ex.failedCodeFileName.getOrElse(null))
+      expect(expectedLineNumber)(ex.failedCodeLineNumber.getOrElse(-1))
   }
   
   def testCheckPropStackDepth() {

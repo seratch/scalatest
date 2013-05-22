@@ -33,7 +33,7 @@ private[scalatest] class SuiteRerunner(suiteClassName: String) extends Rerunner 
     throw new NullPointerException
 
   def apply(report: Reporter, stopRequested: Stopper, filter: Filter,
-            configMap: ConfigMap, distributor: Option[Distributor], tracker: Tracker, loader: ClassLoader) {
+            configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker, loader: ClassLoader) {
 
     val tagsToInclude =
       filter.tagsToInclude match {
@@ -64,15 +64,15 @@ private[scalatest] class SuiteRerunner(suiteClassName: String) extends Rerunner 
         val rawString = Resources("suiteExecutionStarting")
         val formatter = formatterForSuiteStarting(suite)
 
-        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
-        // TODO: I had to pass Set.empty for chosenStyles now. Fix this later.
-        suite.run(None, Args(report, stopRequested, filter, configMap, distributor, tracker, Set.empty))
+        report(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), formatter, rerunnable))
+
+        suite.run(None, report, stopRequested, filter, configMap, distributor, tracker)
 
         val rawString2 = Resources("suiteCompletedNormally")
         val formatter2 = formatterForSuiteCompleted(suite)
         val duration = System.currentTimeMillis - suiteStartTime
 
-        report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), Some(duration), formatter2, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
+        report(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), Some(duration), formatter2, rerunnable))
       }
       catch {
         case e: RuntimeException => {
@@ -85,7 +85,7 @@ private[scalatest] class SuiteRerunner(suiteClassName: String) extends Rerunner 
           val formatter3 = formatterForSuiteAborted(suite, rawString3)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          report(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, suite.suiteId, Some(suite.getClass.getName), Some(e), Some(duration), formatter3, Some(SeeStackDepthException), suite.rerunner))
+          report(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, Some(suite.getClass.getName), Some(e), Some(duration), formatter3, rerunnable))
         }
       }
 

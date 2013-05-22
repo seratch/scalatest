@@ -1,4 +1,5 @@
-/* * Copyright 2001-2008 Artima, Inc.
+/*
+ * Copyright 2001-2008 Artima, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +14,8 @@
  * limitations under the License.
  */
 package org.scalatest.matchers
+
+import org.scalatest._
 
 // T is the type of the object that has a property to verify with an instance of this trait, P is the type of that particular property
 // Since I should be able to pass 
@@ -123,7 +126,7 @@ package org.scalatest.matchers
  * For more information on <code>HavePropertyMatchResult</code> and the meaning of its fields, please
  * see the documentation for <a href="HavePropertyMatchResult.html"><code>HavePropertyMatchResult</code></a>. To understand why <code>HavePropertyMatcher</code>
  * is contravariant in its type parameter, see the section entitled "Matcher's variance" in the
- * documentation for <a href="../Matcher.html"><code>Matcher</code></a>.
+ * documentation for <a href="Matcher.html"><code>Matcher</code></a>.
  * </p>
  *
  * @author Bill Venners

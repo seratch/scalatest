@@ -73,7 +73,11 @@ class TestFailedException(
    */
   def this(message: Option[String], cause: Option[Throwable], failedCodeStackDepth: Int) =
     this(
-      StackDepthException.toExceptionFunction(message),
+      message match {
+        case null => throw new NullPointerException("message was null")
+        case Some(null) => throw new NullPointerException("message was a Some(null)")
+        case _ => { e => message }
+      },
       cause,
       e => failedCodeStackDepth,
       None
