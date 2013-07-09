@@ -108,19 +108,38 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testSuites {
-    configure(_.suites = comma("a", "b", "c")) should containSuiteArgs("-s", "a", "b", "c")
+    val suitesArray: Array[String] = Array(" a ", "b",
+                                           "foo @bar baz",
+                                           " zowie\n  zip zap ")
+
+    val config = configure(_.suites = suitesArray)
+
+    config should containSlice ("-s", "a")
+    config should containSlice ("-s", "b")
+    config should containSlice ("-s", "foo", "-t", "bar baz")
+    config should containSlice ("-s", "zowie", "-z", "zip zap")
+  }
+
+  def testSuitesAndTests {
+    val suitesArray: Array[String] = Array(" a ", "b c")
+    val testsArray:  Array[String] = Array(" d ", "@e")
+
+    val config = configure(x => {x.suites = suitesArray; x.tests = testsArray})
+
+    config should containSlice ("-z", "d",
+                                "-t", "e",
+                                "-s", "a",
+                                "-s", "b", "-z", "c")
   }
 
   def testTests {
-    configure(_.tests = comma("a", "b", "c")) should containSuiteArgs("-z", "a", "b", "c")
-  }
+    val testsArray: Array[String] = Array(" @a ", " b ", "@c")
 
-  //
-  // Verify that a comma can be escaped with a backslash in order to
-  // support a test name that contains a comma.
-  //
-  def testTestsWithCommas {
-    configure(_.tests = comma("a\\, bc", "b", "c")) should containSuiteArgs("-z", "a, bc", "b", "c")
+    val config = configure(_.tests = testsArray)
+
+    config should containSlice("-t", "a")
+    config should containSlice("-z", "b")
+    config should containSlice("-t", "c")
   }
 
   def testSuffixes {

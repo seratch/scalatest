@@ -30,8 +30,8 @@ trait PluginMatchers {
     def apply(seq: Array[String]) = {
       MatchResult(
       values.forall(v => seq.containsSlice(List(name, v))),
-      "The suiteArgs " + name +" "+ values.mkString(" ") + " where not all found in " + seq,
-      "The suiteArgs for " + name +" "+ values.mkString(" ") + " where all found in " + seq
+      "The suiteArgs " + name +" "+ values.mkString(" ") + " were not all found in " + seq,
+      "The suiteArgs for " + name +" "+ values.mkString(" ") + " were all found in " + seq
       )
     }
   }
