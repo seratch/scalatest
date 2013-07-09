@@ -73,16 +73,16 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     String runpath;
 
     /**
-     * Comma separated list of suites to be executed
+     * Suites to be executed.
      * @parameter expression="${suites}"
      */
-    String suites;
+    String[] suites = {};
 
     /**
-     * Comma separated list of tests to be executed
+     * Tests to be executed
      * @parameter expression="${tests}"
      */
-    String tests;
+    String[] tests = {};
 
     /**
      * Regex of suffixes to filter discovered suites
@@ -384,8 +384,8 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
             addAll(tagsToInclude());
             addAll(tagsToExclude());
             addAll(parallel());
-            addAll(suites());
             addAll(tests());
+            addAll(suites());
             addAll(suffixes());
             addAll(membersOnlySuites());
             addAll(wildcardSuites());
@@ -422,11 +422,73 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     }
 
     private List<String> suites() {
-        return suiteArg("-s", suites);
+        List<String> list = new ArrayList<String>();
+
+        for (String suite: suites) {
+            SuiteTestPair pair = new SuiteTestPair(suite);
+
+            if (pair.suite != null) {
+                list.add("-s");
+                list.add(pair.suite);
+
+                if (pair.test != null) {
+                    addTest(list, pair.test);
+                }
+            }
+        }
+        return list;
+    }
+
+    static private class SuiteTestPair {
+        String suite;
+        String test;
+
+        SuiteTestPair(String str) {
+            if (str != null) {
+                String trimStr = str.trim();
+
+                if (trimStr.length() > 0) {
+                    String[] splits = trimStr.split("(?s)\\s", 2);
+                    if (splits.length > 1) {
+                        suite = splits[0];
+                        test = splits[1].trim();
+                    }
+                    else {
+                        suite = trimStr;
+                    }
+                }
+            }
+        }
+    }
+
+    private void addTest(List list, String testParm) {
+        if (testParm != null) {
+            String test = testParm.trim();
+
+            if (test.length() > 0) {
+                if (test.charAt(0) == '@') {
+                    String atTest = test.substring(1).trim();
+
+                    if (atTest.length() > 0) {
+                        list.add("-t");
+                        list.add(atTest);
+                    }
+                }
+                else {
+                    list.add("-z");
+                    list.add(test);
+                }
+            }
+        }
     }
 
     private List<String> tests() {
-        return suiteArg("-z", tests);
+        List<String> list = new ArrayList<String>();
+
+        for (String test: tests) {
+            addTest(list, test);
+        }
+        return list;
     }
 
     private List<String> suffixes() {
