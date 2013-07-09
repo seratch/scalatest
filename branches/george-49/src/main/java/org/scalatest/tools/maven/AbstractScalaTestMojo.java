@@ -73,16 +73,16 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     String runpath;
 
     /**
-     * Suites to be executed.
+     * Comma separated list of suites to be executed.
      * @parameter expression="${suites}"
      */
-    String[] suites = {};
+    String suites;
 
     /**
-     * Tests to be executed
+     * Comma separated list of tests to be executed
      * @parameter expression="${tests}"
      */
-    String[] tests = {};
+    String tests;
 
     /**
      * Regex of suffixes to filter discovered suites
@@ -424,7 +424,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     private List<String> suites() {
         List<String> list = new ArrayList<String>();
 
-        for (String suite: suites) {
+        for (String suite: splitOnComma(suites)) {
             SuiteTestPair pair = new SuiteTestPair(suite);
 
             if (pair.suite != null) {
@@ -485,7 +485,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     private List<String> tests() {
         List<String> list = new ArrayList<String>();
 
-        for (String test: tests) {
+        for (String test: splitOnComma(tests)) {
             addTest(list, test);
         }
         return list;

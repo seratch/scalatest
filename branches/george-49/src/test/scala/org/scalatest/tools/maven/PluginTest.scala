@@ -108,11 +108,12 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testSuites {
-    val suitesArray: Array[String] = Array(" a ", "b",
-                                           "foo @bar baz",
-                                           " zowie\n  zip zap ")
+    val suites: String = comma(" a ",
+                               "b",
+                               "foo @bar baz",
+                               " zowie\n  zip zap ")
 
-    val config = configure(_.suites = suitesArray)
+    val config = configure(_.suites = suites)
 
     config should containSlice ("-s", "a")
     config should containSlice ("-s", "b")
@@ -121,10 +122,10 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testSuitesAndTests {
-    val suitesArray: Array[String] = Array(" a ", "b c")
-    val testsArray:  Array[String] = Array(" d ", "@e")
+    val suites: String = comma(" a ", "b c")
+    val tests:  String = comma(" d ", "@e")
 
-    val config = configure(x => {x.suites = suitesArray; x.tests = testsArray})
+    val config = configure(x => {x.suites = suites; x.tests = tests})
 
     config should containSlice ("-z", "d",
                                 "-t", "e",
@@ -133,9 +134,9 @@ class PluginTest extends JUnit3Suite with ShouldMatchers with PluginMatchers wit
   }
 
   def testTests {
-    val testsArray: Array[String] = Array(" @a ", " b ", "@c")
+    val tests: String= comma(" @a ", " b ", "@c")
 
-    val config = configure(_.tests = testsArray)
+    val config = configure(_.tests = tests)
 
     config should containSlice("-t", "a")
     config should containSlice("-z", "b")
