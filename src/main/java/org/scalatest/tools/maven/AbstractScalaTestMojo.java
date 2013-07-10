@@ -73,7 +73,7 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
     String runpath;
 
     /**
-     * Comma separated list of suites to be executed
+     * Comma separated list of suites to be executed.
      * @parameter expression="${suites}"
      */
     String suites;
@@ -384,8 +384,8 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
             addAll(tagsToInclude());
             addAll(tagsToExclude());
             addAll(parallel());
-            addAll(suites());
             addAll(tests());
+            addAll(suites());
             addAll(suffixes());
             addAll(membersOnlySuites());
             addAll(wildcardSuites());
@@ -421,12 +421,99 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
         return parallel ? singletonList("-c") : Collections.<String>emptyList();
     }
 
+    //
+    // Generates a -s argument for each suite in comma-delimited list
+    // 'suites', with optionally a -z or -t argument for a test name
+    // if one follows the suite name.
+    //
+    // Test names follow suite names after whitespace, and may be prefixed
+    // by an '@' sign to indicate they are an exact test name instead of
+    // a substring.  A -t argument is used for tests preceded by an '@'
+    // sign, and -z is used for others.
+    //
     private List<String> suites() {
-        return suiteArg("-s", suites);
+        List<String> list = new ArrayList<String>();
+
+        for (String suite: splitOnComma(suites)) {
+            SuiteTestPair pair = new SuiteTestPair(suite);
+
+            if (pair.suite != null) {
+                list.add("-s");
+                list.add(pair.suite);
+
+                if (pair.test != null) {
+                    addTest(list, pair.test);
+                }
+            }
+        }
+        return list;
     }
 
+    //
+    // Parses a string containing a Suite name followed
+    // optionally by a test name.
+    //
+    // E.g. "HelloSuite hello there" would produce suite "HelloSuite"
+    // and test "hello there".
+    //
+    static private class SuiteTestPair {
+        String suite;
+        String test;
+
+        SuiteTestPair(String str) {
+            if (str != null) {
+                String trimStr = str.trim();
+
+                if (trimStr.length() > 0) {
+                    String[] splits = trimStr.split("(?s)\\s", 2);
+                    if (splits.length > 1) {
+                        suite = splits[0];
+                        test = splits[1].trim();
+                    }
+                    else {
+                        suite = trimStr;
+                    }
+                }
+            }
+        }
+    }
+
+    //
+    // Adds a -t or -z arg for specified test name.  Uses -t if name is
+    // prefixed by an '@' sign, or -z otherwise.
+    //
+    private void addTest(List list, String testParm) {
+        if (testParm != null) {
+            String test = testParm.trim();
+
+            if (test.length() > 0) {
+                if (test.charAt(0) == '@') {
+                    String atTest = test.substring(1).trim();
+
+                    if (atTest.length() > 0) {
+                        list.add("-t");
+                        list.add(atTest);
+                    }
+                }
+                else {
+                    list.add("-z");
+                    list.add(test);
+                }
+            }
+        }
+    }
+
+    //
+    // Generates a -z or -t argument for each name in comma-delimited
+    // 'tests' list, with -t used for those names prefixed by '@'.
+    //
     private List<String> tests() {
-        return suiteArg("-z", tests);
+        List<String> list = new ArrayList<String>();
+
+        for (String test: splitOnComma(tests)) {
+            addTest(list, test);
+        }
+        return list;
     }
 
     private List<String> suffixes() {
