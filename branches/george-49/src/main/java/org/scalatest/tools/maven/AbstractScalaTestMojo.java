@@ -421,6 +421,16 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
         return parallel ? singletonList("-c") : Collections.<String>emptyList();
     }
 
+    //
+    // Generates a -s argument for each suite in comma-delimited list
+    // 'suites', with optionally a -z or -t argument for a test name
+    // if one follows the suite name.
+    //
+    // Test names follow suite names after whitespace, and may be prefixed
+    // by an '@' sign to indicate they are an exact test name instead of
+    // a substring.  A -t argument is used for tests preceded by an '@'
+    // sign, and -z is used for others.
+    //
     private List<String> suites() {
         List<String> list = new ArrayList<String>();
 
@@ -439,6 +449,13 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
         return list;
     }
 
+    //
+    // Parses a string containing a Suite name followed
+    // optionally by a test name.
+    //
+    // E.g. "HelloSuite hello there" would produce suite "HelloSuite"
+    // and test "hello there".
+    //
     static private class SuiteTestPair {
         String suite;
         String test;
@@ -461,6 +478,10 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
         }
     }
 
+    //
+    // Adds a -t or -z arg for specified test name.  Uses -t if name is
+    // prefixed by an '@' sign, or -z otherwise.
+    //
     private void addTest(List list, String testParm) {
         if (testParm != null) {
             String test = testParm.trim();
@@ -482,6 +503,10 @@ abstract class AbstractScalaTestMojo extends AbstractMojo {
         }
     }
 
+    //
+    // Generates a -z or -t argument for each name in comma-delimited
+    // 'tests' list, with -t used for those names prefixed by '@'.
+    //
     private List<String> tests() {
         List<String> list = new ArrayList<String>();
 

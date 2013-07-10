@@ -103,7 +103,6 @@ public class TestMojo extends AbstractScalaTestMojo {
         if (skipTests) {
             getLog().info("Tests are skipped.");
         } else {
-            for (String config: configuration()) System.err.println("gcbx config [" + config + "]\n");
             if (!runScalaTest(configuration()) && !testFailureIgnore) {
                 throw new MojoFailureException("There are test failures");
             }
