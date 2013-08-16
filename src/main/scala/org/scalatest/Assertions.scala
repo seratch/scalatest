@@ -95,21 +95,21 @@ import Assertions.areEqualComparingArraysStructurally
  * as the operands become lengthy, the code becomes less readable. In addition, the <code>===</code> comparison
  * doesn't distinguish between actual and expected values. The operands are just called <code>left</code> and <code>right</code>,
  * because if one were named <code>expected</code> and the other <code>actual</code>, it would be difficult for people to
- * remember which was which. To help with these limitations of assertions, <code>Suite</code> includes a method called <code>expect</code> that
- * can be used as an alternative to <code>assert</code> with <code>===</code>. To use <code>expect</code>, you place
- * the expected value in parentheses after <code>expect</code>, followed by curly braces containing code 
+ * remember which was which. To help with these limitations of assertions, <code>Suite</code> includes a method called <code>assertResult</code> that
+ * can be used as an alternative to <code>assert</code> with <code>===</code>. To use <code>assertResult</code>, you place
+ * the expected value in parentheses after <code>assertResult</code>, followed by curly braces containing code 
  * that should result in the expected value. For example:
  *
  * <pre class="stHighlight">
  * val a = 5
  * val b = 2
- * expect(2) {
+ * assertResult(2) {
  *   a - b
  * }
  * </pre>
  *
  * <p>
- * In this case, the expected value is <code>2</code>, and the code being tested is <code>a - b</code>. This expectation will fail, and
+ * In this case, the expected value is <code>2</code>, and the code being tested is <code>a - b</code>. This assertion will fail, and
  * the detail message in the <code>TestFailedException</code> will read, "Expected 2, but got 3."
  * </p>
  *
@@ -127,7 +127,7 @@ import Assertions.areEqualComparingArraysStructurally
  *   fail()
  * }
  * catch {
- *   case _: IndexOutOfBoundsException => // Expected, so continue
+ *   case _: IndexOutOfBoundsException =&gt; // Expected, so continue
  * }
  * </pre>
  *
@@ -165,7 +165,7 @@ import Assertions.areEqualComparingArraysStructurally
  * you can supply a "clue" string in one of several ways.
  * The extra information (or "clues") you provide will
  * be included in the detail message of the thrown exception. Both
- * <code>assert</code> and <code>expect</code> provide a way for a clue to be
+ * <code>assert</code> and <code>assertResult</code> provide a way for a clue to be
  * included directly, <code>intercept</code> does not.
  * Here's an example of clues provided directly in <code>assert</code>:
  * </p>
@@ -175,11 +175,11 @@ import Assertions.areEqualComparingArraysStructurally
  * </pre>
  *
  * <p>
- * and in <code>expect</code>:
+ * and in <code>assertResult</code>:
  * </p>
  *
  * <pre class="stHighlight">
- * expect(3, "this is a clue") { 1 + 1 }
+ * assertResult(3, "this is a clue") { 1 + 1 }
  * </pre>
  *
  * <p>
@@ -599,7 +599,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
    * a future version of ScalaTest.
    * </p>
    */
-  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of expectResult instead.")
+  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of assertResult instead.")
   def expectResult(expected: Any, clue: Any)(actual: Any) {
     if (actual != expected) {
       val (act, exp) = Suite.getObjectsForFailureMessage(actual, expected)
@@ -609,15 +609,15 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
   }
 
   /**
-   * This <code>expect</code> method has been deprecated; Please use <code>expectResult</code> instead.
+   * This <code>expect</code> method has been deprecated; Please use <code>assertResult</code> instead.
    *
    * <p>
    * To get rid of the deprecation warning, simply replace <code>expect</code> with
-   * <code>expectResult</code>. The name <code>expect</code> will be used for a different purposes in
+   * <code>assertResult</code>. The name <code>expect</code> will be used for a different purposes in
    * a future version of ScalaTest.
    * </p>
    */
-  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of expectResult instead.")
+  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of assertResult instead.")
   def expect(expected: Any, clue: Any)(actual: Any) {
     if (actual != expected) {
       val (act, exp) = Suite.getObjectsForFailureMessage(actual, expected)
@@ -654,7 +654,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
    * a future version of ScalaTest.
    * </p>
    */
-  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of expectResult instead.")
+  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of assertResult instead.")
   def expectResult(expected: Any)(actual: Any) {
     if (actual != expected) {
       val (act, exp) = Suite.getObjectsForFailureMessage(actual, expected)
@@ -664,15 +664,15 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
   }
 
   /**
-   * This <code>expect</code> method has been deprecated; Please use <code>expectResult</code> instead.
+   * This <code>expect</code> method has been deprecated; Please use <code>assertResult</code> instead.
    *
    * <p>
    * To get rid of the deprecation warning, simply replace <code>expect</code> with
-   * <code>expectResult</code>. The name <code>expect</code> will be used for a different purposes in
+   * <code>assertResult</code>. The name <code>expect</code> will be used for a different purposes in
    * a future version of ScalaTest.
    * </p>
    */
-  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of expectResult instead.")
+  @deprecated("This expect method has been deprecated. Please replace all invocations of expect with an identical invocation of assertResult instead.")
   def expect(expected: Any)(actual: Any) {
     if (actual != expected) {
       val (act, exp) = Suite.getObjectsForFailureMessage(actual, expected)
@@ -860,7 +860,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
  * scala> import org.scalatest.Assertions._
  * import org.scalatest.Assertions._
  * &nbsp;
- * scala> assert(1 === 2)
+ * scala&gt; assert(1 === 2)
  * org.scalatest.TestFailedException: 1 did not equal 2
  * 	at org.scalatest.Assertions$class.assert(Assertions.scala:211)
  * 	at org.scalatest.Assertions$.assert(Assertions.scala:511)
@@ -871,7 +871,7 @@ THIS DOESN'T OVERLOAD. I THINK I'LL EITHER NEED TO USE interceptWithMessage OR J
  * 	at RequestResult$result(<console>)
  * 	at sun.reflect.NativeMethodAccessorImpl.invoke...
  *&nbsp;
- * scala> expect(3) { 1 + 3 }
+ * scala&gt; assertResult(3) { 1 + 3 }
  * org.scalatest.TestFailedException: Expected 3, but got 4
  * 	at org.scalatest.Assertions$class.expect(Assertions.scala:447)
  * 	at org.scalatest.Assertions$.expect(Assertions.scala:511)
