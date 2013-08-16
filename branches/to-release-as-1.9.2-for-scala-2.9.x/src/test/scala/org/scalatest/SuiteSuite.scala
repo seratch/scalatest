@@ -289,7 +289,7 @@ class SuiteSuite extends Suite with PrivateMethodTester with SharedHelpers with 
       var theTestThatCalled = false
       var theTestThisConfigMapWasEmpty = true
       var theTestThatConfigMapWasEmpty = true
-      override def withFixture(test: NoArgTest) {
+      override def withFixture(test: NoArgTest) = {
         if (test.configMap.size > 0)
           test.name match {
             case "testThis" => theTestThisConfigMapWasEmpty = false
