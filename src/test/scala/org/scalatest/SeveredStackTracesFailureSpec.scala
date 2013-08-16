@@ -19,7 +19,7 @@ import org.scalatest.matchers.ShouldMatchers
 
 class SeveredStackTracesFailureSpec extends FunSpec with ShouldMatchers with SeveredStackTraces {
 
-  override def withFixture(test: NoArgTest) {
+  override def withFixture(test: NoArgTest) = {
     try {
       super.withFixture(test)
     }

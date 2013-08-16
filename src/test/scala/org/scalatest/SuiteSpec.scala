@@ -512,7 +512,7 @@ class SuiteSpec extends FunSpec with PrivateMethodTester with SharedHelpers {
       val a = new Suite {
         var withFixtureWasInvoked = false
         var testWasInvoked = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           withFixtureWasInvoked = true
           super.withFixture(test)
         }
@@ -528,7 +528,7 @@ class SuiteSpec extends FunSpec with PrivateMethodTester with SharedHelpers {
       val a = new Suite {
         var withFixtureWasInvoked = false
         var testWasInvoked = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           withFixtureWasInvoked = true
           super.withFixture(test)
         }
@@ -543,7 +543,7 @@ class SuiteSpec extends FunSpec with PrivateMethodTester with SharedHelpers {
     it("should pass the correct test name in the NoArgTest passed to withFixture") {
       val a = new Suite {
         var correctTestNameWasPassed = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           correctTestNameWasPassed = test.name == "testSomething(Informer)"
           super.withFixture(test)
         }
@@ -555,7 +555,7 @@ class SuiteSpec extends FunSpec with PrivateMethodTester with SharedHelpers {
     it("should pass the correct config map in the NoArgTest passed to withFixture") {
       val a = new Suite {
         var correctConfigMapWasPassed = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           correctConfigMapWasPassed = (test.configMap == Map("hi" -> 7))
           super.withFixture(test)
         }

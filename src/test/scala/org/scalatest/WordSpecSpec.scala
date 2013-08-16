@@ -31,7 +31,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
       val a = new WordSpec {
         var withFixtureWasInvoked = false
         var testWasInvoked = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           withFixtureWasInvoked = true
           super.withFixture(test)
         }
@@ -46,7 +46,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
     it("should pass the correct test name in the NoArgTest passed to withFixture") {
       val a = new WordSpec {
         var correctTestNameWasPassed = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           correctTestNameWasPassed = test.name == "do something"
           super.withFixture(test)
         }
@@ -58,7 +58,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
     it("should pass the correct config map in the NoArgTest passed to withFixture") {
       val a = new WordSpec {
         var correctConfigMapWasPassed = false
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           correctConfigMapWasPassed = (test.configMap == Map("hi" -> 7))
           super.withFixture(test)
         }
@@ -868,7 +868,7 @@ class WordSpecSpec extends FunSpec with SharedHelpers with GivenWhenThen {
             }
           }
         }
-        override def withFixture(test: NoArgTest) {
+        override def withFixture(test: NoArgTest) = {
           try {
             test.apply()
           }
