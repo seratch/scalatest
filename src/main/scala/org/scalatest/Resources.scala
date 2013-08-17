@@ -25,9 +25,7 @@ import java.text.MessageFormat
  */
 private[scalatest] object Resources {
 
-  lazy val resourceBundle = ResourceBundle.getBundle("org.scalatest.ScalaTestBundle")
-
-  def apply(resourceName: String): String = resourceBundle.getString(resourceName)
+  def apply(resourceName: String): String = ResourceBundle.getBundle("org.scalatest.ScalaTestBundle").getString(resourceName)
 
   private def makeString(resourceName: String, argArray: Array[Object]): String = {
     val raw = apply(resourceName)

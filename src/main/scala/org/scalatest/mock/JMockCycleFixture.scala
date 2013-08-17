@@ -42,7 +42,7 @@ trait JMockCycleFixture { this: fixture.Suite =>
    *
    * @param test the test function to which to pass a new <code>JMockCycle</code>
    */
-  def withFixture(test: OneArgTest): Outcome = {
+  def withFixture(test: OneArgTest) {
     test(new JMockCycle)
   }
 }

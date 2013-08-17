@@ -26,17 +26,14 @@ import org.scalatest.events._
 import java.util.Collections
 import java.util.HashSet
 import java.util.regex.Pattern
-import Suite.getIndentedTextForTest
-import org.scalatest.events.TopOfMethod
+import Suite.getIndentedText
 import exceptions._
 
   private[junit] class MyRunListener(report: Reporter,
                                      config: Map[String, Any],
-                                     theTracker: Tracker, 
-                                     status: ScalaTestStatefulStatus)
+                                     theTracker: Tracker)
   extends RunListener {
     val failedTests = Collections.synchronizedSet(new HashSet[String])
-    def getTopOfMethod(className: String, methodName: String) = Some(TopOfMethod(className, "public void " + className + "." + methodName + "()"))
 
     override def testFailure(failure: Failure) {
       failedTests.add(failure.getDescription.getDisplayName)
@@ -55,7 +52,7 @@ import exceptions._
         else
           Resources("jUnitTestFailed")
 
-      val formatter = getIndentedTextForTest(testName, 1, true)
+      val formatter = getIndentedText(testName, 1, true)
       val payload = 
         throwable match {
           case optPayload: PayloadField => 
@@ -63,7 +60,7 @@ import exceptions._
           case _ => 
             None
         }
-      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, testClass, Some(testClass), testName, testName, Vector.empty, throwable, None, Some(formatter), Some(SeeStackDepthException), None, payload))
+      report(TestFailed(theTracker.nextOrdinal(), message, testClassName, Some(testClass), testName, throwable, None, Some(formatter), None, payload))
       // TODO: can I add a duration?
     }
 
@@ -71,19 +68,18 @@ import exceptions._
       if (!failedTests.contains(description.getDisplayName)) {
         val (testName, testClass, testClassName) =
           parseTestDescription(description)
-        val formatter = getIndentedTextForTest(testName, 1, true)
-        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), testName, testName, Vector.empty, None, Some(formatter), getTopOfMethod(testClass, testName)))
+        val formatter = getIndentedText(testName, 1, true)
+        report(TestSucceeded(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, None, Some(formatter), None))
         // TODO: can I add a duration?
       }
-      else
-        status.setFailed()
     }
 
     override def testIgnored(description: Description) {
       val (testName, testClass, testClassName) =
         parseTestDescription(description)
-      val formatter = getIndentedTextForTest(testName, 1, true)
-      report(TestIgnored(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), testName, testName, Some(formatter), getTopOfMethod(testClass, testName)))
+      val testSucceededIcon = Resources("testSucceededIconChar")
+      val formattedText = Resources("iconPlusShortName", testSucceededIcon, testName)
+      report(TestIgnored(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, Some(IndentedText(formattedText, testName, 1))))
     }
 
     override def testRunFinished(result: Result) {
@@ -97,7 +93,7 @@ import exceptions._
     override def testStarted(description: Description) {
       val (testName, testClass, testClassName) =
         parseTestDescription(description)
-      report(TestStarting(theTracker.nextOrdinal(), testClassName, testClass, Some(testClass), testName, testName, Some(MotionToSuppress), getTopOfMethod(testClass, testName)))
+      report(TestStarting(theTracker.nextOrdinal(), testClassName, Some(testClass), testName, Some(MotionToSuppress), None))
     }
 
     //
