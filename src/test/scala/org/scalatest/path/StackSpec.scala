@@ -40,14 +40,17 @@ trait StackBehaviors { this: FunSpec =>
   def nonEmptyStack(newStack: => Stack[Int], lastItemAdded: Int) {
 
     it("should be non-empty") {
+      println("test")
       assert(!newStack.empty)
     }
 
     it("should return the top item on peek") {
+      println("test")
       assert(newStack.peek === lastItemAdded)
     }
 
     it("should not remove the top item on peek") {
+      println("test")
       val stack = newStack
       val size = stack.size
       assert(stack.peek === lastItemAdded)
@@ -55,6 +58,7 @@ trait StackBehaviors { this: FunSpec =>
     }
 
     it("should remove the top item on pop") {
+      println("test")
       val stack = newStack
       val size = stack.size
       assert(stack.pop === lastItemAdded)
@@ -65,10 +69,12 @@ trait StackBehaviors { this: FunSpec =>
   def nonFullStack(newStack: => Stack[Int]) {
 
     it("should not be full") {
+      println("test")
       assert(!newStack.full)
     }
 
     it("should add to the top on push") {
+      println("test")
       val stack = newStack
       val size = stack.size
       stack.push(7)
@@ -80,6 +86,8 @@ trait StackBehaviors { this: FunSpec =>
 
 class StackSpec extends org.scalatest.path.FunSpec with StackBehaviors {
 
+  println("new instance")        
+
   val lastValuePushed = 9
 
   describe("A Stack") {
@@ -89,17 +97,20 @@ class StackSpec extends org.scalatest.path.FunSpec with StackBehaviors {
     describe("(when empty)") {
 
       it("should be empty") {
+        println("test")        
         info("hi there from should be empty")
         assert(stack.empty)
       }
 
       it("should complain on peek") {
+        println("test")        
         intercept[IllegalStateException] {
           stack.peek
         }
       }
 
       it("should complain on pop") {
+        println("test")        
         intercept[IllegalStateException] {
           stack.pop
         }
@@ -111,10 +122,12 @@ class StackSpec extends org.scalatest.path.FunSpec with StackBehaviors {
       stack.push(9)
       
       it("should be non-empty, DUDE!") {
+        println("test")        
         assert(!stack.empty)
       }
 
       it("should do something else") {
+        println("test")        
       }
 
       it should behave like nonEmptyStack(stack, lastValuePushed)
@@ -136,6 +149,7 @@ class StackSpec extends org.scalatest.path.FunSpec with StackBehaviors {
         stack.push(i)
 
       it("should be full") {
+        println("test")        
         assert(stack.full)
       }
 

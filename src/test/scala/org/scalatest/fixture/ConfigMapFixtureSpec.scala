@@ -20,7 +20,7 @@ import org.scalatest._
 class ConfigMapFixtureSpec extends org.scalatest.FunSpec with SharedHelpers {
   describe("A ConfigMapFixture") {
     it("should pass the config map to each test") {
-      val myConfigMap = ConfigMap("hello" -> "world", "salt" -> "pepper")
+      val myConfigMap = Map[String, Any]("hello" -> "world", "salt" -> "pepper")
       class MySuite extends fixture.Suite with ConfigMapFixture {
         var configMapPassed = false
         def testSomething(configMap: FixtureParam) {
@@ -29,7 +29,7 @@ class ConfigMapFixtureSpec extends org.scalatest.FunSpec with SharedHelpers {
         }
       }
       val suite = new MySuite
-      suite.run(None, Args(SilentReporter, Stopper.default, Filter(), myConfigMap, None, new Tracker, Set.empty))
+      suite.run(None, SilentReporter, new Stopper {}, Filter(), myConfigMap, None, new Tracker)
       assert(suite.configMapPassed)
     }
   }

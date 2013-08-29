@@ -22,7 +22,7 @@ import Arbitrary._
 import Prop._
 import org.scalatest.exceptions.TestFailedException
 
-class ShouldStartWithRegexSpec extends Spec with ShouldMatchers with Checkers with ReturnsNormallyThrowsAssertion {
+class ShouldStartWithRegexSpec extends FunSpec with ShouldMatchers with Checkers with ReturnsNormallyThrowsAssertion {
 
 /*
 s should include substring t
@@ -34,14 +34,14 @@ s should endWith regex t
 s should fullyMatch regex t
 */
 
-  object `The startWith regex syntax` {
+  describe("The startWith regex syntax") {
 
     val decimal = """(-)?(\d+)(\.\d*)?"""
     val decimalRegex = """(-)?(\d+)(\.\d*)?""".r
 
-    object `(when the regex is specified by a string)` {
+    describe("(when the regex is specified by a string)") {
 
-      def `should do nothing if the string starts with substring that matched the regular expression specified as a string` {
+      it("should do nothing if the string starts with substring that matched the regular expression specified as a string") {
 
         "1.78" should startWith regex ("1.7")
         "1.7" should startWith regex (decimal)
@@ -58,7 +58,7 @@ s should fullyMatch regex t
         "1." should startWith regex (decimal)
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used with not` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used with not") {
 
         "eight" should not { startWith regex (decimal) }
         "one.eight" should not { startWith regex (decimal) }
@@ -67,7 +67,7 @@ s should fullyMatch regex t
         "one.eight" should not startWith regex (decimal)
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression") {
 
         "1.7b" should (startWith regex (decimal) and (startWith regex (decimal)))
         "1.7b" should ((startWith regex (decimal)) and (startWith regex (decimal)))
@@ -78,7 +78,7 @@ s should fullyMatch regex t
         "1.7" should (startWith regex (decimal) and startWith regex (decimal))
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression") {
 
         "1.7b" should (startWith regex ("hello") or (startWith regex (decimal)))
         "1.7b" should ((startWith regex ("hello")) or (startWith regex (decimal)))
@@ -89,19 +89,19 @@ s should fullyMatch regex t
         "1.7" should (startWith regex ("hello") or startWith regex (decimal))
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression with not` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression with not") {
         "fred" should (not (startWith regex ("bob")) and not (startWith regex (decimal)))
         "fred" should ((not startWith regex ("bob")) and (not startWith regex (decimal)))
         "fred" should (not startWith regex ("bob") and not startWith regex (decimal))
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression with not` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression with not") {
         "fred" should (not (startWith regex ("fred")) or not (startWith regex (decimal)))
         "fred" should ((not startWith regex ("fred")) or (not startWith regex (decimal)))
         "fred" should (not startWith regex ("fred") or not startWith regex (decimal))
       }
   
-      def `should throw TestFailedException if the string does not match substring that matched the regular expression specified as a string` {
+      it("should throw TestFailedException if the string does not match substring that matched the regular expression specified as a string") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should startWith regex ("1.78")
@@ -139,7 +139,7 @@ s should fullyMatch regex t
         assert(caught9.getMessage === "\"***\" did not start with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
   
-      def `should throw TestFailedException if the string does matches substring that matched the regular expression specified as a string when used with not` {
+      it("should throw TestFailedException if the string does matches substring that matched the regular expression specified as a string when used with not") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should not { startWith regex ("1.7") }
@@ -208,7 +208,7 @@ s should fullyMatch regex t
         assert(caught23.getMessage === "\"-1.8b\" started with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
 
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should (startWith regex (decimal) and (startWith regex ("1.8")))
@@ -242,7 +242,7 @@ s should fullyMatch regex t
         assert(caught6.getMessage === "\"one.eight\" did not start with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
   
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression") {
   
         val caught1 = intercept[TestFailedException] {
           "one.seven" should (startWith regex (decimal) or (startWith regex ("1.8")))
@@ -260,7 +260,7 @@ s should fullyMatch regex t
         assert(caught3.getMessage === "\"one.seven\" did not start with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?, and \"one.seven\" did not start with a substring that matched the regular expression 1.8")
       }
   
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression used with not` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression used with not") {
 
         val caught1 = intercept[TestFailedException] {
           "1.7" should (not startWith regex ("1.8") and (not startWith regex (decimal)))
@@ -288,7 +288,7 @@ s should fullyMatch regex t
         assert(caught5.getMessage === "\"1.7\" did not start with a substring that matched the regular expression 1.8, but \"1.7\" started with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
 
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression used with not` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression used with not") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should (not startWith regex (decimal) or (not startWith regex ("1.7")))
@@ -317,9 +317,9 @@ s should fullyMatch regex t
       }
     }
 
-    object `(when the regex is specified by an actual Regex)` {
+    describe("(when the regex is specified by an actual Regex)") {
 
-      def `should do nothing if the string starts with substring that matched the regular expression specified as a string` {
+      it("should do nothing if the string starts with substring that matched the regular expression specified as a string") {
 
         "1.7" should startWith regex (decimalRegex)
         "21.7" should startWith regex (decimalRegex)
@@ -334,7 +334,7 @@ s should fullyMatch regex t
         "1." should startWith regex (decimalRegex)
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used with not` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used with not") {
 
         "eight" should not { startWith regex (decimalRegex) }
         "one.eight" should not { startWith regex (decimalRegex) }
@@ -343,7 +343,7 @@ s should fullyMatch regex t
         "one.eight" should not startWith regex (decimalRegex)
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression") {
 
         "1.7b" should (startWith regex (decimalRegex) and (startWith regex (decimalRegex)))
         "1.7b" should ((startWith regex (decimalRegex)) and (startWith regex (decimalRegex)))
@@ -354,7 +354,7 @@ s should fullyMatch regex t
         "1.7" should (startWith regex (decimalRegex) and startWith regex (decimalRegex))
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression") {
 
         "1.7b" should (startWith regex ("hello") or (startWith regex (decimalRegex)))
         "1.7b" should ((startWith regex ("hello")) or (startWith regex (decimalRegex)))
@@ -365,19 +365,19 @@ s should fullyMatch regex t
         "1.7" should (startWith regex ("hello") or startWith regex (decimalRegex))
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression with not` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-and expression with not") {
         "fred" should (not (startWith regex ("bob")) and not (startWith regex (decimalRegex)))
         "fred" should ((not startWith regex ("bob")) and (not startWith regex (decimalRegex)))
         "fred" should (not startWith regex ("bob") and not startWith regex (decimalRegex))
       }
   
-      def `should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression with not` {
+      it("should do nothing if the string does not start with a substring that matched the regular expression specified as a string when used in a logical-or expression with not") {
         "fred" should (not (startWith regex ("fred")) or not (startWith regex (decimalRegex)))
         "fred" should ((not startWith regex ("fred")) or (not startWith regex (decimalRegex)))
         "fred" should (not startWith regex ("fred") or not startWith regex (decimalRegex))
       }
   
-      def `should throw TestFailedException if the string does not match substring that matched the regular expression specified as a string` {
+      it("should throw TestFailedException if the string does not match substring that matched the regular expression specified as a string") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should startWith regex ("1.78")
@@ -415,7 +415,7 @@ s should fullyMatch regex t
         assert(caught9.getMessage === "\"***\" did not start with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
   
-      def `should throw TestFailedException if the string does matches substring that matched the regular expression specified as a string when used with not` {
+      it("should throw TestFailedException if the string does matches substring that matched the regular expression specified as a string when used with not") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should not { startWith regex ("1.7") }
@@ -484,7 +484,7 @@ s should fullyMatch regex t
         assert(caught23.getMessage === "\"-1.8b\" started with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
 
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should (startWith regex (decimalRegex) and (startWith regex ("1.8")))
@@ -518,7 +518,7 @@ s should fullyMatch regex t
         assert(caught6.getMessage === "\"one.eight\" did not start with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
   
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression") {
   
         val caught1 = intercept[TestFailedException] {
           "one.seven" should (startWith regex (decimalRegex) or (startWith regex ("1.8")))
@@ -536,7 +536,7 @@ s should fullyMatch regex t
         assert(caught3.getMessage === "\"one.seven\" did not start with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?, and \"one.seven\" did not start with a substring that matched the regular expression 1.8")
       }
   
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression used with not` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-and expression used with not") {
 
         val caught1 = intercept[TestFailedException] {
           "1.7" should (not startWith regex ("1.8") and (not startWith regex (decimalRegex)))
@@ -564,7 +564,7 @@ s should fullyMatch regex t
         assert(caught5.getMessage === "\"1.7\" did not start with a substring that matched the regular expression 1.8, but \"1.7\" started with a substring that matched the regular expression (-)?(\\d+)(\\.\\d*)?")
       }
 
-      def `should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression used with not` {
+      it("should throw TestFailedException if the string starts with substring that matched the regular expression specified as a string when used in a logical-or expression used with not") {
   
         val caught1 = intercept[TestFailedException] {
           "1.7" should (not startWith regex (decimalRegex) or (not startWith regex ("1.7")))

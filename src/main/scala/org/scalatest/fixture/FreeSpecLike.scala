@@ -17,28 +17,27 @@ package org.scalatest.fixture
 
 import org.scalatest._
 import FixtureNodeFamily._
-import words.{CanVerb, ResultOfAfterWordApplication, ShouldVerb, BehaveWord, MustVerb,
+import verb.{CanVerb, ResultOfAfterWordApplication, ShouldVerb, BehaveWord, MustVerb,
   StringVerbBlockRegistration}
 import scala.collection.immutable.ListSet
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
 import org.scalatest.events._
-import org.scalatest.Suite.anExceptionThatShouldCauseAnAbort
-import org.scalatest.Suite.autoTagClassAnnotations
+import org.scalatest.Suite.anErrorThatShouldCauseAnAbort
 
 /**
- * Implementation trait for class <code>fixture.FreeSpec</code>, which is
- * a sister class to <code>org.scalatest.FreeSpec</code> that can pass a
- * fixture object into its tests.
+ * Implementation trait for class <code>fixture.FreeSpec</code>, which 
+ * is a sister class to <code>org.scalatest.FreeSpec</code> that
+ * can pass a fixture object into its tests.
  * 
  * <p>
- * <a href="FreeSpec.html"><code>fixture.FreeSpec</code></a> is a class,
- * not a trait, to minimize compile time given there is a slight compiler
- * overhead to mixing in traits compared to extending classes. If you need
- * to mix the behavior of <code>fixture.FreeSpec</code> into some other
- * class, you can use this trait instead, because class
- * <code>fixture.FreeSpec</code> does nothing more than extend this trait.
+ * <a href="FreeSpec.html"><code>fixture.FreeSpec</code></a> is a class, not a trait,
+ * to minimize compile time given there is a slight compiler overhead to
+ * mixing in traits compared to extending classes. If you need to mix the
+ * behavior of <code>fixture.FreeSpec</code> into some other class, you can use this
+ * trait instead, because class <code>fixture.FreeSpec</code> does nothing more than
+ * extend this trait.
  * </p>
  *
  * <p>
@@ -48,7 +47,6 @@ import org.scalatest.Suite.autoTagClassAnnotations
  *
  * @author Bill Venners
  */
-@Finders(Array("org.scalatest.finders.FreeSpecFinder"))
 trait FreeSpecLike extends Suite { thisSuite =>
 
   private final val engine = new FixtureEngine[FixtureParam]("concurrentFixtureFreeSpecMod", "FixtureFreeSpec")
@@ -86,7 +84,8 @@ trait FreeSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
-    registerTest(specText, Transformer(testFun), "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 4, -3, None, None, None, testTags: _*)
+    // TODO: This is what was being used before but it is wrong
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", sourceFileName, methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -109,7 +108,8 @@ trait FreeSpecLike extends Suite { thisSuite =>
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: FixtureParam => Any) {
-    registerIgnoredTest(specText, Transformer(testFun), "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 4, -3, None, testTags: _*)
+    // TODO: This is how these were, but it needs attention. Mentions "it".
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", sourceFileName, methodName, 1, testTags: _*)
   }
    /*
   private def registerBranch(description: String, childPrefix: Option[String], fun: () => Unit) {
@@ -250,7 +250,9 @@ trait FreeSpecLike extends Suite { thisSuite =>
 
     // TODO: Fill in Scaladoc
     def - (fun: => Unit) {
-      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 3, -2, None)
+      // registerBranch(string, None, testFun)
+      // TODO: Fix the resource name and method name
+      registerNestedBranch(string, None, fun, "describeCannotAppearInsideAnIt", sourceFileName, "-", 1)
     }
 
     /**
@@ -351,6 +353,7 @@ trait FreeSpecLike extends Suite { thisSuite =>
      */
     def ignore(testFun: () => Any) {
       registerTestToIgnore(string, List(), "ignore", new NoArgTestWrapper(testFun))
+    
     }
 
     /**
@@ -390,13 +393,8 @@ trait FreeSpecLike extends Suite { thisSuite =>
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to
    * methods <code>test</code> and <code>ignore</code>.
    * </p>
-   * 
-   * <p>
-   * In addition, this trait's implementation will also auto-tag tests with class level annotations.  
-   * For example, if you annotate @Ignore at the class level, all test methods in the class will be auto-annotated with @Ignore.
-   * </p>
    */
-  override def tags: Map[String, Set[String]] = autoTagClassAnnotations(atomic.get.tagsMap, this)
+  override def tags: Map[String, Set[String]] = atomic.get.tagsMap
 
   /**
    * Run a test. This trait's implementation runs the test registered with the name specified by
@@ -405,31 +403,23 @@ trait FreeSpecLike extends Suite { thisSuite =>
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>FreeSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    def invokeWithFixture(theTest: TestLeaf): Outcome = {
+    def invokeWithFixture(theTest: TestLeaf) {
       theTest.testFun match {
-        case transformer: org.scalatest.fixture.Transformer[_] => 
-          transformer.exceptionalTestFun match {
-            case wrapper: NoArgTestWrapper[_] =>
-              withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-            case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
-          }
-        case other => 
-          other match {
-            case wrapper: NoArgTestWrapper[_] =>
-              withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, args.configMap))
-            case fun => withFixture(new TestFunAndConfigMap(testName, fun, args.configMap))
-          }
+        case wrapper: NoArgTestWrapper[_] =>
+          withFixture(new FixturelessTestFunAndConfigMap(testName, wrapper.test, configMap))
+        case fun => withFixture(new TestFunAndConfigMap(testName, fun, configMap))
       }
     }
 
-    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
   }
 
   /**
@@ -482,13 +472,18 @@ trait FreeSpecLike extends Suite { thisSuite =>
    *
    * @param testName an optional name of one test to execute. If <code>None</code>, all relevant tests should be executed.
    *                 I.e., <code>None</code> acts like a wildcard that means execute all relevant tests in this <code>FreeSpec</code>.
-   * @param args the <code>Args</code> for this run
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param tagsToInclude a <code>Set</code> of <code>String</code> tag names to include in the execution of this <code>FreeSpec</code>
+   * @param tagsToExclude a <code>Set</code> of <code>String</code> tag names to exclude in the execution of this <code>FreeSpec</code>
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by this <code>FreeSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, <code>tagsToInclude</code>,
    *     <code>tagsToExclude</code>, or <code>configMap</code> is <code>null</code>.
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
-    runTestsImpl(thisSuite, testName, args, info, true, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
   /**
@@ -507,8 +502,10 @@ trait FreeSpecLike extends Suite { thisSuite =>
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
-    runImpl(thisSuite, testName, args, super.run)
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**
@@ -534,6 +531,4 @@ trait FreeSpecLike extends Suite { thisSuite =>
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.fixture.FreeSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }

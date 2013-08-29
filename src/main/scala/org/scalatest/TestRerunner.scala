@@ -29,7 +29,7 @@ private[scalatest] class TestRerunner(suiteClassName: String, testName: String) 
     throw new NullPointerException
 
   // [bv: I wasn't sure if I need to say override here.]
-  def apply(report: Reporter, stopper: Stopper, filter: Filter, configMap: ConfigMap,
+  def apply(report: Reporter, stopper: Stopper, filter: Filter, configMap: Map[String, Any],
             distributor: Option[Distributor], tracker: Tracker, loader: ClassLoader) {
 
     val runStartTime = System.currentTimeMillis
@@ -40,8 +40,7 @@ private[scalatest] class TestRerunner(suiteClassName: String, testName: String) 
 
       report(RunStarting(tracker.nextOrdinal(), 1, configMap))
 
-      // TODO: I Had to pass Set.empty for chosenStyles for now. Check this later.
-      suite.run(Some(testName), Args(report, stopper, filter, configMap, distributor, tracker, Set.empty))
+      suite.run(Some(testName), report, stopper, filter, configMap, distributor, tracker) 
 
       val duration = System.currentTimeMillis - runStartTime
       report(RunCompleted(tracker.nextOrdinal(), Some(duration)))
