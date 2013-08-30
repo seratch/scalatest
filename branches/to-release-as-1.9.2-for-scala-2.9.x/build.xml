@@ -306,9 +306,9 @@
             <include name="**/*.scala" />
         </scaladoc>
 
-        <concat destfile="${doc}/lib/template.css" force="yes">
-          <filelist dir="${html}" files="template.css, addl.css"/>
-        </concat>
+        <antcall target="append-addl-css">
+          <param name="docdir" value="${doc}"/>
+        </antcall>
 
         <!--
       <javadoc sourcepath="${example}"
@@ -319,6 +319,23 @@
         doctitle="ScalaTest Examples ${release}"
         bottom="Copyright (C) 2001-2009 Artima, Inc. All rights reserved."/>
 -->
+    </target>
+
+    <!--
+     - Appends additional css settings to the template.css file provided
+     - by scaladoc.  Uses parameter ${docdir} to locate the template.css
+     - file.
+     -->
+    <target name="append-addl-css">
+      <copy file="${docdir}/lib/template.css" todir="${build}" />
+      <copy file="${html}/addl.css" todir="${build}" />
+
+      <concat destfile="${docdir}/lib/template.css" force="yes">
+        <filelist dir="${build}" files="template.css, addl.css"/>
+      </concat>
+
+      <delete file="${build}/template.css" />
+      <delete file="${build}/addl.css" />
     </target>
 
      <!-- Put everything in ${jar.contents} into the scalatest.jar file -->
