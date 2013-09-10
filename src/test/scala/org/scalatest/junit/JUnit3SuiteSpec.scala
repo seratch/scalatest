@@ -121,7 +121,7 @@ class JUnit3SuiteSpec extends FunSpec with SharedHelpers {
       TestWasCalledSuite.reinitialize()
       
       val b = new TestWasCalledSuite
-      b.run(None, Args(SilentReporter))
+      b.run(None, SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(TestWasCalledSuite.theTestThisCalled)
       assert(TestWasCalledSuite.theTestThatCalled)
     }
@@ -131,7 +131,7 @@ class JUnit3SuiteSpec extends FunSpec with SharedHelpers {
       TestWasCalledSuite.reinitialize()
 
       val a = new TestWasCalledSuite
-      a.run(Some("testThis"), Args(SilentReporter))
+      a.run(Some("testThis"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       assert(TestWasCalledSuite.theTestThisCalled)
       assert(!TestWasCalledSuite.theTestThatCalled)
     }
@@ -141,7 +141,7 @@ class JUnit3SuiteSpec extends FunSpec with SharedHelpers {
       val a = new TestWasCalledSuite
       intercept[IllegalArgumentException] {
         // Here, they forgot that the name is actually testThis(Fixture)
-        a.run(Some("misspelled"), Args(SilentReporter))
+        a.run(Some("misspelled"), SilentReporter, new Stopper {}, Filter(), Map(), None, new Tracker)
       }
     }
 
@@ -150,7 +150,7 @@ class JUnit3SuiteSpec extends FunSpec with SharedHelpers {
       TestWasCalledSuite.reinitialize()
 
       val a = new TestWasCalledSuite
-      a.run(None, Args(SilentReporter, Stopper.default, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), ConfigMap.empty, None, new Tracker, Set.empty))
+      a.run(None, SilentReporter, new Stopper {}, Filter(Some(Set("org.scalatest.SlowAsMolasses")), Set()), Map(), None, new Tracker)
       assert(!TestWasCalledSuite.theTestThisCalled)
       assert(!TestWasCalledSuite.theTestThatCalled)
     }
@@ -184,7 +184,7 @@ class JUnit3SuiteSpec extends FunSpec with SharedHelpers {
             "known in JDK 1.5, excluding AssertionError") {
       val a = new ShouldFailSuite
       val rep = new EventRecordingReporter
-      a.run(None, Args(rep))
+      a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
       val tf = rep.testFailedEventsReceived
       assert(tf.size === 3)
     }

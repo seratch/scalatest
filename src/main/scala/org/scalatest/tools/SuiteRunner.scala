@@ -24,9 +24,10 @@ import Suite.formatterForSuiteCompleted
 import Suite.formatterForSuiteAborted
 import org.scalatest.exceptions.NotAllowedException
 
-private[scalatest] class SuiteRunner(suite: Suite, args: Args, status: ScalaTestStatefulStatus) extends Runnable {
+private[scalatest] class SuiteRunner(suite: Suite, dispatch: Reporter, stopper: Stopper, filter: Filter,
+    propertiesMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) extends Runnable {
 
-  private val stopRequested = args.stopper
+  private val stopRequested = stopper
 
   def run() {
 
@@ -41,36 +42,34 @@ private[scalatest] class SuiteRunner(suite: Suite, args: Args, status: ScalaTest
           case nsme: NoSuchMethodException => false
         }
   
+      val rerunnable: Option[Rerunner] =
+        if (hasPublicNoArgConstructor)
+          Some(new SuiteRerunner(suite.getClass.getName))
+        else
+          None
+  
       val rawString = Resources("suiteExecutionStarting")
       val formatter = formatterForSuiteStarting(suite)
-      val dispatch = args.reporter
-      val tracker = args.tracker
-
+  
       val suiteStartTime = System.currentTimeMillis
 
       if (!suite.isInstanceOf[DistributedTestRunnerSuite])
-        dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
+        dispatch(SuiteStarting(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), formatter, rerunnable))
         
       try {
-        val runStatus = suite.run(None, args)
+        suite.run(None, dispatch, stopRequested, filter, propertiesMap, distributor, tracker)
   
         val rawString2 = Resources("suiteCompletedNormally")
         val formatter = formatterForSuiteCompleted(suite)
 
         val duration = System.currentTimeMillis - suiteStartTime
         if (!suite.isInstanceOf[DistributedTestRunnerSuite])
-          dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, suite.suiteId, Some(suite.getClass.getName), Some(duration), formatter, Some(TopOfClass(suite.getClass.getName)), suite.rerunner))
-          
-        if (!runStatus.succeeds())
-          status.setFailed()
+          dispatch(SuiteCompleted(tracker.nextOrdinal(), suite.suiteName, Some(suite.getClass.getName), Some(duration), formatter, rerunnable))
       }
       catch {
         case e: NotAllowedException =>
           val formatter = Suite.formatterForSuiteAborted(suite, e.getMessage)
-          val duration = System.currentTimeMillis - suiteStartTime
-          // dispatch(SuiteAborted(tracker.nextOrdinal(), e.getMessage, suite.suiteName, Some(suite.getClass.getName), None, None, formatter, rerunnable))
-          dispatch(SuiteAborted(tracker.nextOrdinal(), e.getMessage, suite.suiteName, suite.suiteId, Some(suite.getClass.getName), Some(e), Some(duration), formatter, Some(SeeStackDepthException), suite.rerunner))
-          status.setFailed()
+          dispatch(SuiteAborted(tracker.nextOrdinal(), e.getMessage, suite.suiteName, Some(suite.getClass.getName), None, None, formatter, rerunnable))
         case e: RuntimeException => { // Do fire SuiteAborted even if a DistributedTestRunnerSuite 
           val eMessage = e.getMessage
           val rawString3 = 
@@ -81,15 +80,8 @@ private[scalatest] class SuiteRunner(suite: Suite, args: Args, status: ScalaTest
           val formatter3 = formatterForSuiteAborted(suite, rawString3)
 
           val duration = System.currentTimeMillis - suiteStartTime
-          dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, suite.suiteId, Some(suite.getClass.getName), Some(e), Some(duration), formatter3, Some(SeeStackDepthException), suite.rerunner))
-          status.setFailed()
+          dispatch(SuiteAborted(tracker.nextOrdinal(), rawString3, suite.suiteName, Some(suite.getClass.getName), Some(e), Some(duration), formatter3, rerunnable))
         }
-        case e: Throwable => 
-          status.setFailed()
-          throw e
-      }
-      finally {
-        status.setCompleted()
       }
     }
   }

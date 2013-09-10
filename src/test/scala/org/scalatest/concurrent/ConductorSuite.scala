@@ -202,7 +202,7 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
     }
     val a = new MySuite
     val rep = new EventRecordingReporter
-    a.run(None, Args(rep))
+    a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
     val tf = rep.testFailedEventsReceived
     tf.size should be === 1
     tf.head.throwable should be ('defined)
@@ -341,7 +341,7 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
   test("ConductorFixture is a stackable trait that delegates test function execution to withFixture(NoArgTest)") {
     var calledSuperWithFixtureNoArgTest = false
     class MySpec extends fixture.FunSuite with ConductorFixture {
-      override def withFixture(test: NoArgTest): Outcome = {
+      override def withFixture(test: NoArgTest) = {
         calledSuperWithFixtureNoArgTest = true
         super.withFixture(test)
       }
@@ -349,14 +349,14 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
     }
 
     val a = new MySpec
-    a.run(None, Args(SilentReporter))
+    a.run(None, SilentReporter,new Stopper {}, Filter(), Map.empty, None, new Tracker)
     calledSuperWithFixtureNoArgTest should be (true)
   }
 
   test("ConductorMethods is a stackable trait that delegates test function execution to withFixture(NoArgTest)") {
     var calledSuperWithFixtureNoArgTest = false
-    trait SuperTrait extends SuiteMixin { this: Suite =>
-      abstract override def withFixture(test: NoArgTest): Outcome = {
+    trait SuperTrait extends AbstractSuite { this: Suite =>
+      abstract override def withFixture(test: NoArgTest) = {
         calledSuperWithFixtureNoArgTest = true
         super.withFixture(test)
       }
@@ -366,7 +366,7 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
     }
 
     val a = new MySpec
-    a.run(None, Args(SilentReporter))
+    a.run(None, SilentReporter,new Stopper {}, Filter(), Map.empty, None, new Tracker)
     calledSuperWithFixtureNoArgTest should be (true)
   }
 
@@ -389,7 +389,7 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
     }
     val a = new MySuite
     val rep = new EventRecordingReporter
-    a.run(None, Args(rep))
+    a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
     val tf = rep.testFailedEventsReceived
     tf.size should be === 1
     tf.head.throwable should be ('defined)
@@ -414,7 +414,7 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
     }
     val a = new MySuite
     val rep = new EventRecordingReporter
-    a.run(None, Args(rep))
+    a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
     val tf = rep.testFailedEventsReceived
     tf.size should be === 1
     tf.head.throwable should be ('defined)
@@ -439,7 +439,7 @@ class ConductorSuite extends FunSuite with ShouldMatchers with Conductors with S
     }
     val a = new MySuite
     val rep = new EventRecordingReporter
-    a.run(None, Args(rep))
+    a.run(None, rep, new Stopper {}, Filter(), Map(), None, new Tracker())
     val tf = rep.testFailedEventsReceived
     tf.size should be === 1
     tf.head.throwable should be ('defined)

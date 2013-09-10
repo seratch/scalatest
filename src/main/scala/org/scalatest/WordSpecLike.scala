@@ -15,40 +15,45 @@
  */
 package org.scalatest
 
-import words.{CanVerb, ResultOfAfterWordApplication, ShouldVerb, BehaveWord,
+import verb.{CanVerb, ResultOfAfterWordApplication, ShouldVerb, BehaveWord,
   MustVerb, StringVerbBlockRegistration}
+import NodeFamily._
 import scala.collection.immutable.ListSet
 import org.scalatest.exceptions.StackDepthExceptionHelper.getStackDepth
 import java.util.concurrent.atomic.AtomicReference
 import java.util.ConcurrentModificationException
 import org.scalatest.events._
-import Suite.anExceptionThatShouldCauseAnAbort
-import Suite.autoTagClassAnnotations
+import Suite.anErrorThatShouldCauseAnAbort
 
 /**
- * Implementation trait for class <code>WordSpec</code>, which facilitates a &#8220;behavior-driven&#8221; style of development (BDD), in which tests
- * are combined with text that specifies the behavior the tests verify.
+ * Implementation trait for class <code>WordSpec</code>, which 
+ * facilitates a &#8220;behavior-driven&#8221; style of development (BDD),
+ * in which tests are combined with text that specifies the behavior the tests
+ * verify.
  * 
  * <p>
- * <a href="WordSpec.html"><code>WordSpec</code></a> is a class, not a trait, to minimize compile time given there is a slight compiler overhead to
- * mixing in traits compared to extending classes. If you need to mix the behavior of <code>WordSpec</code>
- * into some other class, you can use this trait instead, because class <code>WordSpec</code> does nothing more than extend this trait.
+ * <a href="WordSpec.html"><code>WordSpec</code></a> is a class, not a trait,
+ * to minimize compile time given there is a slight compiler overhead to
+ * mixing in traits compared to extending classes. If you need to mix the
+ * behavior of <code>WordSpec</code> into some other class, you can use this
+ * trait instead, because class <code>WordSpec</code> does nothing more than
+ * extend this trait.
  * </p>
  *
  * <p>
- * See the documentation of the class for a <a href="WordSpec.html">detailed overview of <code>WordSpec</code></a>.
+ * See the documentation of the class for a <a href="WordSpec.html">detailed
+ * overview of <code>WordSpec</code></a>.
  * </p>
  *
  * @author Bill Venners
  */
-@Finders(Array("org.scalatest.finders.WordSpecFinder"))
 trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { thisSuite =>
 
-  private final val engine = new Engine("concurrentWordSpecMod", "WordSpecLike")
+  private final val engine = new Engine("concurrentWordSpecMod", "WordSpec")
   import engine._
 
   /**
-   * Returns an <code>Informer</code> that during test execution will forward strings passed to its
+   * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
    * <code>apply</code> method to the current reporter. If invoked in a constructor, it
    * will register the passed string for forwarding later during test execution. If invoked while this
    * <code>WordSpec</code> is being executed, such as from inside a test function, it will forward the information to
@@ -56,16 +61,6 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * throw an exception. This method can be called safely by any thread.
    */
   implicit protected def info: Informer = atomicInformer.get
-
-  /**
-   * Returns a <code>Documenter</code> that during test execution will forward strings passed to its
-   * <code>apply</code> method to the current reporter. If invoked in a constructor, it
-   * will register the passed string for forwarding later during test execution. If invoked while this
-   * <code>WordSpec</code> is being executed, such as from inside a test function, it will forward the information to
-   * the current reporter immediately. If invoked at any other time, it will
-   * throw an exception. This method can be called safely by any thread.
-   */
-  implicit protected def markup: Documenter = atomicDocumenter.get
 
   /**
    * Register a test with the given spec text, optional tags, and test function value that takes no arguments.
@@ -87,7 +82,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToRun(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    registerTest(specText, Transformer(testFun), "itCannotAppearInsideAnotherIt", "WordSpecLike.scala", methodName, 4, -3, None, None, None, testTags: _*)
+    registerTest(specText, testFun, "itCannotAppearInsideAnotherIt", "WordSpecLike.scala", methodName, 1, None, None, testTags: _*)
   }
 
   /**
@@ -110,32 +105,11 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
    */
   private def registerTestToIgnore(specText: String, testTags: List[Tag], methodName: String, testFun: () => Unit) {
-    registerIgnoredTest(specText, Transformer(testFun), "ignoreCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, 4, -3, None, testTags: _*)
+    registerIgnoredTest(specText, testFun, "ignoreCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, 1, testTags: _*)
   }
 
-  private def registerBranch(description: String, childPrefix: Option[String], methodName:String, stackDepth: Int, adjustment: Int, fun: () => Unit) {
-    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, stackDepth, adjustment, None)
-  }
-  
-  private def registerShorthandBranch(childPrefix: Option[String], notAllowResourceName: String, methodName:String, stackDepth: Int, adjustment: Int, fun: () => Unit) {
-    // Shorthand syntax only allow at top level, and only after "..." when, "..." should/can/must, or it should/can/must
-    if (engine.currentBranchIsTrunk) {
-      val currentBranch = engine.atomic.get.currentBranch
-      // headOption because subNodes are in reverse order
-      currentBranch.subNodes.headOption match {
-        case Some(last) => 
-          last match {
-            case DescriptionBranch(_, descriptionText, _, _) => 
-              registerNestedBranch(descriptionText, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, stackDepth, adjustment, None)
-            case _ => 
-              throw new exceptions.NotAllowedException(Resources(notAllowResourceName), 2)
-          }
-        case None => 
-          throw new exceptions.NotAllowedException(Resources(notAllowResourceName), 2)
-      }
-    }
-    else
-      throw new exceptions.NotAllowedException(Resources(notAllowResourceName), 2)
+  private def registerBranch(description: String, childPrefix: Option[String], methodName:String, fun: () => Unit) {
+    registerNestedBranch(description, childPrefix, fun(), "describeCannotAppearInsideAnIt", "WordSpecLike.scala", methodName, 1)
   }
 
   /**
@@ -326,7 +300,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </p>
      */
     def when(f: => Unit) {
-      registerBranch(string, Some("when"), "when", 4, -2, f _)
+      registerBranch(string, Some("when"), "when", f _)
     }
 
     /**
@@ -348,7 +322,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </p>
      */
     def when(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string, Some("when " + resultOfAfterWordApplication.text), "when", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string, Some("when " + resultOfAfterWordApplication.text), "when", resultOfAfterWordApplication.f)
     }
 
     /**
@@ -357,7 +331,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      */
     @deprecated("Please use \"which\" instead of \"that\".")
     def that(f: => Unit) {
-      registerBranch(string.trim + " that", None, "that", 4, -2, f _)
+      registerBranch(string + " that", None, "that", f _)
     }
 
     /**
@@ -377,7 +351,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </p>
      */
     def which(f: => Unit) {
-      registerBranch(string.trim + " which", None, "which", 4, -2, f _)
+      registerBranch(string + " which", None, "which", f _)
     }
 
     /**
@@ -386,7 +360,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      */
     @deprecated("Please use \"which\" instead of \"that\".")
     def that(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string.trim + " that " + resultOfAfterWordApplication.text.trim, None, "that", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string + " that " + resultOfAfterWordApplication.text, None, "that", resultOfAfterWordApplication.f)
     }
     
     /**
@@ -408,7 +382,7 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
      * </p>
      */
     def which(resultOfAfterWordApplication: ResultOfAfterWordApplication) {
-      registerBranch(string.trim + " which " + resultOfAfterWordApplication.text.trim, None, "which", 4, -2, resultOfAfterWordApplication.f)
+      registerBranch(string + " which " + resultOfAfterWordApplication.text, None, "which", resultOfAfterWordApplication.f)
     }
   }
 
@@ -525,276 +499,6 @@ trait WordSpecLike extends Suite with ShouldVerb with MustVerb with CanVerb { th
    * </pre>
    */
   protected def afterWord(text: String) = new AfterWord(text)
-  
-  /**
-   * Class that supports shorthand scope registration via the instance referenced from <code>WordSpecLike</code>'s <code>it</code> field.
-   *
-   * <p>
-   * This class enables syntax such as the following test registration:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * "A Stack" when { ... }
-   * 
-   * it should { ... }
-   * ^
-   * </pre>
-   *
-   * <p>
-   * For more information and examples of the use of the <code>it</code> field, see the main documentation 
-   * for <code>WordSpec</code>.
-   * </p>
-   */
-  protected final class ItWord {
-    
-    /**
-     * Supports the registration of scope with <code>should</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "A Stack" when { ... }
-     * 
-     * it should { ... }
-     *    ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def should(right: => Unit) {
-      registerShorthandBranch(Some("should"), "itMustAppearAfterTopLevelSubject", "should", 3, -2, right _)
-    }
-    
-    /**
-     * Supports the registration of scope with <code>must</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "A Stack" when { ... }
-     * 
-     * it must { ... }
-     *    ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def must(right: => Unit) {
-      registerShorthandBranch(Some("must"), "itMustAppearAfterTopLevelSubject", "must", 3, -2, right _)
-    }
-    
-    /**
-     * Supports the registration of scope with <code>can</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "A Stack" when { ... }
-     * 
-     * it can { ... }
-     *    ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def can(right: => Unit) {
-      registerShorthandBranch(Some("can"), "itMustAppearAfterTopLevelSubject", "can", 3, -2, right _)
-    }
-    
-    /**
-     * Supports the registration of scope with <code>when</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "A Stack" should { ... }
-     * 
-     * it when { ... }
-     *    ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def when(right: => Unit) {
-      registerShorthandBranch(Some("when"), "itMustAppearAfterTopLevelSubject", "when", 3, -2, right _)
-    }
-  }
-  
-  /**
-   * Supports shorthand scope registration in <code>WordSpecLike</code>s.
-   *
-   * <p>
-   * This field enables syntax such as the following test registration:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * "A Stack" when { ... }
-   * 
-   * it should { ... }
-   * ^
-   * </pre>
-   *
-   * <p>
-   * For more information and examples of the use of the <code>it</code> field, see the main documentation 
-   * for <code>WordSpec</code>.
-   * </p>
-   */
-  protected val it = new ItWord
-  
-  /**
-   * Class that supports shorthand scope registration via the instance referenced from <code>WordSpecLike</code>'s <code>they</code> field.
-   *
-   * <p>
-   * This class enables syntax such as the following test registration:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * "Basketball players" when { ... }
-   * 
-   * they should { ... }
-   * ^
-   * </pre>
-   *
-   * <p>
-   * For more information and examples of the use of the <code>they</code> field, see the main documentation 
-   * for <code>WordSpec</code>.
-   * </p>
-   */
-  protected final class TheyWord {
-    
-    /**
-     * Supports the registration of scope with <code>should</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "Basketball players" when { ... }
-     * 
-     * they should { ... }
-     *      ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def should(right: => Unit) {
-      registerShorthandBranch(Some("should"), "theyMustAppearAfterTopLevelSubject", "should", 3, -2, right _)
-    }
-    
-    /**
-     * Supports the registration of scope with <code>must</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "Basketball players" when { ... }
-     * 
-     * they must { ... }
-     *      ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def must(right: => Unit) {
-      registerShorthandBranch(Some("must"), "theyMustAppearAfterTopLevelSubject", "must", 3, -2, right _)
-    }
-    
-    /**
-     * Supports the registration of scope with <code>can</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "Basketball players" when { ... }
-     * 
-     * they can { ... }
-     *      ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def can(right: => Unit) {
-      registerShorthandBranch(Some("can"), "theyMustAppearAfterTopLevelSubject", "can", 3, -2, right _)
-    }
-    
-    /**
-     * Supports the registration of scope with <code>when</code> in a <code>WordSpecLike</code>.
-     *
-     * <p>
-     * This method supports syntax such as the following:
-     * </p>
-     *
-     * <pre class="stHighlight">
-     * "Basketball players" should { ... }
-     * 
-     * they when { ... }
-     *      ^
-     * </pre>
-     *
-     * <p>
-     * For examples of scope registration, see the <a href="WordSpec.html">main documentation</a>
-     * for <code>WordSpec</code>.
-     * </p>
-     */
-    def when(right: => Unit) {
-      registerShorthandBranch(Some("when"), "theyMustAppearAfterTopLevelSubject", "when", 3, -2, right _)
-    }
-  }
-  
-  /**
-   * Supports shorthand scope registration in <code>WordSpecLike</code>s.
-   *
-   * <p>
-   * This field enables syntax such as the following test registration:
-   * </p>
-   *
-   * <pre class="stHighlight">
-   * "A Stack" when { ... }
-   * 
-   * they should { ... }
-   * ^
-   * </pre>
-   *
-   * <p>
-   * For more information and examples of the use of the <code>they</code> field, see the main documentation 
-   * for <code>WordSpec</code>.
-   * </p>
-   */
-  protected val they = new TheyWord
 
   /**
    * Implicitly converts <code>String</code>s to <code>WordSpecStringWrapper</code>, which enables
@@ -845,7 +549,7 @@ one error found
    */
   protected implicit val subjectRegistrationFunction: StringVerbBlockRegistration =
     new StringVerbBlockRegistration {
-      def apply(left: String, verb: String, f: () => Unit) = registerBranch(left, Some(verb), "apply", 5, -2, f)
+      def apply(left: String, verb: String, f: () => Unit) = registerBranch(left, Some(verb), "apply", f)
     }
 
   /**
@@ -874,9 +578,9 @@ one error found
     (left, verb, resultOfAfterWordApplication) => {
       val afterWordFunction =
         () => {
-          registerBranch(resultOfAfterWordApplication.text, None, "apply", 5, -2, resultOfAfterWordApplication.f)
+          registerBranch(resultOfAfterWordApplication.text, None, "subjectWithAfterWordRegistrationFunction", resultOfAfterWordApplication.f)
         }
-      registerBranch(left, Some(verb), "apply", 5, -2, afterWordFunction)
+      registerBranch(left, Some(verb), "subjectWithAfterWordRegistrationFunction", afterWordFunction)
     }
   }
 
@@ -888,13 +592,8 @@ one error found
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed to 
    * methods <code>test</code> and <code>ignore</code>. 
    * </p>
-   * 
-   * <p>
-   * In addition, this trait's implementation will also auto-tag tests with class level annotations.  
-   * For example, if you annotate @Ignore at the class level, all test methods in the class will be auto-annotated with @Ignore.
-   * </p>
    */
-  override def tags: Map[String, Set[String]] = autoTagClassAnnotations(atomic.get.tagsMap, this)
+  override def tags: Map[String, Set[String]] = atomic.get.tagsMap
 
   /**
    * Run a test. This trait's implementation runs the test registered with the name specified by
@@ -903,30 +602,26 @@ one error found
    * for <code>testNames</code> for an example.)
    *
    * @param testName the name of one test to execute.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when the test started by this method has completed, and whether or not it failed .
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param configMap a <code>Map</code> of properties that can be used by this <code>WordSpec</code>'s executing tests.
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  protected override def runTest(testName: String, args: Args): Status = {
+  protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
-    def invokeWithFixture(theTest: TestLeaf): Outcome = {
-      val theConfigMap = args.configMap
-      val testData = testDataFor(testName, theConfigMap)
+    def invokeWithFixture(theTest: TestLeaf) {
+      val theConfigMap = configMap
       withFixture(
         new NoArgTest {
-          val name = testData.name
-          def apply(): Outcome = { theTest.testFun() }
-          val configMap = testData.configMap
-          val scopes = testData.scopes
-          val text = testData.text
-          val tags = testData.tags
+          def name = testName
+          def apply() { theTest.testFun() }
+          def configMap = theConfigMap
         }
       )
     }
 
-    runTestImpl(thisSuite, testName, args, true, invokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, invokeWithFixture)
   }
 
   /**
@@ -977,15 +672,21 @@ one error found
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
-   * @return a <code>Status</code> object that indicates when all tests started by this method have completed, and whether or not a failure occurred.
-   *
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    * @throws NullPointerException if any of the passed parameters is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  protected override def runTests(testName: Option[String], args: Args): Status = {
-    runTestsImpl(thisSuite, testName, args, info, true, runTest)
+  protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+    
+    runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
   /**
@@ -1029,9 +730,10 @@ one error found
     ListSet(atomic.get.testNamesList.toArray: _*)
   }
 
-  override def run(testName: Option[String], args: Args): Status = {
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
-    runImpl(thisSuite, testName, args, super.run)
+    runImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, super.run)
   }
 
   /**
@@ -1047,7 +749,7 @@ one error found
    * </pre>
    *
    * <p>
-   * For more information and examples of the use of <cod>behave</code>, see the <a href="#sharedTests">Shared tests section</a>
+   * For more information and examples of the use of <cod>behave</code>, see the <a href="#SharedTests">Shared tests section</a>
    * in the main documentation for this trait.
    * </p>
    */
@@ -1057,6 +759,4 @@ one error found
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.WordSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = createTestDataFor(testName, theConfigMap, this)
 }
