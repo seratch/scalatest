@@ -55,12 +55,21 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
   /**
    * Runs TestNG with the XML config file or files provided to the primary constructor, passing reports to the specified <code>Reporter</code>.
    * 
-   * @param testName If present (Some), then only the method with the supplied name is executed and groups will be ignored.
-   * @param args the <code>Args</code> for this run
+   * @param   testName   If present (Some), then only the method with the supplied name is executed and groups will be ignored.
+   * @param   reporter         The reporter to be notified of test events (success, failure, etc).
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   *
+   * @param stopper the <code>Stopper</code> may be used to request an early termination of a suite of tests. However, because TestNG does
+   *                not support the notion of aborting a run early, this class ignores this parameter.
+   * @param   properties         a <code>Map</code> of properties that can be used by the executing <code>Suite</code> of tests. This class
+   *                      does not use this parameter.
+   * @param distributor an optional <code>Distributor</code>, into which nested <code>Suite</code>s could be put to be executed
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be executed sequentially.
+   *              Because TestNG handles its own concurrency, this class ignores this parameter.
+   * <br><br>
    */
-  override def run(testName: Option[String], args: Args): Status = {
-
-    import args._
+  override def run(testName: Option[String], reporter: Reporter, stopper: Stopper,
+      filter: Filter, properties: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
 
     val tagsToInclude =
       filter.tagsToInclude match {
@@ -69,19 +78,15 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
       }
     val tagsToExclude = filter.tagsToExclude
 
-    val status = new ScalaTestStatefulStatus
-    runTestNG(reporter, tagsToInclude, tagsToExclude, tracker, status)
-
-    status.setCompleted()
-    status
+    runTestNG(reporter, tagsToInclude, tagsToExclude, tracker)
   }
 
   /**
    * Runs all tests in the xml suites.
    * @param   reporter   the reporter to be notified of test events (success, failure, etc)
    */
-  override private[testng] def runTestNG(reporter: Reporter, tracker: Tracker, status: ScalaTestStatefulStatus) {
-    runTestNG(reporter, Set[String](), Set[String](), tracker, status)
+  override private[testng] def runTestNG(reporter: Reporter, tracker: Tracker) {
+    runTestNG(reporter, Set[String](), Set[String](), tracker)
   }
 
   /**
@@ -94,16 +99,15 @@ class TestNGWrapperSuite(xmlSuiteFilenames: List[String]) extends TestNGSuite {
    * @param   reporter   the reporter to be notified of test events (success, failure, etc)
    * @param   groupsToInclude    contains the names of groups to run. only tests in these groups will be executed
    * @param   groupsToExclude    tests in groups in this Set will not be executed
-   * @param   status   Run status.
    */ 
   private[testng] def runTestNG(reporter: Reporter, groupsToInclude: Set[String], 
-      groupsToExclude: Set[String], tracker: Tracker, status: ScalaTestStatefulStatus) {
+      groupsToExclude: Set[String], tracker: Tracker) {
     
     val testng = new TestNG
     handleGroups(groupsToInclude, groupsToExclude, testng)
     addXmlSuitesToTestNG(testng)
     
-    run(testng, reporter, tracker, status)
+    run(testng, reporter, tracker)
   }
   
   /**

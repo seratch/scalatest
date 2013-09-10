@@ -1,9 +1,18 @@
 package org.scalatest.path
 
-import org.scalatest.words.BehaveWord
+import org.scalatest.Suite
+import org.scalatest.OneInstancePerTest
+import org.scalatest.Reporter
+import org.scalatest.Stopper
+import org.scalatest.Filter
+import org.scalatest.Tracker
+import org.scalatest.Distributor
+import org.scalatest.PathEngine
+import org.scalatest.Informer
+import org.scalatest.Tag
+import org.scalatest.verb.BehaveWord
 import scala.collection.immutable.ListSet
-import org.scalatest._
-import org.scalatest.Suite.autoTagClassAnnotations
+import org.scalatest.PendingNothing
 
 /**
  * A sister class to <code>org.scalatest.FreeSpec</code> that isolates tests by running each test in its own
@@ -679,6 +688,5 @@ import org.scalatest.Suite.autoTagClassAnnotations
  * @author Bill Venners
  * @author Chua Chee Seng
  */
-@Finders(Array("org.scalatest.finders.FreeSpecFinder"))
 class FreeSpec extends FreeSpecLike
 

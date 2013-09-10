@@ -1,16 +1,24 @@
 package org.scalatest.path
 
-import org.scalatest.words.BehaveWord
+import org.scalatest.Suite
+import org.scalatest.OneInstancePerTest
+import org.scalatest.Reporter
+import org.scalatest.Stopper
+import org.scalatest.Filter
+import org.scalatest.Tracker
+import org.scalatest.Distributor
+import org.scalatest.PathEngine
+import org.scalatest.Informer
+import org.scalatest.Tag
+import org.scalatest.verb.BehaveWord
 import scala.collection.immutable.ListSet
 import org.scalatest.PathEngine.isInTargetPath
-import org.scalatest._
-import org.scalatest.Suite.autoTagClassAnnotations
 
 /**
- * Implementation trait for class <code>path.FunSpec</code>, which is
- * a sister class to <code>org.scalatest.FunSpec</code> that isolates
- * tests by running each test in its own instance of the test class,
- * and for each test, only executing the <em>path</em> leading to that test.
+ * Implementation trait for class <code>path.FunSpec</code>, which 
+ * facilitates a &#8220;behavior-driven&#8221; style of development (BDD),
+ * in which tests are combined with text that specifies the behavior the tests
+ * verify.
  * 
  * <p>
  * <a href="FunSpec.html"><code>path.FunSpec</code></a> is a class, not a trait,
@@ -28,13 +36,12 @@ import org.scalatest.Suite.autoTagClassAnnotations
  *
  * @author Bill Venners
  */
-@Finders(Array("org.scalatest.finders.FunSpecFinder"))
 trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuite =>
   
   private final val engine = PathEngine.getEngine()
   import engine._
 
-  override def newInstance: FunSpec = this.getClass.newInstance.asInstanceOf[FunSpec]
+  override def newInstance = this.getClass.newInstance.asInstanceOf[FunSpec]
 
   /**
    * Returns an <code>Informer</code> that during test execution will forward strings (and other objects) passed to its
@@ -92,7 +99,7 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(testText: String, testTags: Tag*)(testFun: => Unit) {
-      handleTest(thisSuite, testText, Transformer(testFun _), "itCannotAppearInsideAnotherIt", "FunSpecLike.scala", "apply", 3, -2, None, testTags: _*)
+      handleTest(thisSuite, testText, testFun _, "itCannotAppearInsideAnotherIt", "FunSpecLike.scala", "apply", 1, testTags: _*)
     }
     
     /**
@@ -204,9 +211,9 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
      * @throws NullPointerException if <code>specText</code> or any passed test tag is <code>null</code>
      */
     def apply(testText: String, testTags: Tag*)(testFun: => Unit) {
-      handleTest(thisSuite, testText, Transformer(testFun _), "theyCannotAppearInsideAnotherThey", "FunSpecLike.scala", "apply", 3, -2, None, testTags: _*)
+      handleTest(thisSuite, testText, testFun _, "theyCannotAppearInsideAnotherThey", "FunSpecLike.scala", "apply", 1, testTags: _*)
     }
- 
+    
     /**
      * Supports the registration of shared tests.
      *
@@ -290,7 +297,7 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    */
   protected def ignore(testText: String, testTags: Tag*)(testFun: => Unit) {
     // Might not actually register it. Only will register it if it is its turn.
-    handleIgnoredTest(testText, Transformer(testFun _), "ignoreCannotAppearInsideAnIt", "FunSpecLike.scala", "ignore", 4, -2, None, testTags: _*)
+    handleIgnoredTest(testText, testFun _, "ignoreCannotAppearInsideAnIt", "FunSpecLike.scala", "ignore", 1, testTags: _*)
   }
   
   /**
@@ -307,7 +314,7 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * </p>
    */
   protected def describe(description: String)(fun: => Unit) {
-    handleNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", "FunSpecLike.scala", "describe", 4, -2, None)
+    handleNestedBranch(description, None, fun, "describeCannotAppearInsideAnIt", "FunSpecLike.scala", "describe")
   }
   
   /**
@@ -339,7 +346,7 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * <a href="#sharedFixtures">Shared fixtures</a> section in the main documentation for this trait.
    * </p>
    */
-  final override def withFixture(test: NoArgTest): Outcome = {
+  final override def withFixture(test: NoArgTest) {
     throw new UnsupportedOperationException
   }
 
@@ -450,15 +457,15 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * @throws NullPointerException if any of <code>testName</code>, <code>reporter</code>, <code>stopper</code>, or <code>configMap</code>
    *     is <code>null</code>.
    */
-  final protected override def runTest(testName: String, args: Args): Status = {
+  final protected override def runTest(testName: String, reporter: Reporter, stopper: Stopper, configMap: Map[String, Any], tracker: Tracker) {
 
     ensureTestResultsRegistered(thisSuite)
     
-    def dontInvokeWithFixture(theTest: TestLeaf): Outcome = {
+    def dontInvokeWithFixture(theTest: TestLeaf) {
       theTest.testFun()
     }
 
-    runTestImpl(thisSuite, testName, args, true, dontInvokeWithFixture)
+    runTestImpl(thisSuite, testName, reporter, stopper, configMap, tracker, true, dontInvokeWithFixture)
   }
 
   /**
@@ -476,11 +483,6 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * This trait's implementation returns tags that were passed as strings contained in <code>Tag</code> objects passed
    * to methods <code>it</code> and <code>ignore</code>.
    * </p>
-   * 
-   * <p>
-   * In addition, this trait's implementation will also auto-tag tests with class level annotations.  
-   * For example, if you annotate @Ignore at the class level, all test methods in the class will be auto-annotated with @Ignore.
-   * </p>
    *
    * <p>
    * This trait's implementation of this method is  marked as final. For insight onto why, see the
@@ -489,7 +491,7 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    */
   final override def tags: Map[String, Set[String]] = {
     ensureTestResultsRegistered(thisSuite)
-    autoTagClassAnnotations(atomic.get.tagsMap, this)
+    atomic.get.tagsMap
   }
 
   /**
@@ -516,15 +518,23 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    *
    * @param testName an optional name of one test to run. If <code>None</code>, all relevant tests should be run.
    *                 I.e., <code>None</code> acts like a wildcard that means run all relevant tests in this <code>Suite</code>.
-   * @param args the <code>Args</code> for this run
+   * @param reporter the <code>Reporter</code> to which results will be reported
+   * @param stopper the <code>Stopper</code> that will be consulted to determine whether to stop execution early.
+   * @param filter a <code>Filter</code> with which to filter tests based on their tags
+   * @param configMap a <code>Map</code> of key-value pairs that can be used by the executing <code>Suite</code> of tests.
+   * @param distributor an optional <code>Distributor</code>, into which to put nested <code>Suite</code>s to be run
+   *              by another entity, such as concurrently by a pool of threads. If <code>None</code>, nested <code>Suite</code>s will be run sequentially.
+   * @param tracker a <code>Tracker</code> tracking <code>Ordinal</code>s being fired by the current thread.
    *
-   *@throws NullPointerException if any passed parameter is <code>null</code>.
+   * @throws NullPointerException if any passed parameter is <code>null</code>.
    * @throws IllegalArgumentException if <code>testName</code> is defined, but no test with the specified test name
    *     exists in this <code>Suite</code>
    */
-  final override def run(testName: Option[String], args: Args): Status = {
+  final override def run(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+      configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+
     ensureTestResultsRegistered(thisSuite)
-    runPathTestsImpl(thisSuite, testName, args, info, true, runTest)
+    runPathTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
   }
 
   /**
@@ -536,7 +546,8 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * <a href="#sharedFixtures">Shared fixtures</a> section in the main documentation for this trait.
    * </p>
    */
-  final protected override def runTests(testName: Option[String], args: Args): Status = {
+  final protected override def runTests(testName: Option[String], reporter: Reporter, stopper: Stopper, filter: Filter,
+                             configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
     throw new UnsupportedOperationException
     // ensureTestResultsRegistered(isAnInitialInstance, this)
     // runTestsImpl(thisSuite, testName, reporter, stopper, filter, configMap, distributor, tracker, info, true, runTest)
@@ -564,7 +575,9 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * <a href="#sharedFixtures">Shared fixtures</a> section in the main documentation for this trait.
    * </p>
    */
-  final protected override def runNestedSuites(args: Args): Status = SucceededStatus
+  final protected override def runNestedSuites(reporter: Reporter, stopper: Stopper, filter: Filter,
+                                configMap: Map[String, Any], distributor: Option[Distributor], tracker: Tracker) {
+  }
 
   /**
    * Returns an empty list.
@@ -588,16 +601,11 @@ trait FunSpecLike extends org.scalatest.Suite with OneInstancePerTest { thisSuit
    * <a href="#sharedFixtures">Shared fixtures</a> section in the main documentation for this trait.
    * </p>
    */
-  final override def nestedSuites: collection.immutable.IndexedSeq[Suite] = Vector.empty
+  final override def nestedSuites: List[Suite] = Nil
 
   /**
    * Suite style name.
    */
   final override val styleName: String = "org.scalatest.path.FunSpec"
-    
-  override def testDataFor(testName: String, theConfigMap: ConfigMap = ConfigMap.empty): TestData = {
-    ensureTestResultsRegistered(thisSuite)
-    createTestDataFor(testName, theConfigMap, this)
-  }
 }
 
